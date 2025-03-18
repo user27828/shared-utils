@@ -1,0 +1,90 @@
+# Builds
+/dist/
+dist-ssr
+/build
+/server/dist/
+/server/run/
+/client/dist/
+*.tsbuildinfo
+*.local
+
+# node_modules (if not using Yarn pnp)
+**/node_modules
+
+# Yarn pnp
+**/.pnp.*
+**/.yarn
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Python
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+*.egg-info/
+.eggs/
+wheels/
+share/python-wheels/
+.installed.cfg
+MANIFEST
+.ipynb_checkpoints
+*.ipynb
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+
+# PY: Virtual Environment
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# testing
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+/coverage
+/uploads/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Misc
+.DS_Store
+.Spotlight-V100
+.env
+.env.*
+*.log*
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+/models/*
+#.userdata
+.userdata/cache/
+
+# TMP
+.userdata/memgraph-exports/tumor_drug_network.json
