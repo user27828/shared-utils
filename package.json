@@ -9,10 +9,10 @@
     "url": "https://github.com/user27828"
   },
   "license": "MIT",
-  "scripts": {
-    "killnode": "./bin/killnode.sh",
-    "package-upgrades": "./bin/package-upgrades.sh",
+  "bin": {
     "docker-build": "./bin/docker-build.sh",
-    "vite-preview-envs": "./bin/vite-preview-envs.sh"
+    "killnode": "./bin/killnode.sh",
+    "vite-preview-envs": "./bin/vite-preview-envs.sh",
+    "yarn-upgrade-interactive": "./bin/package-upgrades.sh"
   }
 }

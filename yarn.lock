@@ -7,5 +7,10 @@ __metadata:
 "@user27828/shared-utils@workspace:.":
   version: 0.0.0-use.local
   resolution: "@user27828/shared-utils@workspace:."
+  bin:
+    docker-build: ./bin/docker-build.sh
+    killnode: ./bin/killnode.sh
+    vite-preview-envs: ./bin/vite-preview-envs.sh
+    yarn-upgrade-interactive: ./bin/package-upgrades.sh
   languageName: unknown
   linkType: soft
