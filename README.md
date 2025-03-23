@@ -15,3 +15,7 @@ Collection of common utilities I use for various projects
 - Utilize the utilities in your `scripts`, for example:
   - `"kill": "npx killnode -9",`
   - `"upgrade": "npx yarn-upgrade-interactive --skip-server"` (remove `--skip-server` to prompt for server upgrades automatically - if you run yarn workspaces, this happens automatically)
+
+## Usage in THIS repository
+
+Instead of the usual `yarn ...`, run `npx ...`
