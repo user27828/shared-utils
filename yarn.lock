@@ -3,10 +3,30 @@
 
 __metadata:
   version: 6
+  cacheKey: 8
+
+"@tinymce/tinymce-react@npm:^6.0.0":
+  version: 6.0.0
+  resolution: "@tinymce/tinymce-react@npm:6.0.0"
+  dependencies:
+    prop-types: ^15.6.2
+  peerDependencies:
+    react: ^18.0.0 || ^17.0.1 || ^16.7.0
+    react-dom: ^18.0.0 || ^17.0.1 || ^16.7.0
+    tinymce: ^7.0.0 || ^6.0.0 || ^5.5.1
+  peerDependenciesMeta:
+    tinymce:
+      optional: true
+  checksum: 84c03515f59ad046a89522b3ece353a50f223b571f3034d06e87c9161cc2ba1c6205b9a427eb563d3bff053bebec43428fa1942181db15da51bd19d8cf4c0417
+  languageName: node
+  linkType: hard
 
 "@user27828/shared-utils@workspace:.":
   version: 0.0.0-use.local
   resolution: "@user27828/shared-utils@workspace:."
+  dependencies:
+    "@tinymce/tinymce-react": ^6.0.0
+    tinymce: ^7.7.2
   bin:
     docker-build: ./bin/docker-build.sh
     killnode: ./bin/killnode.sh
@@ -14,3 +34,53 @@ __metadata:
     yarn-upgrade-interactive: ./bin/package-upgrades.sh
   languageName: unknown
   linkType: soft
+
+"js-tokens@npm:^3.0.0 || ^4.0.0":
+  version: 4.0.0
+  resolution: "js-tokens@npm:4.0.0"
+  checksum: 8a95213a5a77deb6cbe94d86340e8d9ace2b93bc367790b260101d2f36a2eaf4e4e22d9fa9cf459b38af3a32fb4190e638024cf82ec95ef708680e405ea7cc78
+  languageName: node
+  linkType: hard
+
+"loose-envify@npm:^1.4.0":
+  version: 1.4.0
+  resolution: "loose-envify@npm:1.4.0"
+  dependencies:
+    js-tokens: ^3.0.0 || ^4.0.0
+  bin:
+    loose-envify: cli.js
+  checksum: 6517e24e0cad87ec9888f500c5b5947032cdfe6ef65e1c1936a0c48a524b81e65542c9c3edc91c97d5bddc806ee2a985dbc79be89215d613b1de5db6d1cfe6f4
+  languageName: node
+  linkType: hard
+
+"object-assign@npm:^4.1.1":
+  version: 4.1.1
+  resolution: "object-assign@npm:4.1.1"
+  checksum: fcc6e4ea8c7fe48abfbb552578b1c53e0d194086e2e6bbbf59e0a536381a292f39943c6e9628af05b5528aa5e3318bb30d6b2e53cadaf5b8fe9e12c4b69af23f
+  languageName: node
+  linkType: hard
+
+"prop-types@npm:^15.6.2":
+  version: 15.8.1
+  resolution: "prop-types@npm:15.8.1"
+  dependencies:
+    loose-envify: ^1.4.0
+    object-assign: ^4.1.1
+    react-is: ^16.13.1
+  checksum: c056d3f1c057cb7ff8344c645450e14f088a915d078dcda795041765047fa080d38e5d626560ccaac94a4e16e3aa15f3557c1a9a8d1174530955e992c675e459
+  languageName: node
+  linkType: hard
+
+"react-is@npm:^16.13.1":
+  version: 16.13.1
+  resolution: "react-is@npm:16.13.1"
+  checksum: f7a19ac3496de32ca9ae12aa030f00f14a3d45374f1ceca0af707c831b2a6098ef0d6bdae51bd437b0a306d7f01d4677fcc8de7c0d331eb47ad0f46130e53c5f
+  languageName: node
+  linkType: hard
+
+"tinymce@npm:^7.7.2":
+  version: 7.7.2
+  resolution: "tinymce@npm:7.7.2"
+  checksum: 1f9204706e8213b75a132b0e0ad357ef0c5f705a19854728987ea519090fe2dbce63826e4ec6eb1883ce73c305871b963a3a0452af2ca487aaadb8f762fc5096
+  languageName: node
+  linkType: hard

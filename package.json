@@ -14,5 +14,9 @@
     "killnode": "./bin/killnode.sh",
     "vite-preview-envs": "./bin/vite-preview-envs.sh",
     "yarn-upgrade-interactive": "./bin/package-upgrades.sh"
+  },
+  "dependencies": {
+    "@tinymce/tinymce-react": "^6.0.0",
+    "tinymce": "^7.7.2"
   }
 }

@@ -1,0 +1,66 @@
+/**
+ * WYSIWYG editor component using TinyMCE (Free Version)
+ * @see {@link ./TinyMceBundle.jsx}
+ * @module RichTextEditor
+ */
+import React, { useRef } from "react";
+import { default as Editor } from "./TinyMceBundle";
+
+/**
+ * Rich text editor component based on TinyMCE's free version
+ * @param {Object} props - Component props
+ * @param {string} props.data - Initial editor content
+ * @param {Function} props.onChange - Change handler function
+ */
+const RichTextEditor = (props) => {
+  const { data, onChange } = props;
+  const editorRef = useRef(null);
+
+  // For compatibility with the previous API that used editor.getData()
+  const handleEditorChange = (content) => {
+    if (onChange) {
+      // Create an object similar to CKEditor's structure to maintain backward compatibility
+      const editorInstance = {
+        getData: () => content,
+      };
+      onChange(null, editorInstance);
+    }
+  };
+
+  return (
+      <Editor
+        // No API key needed for self-hosted or community version
+        onInit={(evt, editor) => (editorRef.current = editor)}
+        initialValue={data || ""}
+        value={data || ""}
+        onEditorChange={handleEditorChange}
+        init={{
+          height: 500,
+          menubar: true,
+          plugins: [
+            "advlist",
+            "anchor",
+            "autolink",
+            "help",
+            "image",
+            "link",
+            "lists",
+            "searchreplace",
+            "table",
+            "wordcount",
+          ],
+          toolbar:
+            "undo redo | blocks | " +
+            "bold italic forecolor | alignleft aligncenter " +
+            "alignright alignjustify | bullist numlist outdent indent | " +
+            "removeformat | help",
+          content_style:
+            "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
+          branding: false,
+          promotion: false,
+        }}
+      />
+  );
+};
+
+export default RichTextEditor;
