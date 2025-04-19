@@ -6,6 +6,7 @@ Collection of common utilities I use for various projects
  - `yarn-upgrade` - Wraps `yarn upgrade-interactive` to install the interactive-tools package on demand and remove it when complete.  This was a quick fix to make repos compatible with Cloudflare Pages, which barfs🤢 when yarn-based repos have plugins (as of 2025-03).  This will prompt you to upgrade the server directory seperately if you have yarn workspaces enabled for that directory, and a root-level alias for `yarn server upgrade`.
  This utility will automatically leave interactive-tools alone if it's already installed (it won't uninstall it at the end.)
  - Other scripts are undocumented because they're less refined or a ~two-off.
+ - `client/*` - Client-related libraries.  Be aware that additional Babel or Vite configuration may be required for certain dev situations.
  - `client/components/*Editor.tsx` - WYSIWYG editor instances
   
 ## Usage in your repository

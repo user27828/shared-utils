@@ -5,19 +5,19 @@ __metadata:
   version: 6
   cacheKey: 8
 
-"@tinymce/tinymce-react@npm:^6.0.0":
-  version: 6.0.0
-  resolution: "@tinymce/tinymce-react@npm:6.0.0"
+"@tinymce/tinymce-react@npm:^6.1.0":
+  version: 6.1.0
+  resolution: "@tinymce/tinymce-react@npm:6.1.0"
   dependencies:
     prop-types: ^15.6.2
   peerDependencies:
-    react: ^18.0.0 || ^17.0.1 || ^16.7.0
-    react-dom: ^18.0.0 || ^17.0.1 || ^16.7.0
+    react: ^19.0.0 || ^18.0.0 || ^17.0.1 || ^16.7.0
+    react-dom: ^19.0.0 || ^18.0.0 || ^17.0.1 || ^16.7.0
     tinymce: ^7.0.0 || ^6.0.0 || ^5.5.1
   peerDependenciesMeta:
     tinymce:
       optional: true
-  checksum: 84c03515f59ad046a89522b3ece353a50f223b571f3034d06e87c9161cc2ba1c6205b9a427eb563d3bff053bebec43428fa1942181db15da51bd19d8cf4c0417
+  checksum: d8c475bedc29727502f67be6cedf4de99e0bbe1a9462a0c09abc22eaf0e43187ba70ac88cab487e3d1bdba0f7385c992b9c2c3d617bc2fcb7e061847a98d1b4a
   languageName: node
   linkType: hard
 
@@ -25,8 +25,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@user27828/shared-utils@workspace:."
   dependencies:
-    "@tinymce/tinymce-react": ^6.0.0
-    tinymce: ^7.7.2
+    "@tinymce/tinymce-react": ^6.1.0
+    tinymce: ^7.8.0
   bin:
     docker-build: ./bin/docker-build.sh
     killnode: ./bin/killnode.sh
@@ -78,9 +78,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tinymce@npm:^7.7.2":
-  version: 7.7.2
-  resolution: "tinymce@npm:7.7.2"
-  checksum: 1f9204706e8213b75a132b0e0ad357ef0c5f705a19854728987ea519090fe2dbce63826e4ec6eb1883ce73c305871b963a3a0452af2ca487aaadb8f762fc5096
+"tinymce@npm:^7.8.0":
+  version: 7.8.0
+  resolution: "tinymce@npm:7.8.0"
+  checksum: e130e1921c9a4f37ec012a9e4e5308a809128740aed1c1e9235b4203c7971ff43b40e9bd8e2307ccef59269ba4b4e2838624019c503762e7332dc45a7e5862ef
   languageName: node
   linkType: hard

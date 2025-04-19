@@ -1,7 +1,7 @@
 /**
  * WYSIWYG editor component using TinyMCE (Free Version)
  * @see {@link ./TinyMceBundle.jsx}
- * @module RichTextEditor
+ * @module TinyMceEditor
  */
 import React, { useRef } from "react";
 import { default as Editor } from "./TinyMceBundle";
@@ -12,9 +12,18 @@ import { default as Editor } from "./TinyMceBundle";
  * @param {string} props.data - Initial editor content
  * @param {Function} props.onChange - Change handler function
  */
-const RichTextEditor = (props) => {
+const TinyMceEditor = (props) => {
   const { data, onChange } = props;
   const editorRef = useRef(null);
+  const initialValueRef = useRef(data || "");
+
+  // Update initialValueRef when data prop changes, but only when the editor isn't focused
+  // This prevents cursor jumping during typing while still allowing content updates on edit
+  useEffect(() => {
+    if (editorRef.current && !editorRef.current.hasFocus()) {
+      initialValueRef.current = data || "";
+    }
+  }, [data]);
 
   // For compatibility with the previous API that used editor.getData()
   const handleEditorChange = (content) => {
@@ -30,11 +39,14 @@ const RichTextEditor = (props) => {
   return (
       <Editor
         // No API key needed for self-hosted or community version
-        onInit={(evt, editor) => (editorRef.current = editor)}
-        initialValue={data || ""}
+        onInit={(evt, editor) => {
+          editorRef.current = editor;
+        }}
+        initialValue={initialValueRef.current}
         value={data || ""}
         onEditorChange={handleEditorChange}
         init={{
+          license_key: "gpl",
           height: 500,
           menubar: true,
           plugins: [
@@ -63,4 +75,4 @@ const RichTextEditor = (props) => {
   );
 };
 
-export default RichTextEditor;
+export default TinyMceEditor;
