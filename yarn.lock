@@ -26,7 +26,7 @@ __metadata:
   resolution: "@user27828/shared-utils@workspace:."
   dependencies:
     "@tinymce/tinymce-react": ^6.1.0
-    tinymce: ^7.8.0
+    tinymce: ^7.9.0
   bin:
     docker-build: ./bin/docker-build.sh
     killnode: ./bin/killnode.sh
@@ -78,9 +78,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tinymce@npm:^7.8.0":
-  version: 7.8.0
-  resolution: "tinymce@npm:7.8.0"
-  checksum: e130e1921c9a4f37ec012a9e4e5308a809128740aed1c1e9235b4203c7971ff43b40e9bd8e2307ccef59269ba4b4e2838624019c503762e7332dc45a7e5862ef
+"tinymce@npm:^7.9.0":
+  version: 7.9.0
+  resolution: "tinymce@npm:7.9.0"
+  checksum: 54802382f2288b0ea6da0aebe3534caee01ca70c1f55aa32d27fb044fba8ae9c431d9f9a1c30d94ad4b97dae4e3bb15505d345044c6ecff602b6772613efdc73
   languageName: node
   linkType: hard
