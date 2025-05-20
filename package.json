@@ -9,6 +9,9 @@
     "url": "https://github.com/user27828"
   },
   "license": "MIT",
+  "scripts": {
+    "upgrade": "npx yarn-upgrade-interactive"
+  },
   "bin": {
     "docker-build": "./bin/docker-build.sh",
     "killnode": "./bin/killnode.sh",
