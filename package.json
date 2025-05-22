@@ -9,6 +9,18 @@
     "url": "https://github.com/user27828"
   },
   "license": "MIT",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./client": {
+      "types": "./client/index.d.ts",
+      "default": "./client/index.js"
+    }
+  },
   "scripts": {
     "upgrade": "npx yarn-upgrade-interactive"
   },
@@ -16,7 +28,7 @@
     "docker-build": "./bin/docker-build.sh",
     "killnode": "./bin/killnode.sh",
     "vite-preview-envs": "./bin/vite-preview-envs.sh",
-    "yarn-upgrade-interactive": "./bin/package-upgrades.sh"
+    "yarn-upgrade-interactive": "bash ./bin/package-upgrades.sh"
   },
   "dependencies": {
     "@tinymce/tinymce-react": "^6.1.0",

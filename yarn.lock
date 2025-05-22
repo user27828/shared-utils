@@ -31,7 +31,7 @@ __metadata:
     docker-build: ./bin/docker-build.sh
     killnode: ./bin/killnode.sh
     vite-preview-envs: ./bin/vite-preview-envs.sh
-    yarn-upgrade-interactive: ./bin/package-upgrades.sh
+    yarn-upgrade-interactive: bash ./bin/package-upgrades.sh
   languageName: unknown
   linkType: soft
 
