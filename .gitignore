@@ -1,10 +1,10 @@
 # Builds
-/dist/
+#/dist/
 dist-ssr
 /build
-/server/dist/
+#/server/dist/
 /server/run/
-/client/dist/
+#/client/dist/
 *.tsbuildinfo
 *.local
 
@@ -28,7 +28,6 @@ dist-ssr
 .Python
 *.egg
 *.egg-info/
-dist/
 build/
 eggs/
 *.egg-info/
@@ -86,5 +85,3 @@ lerna-debug.log*
 #.userdata
 .userdata/cache/
 
-# TMP
-.userdata/memgraph-exports/tumor_drug_network.json
