@@ -1,15 +1,16 @@
 /**
  * Comprehensive import verification tests
- * Tests both CommonJS and ES module imports
+ * Tests ES module imports
  * @jest-environment node
  */
 
+import { log, Log } from '../index.js';
+import logDirect, { Log as LogDirect } from '../src/log.js';
+
 describe('Package Import Verification', () => {
   
-  describe('JavaScript CommonJS Imports', () => {
+  describe('JavaScript ES Module Imports', () => {
     it('should import from utils barrel file', () => {
-      const { log, Log } = require('../../utils/index');
-      
       expect(log).toBeDefined();
       expect(typeof log).toBe('object');
       expect(typeof log.info).toBe('function');
@@ -26,8 +27,6 @@ describe('Package Import Verification', () => {
     });
 
     it('should import directly from log module', () => {
-      const { default: logDirect, Log: LogDirect } = require('../../utils/src/log.ts');
-      
       expect(logDirect).toBeDefined();
       expect(typeof logDirect).toBe('object');
       expect(typeof logDirect.info).toBe('function');
@@ -40,15 +39,12 @@ describe('Package Import Verification', () => {
     });
 
     it('should have consistent exports between barrel and direct imports', () => {
-      const { log: barrelLog, Log: BarrelLog } = require('../../utils/index');
-      const { default: directLog, Log: DirectLog } = require('../../utils/src/log'); 
-      
       // Should be the same constructor  
-      expect(BarrelLog).toBe(DirectLog);
+      expect(Log).toBe(LogDirect);
       
       // Should be instances of the same class
-      expect(barrelLog).toBeInstanceOf(DirectLog);
-      expect(directLog).toBeInstanceOf(BarrelLog);
+      expect(log).toBeInstanceOf(LogDirect);
+      expect(logDirect).toBeInstanceOf(Log);
     });
   });
 
@@ -56,7 +52,6 @@ describe('Package Import Verification', () => {
     let logInstance;
     
     beforeEach(() => {
-      const { Log } = require('../../utils/index');
       logInstance = new Log();
       
       // Mock console methods
@@ -71,8 +66,6 @@ describe('Package Import Verification', () => {
     });
 
     it('should work with imported log instance', () => {
-      const { log } = require('../../utils/index');
-      
       log.info('test message');
       log.warn('test warning');
       log.error('test error');
@@ -91,8 +84,6 @@ describe('Package Import Verification', () => {
     });
 
     it('should support configuration on imported instances', () => {
-      const { log } = require('../../utils/index');
-      
       // Should not throw
       expect(() => {
         log.setOptions({ 

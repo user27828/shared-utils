@@ -1,4 +1,4 @@
-import log, { Log, ORIGINAL_CONSOLE_METHODS } from './src/log';
+import log, { Log, ORIGINAL_CONSOLE_METHODS } from './src/log.js';
 
 export {
   log,
