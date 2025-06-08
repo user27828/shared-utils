@@ -1,5 +1,3 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 /**
  * Data - languages
  */
@@ -1581,4 +1579,4 @@ const languages = [
         speakers: 12,
     },
 ];
-exports.default = languages;
+export default languages;

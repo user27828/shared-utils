@@ -1,56 +1,17 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.DEFAULT_CALENDAR_CONFIG = void 0;
-const jsx_runtime_1 = require("react/jsx-runtime");
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 /**
  * Component for adding calendar items from a menu.  Supports the major calendar platforms
  */
-const react_1 = __importStar(require("react"));
-const material_1 = require("@mui/material");
-const icons_material_1 = require("@mui/icons-material");
-const date_fns_1 = require("date-fns");
-const date_fns_tz_1 = require("date-fns-tz");
-const dompurify_1 = __importDefault(require("dompurify"));
+import React, { useState } from "react";
+import { Button, Box, Menu, MenuItem, ListItemIcon, ListItemText, Typography, Fade, } from "@mui/material";
+import { EventNote as EventNoteIcon, ExpandMore as ExpandMoreIcon, Apple as AppleIcon, Google as GoogleIcon, Microsoft as MicrosoftIcon, CalendarMonth as CalendarIcon, Info as InfoIcon, Lock as LockIcon, Download as DownloadIcon, } from "@mui/icons-material";
+import { formatISO, format } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
+import DOMPurify from "dompurify";
 /**
  * Calendar configuration defaults
  */
-exports.DEFAULT_CALENDAR_CONFIG = {
+export const DEFAULT_CALENDAR_CONFIG = {
     timezone: "America/New_York",
     timezoneName: "Eastern Time",
     defaultDuration: 60, // minutes
@@ -77,8 +38,8 @@ exports.DEFAULT_CALENDAR_CONFIG = {
  * @returns {JSX.Element}
  * @component
  */
-const CalendarAdd = ({ event, requireAuth = false, isAuthenticated, onAuthRequired, calendarConfig = exports.DEFAULT_CALENDAR_CONFIG, buttonProps = {}, iconOnly = false, }) => {
-    const [anchorEl, setAnchorEl] = (0, react_1.useState)(null);
+const CalendarAdd = ({ event, requireAuth = false, isAuthenticated, onAuthRequired, calendarConfig = DEFAULT_CALENDAR_CONFIG, buttonProps = {}, iconOnly = false, }) => {
+    const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
     // Clean HTML content for calendar descriptions
     const cleanHtmlContent = (htmlContent) => {
@@ -86,7 +47,7 @@ const CalendarAdd = ({ event, requireAuth = false, isAuthenticated, onAuthRequir
             return "";
         }
         // Use DOMPurify to sanitize HTML
-        const sanitized = dompurify_1.default.sanitize(htmlContent);
+        const sanitized = DOMPurify.sanitize(htmlContent);
         // Create a temporary element to extract text
         const tempElement = document.createElement("div");
         tempElement.innerHTML = sanitized;
@@ -115,7 +76,7 @@ const CalendarAdd = ({ event, requireAuth = false, isAuthenticated, onAuthRequir
         const title = encodeURIComponent(event.title);
         const description = encodeURIComponent(cleanHtmlContent(event.description) || event.title);
         // Parse the session date and convert to timezone
-        const startDate = (0, date_fns_tz_1.toZonedTime)(new Date(event.startDate), calendarConfig.timezone);
+        const startDate = toZonedTime(new Date(event.startDate), calendarConfig.timezone);
         const duration = event.duration || calendarConfig.defaultDuration;
         const endDate = new Date(startDate.getTime() + duration * 60 * 1000);
         // Location from event URL or default
@@ -125,10 +86,10 @@ const CalendarAdd = ({ event, requireAuth = false, isAuthenticated, onAuthRequir
         switch (provider) {
             case "google":
                 // Format dates for Google Calendar
-                const googleStart = (0, date_fns_1.formatISO)(startDate)
+                const googleStart = formatISO(startDate)
                     .replace(/[-:]/g, "")
                     .replace(/\.\d{3}/g, "");
-                const googleEnd = (0, date_fns_1.formatISO)(endDate)
+                const googleEnd = formatISO(endDate)
                     .replace(/[-:]/g, "")
                     .replace(/\.\d{3}/g, "");
                 calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${googleStart}/${googleEnd}&details=${description}&location=${location}`;
@@ -136,8 +97,8 @@ const CalendarAdd = ({ event, requireAuth = false, isAuthenticated, onAuthRequir
                 break;
             case "outlook":
                 // Format dates for Outlook/Microsoft calendar
-                const outlookStart = (0, date_fns_1.formatISO)(startDate);
-                const outlookEnd = (0, date_fns_1.formatISO)(endDate);
+                const outlookStart = formatISO(startDate);
+                const outlookEnd = formatISO(endDate);
                 calendarUrl = `https://outlook.office.com/calendar/0/deeplink/compose?subject=${title}&body=${description}&startdt=${outlookStart}&enddt=${outlookEnd}&location=${location}`;
                 window.open(calendarUrl, "_blank");
                 break;
@@ -149,10 +110,10 @@ const CalendarAdd = ({ event, requireAuth = false, isAuthenticated, onAuthRequir
                     "VERSION:2.0",
                     "BEGIN:VEVENT",
                     `SUMMARY:${event.title}`,
-                    `DTSTART:${(0, date_fns_1.formatISO)(startDate)
+                    `DTSTART:${formatISO(startDate)
                         .replace(/[-:]/g, "")
                         .replace(/\.\d{3}/g, "")}`,
-                    `DTEND:${(0, date_fns_1.formatISO)(endDate)
+                    `DTEND:${formatISO(endDate)
                         .replace(/[-:]/g, "")
                         .replace(/\.\d{3}/g, "")}`,
                     `DESCRIPTION:${cleanHtmlContent(event.description) || event.title}`,
@@ -175,8 +136,8 @@ const CalendarAdd = ({ event, requireAuth = false, isAuthenticated, onAuthRequir
                 break;
             case "yahoo":
                 // Format dates for Yahoo Calendar
-                const yahooStart = (0, date_fns_1.format)(startDate, "yyyyMMdd'T'HHmmss");
-                const yahooEnd = (0, date_fns_1.format)(endDate, "yyyyMMdd'T'HHmmss");
+                const yahooStart = format(startDate, "yyyyMMdd'T'HHmmss");
+                const yahooEnd = format(endDate, "yyyyMMdd'T'HHmmss");
                 const yahooTitle = encodeURIComponent(event.title);
                 const yahooDesc = encodeURIComponent(cleanHtmlContent(event.description) || event.title);
                 calendarUrl = `https://calendar.yahoo.com/?v=60&title=${yahooTitle}&st=${yahooStart}&et=${yahooEnd}&desc=${yahooDesc}&in_loc=${location}`;
@@ -190,7 +151,7 @@ const CalendarAdd = ({ event, requireAuth = false, isAuthenticated, onAuthRequir
     };
     // Render an IconButton if iconOnly is true
     if (iconOnly) {
-        return ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)(icons_material_1.EventNote, { onClick: handleClick }), (0, jsx_runtime_1.jsxs)(material_1.Menu, { anchorEl: anchorEl, open: open, onClose: handleClose, MenuListProps: {
+        return (_jsxs(_Fragment, { children: [_jsx(EventNoteIcon, { onClick: handleClick }), _jsxs(Menu, { anchorEl: anchorEl, open: open, onClose: handleClose, MenuListProps: {
                         "aria-labelledby": "calendar-button",
                     }, PaperProps: {
                         elevation: 3,
@@ -199,12 +160,12 @@ const CalendarAdd = ({ event, requireAuth = false, isAuthenticated, onAuthRequir
                             borderRadius: 2,
                             width: 220,
                         },
-                    }, TransitionComponent: material_1.Fade, children: [(0, jsx_runtime_1.jsx)(material_1.Box, { sx: {
+                    }, TransitionComponent: Fade, children: [_jsx(Box, { sx: {
                                 px: 2,
                                 py: 1,
                                 borderBottom: "1px solid",
                                 borderColor: "divider",
-                            }, children: (0, jsx_runtime_1.jsx)(material_1.Typography, { variant: "subtitle2", color: "text.secondary", children: "Choose Calendar Type" }) }), (0, jsx_runtime_1.jsxs)(material_1.MenuItem, { onClick: () => handleAddToCalendar("google"), children: [(0, jsx_runtime_1.jsx)(material_1.ListItemIcon, { children: (0, jsx_runtime_1.jsx)(icons_material_1.Google, { fontSize: "small", color: "error" }) }), (0, jsx_runtime_1.jsx)(material_1.ListItemText, { children: "Google Calendar" })] }), (0, jsx_runtime_1.jsxs)(material_1.MenuItem, { onClick: () => handleAddToCalendar("outlook"), children: [(0, jsx_runtime_1.jsx)(material_1.ListItemIcon, { children: (0, jsx_runtime_1.jsx)(icons_material_1.Microsoft, { fontSize: "small", color: "primary" }) }), (0, jsx_runtime_1.jsx)(material_1.ListItemText, { children: "Outlook" })] }), (0, jsx_runtime_1.jsxs)(material_1.MenuItem, { onClick: () => handleAddToCalendar("apple"), children: [(0, jsx_runtime_1.jsx)(material_1.ListItemIcon, { children: (0, jsx_runtime_1.jsx)(icons_material_1.Apple, { fontSize: "small" }) }), (0, jsx_runtime_1.jsx)(material_1.ListItemText, { children: "Apple Calendar" })] }), (0, jsx_runtime_1.jsxs)(material_1.MenuItem, { onClick: () => handleAddToCalendar("yahoo"), children: [(0, jsx_runtime_1.jsx)(material_1.ListItemIcon, { children: (0, jsx_runtime_1.jsx)(icons_material_1.CalendarMonth, { fontSize: "small", color: "secondary" }) }), (0, jsx_runtime_1.jsx)(material_1.ListItemText, { children: "Yahoo Calendar" })] }), (0, jsx_runtime_1.jsxs)(material_1.MenuItem, { onClick: () => handleAddToCalendar("ics"), children: [(0, jsx_runtime_1.jsx)(material_1.ListItemIcon, { children: (0, jsx_runtime_1.jsx)(icons_material_1.Download, { fontSize: "small", color: "action" }) }), (0, jsx_runtime_1.jsx)(material_1.ListItemText, { children: "Calendar ICS" })] }), (0, jsx_runtime_1.jsxs)(material_1.Box, { sx: {
+                            }, children: _jsx(Typography, { variant: "subtitle2", color: "text.secondary", children: "Choose Calendar Type" }) }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("google"), children: [_jsx(ListItemIcon, { children: _jsx(GoogleIcon, { fontSize: "small", color: "error" }) }), _jsx(ListItemText, { children: "Google Calendar" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("outlook"), children: [_jsx(ListItemIcon, { children: _jsx(MicrosoftIcon, { fontSize: "small", color: "primary" }) }), _jsx(ListItemText, { children: "Outlook" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("apple"), children: [_jsx(ListItemIcon, { children: _jsx(AppleIcon, { fontSize: "small" }) }), _jsx(ListItemText, { children: "Apple Calendar" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("yahoo"), children: [_jsx(ListItemIcon, { children: _jsx(CalendarIcon, { fontSize: "small", color: "secondary" }) }), _jsx(ListItemText, { children: "Yahoo Calendar" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("ics"), children: [_jsx(ListItemIcon, { children: _jsx(DownloadIcon, { fontSize: "small", color: "action" }) }), _jsx(ListItemText, { children: "Calendar ICS" })] }), _jsxs(Box, { sx: {
                                 px: 2,
                                 py: 1.5,
                                 mt: 1,
@@ -213,16 +174,16 @@ const CalendarAdd = ({ event, requireAuth = false, isAuthenticated, onAuthRequir
                                 color: "text.secondary",
                                 display: "flex",
                                 alignItems: "center",
-                            }, children: [(0, jsx_runtime_1.jsx)(icons_material_1.Info, { fontSize: "inherit", sx: { mr: 0.5 } }), (0, jsx_runtime_1.jsxs)(material_1.Typography, { variant: "caption", children: ["Times shown in ", calendarConfig.timezoneName] })] })] })] }));
+                            }, children: [_jsx(InfoIcon, { fontSize: "inherit", sx: { mr: 0.5 } }), _jsxs(Typography, { variant: "caption", children: ["Times shown in ", calendarConfig.timezoneName] })] })] })] }));
     }
-    return ((0, jsx_runtime_1.jsxs)(material_1.Box, { sx: { position: "relative", display: "inline-block" }, children: [(0, jsx_runtime_1.jsx)(material_1.Button, { variant: "outlined", size: "small", color: "primary", onClick: handleClick, startIcon: (0, jsx_runtime_1.jsx)(icons_material_1.EventNote, {}), endIcon: (0, jsx_runtime_1.jsx)(icons_material_1.ExpandMore, {}), disabled: requireAuth && !isAuthenticated, sx: {
+    return (_jsxs(Box, { sx: { position: "relative", display: "inline-block" }, children: [_jsx(Button, { variant: "outlined", size: "small", color: "primary", onClick: handleClick, startIcon: _jsx(EventNoteIcon, {}), endIcon: _jsx(ExpandMoreIcon, {}), disabled: requireAuth && !isAuthenticated, sx: {
                     position: "relative",
                     "&:hover": {
                         backgroundColor: isAuthenticated
                             ? "rgba(25, 118, 210, 0.04)"
                             : "transparent",
                     },
-                }, ...buttonProps, children: "Add to Calendar" }), requireAuth && !isAuthenticated && ((0, jsx_runtime_1.jsx)(icons_material_1.Lock, { color: "action", fontSize: "small", sx: {
+                }, ...buttonProps, children: "Add to Calendar" }), requireAuth && !isAuthenticated && (_jsx(LockIcon, { color: "action", fontSize: "small", sx: {
                     position: "absolute",
                     top: "50%",
                     left: "50%",
@@ -231,7 +192,7 @@ const CalendarAdd = ({ event, requireAuth = false, isAuthenticated, onAuthRequir
                     borderRadius: "50%",
                     padding: "2px",
                     cursor: "pointer",
-                }, onClick: () => onAuthRequired("calendar feature") })), (0, jsx_runtime_1.jsxs)(material_1.Menu, { anchorEl: anchorEl, open: open, onClose: handleClose, MenuListProps: {
+                }, onClick: () => onAuthRequired("calendar feature") })), _jsxs(Menu, { anchorEl: anchorEl, open: open, onClose: handleClose, MenuListProps: {
                     "aria-labelledby": "calendar-button",
                 }, PaperProps: {
                     elevation: 3,
@@ -240,12 +201,12 @@ const CalendarAdd = ({ event, requireAuth = false, isAuthenticated, onAuthRequir
                         borderRadius: 2,
                         width: 220,
                     },
-                }, TransitionComponent: material_1.Fade, children: [(0, jsx_runtime_1.jsx)(material_1.Box, { sx: {
+                }, TransitionComponent: Fade, children: [_jsx(Box, { sx: {
                             px: 2,
                             py: 1,
                             borderBottom: "1px solid",
                             borderColor: "divider",
-                        }, children: (0, jsx_runtime_1.jsx)(material_1.Typography, { variant: "subtitle2", color: "text.secondary", children: "Choose Calendar Type" }) }), (0, jsx_runtime_1.jsxs)(material_1.MenuItem, { onClick: () => handleAddToCalendar("google"), children: [(0, jsx_runtime_1.jsx)(material_1.ListItemIcon, { children: (0, jsx_runtime_1.jsx)(icons_material_1.Google, { fontSize: "small", color: "error" }) }), (0, jsx_runtime_1.jsx)(material_1.ListItemText, { children: "Google Calendar" })] }), (0, jsx_runtime_1.jsxs)(material_1.MenuItem, { onClick: () => handleAddToCalendar("outlook"), children: [(0, jsx_runtime_1.jsx)(material_1.ListItemIcon, { children: (0, jsx_runtime_1.jsx)(icons_material_1.Microsoft, { fontSize: "small", color: "primary" }) }), (0, jsx_runtime_1.jsx)(material_1.ListItemText, { children: "Outlook" })] }), (0, jsx_runtime_1.jsxs)(material_1.MenuItem, { onClick: () => handleAddToCalendar("apple"), children: [(0, jsx_runtime_1.jsx)(material_1.ListItemIcon, { children: (0, jsx_runtime_1.jsx)(icons_material_1.Apple, { fontSize: "small" }) }), (0, jsx_runtime_1.jsx)(material_1.ListItemText, { children: "Apple Calendar" })] }), (0, jsx_runtime_1.jsxs)(material_1.MenuItem, { onClick: () => handleAddToCalendar("yahoo"), children: [(0, jsx_runtime_1.jsx)(material_1.ListItemIcon, { children: (0, jsx_runtime_1.jsx)(icons_material_1.CalendarMonth, { fontSize: "small", color: "secondary" }) }), (0, jsx_runtime_1.jsx)(material_1.ListItemText, { children: "Yahoo Calendar" })] }), (0, jsx_runtime_1.jsxs)(material_1.MenuItem, { onClick: () => handleAddToCalendar("ics"), children: [(0, jsx_runtime_1.jsx)(material_1.ListItemIcon, { children: (0, jsx_runtime_1.jsx)(icons_material_1.Download, { fontSize: "small", color: "action" }) }), (0, jsx_runtime_1.jsx)(material_1.ListItemText, { children: "Calendar ICS" })] }), (0, jsx_runtime_1.jsxs)(material_1.Box, { sx: {
+                        }, children: _jsx(Typography, { variant: "subtitle2", color: "text.secondary", children: "Choose Calendar Type" }) }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("google"), children: [_jsx(ListItemIcon, { children: _jsx(GoogleIcon, { fontSize: "small", color: "error" }) }), _jsx(ListItemText, { children: "Google Calendar" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("outlook"), children: [_jsx(ListItemIcon, { children: _jsx(MicrosoftIcon, { fontSize: "small", color: "primary" }) }), _jsx(ListItemText, { children: "Outlook" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("apple"), children: [_jsx(ListItemIcon, { children: _jsx(AppleIcon, { fontSize: "small" }) }), _jsx(ListItemText, { children: "Apple Calendar" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("yahoo"), children: [_jsx(ListItemIcon, { children: _jsx(CalendarIcon, { fontSize: "small", color: "secondary" }) }), _jsx(ListItemText, { children: "Yahoo Calendar" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("ics"), children: [_jsx(ListItemIcon, { children: _jsx(DownloadIcon, { fontSize: "small", color: "action" }) }), _jsx(ListItemText, { children: "Calendar ICS" })] }), _jsxs(Box, { sx: {
                             px: 2,
                             py: 1.5,
                             mt: 1,
@@ -254,6 +215,6 @@ const CalendarAdd = ({ event, requireAuth = false, isAuthenticated, onAuthRequir
                             color: "text.secondary",
                             display: "flex",
                             alignItems: "center",
-                        }, children: [(0, jsx_runtime_1.jsx)(icons_material_1.Info, { fontSize: "inherit", sx: { mr: 0.5 } }), (0, jsx_runtime_1.jsxs)(material_1.Typography, { variant: "caption", children: ["Times shown in ", calendarConfig.timezoneName] })] })] })] }));
+                        }, children: [_jsx(InfoIcon, { fontSize: "inherit", sx: { mr: 0.5 } }), _jsxs(Typography, { variant: "caption", children: ["Times shown in ", calendarConfig.timezoneName] })] })] })] }));
 };
-exports.default = CalendarAdd;
+export default CalendarAdd;

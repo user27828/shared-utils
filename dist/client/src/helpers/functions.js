@@ -1,14 +1,11 @@
-"use strict";
 /**
  * Shared functions
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatDateYYMMDD = exports.isValidUrl = exports.pathJoinUrl = exports.isDev = void 0;
 /**
  * Check if the current environment is development
  * @param {function} param0.xCriteria - eXtra criteria to check if the environment is development - additional check to default
  */
-const isDev = ({ xCriteria = null } = {}) => {
+export const isDev = ({ xCriteria = null } = {}) => {
     const hostname = window.location.hostname;
     const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
     const isDevelopmentEnv = process.env.NODE_ENV === "development";
@@ -18,13 +15,12 @@ const isDev = ({ xCriteria = null } = {}) => {
     }
     return result;
 };
-exports.isDev = isDev;
 /**
  * Similar to path.join(), but for URLs - either full, absolute, or relative
  * @param  {...any} args - The URL parts to join
  * @returns {string} The joined URL
  */
-const pathJoinUrl = (...args) => {
+export const pathJoinUrl = (...args) => {
     const parts = [];
     let protocolPart = ""; // Will store "http://", "https://", or "//"
     let isAbsolutePath = false; // For paths like /foo/bar
@@ -70,7 +66,6 @@ const pathJoinUrl = (...args) => {
         return joinedPath; // Relative path, no leading slash
     }
 };
-exports.pathJoinUrl = pathJoinUrl;
 /**
  * Validates if a string is a properly formatted URL
  *
@@ -81,7 +76,7 @@ exports.pathJoinUrl = pathJoinUrl;
  * @param {boolean} options.allowFragments - Whether to allow URL fragments (default: true)
  * @returns {boolean} True if the URL is valid, false otherwise
  */
-const isValidUrl = (url, options = {}) => {
+export const isValidUrl = (url, options = {}) => {
     // Return false for empty values to allow optional URLs
     if (!url || url.trim() === "") {
         return true;
@@ -114,13 +109,12 @@ const isValidUrl = (url, options = {}) => {
         return false;
     }
 };
-exports.isValidUrl = isValidUrl;
 /**
  * Format date to YYYY/MM/DD
  * @param {string} dateString - The date string to format (parsable by Date constructor)
  * @returns {string} Formatted date string in YYYY/MM/DD format or "N/A" if invalid
  */
-const formatDateYYMMDD = (dateString) => {
+export const formatDateYYMMDD = (dateString) => {
     if (!dateString) {
         return "N/A";
     }
@@ -135,4 +129,3 @@ const formatDateYYMMDD = (dateString) => {
         "/" +
         String(date.getDate()).padStart(2, "0"));
 };
-exports.formatDateYYMMDD = formatDateYYMMDD;

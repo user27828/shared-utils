@@ -1,47 +1,9 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const jsx_runtime_1 = require("react/jsx-runtime");
-const react_1 = require("react");
-const react_2 = __importStar(require("react"));
-const prop_types_1 = __importDefault(require("prop-types"));
-const material_1 = require("@mui/material");
-const countries_1 = require("../../helpers/countries");
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { createElement as _createElement } from "react";
+import React, { useMemo } from "react";
+import PropTypes from "prop-types";
+import { FormControl, InputLabel, TextField, MenuItem, ListItemText, Select, Checkbox, Autocomplete, Chip, Box, Typography, FormHelperText, } from "@mui/material";
+import { getCountryOptions } from "../../helpers/countries";
 /**
  * Country selection component supporting single or multiple country selection
  *
@@ -71,14 +33,14 @@ const countries_1 = require("../../helpers/countries");
  */
 const CountrySelect = ({ value, onChange, multiple = false, topCountries, showEmpty = true, searchable = true, sortBy = "name", order = "asc", label = "Country", id, name, required = false, disabled = false, error = false, helperText = "", sx = {}, fullWidth = true, size = "medium", variant = "outlined", placeholder = "Select country", showTelCode = false, ...props }) => {
     // Prepare country options based on props
-    const countryOptions = (0, react_2.useMemo)(() => {
+    const countryOptions = useMemo(() => {
         // Make sure topCountries is properly formatted
         let formattedTopCountry = topCountries;
         // Handle string vs array case
         if (typeof topCountries === "string" && topCountries) {
             formattedTopCountry = topCountries; // Just pass as is - no need to make array
         }
-        return (0, countries_1.getCountryOptions)({
+        return getCountryOptions({
             includeEmpty: showEmpty,
             topCountries: formattedTopCountry,
             sortBy,
@@ -86,7 +48,7 @@ const CountrySelect = ({ value, onChange, multiple = false, topCountries, showEm
         });
     }, [showEmpty, topCountries, sortBy, order]);
     // Get current selected country object(s) for display
-    const selectedCountryObjects = (0, react_2.useMemo)(() => {
+    const selectedCountryObjects = useMemo(() => {
         if (!value) {
             return multiple ? [] : null;
         }
@@ -152,58 +114,58 @@ const CountrySelect = ({ value, onChange, multiple = false, topCountries, showEm
     };
     // If searchable, use Autocomplete component
     if (searchable) {
-        return ((0, jsx_runtime_1.jsx)(material_1.Autocomplete, { id: id, value: selectedCountryObjects || "", onChange: handleChange, multiple: multiple, options: countryOptions, disableCloseOnSelect: multiple, getOptionLabel: getCountryLabel, filterOptions: filterOptions, isOptionEqualToValue: (option, value) => option.iso3166_1_alpha2 === value.iso3166_1_alpha2 ||
-                option.iso3166_1_alpha3 === value.iso3166_1_alpha3, renderOption: (props, option, { selected }) => ((0, react_1.createElement)(material_1.MenuItem, { ...props, key: `${option.iso3166_1_alpha3}-${option.iso3166_1_numeric}`, sx: { display: "flex", alignItems: "center" } },
-                multiple && (0, jsx_runtime_1.jsx)(material_1.Checkbox, { checked: selected, sx: { mr: 1 } }),
-                (0, jsx_runtime_1.jsx)(material_1.ListItemText, { primary: (0, jsx_runtime_1.jsxs)(material_1.Box, { sx: { display: "flex", justifyContent: "space-between" }, children: [(0, jsx_runtime_1.jsx)("span", { children: option.name }), (0, jsx_runtime_1.jsxs)(material_1.Typography, { variant: "caption", color: "text.secondary", children: [option.iso3166_1_alpha2, showTelCode && option.telCountryCode
+        return (_jsx(Autocomplete, { id: id, value: selectedCountryObjects || "", onChange: handleChange, multiple: multiple, options: countryOptions, disableCloseOnSelect: multiple, getOptionLabel: getCountryLabel, filterOptions: filterOptions, isOptionEqualToValue: (option, value) => option.iso3166_1_alpha2 === value.iso3166_1_alpha2 ||
+                option.iso3166_1_alpha3 === value.iso3166_1_alpha3, renderOption: (props, option, { selected }) => (_createElement(MenuItem, { ...props, key: `${option.iso3166_1_alpha3}-${option.iso3166_1_numeric}`, sx: { display: "flex", alignItems: "center" } },
+                multiple && _jsx(Checkbox, { checked: selected, sx: { mr: 1 } }),
+                _jsx(ListItemText, { primary: _jsxs(Box, { sx: { display: "flex", justifyContent: "space-between" }, children: [_jsx("span", { children: option.name }), _jsxs(Typography, { variant: "caption", color: "text.secondary", children: [option.iso3166_1_alpha2, showTelCode && option.telCountryCode
                                         ? ` +${option.telCountryCode}`
-                                        : ""] })] }), secondary: option.nameLocal !== option.name ? option.nameLocal : null }))), renderTags: (value, getTagProps) => value.map((option, index) => ((0, react_1.createElement)(material_1.Chip, { variant: "outlined", label: option.name, ...getTagProps({ index }), key: option.iso3166_1_alpha3 || option.iso3166_1_alpha2 }))), renderInput: (params) => ((0, jsx_runtime_1.jsx)(material_1.TextField, { ...params, name: name, label: label, placeholder: placeholder, required: required, error: error, helperText: helperText, fullWidth: fullWidth, size: size, variant: variant, disabled: disabled, InputProps: {
+                                        : ""] })] }), secondary: option.nameLocal !== option.name ? option.nameLocal : null }))), renderTags: (value, getTagProps) => value.map((option, index) => (_createElement(Chip, { variant: "outlined", label: option.name, ...getTagProps({ index }), key: option.iso3166_1_alpha3 || option.iso3166_1_alpha2 }))), renderInput: (params) => (_jsx(TextField, { ...params, name: name, label: label, placeholder: placeholder, required: required, error: error, helperText: helperText, fullWidth: fullWidth, size: size, variant: variant, disabled: disabled, InputProps: {
                     ...params.InputProps,
                     sx: { ...sx },
                 } })), disabled: disabled, ...props }));
     }
     // Regular Select component for non-searchable version
-    return ((0, jsx_runtime_1.jsxs)(material_1.FormControl, { fullWidth: fullWidth, required: required, error: error, disabled: disabled, size: size, variant: variant, sx: sx, children: [(0, jsx_runtime_1.jsx)(material_1.InputLabel, { id: `${id}-label`, children: label }), (0, jsx_runtime_1.jsx)(material_1.Select, { id: id, name: name, labelId: `${id}-label`, value: multiple ? value || [] : value || "", onChange: handleRegularSelectChange, multiple: multiple, label: label, renderValue: (selected) => {
+    return (_jsxs(FormControl, { fullWidth: fullWidth, required: required, error: error, disabled: disabled, size: size, variant: variant, sx: sx, children: [_jsx(InputLabel, { id: `${id}-label`, children: label }), _jsx(Select, { id: id, name: name, labelId: `${id}-label`, value: multiple ? value || [] : value || "", onChange: handleRegularSelectChange, multiple: multiple, label: label, renderValue: (selected) => {
                     if (multiple) {
                         const selectedCountries = countryOptions.filter((country) => selected.includes(country.iso3166_1_alpha2));
-                        return ((0, jsx_runtime_1.jsx)(material_1.Box, { sx: { display: "flex", flexWrap: "wrap", gap: 0.5 }, children: selectedCountries.map((country) => ((0, jsx_runtime_1.jsx)(material_1.Chip, { label: country.name }, country.iso3166_1_alpha2))) }));
+                        return (_jsx(Box, { sx: { display: "flex", flexWrap: "wrap", gap: 0.5 }, children: selectedCountries.map((country) => (_jsx(Chip, { label: country.name }, country.iso3166_1_alpha2))) }));
                     }
                     else {
                         const selectedCountry = countryOptions.find((country) => country.iso3166_1_alpha2 === selected);
                         return selectedCountry ? selectedCountry.name : "";
                     }
-                }, placeholder: placeholder, ...props, children: countryOptions.map((country) => ((0, jsx_runtime_1.jsx)(material_1.MenuItem, { value: country.iso3166_1_alpha2, children: (0, jsx_runtime_1.jsxs)(material_1.Box, { sx: { display: "flex", flexDirection: "column" }, children: [multiple && ((0, jsx_runtime_1.jsx)(material_1.Checkbox, { checked: value ? value.indexOf(country.iso3166_1_alpha2) > -1 : false })), (0, jsx_runtime_1.jsx)(material_1.ListItemText, { primary: (0, jsx_runtime_1.jsxs)(material_1.Box, { sx: { display: "flex", justifyContent: "space-between" }, children: [(0, jsx_runtime_1.jsx)("span", { children: country.name }), (0, jsx_runtime_1.jsxs)(material_1.Typography, { variant: "caption", color: "text.secondary", children: [country.iso3166_1_alpha2, showTelCode && country.telCountryCode
+                }, placeholder: placeholder, ...props, children: countryOptions.map((country) => (_jsx(MenuItem, { value: country.iso3166_1_alpha2, children: _jsxs(Box, { sx: { display: "flex", flexDirection: "column" }, children: [multiple && (_jsx(Checkbox, { checked: value ? value.indexOf(country.iso3166_1_alpha2) > -1 : false })), _jsx(ListItemText, { primary: _jsxs(Box, { sx: { display: "flex", justifyContent: "space-between" }, children: [_jsx("span", { children: country.name }), _jsxs(Typography, { variant: "caption", color: "text.secondary", children: [country.iso3166_1_alpha2, showTelCode && country.telCountryCode
                                                     ? ` +${country.telCountryCode}`
-                                                    : ""] })] }), secondary: country.nameLocal !== country.name ? country.nameLocal : null })] }) }, country.iso3166_1_alpha3 || country.iso3166_1_alpha2))) }), helperText && (0, jsx_runtime_1.jsx)(material_1.FormHelperText, { children: helperText })] }));
+                                                    : ""] })] }), secondary: country.nameLocal !== country.name ? country.nameLocal : null })] }) }, country.iso3166_1_alpha3 || country.iso3166_1_alpha2))) }), helperText && _jsx(FormHelperText, { children: helperText })] }));
 };
 CountrySelect.propTypes = {
-    value: prop_types_1.default.oneOfType([
-        prop_types_1.default.string,
-        prop_types_1.default.number,
-        prop_types_1.default.arrayOf(prop_types_1.default.oneOfType([prop_types_1.default.string, prop_types_1.default.number])),
+    value: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.number,
+        PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, PropTypes.number])),
     ]),
-    onChange: prop_types_1.default.func.isRequired,
-    multiple: prop_types_1.default.bool,
-    topCountries: prop_types_1.default.oneOfType([
-        prop_types_1.default.string,
-        prop_types_1.default.arrayOf(prop_types_1.default.string),
+    onChange: PropTypes.func.isRequired,
+    multiple: PropTypes.bool,
+    topCountries: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.arrayOf(PropTypes.string),
     ]),
-    showEmpty: prop_types_1.default.bool,
-    searchable: prop_types_1.default.bool,
-    sortBy: prop_types_1.default.string,
-    order: prop_types_1.default.oneOf(["asc", "desc"]),
-    label: prop_types_1.default.string,
-    id: prop_types_1.default.string,
-    name: prop_types_1.default.string,
-    required: prop_types_1.default.bool,
-    disabled: prop_types_1.default.bool,
-    error: prop_types_1.default.bool,
-    helperText: prop_types_1.default.string,
-    sx: prop_types_1.default.object,
-    fullWidth: prop_types_1.default.bool,
-    size: prop_types_1.default.oneOf(["small", "medium", "large"]),
-    variant: prop_types_1.default.oneOf(["standard", "outlined", "filled"]),
-    placeholder: prop_types_1.default.string,
-    showTelCode: prop_types_1.default.bool,
+    showEmpty: PropTypes.bool,
+    searchable: PropTypes.bool,
+    sortBy: PropTypes.string,
+    order: PropTypes.oneOf(["asc", "desc"]),
+    label: PropTypes.string,
+    id: PropTypes.string,
+    name: PropTypes.string,
+    required: PropTypes.bool,
+    disabled: PropTypes.bool,
+    error: PropTypes.bool,
+    helperText: PropTypes.string,
+    sx: PropTypes.object,
+    fullWidth: PropTypes.bool,
+    size: PropTypes.oneOf(["small", "medium", "large"]),
+    variant: PropTypes.oneOf(["standard", "outlined", "filled"]),
+    placeholder: PropTypes.string,
+    showTelCode: PropTypes.bool,
 };
-exports.default = CountrySelect;
+export default CountrySelect;

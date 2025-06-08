@@ -1,9 +1,3 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCountryOptions = exports.getCountryByCode = void 0;
 /**
  * Countries with ISO codes, local names, and additional data
  *
@@ -20,27 +14,26 @@ exports.getCountryOptions = exports.getCountryByCode = void 0;
  * @property {string} region - Super region code (e.g., EU, UK) if applicable
  * @property {number} population - Estimated population in millions
  */
-const countries_1 = __importDefault(require("../data/countries"));
+import countries from "../data/countries";
 /**
  * Utility function to get a country by its code
  * @param {string} code - ISO 3166 code (alpha-2 or alpha-3) or numeric code
  * @returns {Object|undefined} The country object or undefined if not found
  */
-const getCountryByCode = (code) => {
+export const getCountryByCode = (code) => {
     if (!code) {
         return undefined;
     }
     if (typeof code === "number" || !isNaN(parseInt(code))) {
         // Handle numeric code
         const numericCode = parseInt(code);
-        return countries_1.default.find((country) => country.iso3166_1_numeric === numericCode);
+        return countries.find((country) => country.iso3166_1_numeric === numericCode);
     }
     // Handle string codes (alpha-2 or alpha-3)
     const upperCode = code.toUpperCase();
-    return countries_1.default.find((country) => country.iso3166_1_alpha2 === upperCode ||
+    return countries.find((country) => country.iso3166_1_alpha2 === upperCode ||
         country.iso3166_1_alpha3 === upperCode);
 };
-exports.getCountryByCode = getCountryByCode;
 /**
  * Get country options for select components
  * @param {Object} options - Configuration options
@@ -50,9 +43,9 @@ exports.getCountryByCode = getCountryByCode;
  * @param {string} options.order - Sort order: "asc" or "desc" (defaults to "asc")
  * @returns {Array} Array of country options
  */
-const getCountryOptions = ({ includeEmpty = true, topCountries, sortBy = "name", order = "asc", } = {}) => {
-    let result = [...countries_1.default];
-    const emptyOption = countries_1.default[0];
+export const getCountryOptions = ({ includeEmpty = true, topCountries, sortBy = "name", order = "asc", } = {}) => {
+    let result = [...countries];
+    const emptyOption = countries[0];
     // Remove the empty option if not needed or store it for later
     if (!includeEmpty) {
         result = result.filter((country) => country.iso3166_1_alpha2 !== "");
@@ -128,5 +121,4 @@ const getCountryOptions = ({ includeEmpty = true, topCountries, sortBy = "name",
     }
     return result;
 };
-exports.getCountryOptions = getCountryOptions;
-exports.default = countries_1.default;
+export default countries;

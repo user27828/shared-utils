@@ -1,5 +1,3 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 /**
  * Data - countries
  */
@@ -2399,4 +2397,4 @@ const countries = [
         population: 15.0,
     },
 ];
-exports.default = countries;
+export default countries;

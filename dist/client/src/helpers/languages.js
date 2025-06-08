@@ -1,9 +1,3 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.getLanguageOptions = exports.getLanguageByCode = void 0;
 /**
  * Top 150 languages with ISO codes and native names
  *
@@ -18,28 +12,27 @@ exports.getLanguageOptions = exports.getLanguageByCode = void 0;
  * @property {number} lcid - Microsoft locale identifier
  * @property {number} speakers - Approximate number of speakers in millions (where available)
  */
-const languages_1 = __importDefault(require("../data/languages"));
+import languages from "../data/languages";
 /**
  * Utility function to get a language by its code
  * @param {string} code - The ISO code (2 or 3 letter) or IETF tag
  * @returns {Object|undefined} The language object or undefined if not found
  */
-const getLanguageByCode = (code) => {
+export const getLanguageByCode = (code) => {
     if (!code)
         return undefined;
     const lowerCode = code.toLowerCase();
     const upperCode = code.toUpperCase();
     // First try direct matching with iso639_1, iso639_2, or iso639_3
-    const directMatch = languages_1.default.find((lang) => lang.iso639_1.toLowerCase() === lowerCode ||
+    const directMatch = languages.find((lang) => lang.iso639_1.toLowerCase() === lowerCode ||
         lang.iso639_2.toLowerCase() === lowerCode ||
         lang.iso639_3.toLowerCase() === lowerCode);
     if (directMatch)
         return directMatch;
     // If not found, try matching IETF tags (case insensitive)
-    return languages_1.default.find((lang) => lang.ietf === lowerCode ||
+    return languages.find((lang) => lang.ietf === lowerCode ||
         Object.values(lang.ietfRegions || {}).some((tag) => tag.toLowerCase() === lowerCode));
 };
-exports.getLanguageByCode = getLanguageByCode;
 /**
  * Get language options for select components
  * @param {Object} options - Configuration options
@@ -49,9 +42,9 @@ exports.getLanguageByCode = getLanguageByCode;
  * @param {string} options.order - Sort order: "asc" or "desc" (defaults to "asc")
  * @returns {Array} Array of language options
  */
-const getLanguageOptions = ({ includeEmpty = true, topLanguages, sortBy = "name", order = "asc", } = {}) => {
-    let result = [...languages_1.default];
-    const emptyOption = languages_1.default[0];
+export const getLanguageOptions = ({ includeEmpty = true, topLanguages, sortBy = "name", order = "asc", } = {}) => {
+    let result = [...languages];
+    const emptyOption = languages[0];
     // Remove the empty option if not needed or store it for later
     if (!includeEmpty) {
         result = result.filter((lang) => lang.iso639_1 !== "");
@@ -75,7 +68,7 @@ const getLanguageOptions = ({ includeEmpty = true, topLanguages, sortBy = "name"
             regions.forEach((region) => {
                 // Convert to uppercase for consistent comparison
                 const regionUpper = region.toUpperCase();
-                languages_1.default.forEach((lang) => {
+                languages.forEach((lang) => {
                     if (lang.ietfRegions &&
                         Object.keys(lang.ietfRegions).includes(regionUpper)) {
                         defaultCodes.push(lang.ietf);
@@ -94,7 +87,7 @@ const getLanguageOptions = ({ includeEmpty = true, topLanguages, sortBy = "name"
         for (const code of defaultCodes) {
             if (!code)
                 continue;
-            const defaultLang = (0, exports.getLanguageByCode)(code);
+            const defaultLang = getLanguageByCode(code);
             if (defaultLang && defaultLang.iso639_1 !== "") {
                 // Remove from the main list so we don't have duplicates
                 result = result.filter((lang) => lang.iso639_1 !== defaultLang.iso639_1 &&
@@ -141,5 +134,4 @@ const getLanguageOptions = ({ includeEmpty = true, topLanguages, sortBy = "name"
     }
     return result;
 };
-exports.getLanguageOptions = getLanguageOptions;
-exports.default = languages_1.default;
+export default languages;

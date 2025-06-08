@@ -1,49 +1,11 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const jsx_runtime_1 = require("react/jsx-runtime");
+import { jsx as _jsx } from "react/jsx-runtime";
 /**
  * WYSIWYG editor component using TinyMCE (Free Version)
  * @see {@link ./TinyMceBundle.jsx}
  * @module TinyMceEditor
  */
-const react_1 = __importStar(require("react"));
-const TinyMceBundle_1 = __importDefault(require("./TinyMceBundle"));
+import React, { useRef } from "react";
+import { default as Editor } from "./TinyMceBundle";
 /**
  * Rich text editor component based on TinyMCE's free version
  * @param {Object} props - Component props
@@ -52,8 +14,8 @@ const TinyMceBundle_1 = __importDefault(require("./TinyMceBundle"));
  */
 const TinyMceEditor = (props) => {
     const { data, onChange } = props;
-    const editorRef = (0, react_1.useRef)(null);
-    const initialValueRef = (0, react_1.useRef)(data || "");
+    const editorRef = useRef(null);
+    const initialValueRef = useRef(data || "");
     // Update initialValueRef when data prop changes, but only when the editor isn't focused
     // This prevents cursor jumping during typing while still allowing content updates on edit
     useEffect(() => {
@@ -71,7 +33,7 @@ const TinyMceEditor = (props) => {
             onChange(null, editorInstance);
         }
     };
-    return ((0, jsx_runtime_1.jsx)(TinyMceBundle_1.default
+    return (_jsx(Editor
     // No API key needed for self-hosted or community version
     , { 
         // No API key needed for self-hosted or community version
@@ -102,4 +64,4 @@ const TinyMceEditor = (props) => {
             promotion: false,
         } }));
 };
-exports.default = TinyMceEditor;
+export default TinyMceEditor;

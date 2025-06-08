@@ -1,10 +1,4 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.exportDataToCsv = void 0;
-const papaparse_1 = __importDefault(require("papaparse"));
+import Papa from "papaparse";
 /**
  * Export data to CSV file and download it
  * @param {Object} options - Configuration options
@@ -25,7 +19,7 @@ const papaparse_1 = __importDefault(require("papaparse"));
  *   filename: 'users-export'
  * });
  */
-const exportDataToCsv = ({ data = [], fields = [], filename = "export", fileExtension = "csv", includeHeaders = true, }) => {
+export const exportDataToCsv = ({ data = [], fields = [], filename = "export", fileExtension = "csv", includeHeaders = true, }) => {
     if (!data.length || !fields.length) {
         console.error("Data or fields are empty");
         return;
@@ -45,7 +39,7 @@ const exportDataToCsv = ({ data = [], fields = [], filename = "export", fileExte
         return row;
     });
     // Generate CSV
-    const csvContent = papaparse_1.default.unparse(processedData, {
+    const csvContent = Papa.unparse(processedData, {
         header: includeHeaders,
         newline: "\n",
     });
@@ -63,7 +57,6 @@ const exportDataToCsv = ({ data = [], fields = [], filename = "export", fileExte
     link.click();
     document.body.removeChild(link);
 };
-exports.exportDataToCsv = exportDataToCsv;
-exports.default = {
-    exportDataToCsv: exports.exportDataToCsv,
+export default {
+    exportDataToCsv,
 };

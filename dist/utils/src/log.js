@@ -1,4 +1,3 @@
-"use strict";
 /**
  * Logging utility that wraps console.<log|info|warn|error>
  * The default behavior of this utility is to log NOTHING for client-side production environments,
@@ -20,8 +19,6 @@
  * // Custom interceptor
  * log.setOptions({ interceptor: (level, args) => { sendToAnalytics(level, args); } });
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ORIGINAL_CONSOLE_METHODS = exports.Log = void 0;
 // Store original console methods at module level
 const ORIGINAL_CONSOLE_METHODS = {
     log: console.log.bind(console),
@@ -30,7 +27,6 @@ const ORIGINAL_CONSOLE_METHODS = {
     error: console.error.bind(console),
     debug: console.debug.bind(console),
 };
-exports.ORIGINAL_CONSOLE_METHODS = ORIGINAL_CONSOLE_METHODS;
 class Log {
     constructor() {
         /**
@@ -308,7 +304,8 @@ class Log {
         }
     }
 }
-exports.Log = Log;
 // Create singleton instance
 const log = new Log();
-exports.default = log;
+// Export both the instance and the class
+export { Log, ORIGINAL_CONSOLE_METHODS };
+export default log;

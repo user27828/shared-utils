@@ -1,54 +1,51 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = TinyMceEditor;
-const jsx_runtime_1 = require("react/jsx-runtime");
+import { jsx as _jsx } from "react/jsx-runtime";
 /**
  * Free version of TinyMCE editor
  * Use TinyMceEditor for an component instance
  * @see {@link https://www.tiny.cloud/docs/tinymce/latest/react-pm-bundle/}
  */
-const tinymce_react_1 = require("@tinymce/tinymce-react");
-require("tinymce/tinymce"); // TinyMCE so the global var exists
-require("tinymce/models/dom/model"); // DOM model
-require("tinymce/themes/silver"); // Theme
-require("tinymce/icons/default"); // Toolbar icons
-require("tinymce/skins/ui/oxide/skin"); // Editor styles
+import { Editor } from "@tinymce/tinymce-react";
+import "tinymce/tinymce"; // TinyMCE so the global var exists
+import "tinymce/models/dom/model"; // DOM model
+import "tinymce/themes/silver"; // Theme
+import "tinymce/icons/default"; // Toolbar icons
+import "tinymce/skins/ui/oxide/skin"; // Editor styles
 // importing the plugin js.
 // if you use a plugin that is not listed here the editor will fail to load
-require("tinymce/plugins/advlist");
-require("tinymce/plugins/anchor");
-require("tinymce/plugins/autolink");
-require("tinymce/plugins/autoresize");
-require("tinymce/plugins/autosave");
-require("tinymce/plugins/charmap");
-require("tinymce/plugins/code");
-require("tinymce/plugins/codesample");
-require("tinymce/plugins/directionality");
-require("tinymce/plugins/emoticons");
-require("tinymce/plugins/fullscreen");
-require("tinymce/plugins/help");
-require("tinymce/plugins/help/js/i18n/keynav/en");
-require("tinymce/plugins/image");
-require("tinymce/plugins/importcss");
-require("tinymce/plugins/insertdatetime");
-require("tinymce/plugins/link");
-require("tinymce/plugins/lists");
-require("tinymce/plugins/media");
-require("tinymce/plugins/nonbreaking");
-require("tinymce/plugins/pagebreak");
-require("tinymce/plugins/preview");
-require("tinymce/plugins/quickbars");
-require("tinymce/plugins/save");
-require("tinymce/plugins/searchreplace");
-require("tinymce/plugins/table");
-require("tinymce/plugins/visualblocks");
-require("tinymce/plugins/visualchars");
-require("tinymce/plugins/wordcount");
+import "tinymce/plugins/advlist";
+import "tinymce/plugins/anchor";
+import "tinymce/plugins/autolink";
+import "tinymce/plugins/autoresize";
+import "tinymce/plugins/autosave";
+import "tinymce/plugins/charmap";
+import "tinymce/plugins/code";
+import "tinymce/plugins/codesample";
+import "tinymce/plugins/directionality";
+import "tinymce/plugins/emoticons";
+import "tinymce/plugins/fullscreen";
+import "tinymce/plugins/help";
+import "tinymce/plugins/help/js/i18n/keynav/en";
+import "tinymce/plugins/image";
+import "tinymce/plugins/importcss";
+import "tinymce/plugins/insertdatetime";
+import "tinymce/plugins/link";
+import "tinymce/plugins/lists";
+import "tinymce/plugins/media";
+import "tinymce/plugins/nonbreaking";
+import "tinymce/plugins/pagebreak";
+import "tinymce/plugins/preview";
+import "tinymce/plugins/quickbars";
+import "tinymce/plugins/save";
+import "tinymce/plugins/searchreplace";
+import "tinymce/plugins/table";
+import "tinymce/plugins/visualblocks";
+import "tinymce/plugins/visualchars";
+import "tinymce/plugins/wordcount";
 // importing plugin resources
-require("tinymce/plugins/emoticons/js/emojis");
+import "tinymce/plugins/emoticons/js/emojis";
 // Content styles, including inline UI like fake cursors
-require("tinymce/skins/content/default/content");
-require("tinymce/skins/ui/oxide/content");
-function TinyMceEditor(props) {
-    return (0, jsx_runtime_1.jsx)(tinymce_react_1.Editor, { ...props });
+import "tinymce/skins/content/default/content";
+import "tinymce/skins/ui/oxide/content";
+export default function TinyMceEditor(props) {
+    return _jsx(Editor, { ...props });
 }

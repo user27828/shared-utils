@@ -1,10 +1,7 @@
-"use strict";
 /**
  * Common items for forms
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.sexualOrientationOptions = exports.pronounOptions = exports.raceOptions = exports.ethnicityOptions = exports.genderOptions = void 0;
-exports.genderOptions = [
+export const genderOptions = [
     { value: "Female", label: "Female" },
     { value: "Male", label: "Male" },
     { value: "Nonbinary/Gender Fluid", label: "Nonbinary/Gender Fluid" },
@@ -13,7 +10,7 @@ exports.genderOptions = [
     { value: "Gender Not Listed", label: "Gender Not Listed" },
     { value: "Prefer Not to Answer", label: "Prefer Not to Answer" },
 ];
-exports.ethnicityOptions = [
+export const ethnicityOptions = [
     { value: "Latina/Latino or Hispanic", label: "Latina/Latino or Hispanic" },
     {
         value: "Not Latina/Latino or Hispanic",
@@ -21,7 +18,7 @@ exports.ethnicityOptions = [
     },
     { value: "Prefer Not to Answer", label: "Prefer Not to Answer" },
 ];
-exports.raceOptions = [
+export const raceOptions = [
     {
         value: "American Indian or Alaska Native",
         label: "American Indian/Alaska Native/Indigenous Person",
@@ -49,14 +46,14 @@ exports.raceOptions = [
     { value: "Race Not Listed", label: "Race Not Listed" },
     { value: "Prefer Not to Answer", label: "Prefer Not to Answer" },
 ];
-exports.pronounOptions = [
+export const pronounOptions = [
     { value: "He/Him/His", label: "He/Him/His" },
     { value: "She/Her/Hers", label: "She/Her/Hers" },
     { value: "They/Them/Their", label: "They/Them/Their" },
     { value: "Choice Not Listed", label: "Choice Not Listed" },
     { value: "Prefer Not to Answer", label: "Prefer Not to Answer" },
 ];
-exports.sexualOrientationOptions = [
+export const sexualOrientationOptions = [
     { value: "Heterosexual", label: "Heterosexual" },
     { value: "LGBTQ+", label: "LGBTQ+" },
     {
