@@ -55,6 +55,7 @@ log.error('Failed to load data');
 // In your main server entry point (e.g., server.js, app.js)
 import { log } from '@user27828/shared-utils/utils';
 
+(global as any).log = log; // Make log utility available globally
 // Configure for server-side (optional - auto-detected)
 log.setOptions({
   type: 'server',
