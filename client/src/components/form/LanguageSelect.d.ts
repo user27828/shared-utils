@@ -1,14 +1,10 @@
 import React from 'react';
 
 export interface LanguageSelectProps {
-  /**
-   * Selected language code(s) - can be a string for single selection or array for multiple
-   */
+  // Selected language code(s) - can be a string for single selection or array for multiple
   value?: string | string[];
   
-  /**
-   * Change handler function
-   */
+  // Change handler function
   onChange: (value: string | string[]) => void;
   
   /**
@@ -16,10 +12,7 @@ export interface LanguageSelectProps {
    * @default false
    */
   multiple?: boolean;
-  
-  /**
-   * ISO code(s), IETF tag(s), or {ietfRegions: [array]} object
-   */
+  // ISO code(s), IETF tag(s), or {ietfRegions: [array]} object
   topLanguages?: string | string[] | { ietfRegions: string | string[] };
   
   /**

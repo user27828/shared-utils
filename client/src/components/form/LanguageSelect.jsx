@@ -19,41 +19,42 @@ import { getLanguageOptions } from "../../helpers/languages";
 /**
  * Language selection component supporting single or multiple language selection
  *
- * @param {Object} props - Component props
- * @param {string|string[]} props.value - Selected language code(s)
- * @param {function} props.onChange - Change handler function
- * @param {boolean} props.multiple - Whether multiple languages can be selected
- * @param {string|string[]|Object} props.topLanguages - ISO code(s), IETF tag(s), or {ietfRegions: [array]} object
- * @param {boolean} props.showEmpty - Whether to show the "Not Selected/Other" option
- * @param {boolean} props.searchable - Whether to enable search functionality
- * @param {string} props.sortBy - Property to sort by (e.g., "name", "speakers")
- * @param {string} props.order - Sort order: "asc" or "desc"
- * @param {string} props.label - Label for the select
- * @param {string} props.id - ID for the component
- * @param {string} props.name - Name for the form field
- * @param {boolean} props.required - Whether the field is required
- * @param {boolean} props.disabled - Whether the field is disabled
- * @param {string} props.error - Error message
- * @param {string} props.helperText - Helper text
- * @param {Object} props.sx - Additional styles
- * @param {boolean} props.fullWidth - Whether the component should take up full width
- * @param {string} props.size - Size of the component
- * @param {string} props.variant - Variant of the component
- * @param {string} props.placeholder - Placeholder text
+ * @param {Object} param0 - Component props
+ * @param {string|string[]} param0.value - Selected language code(s)
+ * @param {function} param0.onChange - Change handler function
+ * @param {string} [param0.name="languages"] - Name for the form field
+ * @param {string} [param0.id="language-select"] - React node ID for the component (must be unique for calling component)
+ * @param {string|string[]|Object} [param0.topLanguages=[...]] - ISO code(s), IETF tag(s), or {ietfRegions: [array]} object
+ * @param {boolean} [param0.multiple=false] - Whether multiple languages can be selected
+ * @param {boolean} [param0.showEmpty=true] - Whether to show the "Not Selected/Other" option
+ * @param {boolean} [param0.searchable=true] - Whether to enable search functionality
+ * @param {string} [param0.sortBy="name"] - Property to sort by (e.g., "name", "speakers")
+ * @param {string} [param0.order="asc"] - Sort order: "asc" or "desc"
+ * @param {string} [param0.label="Language"] - Label for the select
+ * @param {boolean} [param0.required=false] - Whether the field is required
+ * @param {boolean} [param0.disabled=false] - Whether the field is disabled
+ * @param {string} [param0.error=false] - Error message
+ * @param {string} [param0.helperText=""] - Helper text
+ * @param {Object} [param0.sx={}] - Additional styles
+ * @param {boolean} [param0.fullWidth=true] - Whether the component should take up full width
+ * @param {string} [param0.size="medium"] - Size of the component
+ * @param {string} [param0.variant="outlined"] - Variant of the component
+ * @param {string} [param0.placeholder="Select language"] - Placeholder text
+ * @param {Object} [param0.props] - Additional props to pass to the <Autocomplete> component
  * @returns {JSX.Element}
  */
 const LanguageSelect = ({
   value,
   onChange,
+  name="languages",
+  id="language-select",
   multiple = false,
-  topLanguages,
+  topLanguages=["en", "fr", "es", "de", "zh", "ja", "ru", "ar"],
   showEmpty = true,
   searchable = true,
   sortBy = "name",
   order = "asc",
   label = "Language",
-  id,
-  name,
   required = false,
   disabled = false,
   error = false,

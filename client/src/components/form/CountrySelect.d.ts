@@ -1,15 +1,10 @@
 import React from 'react';
 
 export interface CountrySelectProps {
-  /**
-   * Selected country code(s) - can be a string for single selection or array for multiple
-   */
-  value?: string | string[]; // Updated to support multiple
-  
-  /**
-   * Change handler function
-   */
-  onChange: (value: string | string[]) => void; // Updated to support multiple
+  // Selected country code(s) - can be a string for single selection or array for multiple
+  value?: string | string[]; 
+  // Change handler function
+  onChange: (value: string | string[]) => void;
 
   /**
    * Whether multiple countries can be selected
@@ -17,9 +12,7 @@ export interface CountrySelectProps {
    */
   multiple?: boolean;
 
-  /**
-   * ISO code(s) to place at the top
-   */
+  // ISO code(s) to place at the top
   topCountries?: string | string[];
 
   /**
@@ -52,14 +45,10 @@ export interface CountrySelectProps {
    */
   label?: string;
 
-  /**
-   * ID for the component
-   */
+  // ID for the component
   id?: string;
 
-  /**
-   * Name for the form field
-   */
+  // Name for the form field
   name?: string;
 
   /**
@@ -122,9 +111,7 @@ export interface CountrySelectProps {
    */
   showTelCode?: boolean;
 
-  /**
-   * Any other props to be spread
-   */
+  // Any other props to be spread
   [key: string]: any;
 }
 
