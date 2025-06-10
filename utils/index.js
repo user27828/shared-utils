@@ -4,9 +4,10 @@
  */
 
 // Logging utility
-const { default: log, Log } = require('./src/log.ts');
+import log, { Log, ORIGINAL_CONSOLE_METHODS } from './src/log.js';
 
-module.exports = {
+export {
   log,
-  Log
+  Log,
+  ORIGINAL_CONSOLE_METHODS,
 };
