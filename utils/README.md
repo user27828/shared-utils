@@ -202,6 +202,46 @@ The utility automatically detects the environment:
 4. **Structured Logging**: Pass objects for structured data: `log.info('User action', { userId, action })`
 5. **Error Handling**: Always log errors: `log.error('Operation failed', error)`
 
+## ESLint Configuration
+
+If you're using the log utility as a global variable (e.g., `window.log = log` or `global.log = log`), you may need to configure ESLint to recognize it as a global to avoid "no-undef" errors.
+
+Add this to your `package.json`:
+
+```json
+{
+  "eslintConfig": {
+    "extends": [
+      "react-app"
+    ],
+    "globals": {
+      "log": "readonly"
+    }
+  }
+}
+```
+
+Or in your `.eslintrc.js` file:
+
+```javascript
+module.exports = {
+  globals: {
+    log: "readonly"
+  }
+};
+```
+
+For TypeScript projects, you can also add a global type declaration in a `.d.ts` file:
+
+```typescript
+// globals.d.ts
+import { Log } from '@user27828/shared-utils/utils';
+
+declare global {
+  var log: Log;
+}
+```
+
 ## Integration Examples
 
 ### React App
