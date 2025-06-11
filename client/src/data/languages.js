@@ -12,7 +12,7 @@ const languages = [
     ietf: "",
     ietfRegions: {},
     lcid: 0,
-    speakers: 0,  // In millions
+    speakers: 0, // In millions
   },
   // The rest of the languages sorted alphabetically by name
   {
@@ -203,6 +203,20 @@ const languages = [
     },
     lcid: 2117,
     speakers: 228,
+  },
+  {
+    iso639_1: "bho",
+    iso639_2: "bho",
+    iso639_3: "bho",
+    name: "Bhojpuri",
+    nameLocal: "भोजपुरी",
+    ietf: "bho",
+    ietfRegions: {
+      IN: "bho-IN", // India
+      NP: "bho-NP", // Nepal
+    },
+    lcid: 1142,
+    speakers: 52,
   },
   {
     iso639_1: "bs",
@@ -404,6 +418,19 @@ const languages = [
     speakers: 0.7,
   },
   {
+    iso639_1: "efi",
+    iso639_2: "efi",
+    iso639_3: "efi",
+    name: "Efik",
+    nameLocal: "Efik",
+    ietf: "efi",
+    ietfRegions: {
+      NG: "efi-NG", // Nigeria
+    },
+    lcid: 1182,
+    speakers: 0.4,
+  },
+  {
     iso639_1: "en",
     iso639_2: "eng",
     iso639_3: "eng",
@@ -432,6 +459,17 @@ const languages = [
     },
     lcid: 1061,
     speakers: 1,
+  },
+  {
+    iso639_1: "eo",
+    iso639_2: "epo",
+    iso639_3: "epo",
+    name: "Esperanto",
+    nameLocal: "Esperanto",
+    ietf: "eo",
+    ietfRegions: {},
+    lcid: 1143,
+    speakers: 2,
   },
   {
     iso639_1: "ee",
@@ -487,6 +525,19 @@ const languages = [
     },
     lcid: 1035,
     speakers: 5,
+  },
+  {
+    iso639_1: "fj",
+    iso639_2: "fij",
+    iso639_3: "fij",
+    name: "Fijian",
+    nameLocal: "Vosa Vakaviti",
+    ietf: "fj",
+    ietfRegions: {
+      FJ: "fj-FJ", // Fiji
+    },
+    lcid: 1144,
+    speakers: 0.35,
   },
   {
     iso639_1: "fr",
@@ -546,19 +597,6 @@ const languages = [
     speakers: 100,
   },
   {
-    iso639_1: "gon",
-    iso639_2: "gon",
-    iso639_3: "gon",
-    name: "Gondi",
-    nameLocal: "గొండి",
-    ietf: "gon",
-    ietfRegions: {
-      IN: "gon-IN", // India
-    },
-    lcid: 1151,
-    speakers: 2.2,
-  },
-  {
     iso639_1: "el",
     iso639_2: "ell",
     iso639_3: "ell",
@@ -571,6 +609,19 @@ const languages = [
     },
     lcid: 1032,
     speakers: 13,
+  },
+  {
+    iso639_1: "kl",
+    iso639_2: "kal",
+    iso639_3: "kal",
+    name: "Greenlandic",
+    nameLocal: "Kalaallisut",
+    ietf: "kl",
+    ietfRegions: {
+      GL: "kl-GL", // Greenland
+    },
+    lcid: 1135,
+    speakers: 0.057,
   },
   {
     iso639_1: "gn",
@@ -653,6 +704,21 @@ const languages = [
     speakers: 341,
   },
   {
+    iso639_1: "hmn",
+    iso639_2: "hmn",
+    iso639_3: "hmn",
+    name: "Hmong",
+    nameLocal: "Hmoob",
+    ietf: "hmn",
+    ietfRegions: {
+      CN: "hmn-CN", // China
+      VN: "hmn-VN", // Vietnam
+      LA: "hmn-LA", // Laos
+    },
+    lcid: 1149,
+    speakers: 4,
+  },
+  {
     iso639_1: "hu",
     iso639_2: "hun",
     iso639_3: "hun",
@@ -729,6 +795,19 @@ const languages = [
     },
     lcid: 2108,
     speakers: 1,
+  },
+  {
+    iso639_1: "isi",
+    iso639_2: "isi",
+    iso639_3: "isi",
+    name: "Inupiaq",
+    nameLocal: "Iñupiaq",
+    ietf: "isi",
+    ietfRegions: {
+      US: "isi-US", // United States (Alaska)
+    },
+    lcid: 1183,
+    speakers: 0.003,
   },
   {
     iso639_1: "it",
@@ -836,6 +915,62 @@ const languages = [
     speakers: 16,
   },
   {
+    iso639_1: "ko",
+    iso639_2: "kor",
+    iso639_3: "kor",
+    name: "Korean",
+    nameLocal: "한국어",
+    ietf: "ko",
+    ietfRegions: {
+      KR: "ko-KR", // South Korea
+      KP: "ko-KP", // North Korea
+    },
+    lcid: 1042,
+    speakers: 77,
+  },
+  {
+    iso639_1: "kok",
+    iso639_2: "kok",
+    iso639_3: "kok",
+    name: "Konkani",
+    nameLocal: "कोंकणी",
+    ietf: "kok",
+    ietfRegions: {
+      IN: "kok-IN", // India
+    },
+    lcid: 1111,
+    speakers: 2.3,
+  },
+  {
+    iso639_1: "ku",
+    iso639_2: "kur",
+    iso639_3: "kur",
+    name: "Kurdish",
+    nameLocal: "Kurdî / کوردی",
+    ietf: "ku",
+    ietfRegions: {
+      TR: "ku-TR", // Turkey
+      IQ: "ku-IQ", // Iraq
+      IR: "ku-IR", // Iran
+      SY: "ku-SY", // Syria
+    },
+    lcid: 1152,
+    speakers: 30,
+  },
+  {
+    iso639_1: "ky",
+    iso639_2: "kir",
+    iso639_3: "kir",
+    name: "Kyrgyz",
+    nameLocal: "Кыргызча",
+    ietf: "ky",
+    ietfRegions: {
+      KG: "ky-KG", // Kyrgyzstan
+    },
+    lcid: 1088,
+    speakers: 4.5,
+  },
+  {
     iso639_1: "lg",
     iso639_2: "lug",
     iso639_3: "lug",
@@ -874,6 +1009,19 @@ const languages = [
     },
     lcid: 1108,
     speakers: 30,
+  },
+  {
+    iso639_1: "lv",
+    iso639_2: "lav",
+    iso639_3: "lav",
+    name: "Latvian",
+    nameLocal: "Latviešu",
+    ietf: "lv",
+    ietfRegions: {
+      LV: "lv-LV", // Latvia
+    },
+    lcid: 1062,
+    speakers: 1.8,
   },
   {
     iso639_1: "lt",
@@ -942,6 +1090,32 @@ const languages = [
     speakers: 77,
   },
   {
+    iso639_1: "mt",
+    iso639_2: "mlt",
+    iso639_3: "mlt",
+    name: "Maltese",
+    nameLocal: "Malti",
+    ietf: "mt",
+    ietfRegions: {
+      MT: "mt-MT", // Malta
+    },
+    lcid: 1082,
+    speakers: 0.52,
+  },
+  {
+    iso639_1: "mi",
+    iso639_2: "mri",
+    iso639_3: "mri",
+    name: "Maori",
+    nameLocal: "Te Reo Māori",
+    ietf: "mi",
+    ietfRegions: {
+      NZ: "mi-NZ", // New Zealand
+    },
+    lcid: 1153,
+    speakers: 0.185,
+  },
+  {
     iso639_1: "ml",
     iso639_2: "mal",
     iso639_3: "mal",
@@ -953,6 +1127,48 @@ const languages = [
     },
     lcid: 1100,
     speakers: 42,
+  },
+  {
+    iso639_1: "mai",
+    iso639_2: "mai",
+    iso639_3: "mai",
+    name: "Maithili",
+    nameLocal: "मैथिली",
+    ietf: "mai",
+    ietfRegions: {
+      IN: "mai-IN", // India
+      NP: "mai-NP", // Nepal
+    },
+    lcid: 2876, // Placeholder or specific if found (e.g., 0x0B3C for mai-NP)
+    speakers: 34,
+  },
+  {
+    iso639_1: "mdx",
+    iso639_2: "mdx",
+    iso639_3: "mdx",
+    name: "Mandinka",
+    nameLocal: "Mandinka",
+    ietf: "mdx",
+    ietfRegions: {
+      GM: "mdx-GM", // Gambia
+      SN: "mdx-SN", // Senegal
+      GN: "mdx-GN", // Guinea
+    },
+    lcid: 1175,
+    speakers: 1.3,
+  },
+  {
+    iso639_1: "mni",
+    iso639_2: "mni",
+    iso639_3: "mni",
+    name: "Manipuri",
+    nameLocal: "মৈতৈলোন্",
+    ietf: "mni",
+    ietfRegions: {
+      IN: "mni-IN", // India
+    },
+    lcid: 1112,
+    speakers: 1.76,
   },
   {
     iso639_1: "mr",
@@ -981,19 +1197,6 @@ const languages = [
     speakers: 0.47,
   },
   {
-    iso639_1: "mn",
-    iso639_2: "mon",
-    iso639_3: "mon",
-    name: "Mongolian",
-    nameLocal: "Монгол",
-    ietf: "mn",
-    ietfRegions: {
-      MN: "mn-MN", // Mongolia
-    },
-    lcid: 1104,
-    speakers: 5,
-  },
-  {
     iso639_1: "mrj",
     iso639_2: "mrj",
     iso639_3: "mrj",
@@ -1007,6 +1210,19 @@ const languages = [
     speakers: 0.03,
   },
   {
+    iso639_1: "lus",
+    iso639_2: "lus",
+    iso639_3: "lus",
+    name: "Mizo",
+    nameLocal: "Mizo ṭawng",
+    ietf: "lus",
+    ietfRegions: {
+      IN: "lus-IN", // India
+    },
+    lcid: 1173,
+    speakers: 0.83,
+  },
+  {
     iso639_1: "ne",
     iso639_2: "nep",
     iso639_3: "nep",
@@ -1018,6 +1234,19 @@ const languages = [
     },
     lcid: 1121,
     speakers: 17,
+  },
+  {
+    iso639_1: "nr",
+    iso639_2: "nbl",
+    iso639_3: "nbl",
+    name: "Ndebele",
+    nameLocal: "isiNdebele",
+    ietf: "nr",
+    ietfRegions: {
+      ZA: "nr-ZA", // South Africa
+    },
+    lcid: 1174,
+    speakers: 1.1,
   },
   {
     iso639_1: "no",
@@ -1057,6 +1286,20 @@ const languages = [
     },
     lcid: 1096,
     speakers: 33,
+  },
+  {
+    iso639_1: "om",
+    iso639_2: "orm",
+    iso639_3: "orm",
+    name: "Oromo",
+    nameLocal: "Afaan Oromoo",
+    ietf: "om",
+    ietfRegions: {
+      ET: "om-ET", // Ethiopia
+      KE: "om-KE", // Kenya
+    },
+    lcid: 1138,
+    speakers: 37,
   },
   {
     iso639_1: "ps",
@@ -1125,6 +1368,21 @@ const languages = [
     speakers: 125,
   },
   {
+    iso639_1: "qu",
+    iso639_2: "que",
+    iso639_3: "que",
+    name: "Quechua",
+    nameLocal: "Runasimi",
+    ietf: "qu",
+    ietfRegions: {
+      PE: "qu-PE", // Peru
+      BO: "qu-BO", // Bolivia
+      EC: "qu-EC", // Ecuador
+    },
+    lcid: 1131,
+    speakers: 8.9,
+  },
+  {
     iso639_1: "rm",
     iso639_2: "roh",
     iso639_3: "roh",
@@ -1136,6 +1394,20 @@ const languages = [
     },
     lcid: 1166,
     speakers: 0.06,
+  },
+  {
+    iso639_1: "rhg",
+    iso639_2: "rhg",
+    iso639_3: "rhg",
+    name: "Rohingya",
+    nameLocal: "Ruáingga",
+    ietf: "rhg",
+    ietfRegions: {
+      MM: "rhg-MM", // Myanmar
+      BD: "rhg-BD", // Bangladesh
+    },
+    lcid: 1177,
+    speakers: 1.8,
   },
   {
     iso639_1: "ro",
@@ -1175,6 +1447,19 @@ const languages = [
     },
     lcid: 1159,
     speakers: 12,
+  },
+  {
+    iso639_1: "rn",
+    iso639_2: "run",
+    iso639_3: "run",
+    name: "Kirundi",
+    nameLocal: "Kirundi",
+    ietf: "rn",
+    ietfRegions: {
+      BI: "rn-BI", // Burundi
+    },
+    lcid: 1185,
+    speakers: 9,
   },
   {
     iso639_1: "sd",
@@ -1314,6 +1599,19 @@ const languages = [
     speakers: 10,
   },
   {
+    iso639_1: "tl",
+    iso639_2: "tgl",
+    iso639_3: "tgl",
+    name: "Tagalog (Filipino)",
+    nameLocal: "Tagalog / Pilipino",
+    ietf: "tl",
+    ietfRegions: {
+      PH: "tl-PH", // Philippines
+    },
+    lcid: 1124, // LCID for Filipino
+    speakers: 70, // Combined speakers for Tagalog/Filipino
+  },
+  {
     iso639_1: "tg",
     iso639_2: "tgk",
     iso639_3: "tgk",
@@ -1434,6 +1732,33 @@ const languages = [
     speakers: 70,
   },
   {
+    iso639_1: "tn",
+    iso639_2: "tsn",
+    iso639_3: "tsn",
+    name: "Tswana",
+    nameLocal: "Setswana",
+    ietf: "tn",
+    ietfRegions: {
+      BW: "tn-BW", // Botswana
+      ZA: "tn-ZA", // South Africa
+    },
+    lcid: 1074,
+    speakers: 5.8,
+  },
+  {
+    iso639_1: "tw",
+    iso639_2: "twi",
+    iso639_3: "twi",
+    name: "Twi",
+    nameLocal: "Twi",
+    ietf: "tw",
+    ietfRegions: {
+      GH: "tw-GH", // Ghana
+    },
+    lcid: 1181,
+    speakers: 9,
+  },
+  {
     iso639_1: "tk",
     iso639_2: "tuk",
     iso639_3: "tuk",
@@ -1485,6 +1810,19 @@ const languages = [
     },
     lcid: 1091,
     speakers: 27,
+  },
+  {
+    iso639_1: "ug",
+    iso639_2: "uig",
+    iso639_3: "uig",
+    name: "Uyghur",
+    nameLocal: "ئۇيغۇرچە",
+    ietf: "ug",
+    ietfRegions: {
+      CN: "ug-CN", // China
+    },
+    lcid: 1184,
+    speakers: 10,
   },
   {
     iso639_1: "vi",
@@ -1550,6 +1888,20 @@ const languages = [
     },
     lcid: 1130,
     speakers: 38,
+  },
+  {
+    iso639_1: "yi",
+    iso639_2: "yid",
+    iso639_3: "yid",
+    name: "Yiddish",
+    nameLocal: "ייִדיש",
+    ietf: "yi",
+    ietfRegions: {
+      IL: "yi-IL", // Israel
+      US: "yi-US", // United States
+    },
+    lcid: 1085,
+    speakers: 1.5,
   },
   {
     iso639_1: "yue",
