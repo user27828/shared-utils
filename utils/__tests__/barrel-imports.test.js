@@ -3,11 +3,12 @@
  * @jest-environment node
  */
 
+import * as utils from '../dist/index.js';
+import { log, Log } from '../dist/index.js';
+
 describe('Utils Barrel Exports', () => {
-  describe('CommonJS Imports', () => {
+  describe('ES Module Imports', () => {
     it('should export log and Log from barrel file', () => {
-      const utils = require('../../dist/utils/index.js');
-      
       expect(utils).toHaveProperty('log');
       expect(utils).toHaveProperty('Log');
       expect(typeof utils.Log).toBe('function');
@@ -15,8 +16,6 @@ describe('Utils Barrel Exports', () => {
     });
 
     it('should allow destructured imports', () => {
-      const { log, Log } = require('../../dist/utils/index.js');
-      
       expect(typeof Log).toBe('function');
       expect(typeof log).toBe('object');
       expect(typeof log.info).toBe('function');
@@ -25,8 +24,6 @@ describe('Utils Barrel Exports', () => {
     });
 
     it('should maintain method binding in destructured imports', () => {
-      const { log } = require('../../dist/utils/index.js');
-      
       // Mock console to test binding
       const consoleSpy = jest.spyOn(console, 'info').mockImplementation();
       
@@ -42,18 +39,18 @@ describe('Utils Barrel Exports', () => {
       consoleSpy.mockRestore();
     });
 
-    it('should export a singleton log instance', () => {
-      const utils1 = require('../../dist/utils/index.js');
-      const utils2 = require('../../dist/utils/index.js');
+    it('should export a singleton log instance', async () => {
+      const utils1 = await import('../dist/index.js');
+      const utils2 = await import('../dist/index.js');
       
       expect(utils1.log).toBe(utils2.log);
     });
-  });
+    });
 
-  describe('ES6/TypeScript Imports', () => {
-    it.skip('should support ES6 import syntax (requires --experimental-vm-modules)', async () => {
+  describe('Dynamic Import Tests', () => {
+    it('should support dynamic import syntax', async () => {
       // Use dynamic import to test ES6 module syntax
-      const utils = await import('../../dist/utils/index.js');
+      const utils = await import('../dist/index.js');
       
       expect(utils).toHaveProperty('log');
       expect(utils).toHaveProperty('Log');
@@ -61,16 +58,16 @@ describe('Utils Barrel Exports', () => {
       expect(typeof utils.log).toBe('object');
     });
 
-    it.skip('should support named imports (requires --experimental-vm-modules)', async () => {
-      const { log, Log } = await import('../../dist/utils/index.js');
+    it('should support dynamic named imports', async () => {
+      const { log, Log } = await import('../dist/index.js');
       
       expect(typeof Log).toBe('function');
       expect(typeof log).toBe('object');
       expect(typeof log.info).toBe('function');
     });
 
-    it.skip('should maintain functionality with ES6 imports (requires --experimental-vm-modules)', async () => {
-      const { log } = await import('../../dist/utils/index.js');
+    it('should maintain functionality with dynamic imports', async () => {
+      const { log } = await import('../dist/index.js');
       
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
       
@@ -87,21 +84,19 @@ describe('Utils Barrel Exports', () => {
   });
 
   describe('Export Consistency', () => {
-    it.skip('should have consistent exports between CommonJS and ES6 (requires --experimental-vm-modules)', async () => {
-      const commonjsUtils = require('../../dist/utils/index.js');
-      const es6Utils = await import('../../dist/utils/index.js');
+    it('should have consistent exports between static and dynamic imports', async () => {
+      const dynamicUtils = await import('../dist/index.js');
       
-      expect(Object.keys(commonjsUtils).sort()).toEqual(Object.keys(es6Utils).sort());
-      expect(typeof commonjsUtils.log).toBe(typeof es6Utils.log);
-      expect(typeof commonjsUtils.Log).toBe(typeof es6Utils.Log);
+      expect(Object.keys(utils).sort()).toEqual(Object.keys(dynamicUtils).sort());
+      expect(typeof utils.log).toBe(typeof dynamicUtils.log);
+      expect(typeof utils.Log).toBe(typeof dynamicUtils.Log);
     });
 
-    it.skip('should export the same log instance between import methods (requires --experimental-vm-modules)', async () => {
-      const commonjsUtils = require('../../dist/utils/index.js');
-      const es6Utils = await import('../../dist/utils/index.js');
+    it('should export the same log instance between import methods', async () => {
+      const dynamicUtils = await import('../dist/index.js');
       
       // Both should reference the same singleton instance
-      expect(commonjsUtils.log).toBe(es6Utils.log);
+      expect(utils.log).toBe(dynamicUtils.log);
     });
   });
 
@@ -109,7 +104,6 @@ describe('Utils Barrel Exports', () => {
     it('should have proper TypeScript declarations', () => {
       // This test ensures that TypeScript types are available
       // The actual type checking is done at compile time
-      const utils = require('../../dist/utils/index.js');
       
       // These should not throw TypeScript errors (tested at compile time)
       expect(utils.log).toBeDefined();

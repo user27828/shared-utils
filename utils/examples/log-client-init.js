@@ -2,7 +2,7 @@
  * Client-side logger initialization example
  * Include this in your main client entry point (e.g., src/main.js, src/index.js)
  */
-import { log } from '@user27828/shared-utils/utils';
+import { log } from '@shared-utils/utils';
 
 // Configure for client-side
 log.setOptions({

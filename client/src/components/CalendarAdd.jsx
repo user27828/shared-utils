@@ -105,7 +105,7 @@ const CalendarAdd = ({
   };
 
   const handleAddToCalendar = (provider) => {
-    if (!event) return;
+    if (!event) { return; }
 
     // Close the menu
     handleClose();

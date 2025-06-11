@@ -1,0 +1,19 @@
+{
+  "name": "@shared-utils/server",
+  "version": "1.0.0",
+  "description": "Shared utilities for server-side operations",
+  "main": "turnstile-worker.ts",
+  "private": true,
+  "scripts": {
+    "deploy": "./deploy-turnstile-worker.sh",
+    "deploy:dev": "./deploy-turnstile-worker.sh dev",
+    "deploy:staging": "./deploy-turnstile-worker.sh staging",
+    "deploy:production": "./deploy-turnstile-worker.sh production",
+    "dev": "wrangler dev",
+    "test": "echo 'No tests found in server package - this is expected until server tests are added' && exit 0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241106.0",
+    "wrangler": "^3.78.12"
+  }
+}

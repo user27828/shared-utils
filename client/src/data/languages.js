@@ -12,7 +12,7 @@ const languages = [
     ietf: "",
     ietfRegions: {},
     lcid: 0,
-    speakers: 0,
+    speakers: 0,  // In millions
   },
   // The rest of the languages sorted alphabetically by name
   {

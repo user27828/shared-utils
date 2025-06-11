@@ -3,11 +3,33 @@ export default {
   preset: 'ts-jest/presets/default-esm',
   extensionsToTreatAsEsm: ['.ts'],
   roots: ['<rootDir>'],
-  testMatch: [
-    '**/__tests__/**/*.js', // Keep for existing JS tests
-    '**/__tests__/**/*.ts', // For TS tests in __tests__ folders
-    '**/*.test.js',       // For .test.js files anywhere (like utils/src/__tests__)
-    '**/*.test.ts'        // For .test.ts files anywhere
+  projects: [
+    {
+      displayName: 'utils',
+      testMatch: ['<rootDir>/utils/__tests__/**/*.js', '<rootDir>/utils/**/*.test.js'],
+      moduleNameMapper: {
+        '^@shared-utils/utils$': '<rootDir>/utils/dist/index.js',
+        '^shared-utils/utils$': '<rootDir>/utils/dist/index.js',
+        '^shared-utils$': '<rootDir>/utils/dist/index.js'
+      }
+    },
+    {
+      displayName: 'client',
+      testMatch: ['<rootDir>/client/__tests__/**/*.js', '<rootDir>/client/**/*.test.js'],
+      moduleNameMapper: {
+        '^@shared-utils/client$': '<rootDir>/client/dist/index.js',
+        '^shared-utils/client$': '<rootDir>/client/dist/index.js'
+      }
+    },
+    {
+      displayName: 'integration',
+      testMatch: ['<rootDir>/__tests__/**/*.js', '<rootDir>/**/*.test.ts'],
+      moduleNameMapper: {
+        '^shared-utils/client$': '<rootDir>/client/dist/index.js',
+        '^shared-utils/utils$': '<rootDir>/utils/dist/index.js',
+        '^shared-utils$': '<rootDir>/utils/dist/index.js'
+      }
+    }
   ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   transform: {
@@ -20,32 +42,31 @@ export default {
         esModuleInterop: true,
         resolveJsonModule: true,
         declaration: false,
-        skipLibCheck: true,
-        // Add path mapping for .js extensions to .ts files
-        paths: {
-          "./src/log.js": ["./src/log.ts"]
-        }
+        skipLibCheck: true
       }
-    }], // Transform both .ts/.tsx and .js/.jsx with ts-jest
+    }]
   },
   collectCoverageFrom: [
     'utils/src/**/*.ts',
     'utils/index.ts',
+    'client/src/**/*.{js,jsx,ts,tsx}',
     '!**/__tests__/**',
     '!**/node_modules/**'
   ],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.mjs'],
   moduleNameMapper: {
-    // Handle specific imports in our test files
+    // Legacy mappings for existing tests
     '^\\.\\.?/src/log\\.js$': '<rootDir>/utils/src/log.ts',
-    '^\\.\\.?/utils/index\\.js$': '<rootDir>/utils/index.ts',
-    // Package mappings
-    '^@user27828/shared-utils/client$': '<rootDir>/dist/client/index.js',
-    '^@user27828/shared-utils/utils$': '<rootDir>/dist/utils/index.js',
-    '^@user27828/shared-utils$': '<rootDir>/dist/index.js'
+    '^\\.\\.?/src/turnstile\\.js$': '<rootDir>/utils/src/turnstile.ts',
+    '^\\.\\.?/src/turnstile\\.ts$': '<rootDir>/utils/src/turnstile.ts',
+    '^\\.\\.?/utils/index\\.js$': '<rootDir>/utils/index.ts'
   },
   // Prevent tests from being run from the dist directory if they are copied there
   testPathIgnorePatterns: [
     '<rootDir>/dist/'
+  ],
+  // Allow lodash-es to be transformed by Jest
+  transformIgnorePatterns: [
+    'node_modules/(?!(lodash-es)/)'
   ]
 };

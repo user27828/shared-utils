@@ -18,7 +18,15 @@
  *
  * // Custom interceptor
  * log.setOptions({ interceptor: (level, args) => { sendToAnalytics(level, args); } });
+ *
+ * // Cross-utility configuration via OptionsManager
+ * import { optionsManager } from 'utils/options-manager';
+ * optionsManager.setGlobalOptions({
+ *   log: { type: 'client', client: { production: ['warn', 'error'] } },
+ *   turnstile: { siteKey: 'your-key' }
+ * });
  */
+import { OptionsManager, optionsManager } from './options-manager';
 type LogLevel = 'log' | 'info' | 'warn' | 'error' | 'debug';
 type Environment = 'client' | 'server';
 interface OriginalConsoleMethods {
@@ -44,16 +52,15 @@ interface LogOptions {
     };
 }
 declare class Log {
-    /**
-     * Options for the logging utility.
-     * These are assigned once upon environment-side initialization
-     * After including this, initialization can be set by calling log.setOptions({ type: 'client', client: { ... } })
-     */
-    private options;
+    private readonly optionsManager;
     private isProduction;
     readonly ORIGINAL_CONSOLE_METHODS: OriginalConsoleMethods;
     private interceptors;
     constructor();
+    /**
+     * Get current options via the options manager
+     */
+    private get options();
     /**
      * Auto-detect if running in client or server environment
      */
@@ -79,11 +86,11 @@ declare class Log {
      */
     private _log;
     /**
-     * Set logging options
+     * Set logging options (delegates to OptionsManager)
      */
     setOptions(values: LogOptions): void;
     /**
-     * Get current options (for debugging)
+     * Get current options (delegates to OptionsManager)
      */
     getOptions(): typeof this.options;
     /**
@@ -126,5 +133,5 @@ declare class Log {
     removeInterceptor(interceptor: (level: LogLevel, args: any[]) => void): void;
 }
 declare const log: Log;
-export { Log, ORIGINAL_CONSOLE_METHODS };
+export { Log, ORIGINAL_CONSOLE_METHODS, OptionsManager, optionsManager };
 export default log;

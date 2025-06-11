@@ -1,0 +1,15 @@
+name = "turnstile-verifier"
+main = "turnstile-worker.ts"
+compatibility_date = "2024-12-01"
+
+# Environment variables (configure these in Cloudflare Dashboard or wrangler.toml)
+[vars]
+# ALLOWED_ORIGINS = "https://yourdomain.com,https://www.yourdomain.com"
+
+# Secrets (set these via `wrangler secret put TURNSTILE_SECRET_KEY`)
+# TURNSTILE_SECRET_KEY = "your-turnstile-secret-key"
+
+# Route configuration (uncomment and modify for custom domain)
+# [[routes]]
+# pattern = "yourdomain.com/api/turnstile/*"
+# zone_name = "yourdomain.com"

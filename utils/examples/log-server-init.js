@@ -2,7 +2,7 @@
  * Server-side logger initialization example
  * Include this in your main server entry point (e.g., server.js, app.js)
  */
-import { log } from '@user27828/shared-utils/utils';
+import { log } from '@shared-utils/utils';
 
 // Configure for server-side
 log.setOptions({

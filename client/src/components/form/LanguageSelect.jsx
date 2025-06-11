@@ -46,10 +46,10 @@ import { getLanguageOptions } from "../../helpers/languages";
 const LanguageSelect = ({
   value,
   onChange,
-  name="languages",
-  id="language-select",
+  name = "languages",
+  id = "language-select",
   multiple = false,
-  topLanguages=["en", "fr", "es", "de", "zh", "ja", "ru", "ar"],
+  topLanguages = ["en", "fr", "es", "de", "zh", "ja", "ru", "ar"],
   showEmpty = true,
   searchable = true,
   sortBy = "name",
@@ -122,7 +122,9 @@ const LanguageSelect = ({
 
   // Handle change based on whether it's multiple selection or not
   const handleChange = (event, newValue) => {
-    if (!onChange) return;
+    if (!onChange) {
+      return;
+    }
 
     if (multiple) {
       // For multiple selection, extract the codes
@@ -143,16 +145,18 @@ const LanguageSelect = ({
 
   // For non-searchable version, handle the regular select change
   const handleRegularSelectChange = (event) => {
-    if (!onChange) return;
+    if (!onChange) {
+      return;
+    }
     onChange(event.target.value);
   };
 
   // Format the language display name to include code and language information
   const getLanguageLabel = (lang) => {
-  // Handle null, undefined, or empty array cases
-  if (!lang || (Array.isArray(lang) && lang.length === 0)) {
-    return "";
-  }
+    // Handle null, undefined, or empty array cases
+    if (!lang || (Array.isArray(lang) && lang.length === 0)) {
+      return "";
+    }
 
     // Format with language name and native name if different
     let label = lang.name;

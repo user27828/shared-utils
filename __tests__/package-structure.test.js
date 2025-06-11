@@ -57,19 +57,19 @@ describe('Root Package Structure', () => {
 
   describe('Module Resolution', () => {
     it('should resolve utils module correctly', () => {
-      const utilsPath = require.resolve('@user27828/shared-utils/utils');
+      const utilsPath = require.resolve('@shared-utils/utils');
       // After moduleNameMapper, this should point to <rootDir>/dist/utils/index.js
       expect(utilsPath).toMatch(/dist[/\\]utils[/\\]index\.js$/);
     });
 
     it('should resolve client module correctly', () => {
-      const clientPath = require.resolve('@user27828/shared-utils/client');
+      const clientPath = require.resolve('@shared-utils/client');
       // After moduleNameMapper, this should point to <rootDir>/dist/client/index.js
       expect(clientPath).toMatch(/dist[/\\]client[/\\]index\.js$/);
     });
 
     it('should resolve root module correctly', () => {
-      const rootPath = require.resolve('@user27828/shared-utils');
+      const rootPath = require.resolve('@shared-utils');
       // After moduleNameMapper, this should point to <rootDir>/dist/index.js
       expect(rootPath).toMatch(/dist[/\\]index\.js$/);
     });
@@ -77,7 +77,7 @@ describe('Root Package Structure', () => {
 
   describe('Import Path Validation', () => {
     it('should allow utils import via subpath', () => {
-      const utils = require('@user27828/shared-utils/utils');
+      const utils = require('@shared-utils/utils');
       
       expect(utils).toHaveProperty('log');
       expect(utils).toHaveProperty('Log');
@@ -88,7 +88,7 @@ describe('Root Package Structure', () => {
       // Client import should fail in Node.js due to ES6 export syntax or browser-specific APIs
       // OR due to path issues if JSX extensions are not resolved, which is a build problem.
       expect(() => {
-        require('@user27828/shared-utils/client');
+        require('@shared-utils/client');
       }).toThrow(/userAgent|document is not defined|window is not defined|navigator is not defined|Unexpected token|Cannot find module/i);
     });
   });
@@ -127,12 +127,12 @@ describe('Root Package Structure', () => {
     it('should work consistently across environments', () => {
       // Test in development
       process.env.NODE_ENV = 'development';
-      const devUtils = require('@user27828/shared-utils/utils');
+      const devUtils = require('@shared-utils/utils');
       expect(devUtils.log).toBeDefined();
       
       // Test in production
       process.env.NODE_ENV = 'production';
-      const prodUtils = require('@user27828/shared-utils/utils');
+      const prodUtils = require('@shared-utils/utils');
       expect(prodUtils.log).toBeDefined();
       
       // Should be the same instance (singleton)

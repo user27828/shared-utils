@@ -7,7 +7,7 @@ describe('Package Import Paths', () => {
   
   describe('Utils Package Imports', () => {
     it('should import utils using package-style path', () => {
-      // This simulates: import { log, Log } from '@user27828/shared-utils/utils'
+      // This simulates: import { log, Log } from '@shared-utils/utils'
       const { log, Log } = require('../utils/index.js');
       
       expect(log).toBeDefined();
@@ -32,7 +32,7 @@ describe('Package Import Paths', () => {
 
   describe('Client Package Imports', () => {
     it('should be able to import client components', () => {
-      // This simulates: import { ... } from '@user27828/shared-utils/client'
+      // This simulates: import { ... } from '@shared-utils/client'
       // Note: Client components use ES6 modules and JSX, so we test that the file exists
       expect(() => {
         require.resolve('../client/index.js');
@@ -45,7 +45,7 @@ describe('Package Import Paths', () => {
 
   describe('Root Package Behavior', () => {
     it('should have minimal root exports', () => {
-      // This simulates: import from '@user27828/shared-utils'
+      // This simulates: import from '@shared-utils'
       const rootExports = require('../index.js');
       
       // Root should have minimal or no exports to avoid JSX issues

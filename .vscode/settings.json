@@ -1,0 +1,22 @@
+{
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnPaste": true,
+  "editor.formatOnSave": true,
+  "eslint.nodePath": ".yarn/sdks",
+  "prettier.prettierPath": "./node_modules/prettier",
+  "prettier.overrides": [
+    {
+      "files": "*.jsonc",
+      "options": {
+        "trailingComma": "none"
+      }
+    }
+  ],
+  "search.exclude": {
+    "**/.pnp.*": true,
+    "**/.yarn": true
+  }
+}

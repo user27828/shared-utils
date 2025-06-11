@@ -18,7 +18,16 @@
  * 
  * // Custom interceptor
  * log.setOptions({ interceptor: (level, args) => { sendToAnalytics(level, args); } });
+ * 
+ * // Cross-utility configuration via OptionsManager
+ * import { optionsManager } from 'utils/options-manager';
+ * optionsManager.setGlobalOptions({
+ *   log: { type: 'client', client: { production: ['warn', 'error'] } },
+ *   turnstile: { siteKey: 'your-key' }
+ * });
  */
+
+import { OptionsManager, optionsManager } from './options-manager.js';
 
 type LogLevel = 'log' | 'info' | 'warn' | 'error' | 'debug';
 type Environment = 'client' | 'server';
@@ -57,34 +66,37 @@ interface LogOptions {
 }
 
 class Log {
-  /**
-   * Options for the logging utility.
-   * These are assigned once upon environment-side initialization
-   * After including this, initialization can be set by calling log.setOptions({ type: 'client', client: { ... } })
-   */
-  private options: Required<Omit<LogOptions, 'interceptor'>> & { interceptor?: LogOptions['interceptor'] } = {
-    // Auto-detect environment - 'client' or 'server'
-    type: this.detectEnvironment(),
-    client: {
-      namespace: 'client',  // Namespace for client-side logging
-      production: [], // List of log levels to log in production, e.g. ['warn', 'error']
-      // key to override log levels in localStorage - if set, then production can see specified log levels, or all
-      // if the key is set to [true] = all log levels, otherwise allow specifying levels as a string[]
-      localStorageOverrideKey: 'logLevels', 
-      attachWindow: true, // Attach to window.log for easy access in client-side code
-    },
-    server: {
-      namespace: 'server',
-      production: ['error'],
-    },
-    interceptor: undefined
-  };
-
+  private readonly optionsManager: OptionsManager<Required<Omit<LogOptions, 'interceptor'>> & { interceptor?: LogOptions['interceptor'] }>;
   private isProduction = this.detectProductionMode();
   public readonly ORIGINAL_CONSOLE_METHODS: OriginalConsoleMethods; // Made public for tests, instance property
   private interceptors: Array<(level: LogLevel, args: any[]) => void> = []; 
 
   constructor() {
+    // Define default options
+    const defaultOptions = {
+      // Auto-detect environment - 'client' or 'server'
+      type: this.detectEnvironment(),
+      client: {
+        namespace: 'client',  // Namespace for client-side logging
+        production: [] as LogLevel[], // List of log levels to log in production, e.g. ['warn', 'error']
+        // key to override log levels in localStorage - if set, then production can see specified log levels, or all
+        // if the key is set to [true] = all log levels, otherwise allow specifying levels as a string[]
+        localStorageOverrideKey: 'logLevels', 
+        attachWindow: true, // Attach to window.log for easy access in client-side code
+      },
+      server: {
+        namespace: 'server',
+        production: ['error'] as LogLevel[],
+      },
+      interceptor: undefined
+    };
+
+    // Initialize options manager
+    this.optionsManager = new OptionsManager('log', defaultOptions);
+    
+    // Register with global options manager
+    optionsManager.registerManager('log', this.optionsManager);
+
     this.ORIGINAL_CONSOLE_METHODS = ORIGINAL_CONSOLE_METHODS; // Assign module-level const to instance property
     // Bind methods to maintain context when destructured
     this.log = this.log.bind(this);
@@ -97,6 +109,13 @@ class Log {
       // Attach to window.log for easy access in client-side code
       (globalThis as any).log = this;
     }
+  }
+
+  /**
+   * Get current options via the options manager
+   */
+  private get options() {
+    return this.optionsManager.getOption();
   }
 
   /**
@@ -133,12 +152,13 @@ class Log {
    * Check localStorage override for client-side logging
    */
   private getLocalStorageOverride(): LogLevel[] | boolean | null {
-    if (this.options.type !== 'client' || typeof localStorage === 'undefined') {
+    const options = this.options;
+    if (options.type !== 'client' || typeof localStorage === 'undefined') {
       return null;
     }
 
     try {
-      const override = localStorage.getItem(this.options.client.localStorageOverrideKey as string);
+      const override = localStorage.getItem(options.client.localStorageOverrideKey as string);
       if (!override) {return null;}
 
       if (override === 'true') {
@@ -154,7 +174,8 @@ class Log {
    * Check if a log level should be output
    */
   private shouldLog(level: LogLevel): boolean {
-    const config = this.options[this.options.type];
+    const options = this.options;
+    const config = options[options.type];
     
     // Always log in development
     if (!this.isProduction) {
@@ -162,7 +183,7 @@ class Log {
     }
 
     // Check localStorage override for client
-    if (this.options.type === 'client') {
+    if (options.type === 'client') {
       const override = this.getLocalStorageOverride();
       if (override === true) {
         return true;
@@ -180,7 +201,8 @@ class Log {
    * Format log message with namespace and timestamp
    */
   private formatMessage(level: LogLevel, args: any[]): any[] {
-    const config = this.options[this.options.type];
+    const options = this.options;
+    const config = options[options.type];
     const timestamp = new Date().toISOString();
     const namespace = config.namespace;
     
@@ -195,10 +217,12 @@ class Log {
    * Core logging method
    */
   private _log(level: LogLevel, args: any[]): void {
+    const options = this.options;
+    
     // Call legacy interceptor if configured (for backward compatibility)
-    if (this.options.interceptor) {
+    if (options.interceptor) {
       try {
-        this.options.interceptor(level, args);
+        options.interceptor(level, args);
       } catch (error) {
         // Don't let interceptor errors break logging
         this.ORIGINAL_CONSOLE_METHODS.error('Log interceptor error:', error);
@@ -243,28 +267,17 @@ class Log {
   }
 
   /**
-   * Set logging options
+   * Set logging options (delegates to OptionsManager)
    */
   setOptions(values: LogOptions): void {
-    if (values.type) {
-      this.options.type = values.type;
-    }
-    if (values.interceptor !== undefined) {
-      this.options.interceptor = values.interceptor;
-    }
-    if (values.client) {
-      this.options.client = { ...this.options.client, ...values.client };
-    }
-    if (values.server) {
-      this.options.server = { ...this.options.server, ...values.server };
-    }
+    this.optionsManager.setOption(values);
   }
 
   /**
-   * Get current options (for debugging)
+   * Get current options (delegates to OptionsManager)
    */
   getOptions(): typeof this.options {
-    return { ...this.options };
+    return this.optionsManager.getOption();
   }
 
   /**
@@ -306,10 +319,11 @@ class Log {
    * Enable debug logging in localStorage (client-side only)
    */
   enableDebug(levels: LogLevel[] | boolean = true): void {
-    if (this.options.type === 'client') {
+    const options = this.options;
+    if (options.type === 'client') {
       if (typeof localStorage !== 'undefined') {
         const value = levels === true ? 'true' : JSON.stringify(levels); // Use levels argument
-        localStorage.setItem(this.options.client.localStorageOverrideKey as string, value);
+        localStorage.setItem(options.client.localStorageOverrideKey as string, value);
         this.ORIGINAL_CONSOLE_METHODS.info('Debug mode enabled. Refresh page to see all logs.'); 
       } else {
         this.ORIGINAL_CONSOLE_METHODS.warn('localStorage not available, cannot enable debug mode.');
@@ -323,9 +337,10 @@ class Log {
    * Disable debug mode (client-side only)
    */
   disableDebug(): void {
-    if (this.options.type === 'client') {
+    const options = this.options;
+    if (options.type === 'client') {
       if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem(this.options.client.localStorageOverrideKey as string);
+        localStorage.removeItem(options.client.localStorageOverrideKey as string);
         this.ORIGINAL_CONSOLE_METHODS.info('Debug mode disabled. Refresh page to restore production log levels.'); 
       } else {
         this.ORIGINAL_CONSOLE_METHODS.warn('localStorage not available, cannot disable debug mode.'); 
@@ -360,6 +375,6 @@ class Log {
 // Create singleton instance
 const log = new Log();
 
-// Export both the instance and the class
-export { Log, ORIGINAL_CONSOLE_METHODS }; 
+// Export both the instance and the class, plus OptionsManager components
+export { Log, ORIGINAL_CONSOLE_METHODS, OptionsManager, optionsManager }; 
 export default log;

@@ -2,7 +2,7 @@
  * Debug logging utilities for production troubleshooting
  * These functions help enable logging in production environments for debugging
  */
-import { log } from '@user27828/shared-utils/utils';
+import { log } from '@shared-utils/utils';
 
 /**
  * Browser console helpers for production debugging

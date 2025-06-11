@@ -137,7 +137,7 @@ const CountrySelect = ({
 
   // For non-searchable version, handle the regular select change
   const handleRegularSelectChange = (event) => {
-    if (!onChange) return;
+    if (!onChange) { return;}
     onChange(event.target.value);
   };
 

@@ -3,11 +3,12 @@
  * @jest-environment node
  */
 
+import { Log } from '../dist/src/log.js';
+
 describe('Log Utility', () => {
   let logInstance;
 
   beforeEach(() => {
-    const { Log } = require('../src/log.ts'); 
     logInstance = new Log();
     
     // Mock console methods
@@ -37,7 +38,6 @@ describe('Log Utility', () => {
       global.window = { location: { hostname: 'localhost' } };
       global.document = {};
       
-      const { Log } = require('../src/log');
       const clientLog = new Log();
       expect(clientLog.detectEnvironment()).toBe('client');
       
@@ -52,7 +52,6 @@ describe('Log Utility', () => {
       process.env.ORIGINAL_NODE_ENV = process.env.NODE_ENV;
       process.env.NODE_ENV = 'production';
       
-      const { Log } = require('../src/log');
       const prodLog = new Log();
       expect(prodLog.isProduction).toBe(true);
     });
@@ -61,7 +60,6 @@ describe('Log Utility', () => {
       process.env.ORIGINAL_NODE_ENV = process.env.NODE_ENV;
       process.env.NODE_ENV = 'development';
       
-      const { Log } = require('../src/log');
       const devLog = new Log();
       expect(devLog.isProduction).toBe(false);
     });
@@ -142,10 +140,7 @@ describe('Log Utility', () => {
       process.env.NODE_ENV = 'production';
     });
 
-    const { Log } = require('../src/log');
-
     it('should filter logs in production mode for server', () => {
-      const { Log } = require('../src/log');
       const prodLog = new Log();
       prodLog.setOptions({
         type: 'server',
@@ -164,7 +159,6 @@ describe('Log Utility', () => {
     });
 
     it('should filter logs in production mode for client', () => {
-      const { Log } = require('../src/log');
       const prodLog = new Log();
       prodLog.setOptions({
         type: 'client',
@@ -253,7 +247,6 @@ describe('Log Utility', () => {
       };
 
       jest.resetModules(); // Reset modules to get a fresh Log instance
-      const { Log } = require('../src/log'); 
       clientLogInstance = new Log(); // Create new instance for client-specific tests
       clientLogInstance.setOptions({ type: 'client' }); // Explicitly set to client type
 

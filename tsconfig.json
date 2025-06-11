@@ -5,15 +5,13 @@
   "compilerOptions": {
     "target": "es2020",
     "lib": ["es2020", "dom"],
-    "module": "es2020", // "commonjs" > "es2020"
+    "module": "es2020",
     "declaration": true,
     "outDir": "./dist",
-    // "rootDir": "./", 
-    "rootDirs": [".", "./client", "./utils"], // rootDirs
     "strict": true,
     "esModuleInterop": true,
     "allowJs": true,
-    "jsx": "react-jsx", // process JSX
+    "jsx": "react-jsx",
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -21,12 +19,13 @@
     "resolveJsonModule": true,
     "types": ["jest", "node"]
   },
+  "references": [
+    { "path": "./utils" },
+    { "path": "./client" }
+  ],
+  "files": [],
   "include": [
-    "index.js", // root index.js
-    "client/**/*.js", // client JS files
-    "client/**/*.jsx",
-    "utils/src/**/*.ts",
-    "utils/index.ts",
+    "index.js",
     "test-*.ts",
     "__tests__/**/*.ts"
   ],

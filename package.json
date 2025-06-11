@@ -1,10 +1,15 @@
 {
-  "name": "@user27828/shared-utils",
+  "name": "shared-utils",
   "description": "Collection of common utilities I use for various projects",
   "version": "0.69.2",
   "private": true,
   "type": "module",
   "packageManager": "yarn@3.2.2",
+  "workspaces": [
+    "client",
+    "utils",
+    "server"
+  ],
   "author": {
     "name": "Marc Stephenson",
     "url": "https://github.com/user27828"
@@ -14,25 +19,28 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "types": "./utils/dist/index.d.ts",
+      "import": "./utils/dist/index.js",
+      "default": "./utils/dist/index.js"
     },
     "./client": {
-      "types": "./dist/client/index.d.ts",
-      "import": "./dist/client/index.js",
-      "default": "./dist/client/index.js"
+      "types": "./client/dist/index.d.ts",
+      "import": "./client/dist/index.js",
+      "default": "./client/dist/index.js"
     },
     "./utils": {
-      "types": "./dist/utils/index.d.ts",
-      "import": "./dist/utils/index.js",
-      "default": "./dist/utils/index.js"
+      "types": "./utils/dist/index.d.ts",
+      "import": "./utils/dist/index.js",
+      "default": "./utils/dist/index.js"
     },
-    "./utils/*": "./dist/utils/*"
+    "./utils/*": "./utils/dist/*"
   },
   "scripts": {
-    "build": "tsc --build",
-    "test": "jest",
+    "client": "yarn workspace @shared-utils/client",
+    "utils": "yarn workspace @shared-utils/utils",
+    "server": "yarn workspace @shared-utils/server",
+    "build": "yarn utils build && yarn client build",
+    "test": "cd client && npm run test && cd ../utils && npm run test && cd ../server && npm run test && cd ..",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "upgrade": "npx yarn-upgrade-interactive"
@@ -43,14 +51,11 @@
     "vite-preview-envs": "./bin/vite-preview-envs.sh",
     "yarn-upgrade-interactive": "./bin/package-upgrades.sh"
   },
-  "dependencies": {
-    "@tinymce/tinymce-react": "^6.2.1",
-    "tinymce": "^7.9.1"
-  },
   "devDependencies": {
     "@types/jest": "^29.5.14",
     "jest": "^29.7.0",
     "jest-environment-node": "^30.0.0-beta.8",
+    "prettier": "^3.5.3",
     "ts-jest": "^29.3.4",
     "typescript": "^5.8.3"
   },

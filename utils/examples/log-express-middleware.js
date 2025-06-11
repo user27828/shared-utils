@@ -1,7 +1,7 @@
 /**
  * Express.js middleware example for request logging
  */
-import { log } from '@user27828/shared-utils/utils';
+import { log } from '@shared-utils/utils';
 
 // Initialize logger for Express app
 log.setOptions({

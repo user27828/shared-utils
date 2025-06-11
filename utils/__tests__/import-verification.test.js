@@ -4,8 +4,8 @@
  * @jest-environment node
  */
 
-import { log, Log } from '../index.ts';
-import logDirect, { Log as LogDirect } from '../src/log.js';
+import { log, Log } from '../dist/index.js';
+import logDirect, { Log as LogDirect } from '../dist/src/log.js';
 
 describe('Package Import Verification', () => {
   
