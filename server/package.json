@@ -13,7 +13,7 @@
     "test": "echo 'No tests found in server package - this is expected until server tests are added' && exit 0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20241106.0",
-    "wrangler": "^3.78.12"
+    "@cloudflare/workers-types": "^4.20250610.0",
+    "wrangler": "^4.19.2"
   }
 }

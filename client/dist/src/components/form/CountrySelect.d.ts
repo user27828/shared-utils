@@ -53,27 +53,26 @@ declare function CountrySelect({ value, onChange, multiple, topCountries, showEm
 }): JSX.Element;
 declare namespace CountrySelect {
     namespace propTypes {
-        let value: PropTypes.Requireable<NonNullable<string | number | (NonNullable<string | number | null | undefined> | null | undefined)[] | null | undefined>>;
-        let onChange: PropTypes.Validator<(...args: any[]) => any>;
-        let multiple: PropTypes.Requireable<boolean>;
-        let topCountries: PropTypes.Requireable<NonNullable<string | (string | null | undefined)[] | null | undefined>>;
-        let showEmpty: PropTypes.Requireable<boolean>;
-        let searchable: PropTypes.Requireable<boolean>;
-        let sortBy: PropTypes.Requireable<string>;
-        let order: PropTypes.Requireable<string>;
-        let label: PropTypes.Requireable<string>;
-        let id: PropTypes.Requireable<string>;
-        let name: PropTypes.Requireable<string>;
-        let required: PropTypes.Requireable<boolean>;
-        let disabled: PropTypes.Requireable<boolean>;
-        let error: PropTypes.Requireable<boolean>;
-        let helperText: PropTypes.Requireable<string>;
-        let sx: PropTypes.Requireable<object>;
-        let fullWidth: PropTypes.Requireable<boolean>;
-        let size: PropTypes.Requireable<string>;
-        let variant: PropTypes.Requireable<string>;
-        let placeholder: PropTypes.Requireable<string>;
-        let showTelCode: PropTypes.Requireable<boolean>;
+        let value: any;
+        let onChange: any;
+        let multiple: any;
+        let topCountries: any;
+        let showEmpty: any;
+        let searchable: any;
+        let sortBy: any;
+        let order: any;
+        let label: any;
+        let id: any;
+        let name: any;
+        let required: any;
+        let disabled: any;
+        let error: any;
+        let helperText: any;
+        let sx: any;
+        let fullWidth: any;
+        let size: any;
+        let variant: any;
+        let placeholder: any;
+        let showTelCode: any;
     }
 }
-import PropTypes from "prop-types";
