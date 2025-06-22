@@ -1,172 +1,178 @@
 # shared-utils
 
-Collection of common utilities I use for various projects. Most utilities that require environment variables get their settings populated through the **OptionsManager** - a centralized configuration system that provides unified configuration capabilities across all utilities while preserving existing APIs.
+Collection of common utilities for web applications. Features centralized configuration through **OptionsManager** and environment-aware utilities that work across client/server contexts.
 
-## Import Paths
+## 📋 Table of Contents
 
-**Important**: Use specific import paths for clarity and to avoid issues with JSX components in Node.js environments when not intended.
+- [shared-utils](#shared-utils)
+  - [📋 Table of Contents](#-table-of-contents)
+  - [Installation](#installation)
+  - [Quick Start](#quick-start)
+    - [Import Paths](#import-paths)
+    - [Basic Setup](#basic-setup)
+  - [Available Modules](#available-modules)
+    - [📋 Utils](#-utils)
+    - [🎨 Client Components](#-client-components)
+    - [🚀 Server](#-server)
+  - [Configuration](#configuration)
+    - [Centralized Configuration (Recommended)](#centralized-configuration-recommended)
+    - [Framework Examples](#framework-examples)
+      - [Next.js](#nextjs)
+      - [Express.js](#expressjs)
+  - [Command Line Tools](#command-line-tools)
+    - [Package Scripts Integration](#package-scripts-integration)
+  - [Usage Examples](#usage-examples)
+  - [Deployment Guide](#deployment-guide)
+    - [📖 Documentation](#-documentation)
+    - [Quick Setup](#quick-setup)
+  - [Documentation](#documentation)
+    - [Package Structure](#package-structure)
 
-```typescript
-// ✅ Recommended for Utils
-import { log, turnstile, optionsManager } from '@shared-utils/utils';
-
-// ✅ Import utility classes for custom instances
-import { Log, Turnstile, OptionsManager } from '@shared-utils/utils';
-
-// 🚫 Importing from the root is NOT supported for specific utils or components.
-// import { log } from '@shared-utils'; // This will not work.
-
-// ✅ Recommended for Client components (React/Next.js apps)
-import { CountrySelect, LanguageSelect } from '@shared-utils/client';
-
-// 🚫 Importing client components from the root is NOT supported.
-// import { CountrySelect } from '@shared-utils'; // This will not work.
-```
-
-## Key Features
-
-### 🎯 **Smart Environment Detection**
-- Automatically detects client vs server environments
-- Adapts logging and configuration accordingly
-- No manual environment setup required
-
-### 🔧 **Centralized Configuration**
-- Configure multiple utilities through OptionsManager
-- Type-safe configuration with TypeScript
-- Backward compatible with existing utility APIs
-
-### 🛡️ **Production Safety**
-- Filtered logging in production environments
-- Secure Turnstile token verification
-- localStorage debug overrides for development
-
-### 🔌 **Framework Agnostic**
-- Works with React, Next.js, Express, vanilla JS
-- ES modules and CommonJS support
-- No framework lock-in
-
-### 🧪 **Comprehensive Testing**
-- 15 test suites with 135+ tests
-- Integration tests for real-world scenarios
-- Manual testing tools included
-
-## Available Modules
-
-### Utils (`/utils`)
-- **Logging utility**: Production-safe console wrapper with environment detection
-- **Turnstile utility**: Cloudflare Turnstile integration for bot protection
-- **OptionsManager**: Centralized configuration system for all utilities
-- Auto-detects client/server environment
-- Supports custom interceptors for analytics
-- TypeScript support with full type safety
-- See `/utils/README.md` for detailed documentation
-
-### Client Components (`/client`)
-- **Form Components**: `CountrySelect`, `LanguageSelect` with built-in data
-- **WYSIWYG Editors**: `TinyMceEditor`, `TinyMceBundle` with configuration presets
-- **Helper Functions**: Country/language utilities, CSV helpers, and more
-- Requires React environment (JSX support)
-
-### Server (`/server`)
-- **Cloudflare Worker**: Turnstile token verification service
-- **Deployment Scripts**: Automated deployment helpers for Cloudflare Workers
-- **Configuration Templates**: Ready-to-use `wrangler.toml` examples
-- See `/server/TURNSTILE_SETUP.md` for setup instructions
-
-## Configuration
-
-### Quick Start Examples
-
-```typescript
-// Import utilities and OptionsManager
-import { log, turnstile, optionsManager } from '@shared-utils/utils';
-
-// Option 1: Individual utility configuration (traditional)
-log.setOptions({ 
-  type: 'client',
-  client: { production: ['warn', 'error'] }
-});
-turnstile.setOptions({ 
-  siteKey: 'your-site-key-here'  // Must be injected by calling application
-});
-
-// Option 2: Centralized configuration (recommended)
-optionsManager.setGlobalOptions({
-  log: {
-    type: 'client',
-    client: { production: ['warn', 'error'] }
-  },
-  turnstile: {
-    siteKey: 'your-site-key-here',         // Must be injected by calling application  
-    secretKey: 'your-secret-key-here',     // For server-side verification
-    widget: { theme: 'auto', size: 'normal' }
-  }
-});
-```
-
-### OptionsManager Benefits
-
-- **Centralized Configuration**: Configure multiple utilities in one place
-- **Environment Detection**: Automatically adapts to client/server environments
-- **Type Safety**: Full TypeScript support with autocomplete
-- **Backward Compatibility**: All existing utility APIs continue to work
-- **Options Injection**: Calling application injects configuration (no env vars needed)
-- **Inspection Tools**: View and manage all utility configurations
-
-```typescript
-// Get all current configurations
-const allOptions = optionsManager.getAllOptions();
-
-// List registered utilities
-const utilities = optionsManager.getRegisteredUtilities(); // ['log', 'turnstile']
-
-// Reset all utilities to defaults
-optionsManager.resetAllOptions();
-
-// Example: Application initialization with injected configuration
-function initializeUtils(config) {
-  optionsManager.setGlobalOptions({
-    log: {
-      type: 'client',
-      client: { production: ['warn', 'error'] }
-    },
-    turnstile: {
-      siteKey: config.turnstileSiteKey,      // Injected from calling app
-      secretKey: config.turnstileSecretKey   // Injected from calling app
-    }
-  });
-}
-```
-
-## Command Line Tools
-
- - `killnode` - Kills instances of node server processes that are likely to be running from an Express server.  It *should* ignore node processes from VS Code, Electron, Android Studio, etc.
- - `yarn-upgrade` - Wraps `yarn upgrade-interactive` to install the interactive-tools package on demand and remove it when complete.  This was a quick fix to make repos compatible with Cloudflare Pages, which barfs🤢 when yarn-based repos have plugins (as of 2025-03).  This will prompt you to upgrade the server directory seperately if you have yarn workspaces enabled for that directory, and a root-level alias for `yarn server upgrade`.
- This utility will automatically leave interactive-tools alone if it's already installed (it won't uninstall it at the end.)
- - Other scripts are undocumented because they're less refined or a ~two-off.
- - `client/*` - Client-related libraries.  Be aware that additional Babel or Vite configuration may be required for certain dev situations.
- - `client/components/*Editor.jsx` - WYSIWYG editor instances
-  
-## Installation & Setup
-
-### In Your Project
+## Installation
 
 Add to your `package.json`:
 
 ```json
 {
   "dependencies": {
-    "@shared-utils": "github:user27828/shared-utils#master"
+    "@user27828/shared-utils": "https://github.com/user27828/shared-utils.git#master"
   }
 }
 ```
 
 Or install via command line:
+
 ```bash
-yarn add @shared-utils@github:user27828/shared-utils#master
-# OR
-npm install @shared-utils@github:user27828/shared-utils#master
+# Using yarn (recommended)
+yarn add @user27828/shared-utils@https://github.com/user27828/shared-utils.git#master
+
+# Using npm
+npm install @user27828/shared-utils@https://github.com/user27828/shared-utils.git#master
 ```
+
+[🔝 Back to Top](#shared-utils)
+
+## Quick Start
+
+### Import Paths
+
+Use specific import paths for clarity:
+
+```typescript
+// ✅ Utils and configuration
+import { log, turnstile, optionsManager } from "@user27828/shared-utils/utils";
+
+// ✅ Client components (React/Next.js)
+import { CountrySelect, LanguageSelect } from "@user27828/shared-utils/client";
+
+// ✅ Server functionality
+import { verifyTurnstileTokenEnhanced } from "@user27828/shared-utils/server";
+```
+
+### Basic Setup
+
+```typescript
+import { optionsManager } from "@user27828/shared-utils/utils";
+
+// Configure utilities
+optionsManager.setGlobalOptions({
+  log: {
+    type: "client",
+    client: { production: ["warn", "error"] },
+  },
+  turnstile: {
+    siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+    secretKey: process.env.TURNSTILE_SECRET_KEY,
+  },
+});
+```
+
+[🔝 Back to Top](#shared-utils)
+
+## Available Modules
+
+### 📋 [Utils](/utils/README.md)
+
+Core utilities with environment detection and centralized configuration:
+
+- **Logging**: Production-safe console wrapper
+- **Turnstile**: Cloudflare bot protection integration
+- **OptionsManager**: Unified configuration system
+
+### 🎨 [Client Components](/client)
+
+React components and client-side helpers:
+
+- **Form Components**: `CountrySelect`, `LanguageSelect`
+- **WYSIWYG Editors**: `TinyMceEditor`, `TinyMceBundle`
+- **Helper Functions**: Country/language utilities, CSV helpers
+
+### 🚀 [Server](/server/README-SERVER.md)
+
+Server-side functionality and Cloudflare Workers:
+
+- **Turnstile Verification**: Token validation service
+- **Deployment Scripts**: Automated Cloudflare Worker deployment
+- **Configuration Templates**: Ready-to-use examples
+
+[🔝 Back to Top](#shared-utils)
+
+## Configuration
+
+### Centralized Configuration (Recommended)
+
+```typescript
+import { optionsManager } from "@user27828/shared-utils/utils";
+
+optionsManager.setGlobalOptions({
+  log: {
+    type: "client",
+    client: { production: ["warn", "error"] },
+  },
+  turnstile: {
+    siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+    secretKey: process.env.TURNSTILE_SECRET_KEY,
+    widget: { theme: "auto", size: "normal" },
+  },
+});
+```
+
+### Framework Examples
+
+#### Next.js
+
+```typescript
+// app/lib/utils-config.ts
+import { optionsManager } from "@user27828/shared-utils/utils";
+
+export function initializeUtils() {
+  optionsManager.setGlobalOptions({
+    turnstile: {
+      siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!,
+      secretKey: process.env.TURNSTILE_SECRET_KEY!,
+    },
+  });
+}
+```
+
+#### Express.js
+
+```typescript
+// server.js
+import { optionsManager } from "@user27828/shared-utils/utils";
+
+optionsManager.setGlobalOptions({
+  log: { type: "server" },
+  turnstile: { secretKey: process.env.TURNSTILE_SECRET_KEY! },
+});
+```
+
+[🔝 Back to Top](#shared-utils)
+
+## Command Line Tools
+
+- **`killnode`** - Kills Express server node processes (ignores VS Code, Electron, etc.)
+- **`yarn-upgrade`** - Interactive yarn upgrade with Cloudflare Pages compatibility
 
 ### Package Scripts Integration
 
@@ -182,170 +188,69 @@ Add useful scripts to your `package.json`:
 }
 ```
 
-### Turnstile Configuration
+[🔝 Back to Top](#shared-utils)
 
-Turnstile requires configuration through the OptionsManager (not environment variables):
+## Usage Examples
 
-```typescript
-// ✅ Correct: Configure through OptionsManager
-import { turnstile, optionsManager } from '@shared-utils/utils';
+Complete examples are available in the [`/utils/examples/`](/utils/examples/) directory:
 
-// Option 1: Individual configuration
-turnstile.setOptions({
-  siteKey: 'your_site_key_here',          // Required for client-side
-  secretKey: 'your_secret_key_here',      // Required for server-side verification
-  apiUrl: 'https://your-worker.domain.workers.dev/'  // Optional: custom verification endpoint
-});
+- **`client-init.js`** - Client-side setup
+- **`server-init.js`** - Server-side configuration
+- **`express-middleware.js`** - Express.js integration
+- **`turnstile-react-component.tsx`** - React component integration
 
-// Option 2: Centralized configuration (recommended)
-optionsManager.setGlobalOptions({
-  turnstile: {
-    siteKey: 'your_site_key_here',
-    secretKey: 'your_secret_key_here',
-    apiUrl: 'https://your-worker.domain.workers.dev/'  // Optional
-  }
-});
+[🔝 Back to Top](#shared-utils)
 
-// 🚫 Incorrect: Environment variables won't work
-// process.env.TURNSTILE_SITE_KEY - Not available to shared-utils package
+## Deployment Guide
+
+For deploying Turnstile workers in your own projects:
+
+### 📖 Documentation
+
+- **[Worker Deployment Guide](./WORKER_DEPLOYMENT_GUIDE.md)** - Complete deployment strategies
+- **[Example Integration](./examples/CONSUMING_PROJECT_EXAMPLE.md)** - Step-by-step example
+
+### Quick Setup
+
+```bash
+# Set up Turnstile worker in your project
+npx cf:setup-turnstile-worker --name "myapp-turnstile" --origins "https://myapp.com"
+
+# Configure and deploy
+cd workers/turnstile
+wrangler secret put TURNSTILE_SECRET_KEY
+./deploy-turnstile-worker.sh production
 ```
 
-### Where to Get Configuration Values
+[🔝 Back to Top](#shared-utils)
 
-The calling project should inject the keys from its own environment:
+## Documentation
 
-```typescript
-// In your application code
-import { optionsManager } from '@shared-utils/utils';
+- **[Utils Documentation](./utils/README.md)** - Complete API reference for logging, Turnstile, and OptionsManager
+- **[Server Documentation](./server/README-SERVER.md)** - Server-side integration and Cloudflare Workers
+- **[Deployment Guide](./doc/WORKER_DEPLOYMENT_GUIDE.md)** - Complete deployment strategies
+- **[Example Integration](./examples/CONSUMING_PROJECT_EXAMPLE.md)** - Step-by-step integration example
 
-optionsManager.setGlobalOptions({
-  turnstile: {
-    siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,    // Your app's env var
-    secretKey: process.env.TURNSTILE_SECRET_KEY,            // Your app's env var
-    apiUrl: process.env.TURNSTILE_API_URL                   // Your app's env var (optional)
-  }
-});
-```
+[🔝 Back to Top](#shared-utils)
 
-### Framework-Specific Examples
+---
 
-#### Next.js App
-```typescript
-// app/lib/utils-config.ts
-import { optionsManager } from '@shared-utils/utils';
-
-export function initializeUtils() {
-  optionsManager.setGlobalOptions({
-    log: {
-      type: 'client',
-      client: { production: ['warn', 'error'] }
-    },
-    turnstile: {
-      siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!,
-      secretKey: process.env.TURNSTILE_SECRET_KEY!
-    }
-  });
-}
-```
-
-#### Express.js Server
-```typescript
-// server.js
-import { optionsManager } from '@shared-utils/utils';
-
-function initializeUtils() {
-  optionsManager.setGlobalOptions({
-    log: {
-      type: 'server',
-      server: { production: ['info', 'warn', 'error'] }
-    },
-    turnstile: {
-      secretKey: process.env.TURNSTILE_SECRET_KEY!
-    }
-  });
-}
-
-initializeUtils();
-// ... rest of server setup
-```
-
-### Production Considerations
-
-- **Logging**: Production mode filters console output by default
-- **Turnstile**: Requires HTTPS in production
-- **Environment Detection**: Automatically adapts client vs server behavior
-- **localStorage Override**: Enables debug logging in production via browser localStorage
-- **Type Safety**: Full TypeScript support prevents configuration errors
-
-### Development in THIS Repository
-
-When working on this shared-utils repository itself:
-- Use `npx` instead of `yarn` for commands
-- Run `yarn test` to execute all test suites
-- Use `node test-core-functionality.mjs` for manual integration testing
-
-## Examples & Documentation
-
-### Code Examples
-All utilities include comprehensive examples in `/utils/examples/`:
-- `client-init.js` - Complete client-side setup
-- `server-init.js` - Server-side configuration 
-- `express-middleware.js` - Express.js integration
-- `debug-helpers.js` - Development and debugging utilities
-- `turnstile-react-component.tsx` - React component integration
-
-### Documentation Links
-- **Utils**: `/utils/README.md` - Complete API reference
-- **Server Setup**: `/server/TURNSTILE_SETUP.md` - Cloudflare Worker deployment
-- **TypeScript**: Full type definitions included
-
-## Testing
-
-- **Automated Tests**: 15 test suites with 135+ individual tests
-- **Manual Integration**: `test-core-functionality.mjs` for end-to-end verification
-- **Cross-Environment**: Tests cover both client and server scenarios
-- **TypeScript**: Full type checking in build process
-
-## Package Structure
+### Package Structure
 
 ```
 ├── utils/           # Core utilities (log, turnstile, OptionsManager)
 ├── client/          # React components and helpers
 ├── server/          # Cloudflare Workers and deployment scripts
 ├── bin/             # Command-line tools
-└── __tests__/       # Cross-package integration tests
+└── examples/        # Complete integration examples
 ```
 
-## Contributing
+---
 
-When adding new utilities to this package:
+Thx "AI" for writing the tests and parts of the readme files. Now, plz don't kill me during the revolution. Thx!
 
-1. **Follow OptionsManager Integration Pattern**:
-   ```typescript
-   // Create utility with OptionsManager integration
-   class NewUtility {
-     private optionsManager = new OptionsManager('newUtility', defaultOptions);
-     // ... implementation
-   }
-   
-   // Register with global options manager
-   optionsManager.registerManager('newUtility', instance.optionsManager);
-   ```
+---
 
-2. **Export Pattern**: Export both singleton instance and class
-3. **TypeScript**: Add full type definitions
-4. **Tests**: Write comprehensive test coverage
-5. **Examples**: Add usage examples to `/utils/examples/`
-6. **Documentation**: Update relevant README files
+_Love, User27828_ ❤️
 
-### Best Practices
-
-- **Environment Safety**: Always consider client vs server differences
-- **Backward Compatibility**: Maintain existing APIs when adding features
-- **Type Safety**: Use TypeScript for all new code
-- **Testing**: Test both individual utilities and cross-utility integration
-- **Documentation**: Keep examples up-to-date with API changes
-
-<hr />
-Love,<br />
-User27828
+[🔝 Back to Top](#shared-utils)

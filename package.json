@@ -1,5 +1,5 @@
 {
-  "name": "shared-utils",
+  "name": "@user27828/shared-utils",
   "description": "Collection of common utilities I use for various projects",
   "version": "0.69.2",
   "private": true,
@@ -33,6 +33,11 @@
       "import": "./utils/dist/index.js",
       "default": "./utils/dist/index.js"
     },
+    "./server": {
+      "types": "./server/dist/index.d.ts",
+      "import": "./server/dist/index.js",
+      "default": "./server/dist/index.js"
+    },
     "./utils/*": "./utils/dist/*"
   },
   "scripts": {
@@ -46,23 +51,26 @@
     "upgrade": "npx yarn-upgrade-interactive"
   },
   "bin": {
+    "cf:setup-turnstile-worker": "./scripts/setup-turnstile-worker.sh",
     "docker-build": "./bin/docker-build.sh",
     "killnode": "./bin/killnode.sh",
     "vite-preview-envs": "./bin/vite-preview-envs.sh",
     "yarn-upgrade-interactive": "./bin/package-upgrades.sh"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.14",
-    "jest": "^30.0.0",
-    "jest-environment-node": "^30.0.0",
+    "@types/jest": "^30.0.0",
+    "jest": "^30.0.2",
+    "jest-environment-node": "^30.0.2",
     "prettier": "^3.5.3",
-    "ts-jest": "^29.3.4",
+    "ts-jest": "^29.4.0",
     "typescript": "^5.8.3"
   },
   "files": [
     "dist",
     "package.json",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "scripts",
+    "bin"
   ]
 }

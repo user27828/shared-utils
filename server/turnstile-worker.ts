@@ -4,25 +4,14 @@
  * Deploy this to Cloudflare Workers and use the URL for server-side verification
  */
 
-interface TurnstileVerifyRequest {
-  token: string;
-  remoteip?: string;
-  idempotencyKey?: string;
-}
-
-interface TurnstileVerifyResponse {
-  success: boolean;
-  "error-codes"?: string[];
-  challenge_ts?: string;
-  hostname?: string;
-  action?: string;
-  cdata?: string;
-}
-
-interface Environment {
-  TURNSTILE_SECRET_KEY: string;
-  ALLOWED_ORIGINS?: string; // Comma-separated list of allowed origins
-}
+import type {
+  TurnstileVerifyRequest,
+  Environment,
+} from "./src/turnstile/index.js";
+import {
+  verifyTurnstileTokenEnhanced,
+  getAllowedOrigin,
+} from "./src/turnstile/index.js";
 
 export default {
   async fetch(request: Request, env: Environment): Promise<Response> {
@@ -75,12 +64,23 @@ export default {
         request.headers.get("X-Forwarded-For") ||
         request.headers.get("X-Real-IP");
 
-      // Verify with Cloudflare Turnstile API
-      const verifyResult = await verifyTurnstileToken(
+      // Verify with enhanced verification (includes dev mode and localhost bypass)
+      const verifyResult = await verifyTurnstileTokenEnhanced(
         body.token,
         env.TURNSTILE_SECRET_KEY,
         remoteip,
         body.idempotencyKey,
+        {
+          secretKey: env.TURNSTILE_SECRET_KEY,
+          devMode: env.DEV_MODE === "true" || env.NODE_ENV === "development",
+          bypassLocalhost: true,
+          allowedOrigins: env.ALLOWED_ORIGINS
+            ? env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+            : ["*"],
+          apiUrl: "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+          interceptor: undefined,
+        },
+        request,
       );
 
       return new Response(JSON.stringify(verifyResult), {
@@ -110,57 +110,5 @@ export default {
   },
 };
 
-/**
- * Verify Turnstile token with Cloudflare API
- */
-async function verifyTurnstileToken(
-  token: string,
-  secretKey: string,
-  remoteip?: string | null,
-  idempotencyKey?: string,
-): Promise<TurnstileVerifyResponse> {
-  const formData = new FormData();
-  formData.append("secret", secretKey);
-  formData.append("response", token);
-
-  if (remoteip) {
-    formData.append("remoteip", remoteip);
-  }
-
-  if (idempotencyKey) {
-    formData.append("idempotency_key", idempotencyKey);
-  }
-
-  const response = await fetch(
-    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-    {
-      method: "POST",
-      body: formData,
-    },
-  );
-
-  if (!response.ok) {
-    throw new Error(`Turnstile API error: ${response.status}`);
-  }
-
-  return await response.json();
-}
-
-/**
- * Get allowed origin for CORS
- */
-function getAllowedOrigin(request: Request, env: Environment): string {
-  const origin = request.headers.get("Origin");
-
-  if (!env.ALLOWED_ORIGINS) {
-    return "*"; // Allow all origins if not configured
-  }
-
-  const allowedOrigins = env.ALLOWED_ORIGINS.split(",").map((o) => o.trim());
-
-  if (origin && allowedOrigins.includes(origin)) {
-    return origin;
-  }
-
-  return allowedOrigins[0] || "*";
-}
+// Re-export main functionality for Node.js usage
+export * from "./src/turnstile/index.js";

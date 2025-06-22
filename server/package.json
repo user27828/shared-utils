@@ -2,18 +2,29 @@
   "name": "@shared-utils/server",
   "version": "1.0.0",
   "description": "Shared utilities for server-side operations",
+  "type": "module",
   "main": "turnstile-worker.ts",
   "private": true,
   "scripts": {
-    "deploy": "./deploy-turnstile-worker.sh",
-    "deploy:dev": "./deploy-turnstile-worker.sh dev",
-    "deploy:staging": "./deploy-turnstile-worker.sh staging",
-    "deploy:production": "./deploy-turnstile-worker.sh production",
-    "dev": "wrangler dev",
-    "test": "echo 'No tests found in server package - this is expected until server tests are added' && exit 0"
+    "cf:deploy": "./deploy-turnstile-worker.sh",
+    "cf:deploy:dev": "./deploy-turnstile-worker.sh dev",
+    "cf:deploy:staging": "./deploy-turnstile-worker.sh staging",
+    "cf:deploy:production": "./deploy-turnstile-worker.sh production",
+    "cf:dev": "wrangler dev",
+    "test": "NODE_OPTIONS=\"--experimental-vm-modules\" jest",
+    "test:watch": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --watch",
+    "test:coverage": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --coverage"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250610.0",
-    "wrangler": "^4.19.2"
+    "@babel/core": "^7.27.4",
+    "@babel/preset-env": "^7.27.2",
+    "@cloudflare/workers-types": "^4.20250620.0",
+    "@jest/globals": "^30.0.2",
+    "babel-jest": "^30.0.2",
+    "jest": "^30.0.2",
+    "ts-jest": "^29.4.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.20.5"
   }
 }

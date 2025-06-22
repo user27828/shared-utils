@@ -50,14 +50,25 @@ fi
 
 # Deploy the worker
 echo "📦 Deploying worker..."
-wrangler deploy
+DEPLOY_OUTPUT=$(wrangler deploy 2>&1)
+echo "$DEPLOY_OUTPUT"
 
 echo "✅ Deployment complete!"
 
-# Get the worker URL
-WORKER_URL=$(wrangler subdomain)
+# Extract worker URL from deploy output or construct it
+WORKER_NAME=$(grep "name" wrangler.toml | cut -d'"' -f2)
+WORKER_URL=$(echo "$DEPLOY_OUTPUT" | grep -o "https://[^[:space:]]*\.workers\.dev" | head -1)
+
+if [ -z "$WORKER_URL" ]; then
+    # Fallback: try to get subdomain from wrangler whoami
+    SUBDOMAIN=$(wrangler whoami 2>/dev/null | grep -o "[^[:space:]]*\.workers\.dev" | head -1 | cut -d'.' -f1)
+    if [ ! -z "$SUBDOMAIN" ] && [ ! -z "$WORKER_NAME" ]; then
+        WORKER_URL="https://${SUBDOMAIN}.workers.dev"
+    fi
+fi
+
 if [ ! -z "$WORKER_URL" ]; then
-    echo "🌐 Worker available at: https://${WORKER_URL}.workers.dev"
+    echo "🌐 Worker available at: $WORKER_URL"
     echo ""
     echo "📋 Next steps:"
     echo "1. Test the worker with a POST request"

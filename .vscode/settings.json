@@ -18,5 +18,8 @@
   "search.exclude": {
     "**/.pnp.*": true,
     "**/.yarn": true
+  },
+  "[shellscript]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
   }
 }
