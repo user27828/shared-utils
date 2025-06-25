@@ -2,7 +2,6 @@
   "name": "@user27828/shared-utils",
   "description": "Collection of common utilities I use for various projects",
   "version": "0.69.5",
-  "private": true,
   "type": "module",
   "packageManager": "yarn@3.2.2",
   "workspaces": [
@@ -76,7 +75,7 @@
   "files": [
     "dist/**/*",
     "client/**/*",
-    "utils/**/*", 
+    "utils/**/*",
     "server/**/*",
     "package.json",
     "README.md",
