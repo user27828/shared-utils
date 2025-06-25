@@ -45,6 +45,8 @@
     "utils": "yarn workspace @shared-utils/utils",
     "server": "yarn workspace @shared-utils/server",
     "build": "yarn utils build && yarn client build && yarn server build",
+    "prepare": "yarn build",
+    "postinstall": "yarn build",
     "test": "cd client && yarn test && cd ../utils && yarn test && cd ../server && yarn test && cd ..",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
