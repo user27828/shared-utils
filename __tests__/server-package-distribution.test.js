@@ -361,4 +361,80 @@ describe("Server Package Distribution", () => {
       expect(serverIndexPath).toBe(exportedImportPath);
     });
   });
+
+  describe("Package Publishing Debug", () => {
+    it("should show package version and verify it matches published expectations", () => {
+      const packageJsonPath = path.join(projectRoot, "package.json");
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+
+      console.log("Current package version:", packageJson.version);
+      console.log("Package name:", packageJson.name);
+
+      // Check if this version includes the server fixes
+      expect(packageJson.exports["./server"]).toBeDefined();
+      expect(packageJson.files).toContain("server/dist/**/*");
+    });
+
+    it("should create a test tarball and verify server files are included", async () => {
+      const { execSync } = require("child_process");
+
+      try {
+        // Create an actual tarball to test
+        const packResult = execSync("npm pack", {
+          cwd: projectRoot,
+          encoding: "utf8",
+        });
+
+        const tarballName = packResult.trim();
+        console.log("Created tarball:", tarballName);
+
+        // List contents of the tarball
+        const tarContents = execSync(`tar -tzf ${tarballName}`, {
+          cwd: projectRoot,
+          encoding: "utf8",
+        });
+
+        console.log("Tarball contents (server files only):");
+        const serverFiles = tarContents
+          .split("\n")
+          .filter((line) => line.includes("server/"));
+        serverFiles.forEach((file) => console.log("  ", file));
+
+        // Verify server files are present
+        expect(tarContents).toContain("package/server/dist/index.js");
+        expect(tarContents).toContain("package/server/dist/index.d.ts");
+        expect(tarContents).toContain("package/server/dist/turnstile-worker.js");
+
+        // Clean up
+        execSync(`rm ${tarballName}`, { cwd: projectRoot });
+      } catch (error) {
+        console.error("Tarball creation/inspection failed:", error.message);
+        throw error;
+      }
+    });
+
+    it("should verify the package can be imported as expected", () => {
+      // Test the exact import pattern a consumer would use
+      const serverExportPath = path.join(
+        projectRoot,
+        "server",
+        "dist",
+        "index.js",
+      );
+      expect(fs.existsSync(serverExportPath)).toBe(true);
+
+      const content = fs.readFileSync(serverExportPath, "utf8");
+      console.log("Server exports available:");
+
+      // Look for export statements
+      const exportMatches = content.match(/export\s+{[^}]+}/g);
+      if (exportMatches) {
+        exportMatches.forEach((match) => console.log("  ", match));
+      }
+
+      // Verify key exports are present
+      expect(content).toContain("createTurnstileWorker");
+      expect(content).toContain("verifyTurnstileTokenEnhanced");
+    });
+  });
 });
