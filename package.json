@@ -14,8 +14,8 @@
     "url": "https://github.com/user27828"
   },
   "license": "MIT",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/utils/index.js",
+  "types": "dist/utils/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/utils/index.d.ts",
@@ -70,7 +70,8 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "lodash-es": "^4.17.21"
   },
   "files": [
     "dist/**/*",
