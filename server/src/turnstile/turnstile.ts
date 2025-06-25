@@ -5,7 +5,7 @@
 import {
   OptionsManager,
   optionsManager,
-} from "../../../utils/src/options-manager.js";
+} from "@shared-utils/utils";
 import type {
   TurnstileServerOptions,
   TurnstileVerifyResponse,

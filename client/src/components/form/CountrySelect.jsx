@@ -137,13 +137,17 @@ const CountrySelect = ({
 
   // For non-searchable version, handle the regular select change
   const handleRegularSelectChange = (event) => {
-    if (!onChange) { return;}
+    if (!onChange) {
+      return;
+    }
     onChange(event.target.value);
   };
 
   // Format the country display name to include code and language information
   const getCountryLabel = (country) => {
-    if (!country) return "";
+    if (!country) {
+      return "";
+    }
 
     // Format with country name and native name if different
     let label = country.name;

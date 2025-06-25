@@ -16,9 +16,15 @@ export function isDevMode(
   options?: TurnstileServerOptions,
   env?: Environment,
 ): boolean {
-  if (options?.devMode !== undefined) return options.devMode;
-  if (env?.DEV_MODE === "true") return true;
-  if (env?.NODE_ENV === "development") return true;
+  if (options?.devMode !== undefined) {
+    return options.devMode;
+  }
+  if (env?.DEV_MODE === "true") {
+    return true;
+  }
+  if (env?.NODE_ENV === "development") {
+    return true;
+  }
   return false;
 }
 

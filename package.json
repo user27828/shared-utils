@@ -44,8 +44,8 @@
     "client": "yarn workspace @shared-utils/client",
     "utils": "yarn workspace @shared-utils/utils",
     "server": "yarn workspace @shared-utils/server",
-    "build": "yarn utils build && yarn client build",
-    "test": "cd client && npm run test && cd ../utils && npm run test && cd ../server && npm run test && cd ..",
+    "build": "yarn utils build && yarn client build && yarn server build",
+    "test": "cd client && yarn test && cd ../utils && yarn test && cd ../server && yarn test && cd ..",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "upgrade": "npx yarn-upgrade-interactive"
@@ -67,6 +67,9 @@
   },
   "files": [
     "dist",
+    "client/dist",
+    "utils/dist",
+    "server/dist",
     "package.json",
     "README.md",
     "LICENSE",

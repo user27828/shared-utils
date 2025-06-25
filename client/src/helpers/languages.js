@@ -20,7 +20,9 @@ import languages from "../data/languages";
  * @returns {Object|undefined} The language object or undefined if not found
  */
 export const getLanguageByCode = (code) => {
-  if (!code) return undefined;
+  if (!code) {
+    return undefined;
+  }
 
   const lowerCode = code.toLowerCase();
   const upperCode = code.toUpperCase();
@@ -33,7 +35,9 @@ export const getLanguageByCode = (code) => {
       lang.iso639_3.toLowerCase() === lowerCode,
   );
 
-  if (directMatch) return directMatch;
+  if (directMatch) {
+    return directMatch;
+  }
 
   // If not found, try matching IETF tags (case insensitive)
   return languages.find(

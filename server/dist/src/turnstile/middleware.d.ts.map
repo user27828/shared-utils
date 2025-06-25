@@ -1,0 +1,1 @@
+{"version":3,"file":"middleware.d.ts","sourceRoot":"","sources":["../../../src/turnstile/middleware.ts"],"names":[],"mappings":"AAAA;;GAEG;AAEH,OAAO,KAAK,EAAE,sBAAsB,EAAE,MAAM,YAAY,CAAC;AAMzD;;;;GAIG;AACH,wBAAgB,yBAAyB,CACvC,OAAO,CAAC,EAAE,OAAO,CAAC,sBAAsB,CAAC,IAS3B,KAAK,GAAG,EAAE,KAAK,GAAG,EAAE,MAAM,GAAG,kBA0D5C"}

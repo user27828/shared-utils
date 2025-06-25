@@ -3,17 +3,40 @@
   "version": "1.0.0",
   "description": "Shared utilities for server-side operations",
   "type": "module",
-  "main": "turnstile-worker.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./turnstile-worker": {
+      "types": "./dist/turnstile-worker.d.ts",
+      "import": "./dist/turnstile-worker.js",
+      "default": "./dist/turnstile-worker.js"
+    }
+  },
+  "files": [
+    "dist/**/*",
+    "package.json",
+    "README-SERVER.md"
+  ],
   "private": true,
   "scripts": {
+    "build": "yarn tsc",
+    "dev": "yarn tsc --watch",
     "cf:deploy": "./deploy-turnstile-worker.sh",
     "cf:deploy:dev": "./deploy-turnstile-worker.sh dev",
     "cf:deploy:staging": "./deploy-turnstile-worker.sh staging",
     "cf:deploy:production": "./deploy-turnstile-worker.sh production",
     "cf:dev": "wrangler dev",
-    "test": "NODE_OPTIONS=\"--experimental-vm-modules\" jest",
-    "test:watch": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --watch",
-    "test:coverage": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --coverage"
+    "test": "NODE_OPTIONS=\"--experimental-vm-modules\" yarn jest",
+    "test:watch": "NODE_OPTIONS=\"--experimental-vm-modules\" yarn jest --watch",
+    "test:coverage": "NODE_OPTIONS=\"--experimental-vm-modules\" yarn jest --coverage"
+  },
+  "dependencies": {
+    "@shared-utils/utils": "workspace:*"
   },
   "devDependencies": {
     "@babel/core": "^7.27.4",
