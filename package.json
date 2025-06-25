@@ -44,13 +44,16 @@
     "client": "yarn workspace @shared-utils/client",
     "utils": "yarn workspace @shared-utils/utils",
     "server": "yarn workspace @shared-utils/server",
-    "build": "yarn utils build && yarn client build && yarn server build",
-    "prepare": "yarn build",
-    "postinstall": "yarn build",
+    "build": "yarn build:utils && yarn build:client && yarn build:server",
+    "build:utils": "cd utils && (yarn --version > /dev/null 2>&1 && yarn tsc || npx tsc)",
+    "build:client": "cd client && (yarn --version > /dev/null 2>&1 && yarn tsc || npx tsc)",
+    "build:server": "cd server && (yarn --version > /dev/null 2>&1 && yarn tsc || npx tsc)",
+    "prepare": "yarn build 2>/dev/null || echo 'Build failed during prepare, continuing...'",
+    "postinstall": "yarn build 2>/dev/null || echo 'Build failed during postinstall, continuing...'",
     "test": "cd client && yarn test && cd ../utils && yarn test && cd ../server && yarn test && cd ..",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "upgrade": "npx yarn-upgrade-interactive"
+    "upgrade": "yarn upgrade-interactive"
   },
   "bin": {
     "cf:setup-turnstile-worker": "./scripts/setup-turnstile-worker.sh",
@@ -65,6 +68,9 @@
     "jest-environment-node": "^30.0.2",
     "prettier": "^3.5.3",
     "ts-jest": "^29.4.0",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
     "typescript": "^5.8.3"
   },
   "files": [
