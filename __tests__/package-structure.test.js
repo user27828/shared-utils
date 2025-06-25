@@ -103,7 +103,7 @@ describe("Root Package Structure", () => {
       const path = require("path");
       const projectRoot = path.resolve(__dirname, ".."); // Assuming test is in __tests__
 
-      // Check for declaration files in the dist directories 
+      // Check for declaration files in the dist directories
       expect(fs.existsSync(path.join(projectRoot, "dist/index.d.ts"))).toBe(
         true,
       );
@@ -113,7 +113,7 @@ describe("Root Package Structure", () => {
       expect(
         fs.existsSync(path.join(projectRoot, "client/dist/index.d.ts")),
       ).toBe(true);
-      
+
       // Check for utils source declaration files
       const utilsSrcDir = path.join(projectRoot, "utils/dist/src");
       const logDtsPath = path.join(utilsSrcDir, "log.d.ts");
