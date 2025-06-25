@@ -15,7 +15,8 @@
     "allowImportingTsExtensions": false,
     "noEmitOnError": true,
     "types": ["@cloudflare/workers-types"],
-    "composite": true
+    "composite": true,
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo"
   },
   "include": ["**/*.ts", "index.ts", "turnstile-worker.ts"],
   "exclude": [

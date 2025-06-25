@@ -67,11 +67,14 @@ describe("GitHub Installation Final Verification", () => {
 
   test("server files are present in installed package", () => {
     // Find the unplugged package directory
-    const yarnDir = path.join(tempDir, '.yarn', 'unplugged');
-    const sharedUtilsDirs = fs.readdirSync(yarnDir)
-      .filter(dir => dir.includes('shared-utils'))
-      .map(dir => path.join(yarnDir, dir, 'node_modules', '@user27828', 'shared-utils'));
-    
+    const yarnDir = path.join(tempDir, ".yarn", "unplugged");
+    const sharedUtilsDirs = fs
+      .readdirSync(yarnDir)
+      .filter((dir) => dir.includes("shared-utils"))
+      .map((dir) =>
+        path.join(yarnDir, dir, "node_modules", "@user27828", "shared-utils"),
+      );
+
     expect(sharedUtilsDirs.length).toBeGreaterThan(0);
     const nodeModulesPath = sharedUtilsDirs[0];
     expect(fs.existsSync(nodeModulesPath)).toBe(true);
@@ -102,11 +105,14 @@ describe("GitHub Installation Final Verification", () => {
 
   test("package.json exports are correctly configured", () => {
     // Find the unplugged package directory
-    const yarnDir = path.join(tempDir, '.yarn', 'unplugged');
-    const sharedUtilsDirs = fs.readdirSync(yarnDir)
-      .filter(dir => dir.includes('shared-utils'))
-      .map(dir => path.join(yarnDir, dir, 'node_modules', '@user27828', 'shared-utils'));
-    
+    const yarnDir = path.join(tempDir, ".yarn", "unplugged");
+    const sharedUtilsDirs = fs
+      .readdirSync(yarnDir)
+      .filter((dir) => dir.includes("shared-utils"))
+      .map((dir) =>
+        path.join(yarnDir, dir, "node_modules", "@user27828", "shared-utils"),
+      );
+
     expect(sharedUtilsDirs.length).toBeGreaterThan(0);
     const nodeModulesPath = sharedUtilsDirs[0];
     const packageJsonPath = path.join(nodeModulesPath, "package.json");
@@ -116,7 +122,7 @@ describe("GitHub Installation Final Verification", () => {
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
 
     // Check server export
-    expect(packageJson.exports['./server']).toBeDefined();
+    expect(packageJson.exports["./server"]).toBeDefined();
     expect(packageJson.exports["./server"]).toEqual({
       types: "./dist/server/index.d.ts",
       import: "./dist/server/index.js",
@@ -181,11 +187,14 @@ console.log('Turnstile worker import successful:', typeof createTurnstileWorker)
 
   test("server source files are included in src directory", () => {
     // Find the unplugged package directory
-    const yarnDir = path.join(tempDir, '.yarn', 'unplugged');
-    const sharedUtilsDirs = fs.readdirSync(yarnDir)
-      .filter(dir => dir.includes('shared-utils'))
-      .map(dir => path.join(yarnDir, dir, 'node_modules', '@user27828', 'shared-utils'));
-    
+    const yarnDir = path.join(tempDir, ".yarn", "unplugged");
+    const sharedUtilsDirs = fs
+      .readdirSync(yarnDir)
+      .filter((dir) => dir.includes("shared-utils"))
+      .map((dir) =>
+        path.join(yarnDir, dir, "node_modules", "@user27828", "shared-utils"),
+      );
+
     expect(sharedUtilsDirs.length).toBeGreaterThan(0);
     const nodeModulesPath = sharedUtilsDirs[0];
     const serverSrcPath = path.join(nodeModulesPath, "dist", "server", "src");
