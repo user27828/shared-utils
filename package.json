@@ -75,9 +75,9 @@
   },
   "files": [
     "dist/**/*",
-    "client/dist/**/*",
-    "utils/dist/**/*",
-    "server/dist/**/*",
+    "client/**/*",
+    "utils/**/*", 
+    "server/**/*",
     "package.json",
     "README.md",
     "LICENSE",
