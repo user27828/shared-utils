@@ -23,6 +23,7 @@ export { getTurnstileServerOptions, verifyTurnstileTokenEnhanced, verifyTurnstil
 export { createTurnstileMiddleware } from "./src/turnstile/index.js";
 export { createTurnstileWorker } from "./src/turnstile/index.js";
 export { verifyTurnstileToken } from "./src/turnstile/index.js";
+export { OptionsManager, optionsManager } from "./src/options-manager.js";
 export { isDevMode, isLocalhostRequest, createMockVerifyResponse, getAllowedOrigin, } from "./src/turnstile/index.js";
 export type { TurnstileVerifyRequest, TurnstileVerifyResponse, Environment, TurnstileServerOptions, TurnstileWorkerConfig, } from "./src/turnstile/index.js";
 //# sourceMappingURL=index.d.ts.map
