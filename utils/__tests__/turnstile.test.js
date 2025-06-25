@@ -68,7 +68,7 @@ describe("Turnstile Utility", () => {
     };
 
     // Import after mocking globals
-    const module = await import("../dist/src/turnstile.js");
+    const module = await import("../../dist/utils/src/turnstile.js");
     turnstile = module.default;
     Turnstile = module.Turnstile;
 
