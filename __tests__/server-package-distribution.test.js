@@ -158,7 +158,7 @@ describe("Server Package Distribution", () => {
   });
 
   describe("Workspace Dependencies", () => {
-    it("should have proper dependency on utils package", () => {
+    it("should not have workspace dependencies that break consuming projects", () => {
       const serverPackageJsonPath = path.join(
         projectRoot,
         "server",
@@ -168,20 +168,25 @@ describe("Server Package Distribution", () => {
         fs.readFileSync(serverPackageJsonPath, "utf8"),
       );
 
-      expect(serverPackageJson.dependencies).toHaveProperty(
-        "@shared-utils/utils",
+      // The server package should not depend on workspace packages
+      // that won't be available in consuming projects
+      const dependencies = serverPackageJson.dependencies || {};
+      const workspaceDeps = Object.keys(dependencies).filter(
+        (dep) =>
+          dep.startsWith("@shared-utils/") ||
+          dependencies[dep].includes("workspace:"),
       );
-      expect(serverPackageJson.dependencies["@shared-utils/utils"]).toBe(
-        "workspace:*",
-      );
+
+      expect(workspaceDeps).toHaveLength(0);
     });
 
-    it("should reference utils dependency in compiled code", () => {
+    it("should not reference workspace dependencies in compiled code", () => {
       const serverJsPath = path.join(serverDistPath, "index.js");
       const serverJsContent = fs.readFileSync(serverJsPath, "utf8");
 
-      // The compiled JS should have references to @shared-utils/utils
-      expect(serverJsContent).toContain("@shared-utils/utils");
+      // The compiled JS should NOT have references to @shared-utils/utils
+      // since this would break in consuming projects
+      expect(serverJsContent).not.toContain("@shared-utils/utils");
     });
   });
 
@@ -403,7 +408,9 @@ describe("Server Package Distribution", () => {
         // Verify server files are present
         expect(tarContents).toContain("package/server/dist/index.js");
         expect(tarContents).toContain("package/server/dist/index.d.ts");
-        expect(tarContents).toContain("package/server/dist/turnstile-worker.js");
+        expect(tarContents).toContain(
+          "package/server/dist/turnstile-worker.js",
+        );
 
         // Clean up
         execSync(`rm ${tarballName}`, { cwd: projectRoot });
@@ -435,6 +442,63 @@ describe("Server Package Distribution", () => {
       // Verify key exports are present
       expect(content).toContain("createTurnstileWorker");
       expect(content).toContain("verifyTurnstileTokenEnhanced");
+    });
+  });
+
+  describe("Consuming Project Integration", () => {
+    it("should not have workspace dependency issues when imported in consuming projects", async () => {
+      // This test ensures the server package can be imported without workspace dependencies
+      const { execSync } = require("child_process");
+
+      try {
+        // Create a test package and try to import it
+        const packResult = execSync("npm pack", {
+          cwd: projectRoot,
+          encoding: "utf8",
+        });
+
+        const tarballName = packResult.trim();
+        const testDir = "/tmp/shared-utils-import-test";
+
+        // Clean up any existing test directory
+        execSync(`rm -rf ${testDir}`, { stdio: "ignore" });
+        execSync(`mkdir -p ${testDir}`);
+
+        // Extract package
+        execSync(
+          `tar -xzf ${path.join(projectRoot, tarballName)} -C ${testDir}`,
+        );
+
+        // Create test import file
+        const testImportContent = `
+import { createTurnstileWorker, verifyTurnstileTokenEnhanced } from './package/server/dist/index.js';
+console.log('SUCCESS: Server exports imported without errors');
+console.log('createTurnstileWorker type:', typeof createTurnstileWorker);
+console.log('verifyTurnstileTokenEnhanced type:', typeof verifyTurnstileTokenEnhanced);
+        `;
+
+        const testImportPath = path.join(testDir, "test-import.mjs");
+        fs.writeFileSync(testImportPath, testImportContent);
+
+        // Try to run the import test
+        const importResult = execSync(`node test-import.mjs`, {
+          cwd: testDir,
+          encoding: "utf8",
+        });
+
+        expect(importResult).toContain("SUCCESS");
+        expect(importResult).toContain("createTurnstileWorker type: function");
+        expect(importResult).toContain(
+          "verifyTurnstileTokenEnhanced type: function",
+        );
+
+        // Clean up
+        execSync(`rm -rf ${testDir}`);
+        execSync(`rm ${path.join(projectRoot, tarballName)}`);
+      } catch (error) {
+        console.error("Import test failed:", error.message);
+        throw error;
+      }
     });
   });
 });

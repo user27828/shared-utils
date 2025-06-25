@@ -1,7 +1,7 @@
 /**
  * Enhanced Turnstile server-side verification with dev mode and localhost bypass
  */
-import { OptionsManager, optionsManager, } from "@shared-utils/utils";
+import { OptionsManager } from "../options-manager.js";
 import { isDevMode, isLocalhostRequest, createMockVerifyResponse, } from "./utils.js";
 import { verifyTurnstileToken } from "./verification.js";
 // Default options for server-side Turnstile verification
@@ -21,9 +21,7 @@ let turnstileServerManager = null;
  */
 function getTurnstileServerManager() {
     if (!turnstileServerManager) {
-        turnstileServerManager = new OptionsManager("turnstile-server", defaultServerOptions);
-        // Register with global optionsManager for unified configuration
-        optionsManager.registerManager("turnstile-server", turnstileServerManager);
+        turnstileServerManager = new OptionsManager(defaultServerOptions);
     }
     return turnstileServerManager;
 }

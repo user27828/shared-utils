@@ -103,18 +103,19 @@ describe("Root Package Structure", () => {
       const path = require("path");
       const projectRoot = path.resolve(__dirname, ".."); // Assuming test is in __tests__
 
-      // Check for declaration files in the dist directory
+      // Check for declaration files in the dist directories 
       expect(fs.existsSync(path.join(projectRoot, "dist/index.d.ts"))).toBe(
         true,
       );
       expect(
-        fs.existsSync(path.join(projectRoot, "dist/utils/index.d.ts")),
+        fs.existsSync(path.join(projectRoot, "utils/dist/index.d.ts")),
       ).toBe(true);
       expect(
-        fs.existsSync(path.join(projectRoot, "dist/client/index.d.ts")),
+        fs.existsSync(path.join(projectRoot, "client/dist/index.d.ts")),
       ).toBe(true);
-      // This specific path was problematic, let's ensure it's checked correctly
-      const utilsSrcDir = path.join(projectRoot, "dist/utils/src");
+      
+      // Check for utils source declaration files
+      const utilsSrcDir = path.join(projectRoot, "utils/dist/src");
       const logDtsPath = path.join(utilsSrcDir, "log.d.ts");
       console.log(`Checking for: ${logDtsPath}`);
       let foundInDirList = false;

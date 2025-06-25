@@ -2,10 +2,7 @@
  * Enhanced Turnstile server-side verification with dev mode and localhost bypass
  */
 
-import {
-  OptionsManager,
-  optionsManager,
-} from "@shared-utils/utils";
+import { OptionsManager, optionsManager } from "../options-manager.js";
 import type {
   TurnstileServerOptions,
   TurnstileVerifyResponse,
@@ -37,12 +34,7 @@ let turnstileServerManager: OptionsManager<TurnstileServerOptions> | null =
  */
 function getTurnstileServerManager(): OptionsManager<TurnstileServerOptions> {
   if (!turnstileServerManager) {
-    turnstileServerManager = new OptionsManager(
-      "turnstile-server",
-      defaultServerOptions,
-    );
-    // Register with global optionsManager for unified configuration
-    optionsManager.registerManager("turnstile-server", turnstileServerManager);
+    turnstileServerManager = new OptionsManager(defaultServerOptions);
   }
   return turnstileServerManager;
 }

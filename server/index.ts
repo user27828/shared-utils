@@ -6,21 +6,17 @@
  *
  * @example
  * ```typescript
- * import { optionsManager } from '@shared-utils/utils';
- * import { createTurnstileMiddleware } from '@shared-utils/server';
+ * import { createTurnstileMiddleware, getTurnstileServerOptions } from '@shared-utils/server';
  *
- * // Configure using unified optionsManager
- * optionsManager.setGlobalOptions({
- *   'turnstile-server': {
- *     secretKey: process.env.TURNSTILE_SECRET_KEY,
- *     devMode: process.env.NODE_ENV === 'development',
- *     bypassLocalhost: true
- *   }
+ * // Configure options directly
+ * const middleware = createTurnstileMiddleware({
+ *   secretKey: process.env.TURNSTILE_SECRET_KEY,
+ *   devMode: process.env.NODE_ENV === 'development',
+ *   bypassLocalhost: true
  * });
  *
  * // Use in Express.js
- * const verifyTurnstile = createTurnstileMiddleware();
- * app.post('/api/form', verifyTurnstile, handler);
+ * app.post('/api/form', middleware, handler);
  * ```
  */
 
