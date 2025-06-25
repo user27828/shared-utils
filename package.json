@@ -18,35 +18,35 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./utils/dist/index.d.ts",
-      "import": "./utils/dist/index.js",
-      "default": "./utils/dist/index.js"
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/index.js",
+      "default": "./dist/utils/index.js"
     },
     "./client": {
-      "types": "./client/dist/index.d.ts",
-      "import": "./client/dist/index.js",
-      "default": "./client/dist/index.js"
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.js",
+      "default": "./dist/client/index.js"
     },
     "./utils": {
-      "types": "./utils/dist/index.d.ts",
-      "import": "./utils/dist/index.js",
-      "default": "./utils/dist/index.js"
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/index.js",
+      "default": "./dist/utils/index.js"
     },
     "./server": {
-      "types": "./server/dist/index.d.ts",
-      "import": "./server/dist/index.js",
-      "default": "./server/dist/index.js"
+      "types": "./dist/server/index.d.ts",
+      "import": "./dist/server/index.js",
+      "default": "./dist/server/index.js"
     },
-    "./utils/*": "./utils/dist/*"
+    "./utils/*": "./dist/utils/*"
   },
   "scripts": {
     "client": "yarn workspace @shared-utils/client",
     "utils": "yarn workspace @shared-utils/utils",
     "server": "yarn workspace @shared-utils/server",
     "build": "yarn build:utils && yarn build:client && yarn build:server",
-    "build:utils": "cd utils && (yarn --version > /dev/null 2>&1 && yarn tsc || npx tsc)",
-    "build:client": "cd client && (yarn --version > /dev/null 2>&1 && yarn tsc || npx tsc)",
-    "build:server": "cd server && (yarn --version > /dev/null 2>&1 && yarn tsc || npx tsc)",
+    "build:utils": "cd utils && (yarn --version > /dev/null 2>&1 && yarn tsc --outDir ../dist/utils || npx tsc --outDir ../dist/utils)",
+    "build:client": "cd client && (yarn --version > /dev/null 2>&1 && yarn tsc --outDir ../dist/client || npx tsc --outDir ../dist/client)",
+    "build:server": "cd server && (yarn --version > /dev/null 2>&1 && yarn tsc --outDir ../dist/server || npx tsc --outDir ../dist/server)",
     "prepare": "yarn build 2>/dev/null || echo 'Build failed during prepare, continuing...'",
     "postinstall": "yarn build 2>/dev/null || echo 'Build failed during postinstall, continuing...'",
     "test": "cd client && yarn test && cd ../utils && yarn test && cd ../server && yarn test && cd ..",
@@ -74,9 +74,6 @@
   },
   "files": [
     "dist/**/*",
-    "client/**/*",
-    "utils/**/*",
-    "server/**/*",
     "package.json",
     "README.md",
     "LICENSE",
