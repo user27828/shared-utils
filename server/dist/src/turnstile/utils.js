@@ -6,12 +6,15 @@
  * Detect if we're running in a development environment
  */
 export function isDevMode(options, env) {
-    if (options?.devMode !== undefined)
+    if (options?.devMode !== undefined) {
         return options.devMode;
-    if (env?.DEV_MODE === "true")
+    }
+    if (env?.DEV_MODE === "true") {
         return true;
-    if (env?.NODE_ENV === "development")
+    }
+    if (env?.NODE_ENV === "development") {
         return true;
+    }
     return false;
 }
 /**

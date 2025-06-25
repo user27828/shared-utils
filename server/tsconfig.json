@@ -15,7 +15,8 @@
     "resolveJsonModule": true,
     "allowImportingTsExtensions": false,
     "noEmitOnError": true,
-    "types": ["@cloudflare/workers-types"]
+    "types": ["@cloudflare/workers-types"],
+    "composite": true
   },
   "include": ["**/*.ts", "index.ts", "turnstile-worker.ts"],
   "exclude": [

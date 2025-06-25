@@ -93,8 +93,9 @@ const CountrySelect = ({ value, onChange, multiple = false, topCountries = [], s
     };
     // Format the country display name to include code and language information
     const getCountryLabel = (country) => {
-        if (!country)
+        if (!country) {
             return "";
+        }
         // Format with country name and native name if different
         let label = country.name;
         if (country.nameLocal && country.nameLocal !== country.name) {

@@ -42,7 +42,7 @@ describe("Server Package Distribution", () => {
       const packageJsonPath = path.join(projectRoot, "package.json");
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
 
-      expect(packageJson.files).toContain("server/dist");
+      expect(packageJson.files).toContain("server/dist/**/*");
     });
 
     it("should have proper ./server export configuration", () => {
@@ -289,6 +289,76 @@ describe("Server Package Distribution", () => {
       // Should not have relative paths going outside the package
       expect(indexJsContent).not.toContain("../../../utils/src");
       expect(indexJsContent).not.toContain("../../../../");
+    });
+  });
+
+  describe("Package Distribution Simulation", () => {
+    it("should include server files in npm pack simulation", async () => {
+      // This test simulates what npm pack would include
+      const { execSync } = require("child_process");
+
+      try {
+        // Capture both stdout and stderr since npm pack outputs to stderr
+        const packOutput = execSync("npm pack --dry-run 2>&1", {
+          cwd: projectRoot,
+          encoding: "utf8",
+        });
+
+        // Check that server files are listed in the pack output
+        // npm pack output includes "npm notice" lines, so we check for the notice messages
+        expect(packOutput).toContain("server/dist/index.js");
+        expect(packOutput).toContain("server/dist/index.d.ts");
+        expect(packOutput).toContain("server/dist/turnstile-worker.js");
+        expect(packOutput).toContain("server/dist/src/turnstile/");
+
+        // Verify that the total file count includes server files (should be > 80 files)
+        const totalFilesMatch = packOutput.match(/total files:\s*(\d+)/);
+        if (totalFilesMatch) {
+          const totalFiles = parseInt(totalFilesMatch[1]);
+          expect(totalFiles).toBeGreaterThan(80);
+        }
+      } catch (error) {
+        console.error("npm pack simulation failed:", error.message);
+        throw error;
+      }
+    });
+
+    it("should have server files accessible via file system as they would be in node_modules", () => {
+      // Simulate what a consuming project would see in node_modules/@user27828/shared-utils/
+      const serverIndexPath = path.join(
+        projectRoot,
+        "server",
+        "dist",
+        "index.js",
+      );
+      const serverTypesPath = path.join(
+        projectRoot,
+        "server",
+        "dist",
+        "index.d.ts",
+      );
+      const serverWorkerPath = path.join(
+        projectRoot,
+        "server",
+        "dist",
+        "turnstile-worker.js",
+      );
+
+      expect(fs.existsSync(serverIndexPath)).toBe(true);
+      expect(fs.existsSync(serverTypesPath)).toBe(true);
+      expect(fs.existsSync(serverWorkerPath)).toBe(true);
+
+      // Verify the paths match what the exports field references
+      const packageJson = JSON.parse(
+        fs.readFileSync(path.join(projectRoot, "package.json"), "utf8"),
+      );
+      const serverExport = packageJson.exports["./server"];
+
+      const exportedTypesPath = path.join(projectRoot, serverExport.types);
+      const exportedImportPath = path.join(projectRoot, serverExport.import);
+
+      expect(serverTypesPath).toBe(exportedTypesPath);
+      expect(serverIndexPath).toBe(exportedImportPath);
     });
   });
 });

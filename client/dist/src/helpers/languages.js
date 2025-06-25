@@ -19,16 +19,18 @@ import languages from "../data/languages";
  * @returns {Object|undefined} The language object or undefined if not found
  */
 export const getLanguageByCode = (code) => {
-    if (!code)
+    if (!code) {
         return undefined;
+    }
     const lowerCode = code.toLowerCase();
     const upperCode = code.toUpperCase();
     // First try direct matching with iso639_1, iso639_2, or iso639_3
     const directMatch = languages.find((lang) => lang.iso639_1.toLowerCase() === lowerCode ||
         lang.iso639_2.toLowerCase() === lowerCode ||
         lang.iso639_3.toLowerCase() === lowerCode);
-    if (directMatch)
+    if (directMatch) {
         return directMatch;
+    }
     // If not found, try matching IETF tags (case insensitive)
     return languages.find((lang) => lang.ietf === lowerCode ||
         Object.values(lang.ietfRegions || {}).some((tag) => tag.toLowerCase() === lowerCode));

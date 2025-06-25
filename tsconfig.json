@@ -21,16 +21,10 @@
   },
   "references": [
     { "path": "./utils" },
-    { "path": "./client" }
+    { "path": "./client" },
+    { "path": "./server" }
   ],
   "files": [],
-  "include": [
-    "index.js",
-    "test-*.ts",
-    "__tests__/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["index.js", "test-*.ts", "__tests__/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }
