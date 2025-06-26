@@ -1,6 +1,6 @@
 {
   "name": "@shared-utils/client",
-  "version": "0.69.2",
+  "version": "0.69.3",
   "description": "React components and client-side utilities",
   "type": "module",
   "main": "dist/index.js",

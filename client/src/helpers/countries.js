@@ -14,7 +14,7 @@
  * @property {string} region - Super region code (e.g., EU, UK) if applicable
  * @property {number} population - Estimated population in millions
  */
-import countries from "../data/countries";
+import countries from "../data/countries.js";
 
 /**
  * Utility function to get a country by its code

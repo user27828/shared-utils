@@ -14,7 +14,7 @@ import {
   Typography,
   FormHelperText,
 } from "@mui/material";
-import { getCountryOptions } from "../../helpers/countries";
+import { getCountryOptions } from "../../helpers/countries.js";
 
 /**
  * Country selection component supporting single or multiple country selection

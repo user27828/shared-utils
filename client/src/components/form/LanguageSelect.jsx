@@ -14,7 +14,7 @@ import {
   Typography,
   FormHelperText,
 } from "@mui/material";
-import { getLanguageOptions } from "../../helpers/languages";
+import { getLanguageOptions } from "../../helpers/languages.js";
 
 /**
  * Language selection component supporting single or multiple language selection

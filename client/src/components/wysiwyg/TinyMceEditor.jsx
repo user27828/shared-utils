@@ -4,7 +4,7 @@
  * @module TinyMceEditor
  */
 import React, { useRef } from "react";
-import { default as Editor } from "./TinyMceBundle";
+import { default as Editor } from "./TinyMceBundle.js";
 
 /**
  * Rich text editor component based on TinyMCE's free version
@@ -37,41 +37,41 @@ const TinyMceEditor = (props) => {
   };
 
   return (
-      <Editor
-        // No API key needed for self-hosted or community version
-        onInit={(evt, editor) => {
-          editorRef.current = editor;
-        }}
-        initialValue={initialValueRef.current}
-        value={data || ""}
-        onEditorChange={handleEditorChange}
-        init={{
-          license_key: "gpl",
-          height: 500,
-          menubar: true,
-          plugins: [
-            "advlist",
-            "anchor",
-            "autolink",
-            "help",
-            "image",
-            "link",
-            "lists",
-            "searchreplace",
-            "table",
-            "wordcount",
-          ],
-          toolbar:
-            "undo redo | blocks | " +
-            "bold italic forecolor | alignleft aligncenter " +
-            "alignright alignjustify | bullist numlist outdent indent | " +
-            "removeformat | help",
-          content_style:
-            "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
-          branding: false,
-          promotion: false,
-        }}
-      />
+    <Editor
+      // No API key needed for self-hosted or community version
+      onInit={(evt, editor) => {
+        editorRef.current = editor;
+      }}
+      initialValue={initialValueRef.current}
+      value={data || ""}
+      onEditorChange={handleEditorChange}
+      init={{
+        license_key: "gpl",
+        height: 500,
+        menubar: true,
+        plugins: [
+          "advlist",
+          "anchor",
+          "autolink",
+          "help",
+          "image",
+          "link",
+          "lists",
+          "searchreplace",
+          "table",
+          "wordcount",
+        ],
+        toolbar:
+          "undo redo | blocks | " +
+          "bold italic forecolor | alignleft aligncenter " +
+          "alignright alignjustify | bullist numlist outdent indent | " +
+          "removeformat | help",
+        content_style:
+          "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
+        branding: false,
+        promotion: false,
+      }}
+    />
   );
 };
 

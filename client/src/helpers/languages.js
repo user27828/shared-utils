@@ -12,7 +12,7 @@
  * @property {number} lcid - Microsoft locale identifier
  * @property {number} speakers - Approximate number of speakers in millions (where available)
  */
-import languages from "../data/languages";
+import languages from "../data/languages.js";
 
 /**
  * Utility function to get a language by its code
