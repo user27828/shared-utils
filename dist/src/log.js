@@ -47,7 +47,7 @@ class Log {
         const defaultOptions = {
             // Auto-detect environment - 'client' or 'server'
             type: this.detectEnvironment(),
-            showCaller: true, // Add caller information to log messages
+            showCaller: false, // Add caller information to log messages - default false for backward compatibility
             client: {
                 namespace: "client", // Namespace for client-side logging
                 production: [], // List of log levels to log in production, e.g. ['warn', 'error']
@@ -253,8 +253,7 @@ class Log {
         else {
             // Use the original console methods to try to preserve call stack
             // This helps the browser show better source information
-            const originalMethod = this.ORIGINAL_CONSOLE_METHODS[level] ||
-                this.ORIGINAL_CONSOLE_METHODS.log;
+            const originalMethod = this.ORIGINAL_CONSOLE_METHODS[level] || this.ORIGINAL_CONSOLE_METHODS.log;
             originalMethod(...formattedArgs);
         }
     }
@@ -263,20 +262,20 @@ class Log {
      */
     isTestEnvironment() {
         // Check for Jest environment
-        if (typeof global !== "undefined" &&
+        if (typeof global !== 'undefined' &&
             global.expect &&
             global.describe &&
             global.it) {
             return true;
         }
         // Check NODE_ENV
-        if (typeof process !== "undefined" && process.env?.NODE_ENV === "test") {
+        if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') {
             return true;
         }
         // Check for common test runners
-        if (typeof window === "undefined" &&
-            (typeof global !== "undefined" || typeof globalThis !== "undefined")) {
-            const g = typeof global !== "undefined" ? global : globalThis;
+        if (typeof window === 'undefined' &&
+            (typeof global !== 'undefined' || typeof globalThis !== 'undefined')) {
+            const g = typeof global !== 'undefined' ? global : globalThis;
             if (g.__coverage__ || g.jasmine || g.mocha) {
                 return true;
             }

@@ -1,0 +1,77 @@
+<!doctype html>
+<!--
+  Browser test for the log utility's caller information feature
+  
+  This HTML file demonstrates the showCaller feature in a browser environment.
+  
+  To test:
+  1. Build the utils: yarn build:utils
+  2. Open this file in a browser (preferably via a local server)
+  3. Open browser console
+  4. Observe log messages with caller file information
+  5. Click the button to test from event handler
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Log Utility Caller Information Test</title>
+  </head>
+  <body>
+    <h1>Log Utility - Caller Information Test</h1>
+    <p>Open browser console to see the log output.</p>
+    <button onclick="testFromButton()">Test from Button Click</button>
+
+    <script type="module">
+      import { log } from "../dist/utils/index.js";
+
+      // Enable caller information and set client mode with all log levels enabled
+      log.setOptions({
+        type: "client",
+        showCaller: true,
+        client: {
+          production: ["log", "info", "warn", "error", "debug"], // Enable all levels
+        },
+      });
+
+      console.log("=== Browser Test Started ===");
+      console.log("Configuration:", log.getOptions());
+
+      function testFunction() {
+        log.log("Message from testFunction - should show caller info");
+        log.info("Info from testFunction");
+        log.warn("Warning from testFunction");
+      }
+
+      function anotherFunction() {
+        log.error("Error from anotherFunction");
+      }
+
+      // Make testFromButton global for onclick handler
+      window.testFromButton = function () {
+        log.log("Message from button click handler");
+      };
+
+      // Run tests
+      console.log("1. Testing from testFunction():");
+      testFunction();
+
+      console.log("2. Testing from anotherFunction():");
+      anotherFunction();
+
+      console.log("3. Testing direct calls:");
+      log.log("Direct call from main script");
+      log.debug("Debug message from main script");
+
+      console.log("4. Testing with showCaller disabled:");
+      log.setOptions({ showCaller: false });
+      log.log("This should NOT show caller info");
+
+      console.log("5. Re-enabling showCaller:");
+      log.setOptions({ showCaller: true });
+      log.log("This should show caller info again");
+
+      console.log("=== Click the button to test from event handler ===");
+    </script>
+  </body>
+</html>
