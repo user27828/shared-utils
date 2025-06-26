@@ -73,17 +73,17 @@ describe("Real GitHub Installation Test", () => {
     );
   });
 
-  it("should simulate npm pack to see what would be included in GitHub install", () => {
-    // Run npm pack and examine contents
-    console.log("📦 Running npm pack to see included files...");
+  it("should simulate yarn pack to see what would be included in GitHub install", () => {
+    // Run yarn pack and examine contents
+    console.log("📦 Running yarn pack to see included files...");
 
     try {
-      const output = execSync("npm pack --dry-run", {
+      const output = execSync("yarn pack --dry-run", {
         encoding: "utf8",
         cwd: path.resolve(__dirname, ".."),
       });
 
-      // Extract the tarball contents from npm pack output
+      // Extract the tarball contents from yarn pack output
       const lines = output.split("\n");
       const serverFiles = lines.filter((line) => line.includes("server/"));
 
@@ -109,9 +109,9 @@ describe("Real GitHub Installation Test", () => {
       expect(hasServerIndex).toBe(true);
       expect(hasServerTypes).toBe(true);
 
-      console.log("✅ npm pack confirms server/dist files would be included");
+      console.log("✅ yarn pack confirms server/dist files would be included");
     } catch (error) {
-      console.error("❌ npm pack failed:", error.message);
+      console.error("❌ yarn pack failed:", error.message);
       throw error;
     }
   });

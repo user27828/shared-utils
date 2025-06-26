@@ -10,7 +10,7 @@ const { pathToFileURL } = require("url");
 
 describe("Server Package Distribution", () => {
   const projectRoot = path.resolve(__dirname, "..");
-  const serverDistPath = path.join(projectRoot, "server", "dist");
+  const serverDistPath = path.join(projectRoot, "dist", "server");
 
   beforeAll(() => {
     // Ensure packages are built before running tests
@@ -18,7 +18,7 @@ describe("Server Package Distribution", () => {
   });
 
   describe("Package Structure", () => {
-    it("should have server/dist directory with required files", () => {
+    it("should have dist/server directory with required files", () => {
       expect(fs.existsSync(serverDistPath)).toBe(true);
 
       const requiredFiles = [
@@ -38,11 +38,11 @@ describe("Server Package Distribution", () => {
       expect(fs.existsSync(srcPath)).toBe(true);
     });
 
-    it("should include server/dist in root package files array", () => {
+    it("should include dist in root package files array", () => {
       const packageJsonPath = path.join(projectRoot, "package.json");
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
 
-      expect(packageJson.files).toContain("server/dist/**/*");
+      expect(packageJson.files).toContain("dist/**/*");
     });
 
     it("should have proper ./server export configuration", () => {
@@ -53,9 +53,9 @@ describe("Server Package Distribution", () => {
       expect(packageJson.exports["./server"]).toBeDefined();
 
       const serverExport = packageJson.exports["./server"];
-      expect(serverExport.types).toBe("./server/dist/index.d.ts");
-      expect(serverExport.import).toBe("./server/dist/index.js");
-      expect(serverExport.default).toBe("./server/dist/index.js");
+      expect(serverExport.types).toBe("./dist/server/index.d.ts");
+      expect(serverExport.import).toBe("./dist/server/index.js");
+      expect(serverExport.default).toBe("./dist/server/index.js");
 
       // Verify these files exist
       const typesPath = path.join(projectRoot, serverExport.types);
@@ -255,7 +255,7 @@ describe("Server Package Distribution", () => {
 
     it("should have consistent exports between different import methods", () => {
       const directImportPath = path.join(serverDistPath, "index.js");
-      const viaExportsPath = path.join(projectRoot, "server/dist/index.js");
+      const viaExportsPath = path.join(projectRoot, "dist/server/index.js");
 
       // Both paths should point to the same file and exist
       expect(fs.existsSync(directImportPath)).toBe(true);
@@ -298,23 +298,23 @@ describe("Server Package Distribution", () => {
   });
 
   describe("Package Distribution Simulation", () => {
-    it("should include server files in npm pack simulation", async () => {
-      // This test simulates what npm pack would include
+    it("should include server files in yarn pack simulation", async () => {
+      // This test simulates what yarn pack would include
       const { execSync } = require("child_process");
 
       try {
-        // Capture both stdout and stderr since npm pack outputs to stderr
-        const packOutput = execSync("npm pack --dry-run 2>&1", {
+        // Capture both stdout and stderr since yarn pack outputs to stderr
+        const packOutput = execSync("yarn pack --dry-run 2>&1", {
           cwd: projectRoot,
           encoding: "utf8",
         });
 
         // Check that server files are listed in the pack output
-        // npm pack output includes "npm notice" lines, so we check for the notice messages
-        expect(packOutput).toContain("server/dist/index.js");
-        expect(packOutput).toContain("server/dist/index.d.ts");
-        expect(packOutput).toContain("server/dist/turnstile-worker.js");
-        expect(packOutput).toContain("server/dist/src/turnstile/");
+        // yarn pack output includes notice lines, so we check for the notice messages
+        expect(packOutput).toContain("dist/server/index.js");
+        expect(packOutput).toContain("dist/server/index.d.ts");
+        expect(packOutput).toContain("dist/server/turnstile-worker.js");
+        expect(packOutput).toContain("dist/server/src/turnstile/");
 
         // Verify that the total file count includes server files (should be > 80 files)
         const totalFilesMatch = packOutput.match(/total files:\s*(\d+)/);
@@ -323,7 +323,7 @@ describe("Server Package Distribution", () => {
           expect(totalFiles).toBeGreaterThan(80);
         }
       } catch (error) {
-        console.error("npm pack simulation failed:", error.message);
+        console.error("yarn pack simulation failed:", error.message);
         throw error;
       }
     });
@@ -377,7 +377,7 @@ describe("Server Package Distribution", () => {
 
       // Check if this version includes the server fixes
       expect(packageJson.exports["./server"]).toBeDefined();
-      expect(packageJson.files).toContain("server/dist/**/*");
+      expect(packageJson.files).toContain("dist/**/*");
     });
 
     it("should create a test tarball and verify server files are included", async () => {
@@ -385,7 +385,7 @@ describe("Server Package Distribution", () => {
 
       try {
         // Create an actual tarball to test
-        const packResult = execSync("npm pack", {
+        const packResult = execSync("yarn pack", {
           cwd: projectRoot,
           encoding: "utf8",
         });
@@ -406,10 +406,10 @@ describe("Server Package Distribution", () => {
         serverFiles.forEach((file) => console.log("  ", file));
 
         // Verify server files are present
-        expect(tarContents).toContain("package/server/dist/index.js");
-        expect(tarContents).toContain("package/server/dist/index.d.ts");
+        expect(tarContents).toContain("package/dist/server/index.js");
+        expect(tarContents).toContain("package/dist/server/index.d.ts");
         expect(tarContents).toContain(
-          "package/server/dist/turnstile-worker.js",
+          "package/dist/server/turnstile-worker.js",
         );
 
         // Clean up
@@ -452,7 +452,7 @@ describe("Server Package Distribution", () => {
 
       try {
         // Create a test package and try to import it
-        const packResult = execSync("npm pack", {
+        const packResult = execSync("yarn pack", {
           cwd: projectRoot,
           encoding: "utf8",
         });
@@ -471,7 +471,7 @@ describe("Server Package Distribution", () => {
 
         // Create test import file
         const testImportContent = `
-import { createTurnstileWorker, verifyTurnstileTokenEnhanced } from './package/server/dist/index.js';
+import { createTurnstileWorker, verifyTurnstileTokenEnhanced } from './package/dist/server/index.js';
 console.log('SUCCESS: Server exports imported without errors');
 console.log('createTurnstileWorker type:', typeof createTurnstileWorker);
 console.log('verifyTurnstileTokenEnhanced type:', typeof verifyTurnstileTokenEnhanced);

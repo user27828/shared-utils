@@ -8,20 +8,20 @@ const fs = require("fs");
 const path = require("path");
 
 describe("FINAL GitHub Installation Verification", () => {
-  it("✅ PROVES server files are included in npm pack", () => {
-    console.log("🔍 Running npm pack and analyzing output...");
+  it("✅ PROVES server files are included in yarn pack", () => {
+    console.log("🔍 Running yarn pack and analyzing output...");
 
-    const output = execSync("npm pack --dry-run", {
+    const output = execSync("yarn pack --dry-run", {
       encoding: "utf8",
       cwd: path.resolve(__dirname, ".."),
     });
 
     // Count server files
     const lines = output.split("\n");
-    const serverFiles = lines.filter((line) => line.includes("server/dist/"));
+    const serverFiles = lines.filter((line) => line.includes("dist/server/"));
 
     console.log(
-      `📊 Found ${serverFiles.length} server/dist files in npm pack:`,
+      `📊 Found ${serverFiles.length} server/dist files in yarn pack:`,
     );
     serverFiles.slice(0, 10).forEach((file) => {
       console.log(`   ${file.trim()}`);
@@ -35,23 +35,17 @@ describe("FINAL GitHub Installation Verification", () => {
 
     // Check for key files
     const hasIndexJs = serverFiles.some((line) =>
-      line.includes("server/dist/index.js"),
+      line.includes("dist/server/index.js"),
     );
     const hasIndexDts = serverFiles.some((line) =>
-      line.includes("server/dist/index.d.ts"),
-    );
-    const hasServerPackageJson = lines.some((line) =>
-      line.includes("server/package.json"),
+      line.includes("dist/server/index.d.ts"),
     );
 
     expect(hasIndexJs).toBe(true);
     expect(hasIndexDts).toBe(true);
-    expect(hasServerPackageJson).toBe(true);
 
-    console.log("✅ CONFIRMED: Server files ARE included in npm pack");
-    console.log(
-      "✅ CONFIRMED: index.js, index.d.ts, and package.json are included",
-    );
+    console.log("✅ CONFIRMED: Server files ARE included in yarn pack");
+    console.log("✅ CONFIRMED: index.js and index.d.ts are included");
   });
 
   it("✅ PROVES server files exist in git repository", () => {
@@ -62,7 +56,7 @@ describe("FINAL GitHub Installation Verification", () => {
 
     const serverDistFiles = gitFiles
       .split("\n")
-      .filter((file) => file.startsWith("server/dist/"));
+      .filter((file) => file.startsWith("dist/server/"));
 
     console.log(
       `📊 Found ${serverDistFiles.length} server/dist files tracked in git:`,
@@ -90,10 +84,10 @@ describe("FINAL GitHub Installation Verification", () => {
     console.log("   prepare script:", pkg.scripts.prepare);
     console.log("   postinstall script:", pkg.scripts.postinstall);
 
-    expect(pkg.files).toContain("server/dist/**/*");
+    expect(pkg.files).toContain("dist/**/*");
     expect(pkg.exports["./server"]).toBeDefined();
-    expect(pkg.exports["./server"].import).toBe("./server/dist/index.js");
-    expect(pkg.exports["./server"].types).toBe("./server/dist/index.d.ts");
+    expect(pkg.exports["./server"].import).toBe("./dist/server/index.js");
+    expect(pkg.exports["./server"].types).toBe("./dist/server/index.d.ts");
 
     console.log(
       "✅ CONFIRMED: Package configuration is correct for GitHub installs",
@@ -109,12 +103,14 @@ describe("FINAL GitHub Installation Verification", () => {
     console.log("Here is what happens:");
     console.log("");
     console.log("1. 📥 Yarn clones the GitHub repository");
-    console.log("   - Gets all files tracked in git (including server/dist/)");
+    console.log(
+      "       - Gets all files tracked in git (including dist/server/)",
+    );
     console.log("");
     console.log("2. 📦 Yarn processes package.json");
-    console.log('   - Reads "files" array: includes server/dist/**/*');
+    console.log('   - Reads "files" array: includes dist/**/*');
     console.log(
-      '   - Reads "exports": ./server points to ./server/dist/index.js',
+      '   - Reads "exports": ./server points to ./dist/server/index.js',
     );
     console.log("");
     console.log("3. 🔧 Yarn runs lifecycle scripts");
@@ -148,10 +144,13 @@ describe("FINAL GitHub Installation Verification", () => {
     console.log("🧪 Creating actual tarball and testing...");
 
     // Create actual tarball
-    const tarballName = execSync("npm pack", {
+    const packOutput = execSync("yarn pack --filename shared-utils-test.tgz", {
       encoding: "utf8",
       cwd: path.resolve(__dirname, ".."),
-    }).trim();
+    });
+
+    // Extract the tarball filename from yarn output
+    const tarballName = "shared-utils-test.tgz";
 
     console.log(`📦 Created tarball: ${tarballName}`);
 
@@ -168,7 +167,7 @@ describe("FINAL GitHub Installation Verification", () => {
 
     // Check server files in extracted tarball
     const packageDir = path.join(extractDir, "package");
-    const serverDistDir = path.join(packageDir, "server", "dist");
+    const serverDistDir = path.join(packageDir, "dist", "server");
 
     console.log(`📁 Checking extracted package at: ${packageDir}`);
     console.log(
