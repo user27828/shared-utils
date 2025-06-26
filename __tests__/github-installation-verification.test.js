@@ -3,24 +3,25 @@ const path = require("path");
 const { execSync } = require("child_process");
 const os = require("os");
 
-describe("GitHub Installation Final Verification", () => {
+describe("GitHub Installation Verification", () => {
   let tempDir;
   let packageTarball;
 
   beforeAll(async () => {
-    // Create a tarball of the current package
-    console.log("Creating package tarball...");
-    const result = execSync("yarn pack --filename shared-utils.tgz", {
-      cwd: process.cwd(),
-      encoding: "utf8",
-    });
-
-    packageTarball = "shared-utils.tgz";
-    console.log("Created tarball:", packageTarball);
-
     // Create a temporary directory for testing
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "shared-utils-test-"));
     console.log("Created temp dir:", tempDir);
+
+    // Create tarball directly in temp directory
+    packageTarball = "shared-utils.tgz";
+    const tarballPath = path.join(tempDir, packageTarball);
+
+    console.log("Creating package tarball...");
+    const result = execSync(`yarn pack --filename "${tarballPath}"`, {
+      cwd: process.cwd(),
+      encoding: "utf8",
+    });
+    console.log("Created tarball:", tarballPath);
 
     // Create a minimal package.json in temp directory
     const testPackageJson = {
@@ -33,11 +34,6 @@ describe("GitHub Installation Final Verification", () => {
       path.join(tempDir, "package.json"),
       JSON.stringify(testPackageJson, null, 2),
     );
-
-    // Copy the tarball to temp directory
-    const tarballPath = path.join(process.cwd(), packageTarball);
-    const tempTarballPath = path.join(tempDir, packageTarball);
-    fs.copyFileSync(tarballPath, tempTarballPath);
 
     console.log("Installing package from tarball...");
     try {
@@ -56,12 +52,9 @@ describe("GitHub Installation Final Verification", () => {
   });
 
   afterAll(() => {
-    // Clean up
+    // Clean up temporary directory
     if (tempDir && fs.existsSync(tempDir)) {
       fs.rmSync(tempDir, { recursive: true, force: true });
-    }
-    if (packageTarball && fs.existsSync(packageTarball)) {
-      fs.unlinkSync(packageTarball);
     }
   });
 

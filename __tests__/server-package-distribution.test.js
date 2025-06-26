@@ -7,6 +7,7 @@
 const fs = require("fs");
 const path = require("path");
 const { pathToFileURL } = require("url");
+const os = require("os");
 
 describe("Server Package Distribution", () => {
   const projectRoot = path.resolve(__dirname, "..");
@@ -383,19 +384,23 @@ describe("Server Package Distribution", () => {
     it("should create a test tarball and verify server files are included", async () => {
       const { execSync } = require("child_process");
 
+      // Create a temporary directory for this test
+      const tempDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "shared-utils-tarball-"),
+      );
+      const tarballPath = path.join(tempDir, "package.tgz");
+
       try {
-        // Create an actual tarball to test
-        const packResult = execSync("yarn pack", {
+        // Create an actual tarball to test in temp directory
+        const packResult = execSync(`yarn pack --filename "${tarballPath}"`, {
           cwd: projectRoot,
           encoding: "utf8",
         });
 
-        const tarballName = packResult.trim();
-        console.log("Created tarball:", tarballName);
+        console.log("Created tarball:", tarballPath);
 
         // List contents of the tarball
-        const tarContents = execSync(`tar -tzf ${tarballName}`, {
-          cwd: projectRoot,
+        const tarContents = execSync(`tar -tzf "${tarballPath}"`, {
           encoding: "utf8",
         });
 
@@ -411,12 +416,16 @@ describe("Server Package Distribution", () => {
         expect(tarContents).toContain(
           "package/dist/server/turnstile-worker.js",
         );
-
-        // Clean up
-        execSync(`rm ${tarballName}`, { cwd: projectRoot });
       } catch (error) {
         console.error("Tarball creation/inspection failed:", error.message);
         throw error;
+      } finally {
+        // Clean up temp directory
+        try {
+          execSync(`rm -rf "${tempDir}"`);
+        } catch (cleanupError) {
+          console.warn(`Warning: Could not clean up temp directory ${tempDir}`);
+        }
       }
     });
 
@@ -450,24 +459,24 @@ describe("Server Package Distribution", () => {
       // This test ensures the server package can be imported without workspace dependencies
       const { execSync } = require("child_process");
 
+      // Create a temporary directory for this test
+      const tempDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "shared-utils-import-"),
+      );
+      const tarballPath = path.join(tempDir, "package.tgz");
+
       try {
         // Create a test package and try to import it
-        const packResult = execSync("yarn pack", {
+        const packResult = execSync(`yarn pack --filename "${tarballPath}"`, {
           cwd: projectRoot,
           encoding: "utf8",
         });
 
-        const tarballName = packResult.trim();
-        const testDir = "/tmp/shared-utils-import-test";
-
-        // Clean up any existing test directory
-        execSync(`rm -rf ${testDir}`, { stdio: "ignore" });
-        execSync(`mkdir -p ${testDir}`);
+        const testDir = path.join(tempDir, "test-extraction");
+        fs.mkdirSync(testDir, { recursive: true });
 
         // Extract package
-        execSync(
-          `tar -xzf ${path.join(projectRoot, tarballName)} -C ${testDir}`,
-        );
+        execSync(`tar -xzf "${tarballPath}" -C "${testDir}"`);
 
         // Create test import file
         const testImportContent = `
@@ -491,13 +500,16 @@ console.log('verifyTurnstileTokenEnhanced type:', typeof verifyTurnstileTokenEnh
         expect(importResult).toContain(
           "verifyTurnstileTokenEnhanced type: function",
         );
-
-        // Clean up
-        execSync(`rm -rf ${testDir}`);
-        execSync(`rm ${path.join(projectRoot, tarballName)}`);
       } catch (error) {
         console.error("Import test failed:", error.message);
         throw error;
+      } finally {
+        // Clean up temp directory
+        try {
+          execSync(`rm -rf "${tempDir}"`);
+        } catch (cleanupError) {
+          console.warn(`Warning: Could not clean up temp directory ${tempDir}`);
+        }
       }
     });
   });
