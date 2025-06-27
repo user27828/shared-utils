@@ -47,8 +47,8 @@
     "build:utils": "cd utils && (yarn --version > /dev/null 2>&1 && yarn tsc --outDir ../dist/utils || npx tsc --outDir ../dist/utils)",
     "build:client": "cd client && (yarn --version > /dev/null 2>&1 && yarn tsc --outDir ../dist/client || npx tsc --outDir ../dist/client)",
     "build:server": "cd server && (yarn --version > /dev/null 2>&1 && yarn tsc --outDir ../dist/server || npx tsc --outDir ../dist/server)",
-    "prepare": "yarn build 2>/dev/null || echo 'Build failed during prepare, continuing...'",
-    "postinstall": "yarn build 2>/dev/null || echo 'Build failed during postinstall, continuing...'",
+    "prepare": "yarn build 2>/dev/null || echo '⚠️ Build failed during prepare, continuing...'",
+    "postinstall": "timeout 50s yarn build 2>/dev/null || echo '⚠️ Build failed during postinstall, continuing. This is a graceful failure.'",
     "test": "cd client && yarn test && cd ../utils && yarn test && cd ../server && yarn test && cd ..",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -70,8 +70,8 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "typescript": "^5.8.3",
-    "lodash-es": "^4.17.21"
+    "lodash-es": "^4.17.21",
+    "typescript": "^5.8.3"
   },
   "files": [
     "dist/**/*",

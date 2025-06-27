@@ -1,0 +1,22 @@
+{
+  "name": "@shared-utils/test-consumer",
+  "version": "1.0.0",
+  "description": "Integration tests and real-world usage examples for shared-utils",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev:react": "cd react-app && yarn dev",
+    "build:react": "cd react-app && yarn build",
+    "test:react": "cd react-app && yarn test",
+    "test:node": "cd node-consumer && yarn test",
+    "test:vanilla": "cd vanilla-js-consumer && yarn test",
+    "test:all": "yarn test:react && yarn test:node && yarn test:vanilla"
+  },
+  "dependencies": {
+    "@user27828/shared-utils": "workspace:.."
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.8.3"
+  }
+}

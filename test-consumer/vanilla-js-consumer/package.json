@@ -1,0 +1,14 @@
+{
+  "name": "@test-consumer/vanilla-js-consumer",
+  "version": "1.0.0",
+  "description": "Vanilla JavaScript integration tests for shared-utils",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "python -m http.server 8080",
+    "test": "echo 'Open http://localhost:8080 in browser to test'"
+  },
+  "dependencies": {
+    "@user27828/shared-utils": "workspace:../.."
+  }
+}

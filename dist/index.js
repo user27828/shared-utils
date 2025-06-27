@@ -1,3 +1,13 @@
-import log, { Log, ORIGINAL_CONSOLE_METHODS, OptionsManager, optionsManager, } from "./src/log.js";
-import turnstile, { Turnstile } from "./src/turnstile.js";
-export { log, Log, ORIGINAL_CONSOLE_METHODS, turnstile, Turnstile, OptionsManager, optionsManager, };
+"use strict";
+/**
+ * Main entry point for @shared-utils
+ *
+ * This module intentionally does NOT export client components directly
+ * to avoid runtime issues with JSX imports in Node.js environments.
+ *
+ * Usage:
+ * - Client components: import { CountrySelect } from '@shared-utils/client'
+ * - Utils: import { log } from '@shared-utils/utils'
+ */
+// No exports from root - use specific import paths
+// This ensures proper tree-shaking and avoids JSX import issues

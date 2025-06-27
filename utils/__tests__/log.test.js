@@ -11,6 +11,9 @@ describe("Log Utility", () => {
   beforeEach(() => {
     logInstance = new Log();
 
+    // Disable caller information for basic tests to avoid filename prefixes
+    logInstance.setOptions({ showCaller: false });
+
     // Mock console methods
     jest.spyOn(console, "log").mockImplementation();
     jest.spyOn(console, "info").mockImplementation();
@@ -146,6 +149,7 @@ describe("Log Utility", () => {
       const prodLog = new Log();
       prodLog.setOptions({
         type: "server",
+        showCaller: false, // Disable caller info for this test
         server: { production: ["error"] },
       });
 
@@ -164,6 +168,7 @@ describe("Log Utility", () => {
       const prodLog = new Log();
       prodLog.setOptions({
         type: "client",
+        showCaller: false, // Disable caller info for this test
         client: { production: ["warn", "error"] },
       });
 
@@ -254,7 +259,10 @@ describe("Log Utility", () => {
 
       jest.resetModules(); // Reset modules to get a fresh Log instance
       clientLogInstance = new Log(); // Create new instance for client-specific tests
-      clientLogInstance.setOptions({ type: "client" }); // Explicitly set to client type
+      clientLogInstance.setOptions({
+        type: "client",
+        showCaller: false, // Disable caller info for this test
+      }); // Explicitly set to client type
 
       // Spy on the instance's ORIGINAL_CONSOLE_METHODS, not the global console
       jest

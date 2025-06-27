@@ -31,6 +31,7 @@ describe("Utils Barrel Exports", () => {
       process.env.NODE_ENV = "development";
       log.setOptions({
         type: "server",
+        showCaller: false, // Disable caller info for this test
         server: { production: ["log", "info", "warn", "error"] },
       });
 
@@ -78,6 +79,7 @@ describe("Utils Barrel Exports", () => {
       process.env.NODE_ENV = "development";
       log.setOptions({
         type: "server",
+        showCaller: false, // Disable caller info for this test
         server: { production: ["log", "info", "warn", "error"] },
       });
 

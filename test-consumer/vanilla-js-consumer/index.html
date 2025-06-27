@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vanilla JS Consumer Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+        background-color: #f5f5f5;
+      }
+      .test-section {
+        background: white;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 0.5rem;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      .result {
+        margin: 1rem 0;
+        padding: 1rem;
+        border-radius: 4px;
+        background: #f8f9fa;
+      }
+      #turnstile-container {
+        margin: 1rem 0;
+        padding: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Vanilla JavaScript Consumer Test</h1>
+    <p>
+      This page tests @user27828/shared-utils integration in a plain
+      HTML/JavaScript environment.
+    </p>
+
+    <div class="test-section">
+      <h2>Log Utility Test</h2>
+      <button onclick="testLog()">Test Log Utility</button>
+      <div id="log-result" class="result" style="display: none"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>Turnstile Utility Test</h2>
+      <button onclick="testTurnstile()">Test Turnstile Utility</button>
+      <div id="turnstile-container"></div>
+      <div id="turnstile-result" class="result" style="display: none"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>Integration Notes</h2>
+      <p>
+        This test environment allows testing the library in a vanilla JavaScript
+        context, which is useful for debugging module loading, browser
+        compatibility, and basic API functionality.
+      </p>
+      <p><strong>Status:</strong> Ready for implementation</p>
+    </div>
+
+    <script type="module">
+      // This will be implemented when the library is ready for vanilla JS testing
+      window.testLog = () => {
+        const resultDiv = document.getElementById("log-result");
+        resultDiv.style.display = "block";
+        resultDiv.innerHTML =
+          "⏳ Log utility test not yet implemented. Check console for import attempts.";
+
+        // Try to import and test
+        import("@user27828/shared-utils/utils")
+          .then((module) => {
+            const { log } = module;
+            log.info("Vanilla JS test successful!");
+            resultDiv.innerHTML =
+              "✅ Log utility imported and tested successfully!";
+          })
+          .catch((error) => {
+            console.error("Log import failed:", error);
+            resultDiv.innerHTML = `❌ Log utility import failed: ${error.message}`;
+          });
+      };
+
+      window.testTurnstile = () => {
+        const resultDiv = document.getElementById("turnstile-result");
+        const container = document.getElementById("turnstile-container");
+
+        resultDiv.style.display = "block";
+        resultDiv.innerHTML = "⏳ Turnstile utility test starting...";
+
+        // Try to import and test turnstile
+        import("@user27828/shared-utils/utils")
+          .then((module) => {
+            const { turnstile } = module;
+
+            turnstile.setOptions({
+              siteKey: "1x00000000000000000000AA", // Test key
+            });
+
+            return turnstile.render(container, {
+              sitekey: "1x00000000000000000000AA",
+              theme: "light",
+            });
+          })
+          .then((widgetId) => {
+            resultDiv.innerHTML = `✅ Turnstile widget rendered successfully! Widget ID: ${widgetId}`;
+          })
+          .catch((error) => {
+            console.error("Turnstile test failed:", error);
+            resultDiv.innerHTML = `❌ Turnstile test failed: ${error.message}`;
+          });
+      };
+    </script>
+  </body>
+</html>

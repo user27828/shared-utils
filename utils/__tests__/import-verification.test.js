@@ -53,6 +53,10 @@ describe("Package Import Verification", () => {
     beforeEach(() => {
       logInstance = new Log();
 
+      // Disable caller information for basic tests to avoid filename prefixes
+      logInstance.setOptions({ showCaller: false });
+      log.setOptions({ showCaller: false });
+
       // Mock console methods
       jest.spyOn(console, "log").mockImplementation();
       jest.spyOn(console, "info").mockImplementation();

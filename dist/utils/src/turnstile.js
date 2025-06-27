@@ -70,8 +70,9 @@ class Turnstile {
         return new Promise((resolve, reject) => {
             const script = document.createElement("script");
             script.src = options.scriptUrl;
-            script.async = true;
-            script.defer = true;
+            // Remove async/defer to fix "Remove async/defer from the Turnstile api.js script tag" error
+            // script.async = true;
+            // script.defer = true;
             script.onload = () => {
                 this.scriptLoaded = true;
                 this.scriptLoading = false;
@@ -136,8 +137,10 @@ class Turnstile {
                     reject(error);
                 }
             };
+            // When script is dynamically loaded, don't use turnstile.ready()
+            // Just render directly since the script is already loaded when we get here
             if (window.turnstile) {
-                window.turnstile.ready(renderWidget);
+                renderWidget();
             }
             else {
                 renderWidget();
