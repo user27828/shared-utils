@@ -45,3 +45,4 @@ declare function CalendarAdd({ event, requireAuth, isAuthenticated, onAuthRequir
     buttonProps?: Object | undefined;
     iconOnly?: boolean | undefined;
 }): JSX.Element;
+//# sourceMappingURL=CalendarAdd.d.ts.map

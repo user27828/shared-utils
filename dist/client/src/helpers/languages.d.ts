@@ -7,3 +7,4 @@ export function getLanguageOptions({ includeEmpty, topLanguages, sortBy, order, 
 }): any[];
 export default languages;
 import languages from "../data/languages.js";
+//# sourceMappingURL=languages.d.ts.map

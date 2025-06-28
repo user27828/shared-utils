@@ -1,0 +1,48 @@
+# Exclude test-consumer and all its contents
+test-consumer/
+test-consumer/**/*
+
+# Exclude node_modules
+node_modules/
+**/node_modules/
+
+# Exclude development and testing files
+__tests__/
+**/__tests__/
+*.test.js
+*.test.ts
+*.test.tsx
+jest.config.*
+jest.setup.*
+jest-resolver.*
+
+# Exclude build artifacts
+*.tsbuildinfo
+.yarn/
+yarn.lock
+
+# Exclude large data files and backups
+data/source/
+**/*.bak
+**/*.bak.gz
+
+# Exclude logs
+*.log
+logs/
+
+# Exclude IDE files
+.vscode/
+.idea/
+
+# Exclude environment files
+.env
+.env.*
+
+# Source TypeScript files (we only want dist)
+client/src/
+utils/src/
+server/src/
+!dist/
+
+# Exclude examples
+examples/

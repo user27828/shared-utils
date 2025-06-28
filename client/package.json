@@ -14,10 +14,10 @@
     "./*": "./dist/*"
   },
   "scripts": {
-    "build": "npx tsc",
+    "build": "yarn tsc",
     "test": "echo 'No tests found in client package - this is expected until client tests are added' && exit 0",
     "test:watch": "jest --watch",
-    "dev": "npx tsc --watch"
+    "dev": "yarn tsc --watch"
   },
   "peerDependencies": {
     "@mui/icons-material": ">=5.0.0",

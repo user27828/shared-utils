@@ -81,6 +81,9 @@ lerna-debug.log*
 *.sln
 *.sw?
 
+# Local package builds
+/test-consumer/packages/*.tgz
+
 /models/*
 #.userdata
 .userdata/cache/

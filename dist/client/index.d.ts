@@ -1,15 +1,38 @@
 /**
- * Barrel file for client components and utilities
+ * TypeScript declarations for client components and utilities
  */
-export * from "./src/components/wysiwyg/TinyMceBundle.js";
-export * from "./src/components/wysiwyg/TinyMceEditor.js";
-export { default as CountrySelect } from "./src/components/form/CountrySelect.js";
-export { default as LanguageSelect } from "./src/components/form/LanguageSelect.js";
-export { default as CalendarAdd } from "./src/components/CalendarAdd.js";
-export * from "./src/helpers/functions.js";
-export * from "./src/helpers/countries.js";
-export * from "./src/helpers/languages.js";
-export * from "./src/helpers/csv.js";
-export * from "./src/data/countries.js";
-export * from "./src/data/languages.js";
-export * from "./src/data/demographic-options.js";
+
+// Components
+export * from "./src/components/wysiwyg/TinyMceBundle";
+export * from "./src/components/wysiwyg/TinyMceEditor";
+export {
+  default as CountrySelect,
+  type CountrySelectProps,
+} from "./src/components/form/CountrySelect";
+export {
+  default as LanguageSelect,
+  type LanguageSelectProps,
+} from "./src/components/form/LanguageSelect";
+
+// Helpers
+export * from "./src/helpers/functions";
+export * from "./src/helpers/countries";
+export * from "./src/helpers/languages";
+export * from "./src/helpers/csv";
+export {
+  formatDate,
+  parseDate,
+  addToDate,
+  dateDifference,
+  isValidDate,
+  getRelativeTime,
+  getTimezoneInfo,
+  getTimezoneOffset,
+  isLeapYear,
+  getDaysInMonth,
+} from "./src/helpers/date-utils";
+
+// Data
+export * from "./src/data/countries";
+export * from "./src/data/languages";
+export * from "./src/data/demographic-options";

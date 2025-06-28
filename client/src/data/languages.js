@@ -260,6 +260,19 @@ const languages = [
     speakers: 52,
   },
   {
+    iso639_1: "bi",
+    iso639_2: "bis",
+    iso639_3: "bis",
+    name: "Bislama",
+    nameLocal: "Bislama",
+    ietf: "bi",
+    ietfRegions: {
+      VU: "bi-VU", // Vanuatu
+    },
+    lcid: 0,
+    speakers: 0.01,
+  },
+  {
     iso639_1: "bs",
     iso639_2: "bos",
     iso639_3: "bos",
@@ -579,6 +592,19 @@ const languages = [
     speakers: 0.066,
   },
   {
+    iso639_1: "fi",
+    iso639_2: "fin",
+    iso639_3: "fin",
+    name: "Finnish",
+    nameLocal: "Suomi",
+    ietf: "fi",
+    ietfRegions: {
+      FI: "fi-FI", // Finland
+    },
+    lcid: 1035,
+    speakers: 5.5,
+  },
+  {
     iso639_1: "",
     iso639_2: "fon",
     iso639_3: "fon",
@@ -590,6 +616,24 @@ const languages = [
     },
     lcid: 0,
     speakers: 2.2,
+  },
+  {
+    iso639_1: "fr",
+    iso639_2: "fre",
+    iso639_3: "fra",
+    name: "French",
+    nameLocal: "Français",
+    ietf: "fr",
+    ietfRegions: {
+      FR: "fr-FR", // France
+      CA: "fr-CA", // Canada
+      BE: "fr-BE", // Belgium
+      CH: "fr-CH", // Switzerland
+      MC: "fr-MC", // Monaco
+      LU: "fr-LU", // Luxembourg
+    },
+    lcid: 1036, // Microsoft LCID for fr-FR
+    speakers: 280, // Native and second language speakers combined
   },
   {
     iso639_1: "ff",
@@ -806,6 +850,19 @@ const languages = [
     },
     lcid: 1081,
     speakers: 341,
+  },
+  {
+    iso639_1: "ho",
+    iso639_2: "hmo",
+    iso639_3: "hmo",
+    name: "Hiri Motu",
+    nameLocal: "Hiri Motu",
+    ietf: "ho",
+    ietfRegions: {
+      PG: "ho-PG", // Papua New Guinea
+    },
+    lcid: 0,
+    speakers: 0.12,
   },
   {
     iso639_1: "hmn",
@@ -1393,6 +1450,20 @@ const languages = [
     speakers: 0.83,
   },
   {
+    iso639_1: "mn",
+    iso639_2: "mon",
+    iso639_3: "mon",
+    name: "Mongolian",
+    nameLocal: "Монгол хэл",
+    ietf: "mn",
+    ietfRegions: {
+      MN: "mn-MN", // Mongolia
+      CN: "mn-CN", // China (Inner Mongolia)
+    },
+    lcid: 1104,
+    speakers: 5.2,
+  },
+  {
     iso639_1: "",
     iso639_2: "nan",
     iso639_3: "nan",
@@ -1457,19 +1528,6 @@ const languages = [
     },
     lcid: 1044,
     speakers: 5,
-  },
-  {
-    iso639_1: "ny",
-    iso639_2: "nya",
-    iso639_3: "nya",
-    name: "Chichewa",
-    nameLocal: "Chichewa",
-    ietf: "ny",
-    ietfRegions: {
-      MW: "ny-MW", // Malawi
-    },
-    lcid: 1156,
-    speakers: 12,
   },
   {
     iso639_1: "or",
@@ -1657,6 +1715,20 @@ const languages = [
     },
     lcid: 1185,
     speakers: 9,
+  },
+  {
+    iso639_1: "sm",
+    iso639_2: "smo",
+    iso639_3: "smo",
+    name: "Samoan",
+    nameLocal: "Gagana fa'a Samoa",
+    ietf: "sm",
+    ietfRegions: {
+      WS: "sm-WS", // Samoa
+      AS: "sm-AS", // American Samoa
+    },
+    lcid: 0,
+    speakers: 0.51,
   },
   {
     iso639_1: "sd",
@@ -1853,7 +1925,7 @@ const languages = [
     iso639_2: "tzm",
     iso639_3: "tzm",
     name: "Tamazight",
-    nameLocal: "ⵜⴰⵎⴰⵣⵉⵖⵜ",
+    nameLocal: "ⵜⴰ⎵ⴰⵣⵉⵖⵜ",
     ietf: "tzm",
     ietfRegions: {
       MA: "tzm-MA", // Morocco

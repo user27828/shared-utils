@@ -6,13 +6,22 @@ This is a practical example of how to use the shared-utils Turnstile worker in y
 
 ## 📋 Table of Contents
 
-- [Project Structure](#project-structure)
-- [Step-by-Step Setup](#step-by-step-setup)
-- [Package.json Scripts](#packagejson-scripts)
-- [Using Verification in Your Server](#using-verification-in-your-server)
-- [Environment Variables](#environment-variables)
-- [Frontend Integration](#frontend-integration)
-- [Complete Workflow](#complete-workflow)
+- [Example: Deploying Turnstile Worker in Your Project](#example-deploying-turnstile-worker-in-your-project)
+  - [📋 Table of Contents](#-table-of-contents)
+  - [Project Structure](#project-structure)
+  - [Step-by-Step Setup](#step-by-step-setup)
+    - [1. Install Dependencies](#1-install-dependencies)
+    - [2. Set Up the Worker](#2-set-up-the-worker)
+    - [3. Configure Worker](#3-configure-worker)
+    - [4. Set Secrets](#4-set-secrets)
+    - [5. Deploy](#5-deploy)
+  - [Package.json Scripts](#packagejson-scripts)
+  - [Using Verification in Your Server](#using-verification-in-your-server)
+    - [Option 1: Use Your Deployed Worker](#option-1-use-your-deployed-worker)
+    - [Option 2: Use Verification Functions Directly](#option-2-use-verification-functions-directly)
+  - [Environment Variables](#environment-variables)
+  - [Frontend Integration](#frontend-integration)
+  - [Complete Workflow](#complete-workflow)
 
 ## Project Structure
 
@@ -323,7 +332,7 @@ cd workers/turnstile && wrangler secret put TURNSTILE_SECRET_KEY
 cd workers/turnstile && wrangler deploy
 
 # 5. Test integration
-yarn dev  # or npm run dev
+yarn dev  # or npm dev
 ```
 
 This example demonstrates the simplified reference-based approach for Turnstile worker deployment.

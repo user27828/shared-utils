@@ -1,8 +1,7 @@
-export function isDev({ xCriteria }?: Function): boolean;
-export function pathJoinUrl(...args: any[]): string;
-export function isValidUrl(url: string, options?: {
-    requireProtocol: boolean;
-    allowQueryParams: boolean;
-    allowFragments: boolean;
-}): boolean;
-export function formatDateYYMMDD(dateString: string): string;
+/**
+ * Define your helper function types here
+ * Example:
+ */
+export function formatCurrency(amount: number, currency?: string): string;
+export function formatDate(date: Date | string | number, format?: string): string;
+// Add more function declarations based on what's actually in your functions.js file

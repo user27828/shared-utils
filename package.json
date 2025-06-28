@@ -52,7 +52,10 @@
     "test": "cd client && yarn test && cd ../utils && yarn test && cd ../server && yarn test && cd ..",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "upgrade": "yarn upgrade-interactive"
+    "upgrade": "yarn upgrade-interactive",
+    "update:data": "./bin/update-source-data.sh",
+    "update:local": "./bin/update-local-package.sh",
+    "compare:data": "./bin/compare-data.cjs"
   },
   "bin": {
     "cf:setup-turnstile-worker": "./scripts/setup-turnstile-worker.sh",

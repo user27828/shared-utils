@@ -189,31 +189,41 @@ const CountrySelect = ({
           option.iso3166_1_alpha2 === value.iso3166_1_alpha2 ||
           option.iso3166_1_alpha3 === value.iso3166_1_alpha3
         }
-        renderOption={(props, option, { selected }) => (
-          <MenuItem
-            {...props}
-            key={`${option.iso3166_1_alpha3}-${option.iso3166_1_numeric}`}
-            sx={{ display: "flex", alignItems: "center" }}
-          >
-            {multiple && <Checkbox checked={selected} sx={{ mr: 1 }} />}
-            <ListItemText
-              primary={
-                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                  <span>{option.name}</span>
-                  <Typography variant="caption" color="text.secondary">
-                    {option.iso3166_1_alpha2}
-                    {showTelCode && option.telCountryCode
-                      ? ` +${option.telCountryCode}`
-                      : ""}
-                  </Typography>
-                </Box>
-              }
-              secondary={
-                option.nameLocal !== option.name ? option.nameLocal : null
-              }
-            />
-          </MenuItem>
-        )}
+        renderOption={(props, option, { selected }) => {
+          const optionIndex = countryOptions.findIndex(
+            (country) =>
+              country.iso3166_1_alpha2 === option.iso3166_1_alpha2 &&
+              country.iso3166_1_alpha3 === option.iso3166_1_alpha3 &&
+              country.iso3166_1_numeric === option.iso3166_1_numeric,
+          );
+          return (
+            <MenuItem
+              {...props}
+              key={`country-${option.iso3166_1_alpha2}-${option.iso3166_1_alpha3}-${option.iso3166_1_numeric}-${optionIndex}`}
+              sx={{ display: "flex", alignItems: "center" }}
+            >
+              {multiple && <Checkbox checked={selected} sx={{ mr: 1 }} />}
+              <ListItemText
+                primary={
+                  <Box
+                    sx={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <span>{option.name}</span>
+                    <Typography variant="caption" color="text.secondary">
+                      {option.iso3166_1_alpha2}
+                      {showTelCode && option.telCountryCode
+                        ? ` +${option.telCountryCode}`
+                        : ""}
+                    </Typography>
+                  </Box>
+                }
+                secondary={
+                  option.nameLocal !== option.name ? option.nameLocal : null
+                }
+              />
+            </MenuItem>
+          );
+        }}
         renderTags={(value, getTagProps) =>
           value.map((option, index) => (
             <Chip

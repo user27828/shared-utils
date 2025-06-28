@@ -193,33 +193,39 @@ const LanguageSelect = ({
           option.iso639_2 === value.iso639_2 ||
           option.ietf === value.ietf
         }
-        renderOption={(props, option, { selected }) => (
-          <MenuItem
-            {...props}
-            key={
-              option.iso639_3 ||
-              option.iso639_2 ||
-              option.iso639_1 ||
-              option.ietf
-            }
-            sx={{ display: "flex", alignItems: "center" }}
-          >
-            {multiple && <Checkbox checked={selected} sx={{ mr: 1 }} />}
-            <ListItemText
-              primary={
-                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                  <span>{option.name}</span>
-                  <Typography variant="caption" color="text.secondary">
-                    {option.ietf || option.iso639_1}
-                  </Typography>
-                </Box>
-              }
-              secondary={
-                option.nameLocal !== option.name ? option.nameLocal : null
-              }
-            />
-          </MenuItem>
-        )}
+        renderOption={(props, option, { selected }) => {
+          const optionIndex = languageOptions.findIndex(
+            (lang) =>
+              lang.iso639_1 === option.iso639_1 &&
+              lang.iso639_2 === option.iso639_2 &&
+              lang.iso639_3 === option.iso639_3 &&
+              lang.lcid === option.lcid,
+          );
+          return (
+            <MenuItem
+              {...props}
+              key={`language-${option.iso639_1}-${option.iso639_2}-${option.iso639_3}-${option.lcid || "unknown"}-${optionIndex}`}
+              sx={{ display: "flex", alignItems: "center" }}
+            >
+              {multiple && <Checkbox checked={selected} sx={{ mr: 1 }} />}
+              <ListItemText
+                primary={
+                  <Box
+                    sx={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <span>{option.name}</span>
+                    <Typography variant="caption" color="text.secondary">
+                      {option.ietf || option.iso639_1}
+                    </Typography>
+                  </Box>
+                }
+                secondary={
+                  option.nameLocal !== option.name ? option.nameLocal : null
+                }
+              />
+            </MenuItem>
+          );
+        }}
         renderTags={(value, getTagProps) =>
           value.map((option, index) => (
             <Chip

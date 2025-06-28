@@ -16,7 +16,8 @@
     "noEmitOnError": true,
     "types": ["@cloudflare/workers-types"],
     "composite": true,
-    "tsBuildInfoFile": "./tsconfig.tsbuildinfo"
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
+    "outDir": "../dist/server"
   },
   "include": ["**/*.ts", "index.ts", "turnstile-worker.ts"],
   "exclude": [

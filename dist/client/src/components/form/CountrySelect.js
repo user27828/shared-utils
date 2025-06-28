@@ -118,11 +118,16 @@ const CountrySelect = ({ value, onChange, multiple = false, topCountries = [], s
     // If searchable, use Autocomplete component
     if (searchable) {
         return (_jsx(Autocomplete, { id: id, value: selectedCountryObjects || "", onChange: handleChange, multiple: multiple, options: countryOptions, disableCloseOnSelect: multiple, getOptionLabel: getCountryLabel, filterOptions: filterOptions, isOptionEqualToValue: (option, value) => option.iso3166_1_alpha2 === value.iso3166_1_alpha2 ||
-                option.iso3166_1_alpha3 === value.iso3166_1_alpha3, renderOption: (props, option, { selected }) => (_createElement(MenuItem, { ...props, key: `${option.iso3166_1_alpha3}-${option.iso3166_1_numeric}`, sx: { display: "flex", alignItems: "center" } },
-                multiple && _jsx(Checkbox, { checked: selected, sx: { mr: 1 } }),
-                _jsx(ListItemText, { primary: _jsxs(Box, { sx: { display: "flex", justifyContent: "space-between" }, children: [_jsx("span", { children: option.name }), _jsxs(Typography, { variant: "caption", color: "text.secondary", children: [option.iso3166_1_alpha2, showTelCode && option.telCountryCode
-                                        ? ` +${option.telCountryCode}`
-                                        : ""] })] }), secondary: option.nameLocal !== option.name ? option.nameLocal : null }))), renderTags: (value, getTagProps) => value.map((option, index) => (_createElement(Chip, { variant: "outlined", label: option.name, ...getTagProps({ index }), key: option.iso3166_1_alpha3 || option.iso3166_1_alpha2 }))), renderInput: (params) => (_jsx(TextField, { ...params, name: name, label: label, placeholder: placeholder, required: required, error: error, helperText: helperText, fullWidth: fullWidth, size: size, variant: variant, disabled: disabled, InputProps: {
+                option.iso3166_1_alpha3 === value.iso3166_1_alpha3, renderOption: (props, option, { selected }) => {
+                const optionIndex = countryOptions.findIndex((country) => country.iso3166_1_alpha2 === option.iso3166_1_alpha2 &&
+                    country.iso3166_1_alpha3 === option.iso3166_1_alpha3 &&
+                    country.iso3166_1_numeric === option.iso3166_1_numeric);
+                return (_createElement(MenuItem, { ...props, key: `country-${option.iso3166_1_alpha2}-${option.iso3166_1_alpha3}-${option.iso3166_1_numeric}-${optionIndex}`, sx: { display: "flex", alignItems: "center" } },
+                    multiple && _jsx(Checkbox, { checked: selected, sx: { mr: 1 } }),
+                    _jsx(ListItemText, { primary: _jsxs(Box, { sx: { display: "flex", justifyContent: "space-between" }, children: [_jsx("span", { children: option.name }), _jsxs(Typography, { variant: "caption", color: "text.secondary", children: [option.iso3166_1_alpha2, showTelCode && option.telCountryCode
+                                            ? ` +${option.telCountryCode}`
+                                            : ""] })] }), secondary: option.nameLocal !== option.name ? option.nameLocal : null })));
+            }, renderTags: (value, getTagProps) => value.map((option, index) => (_createElement(Chip, { variant: "outlined", label: option.name, ...getTagProps({ index }), key: option.iso3166_1_alpha3 || option.iso3166_1_alpha2 }))), renderInput: (params) => (_jsx(TextField, { ...params, name: name, label: label, placeholder: placeholder, required: required, error: error, helperText: helperText, fullWidth: fullWidth, size: size, variant: variant, disabled: disabled, InputProps: {
                     ...params.InputProps,
                     sx: { ...sx },
                 } })), disabled: disabled, ...props }));

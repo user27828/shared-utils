@@ -576,13 +576,13 @@ For enhanced security, deploy the included Cloudflare Worker:
 cd server/
 
 # Install dependencies
-npm install
+yarn install
 
 # Set your secret key
 wrangler secret put TURNSTILE_SECRET_KEY
 
 # Deploy worker
-npm run deploy
+yarn deploy
 ```
 
 Then update your configuration:

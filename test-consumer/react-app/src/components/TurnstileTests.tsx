@@ -1,4 +1,5 @@
 import React from "react";
+import { Button, Box } from "@mui/material";
 import { TestResultsRenderer, type TestResult } from "./TestResultsRenderer";
 
 // Import the turnstile utility from shared-utils
@@ -10,14 +11,14 @@ const loadTurnstile = async () => {
   try {
     const module = await import("@user27828/shared-utils/utils");
     console.log("Imported module:", module);
-    return module.turnstile;
+    return (module as any).turnstile;
   } catch (error) {
     console.error("Failed to import turnstile:", error);
     try {
       // Try alternative import paths
       const altModule = await import("@user27828/shared-utils");
       console.log("Alternative import:", altModule);
-      return altModule.turnstile;
+      return (altModule as any).turnstile;
     } catch (altError) {
       console.error("Alternative import also failed:", altError);
       return null;
@@ -99,7 +100,7 @@ const TurnstileTests: React.FC = () => {
       );
 
       // Test basic configuration
-      const result = await turnstile.setOptions({
+      await turnstile.setOptions({
         siteKey: "1x00000000000000000000AA", // Test site key
         theme: "light",
       });
@@ -192,22 +193,18 @@ const TurnstileTests: React.FC = () => {
     try {
       addTestResult("Event Handling", "pending", "Testing event callbacks...");
 
-      let successCalled = false;
-      let errorCalled = false;
-      let expiredCalled = false;
-
       // Set up event handlers
       if (eventWidgetRef.current) {
         const widgetId = await turnstile.render(eventWidgetRef.current, {
           sitekey: "1x00000000000000000000AA",
           callback: () => {
-            successCalled = true;
+            console.log("Success callback triggered");
           },
           "error-callback": () => {
-            errorCalled = true;
+            console.log("Error callback triggered");
           },
           "expired-callback": () => {
-            expiredCalled = true;
+            console.log("Expired callback triggered");
           },
         });
 
@@ -244,8 +241,6 @@ const TurnstileTests: React.FC = () => {
         "pending",
         "Testing multiple widgets...",
       );
-
-      const widgets: string[] = [];
 
       if (multipleWidget1Ref.current && multipleWidget2Ref.current) {
         const widget1Id = await turnstile.render(multipleWidget1Ref.current, {
@@ -415,15 +410,21 @@ const TurnstileTests: React.FC = () => {
           {turnstileLoaded ? "✅ Loaded" : "❌ Not Loaded"}
         </div>
 
-        <button
-          onClick={runAllTests}
-          disabled={isLoading || !turnstileLoaded}
-          style={{ marginRight: "1rem" }}
-        >
-          {isLoading ? "Running Tests..." : "Run All Tests"}
-        </button>
+        <Box sx={{ mb: 4 }}>
+          <Button
+            variant="contained"
+            onClick={runAllTests}
+            disabled={isLoading || !turnstileLoaded}
+            size="large"
+            sx={{ mr: 2 }}
+          >
+            {isLoading ? "Running Tests..." : "Run All Tests"}
+          </Button>
 
-        <button onClick={clearResults}>Clear Results</button>
+          <Button variant="outlined" onClick={clearResults} size="large">
+            Clear Results
+          </Button>
+        </Box>
       </div>
 
       {/* Test Widgets Containers */}
@@ -463,24 +464,56 @@ const TurnstileTests: React.FC = () => {
       {/* Individual Test Buttons */}
       <div className="test-section">
         <h3>Individual Tests</h3>
-        <button onClick={runBasicRenderingTest} disabled={!turnstileLoaded}>
-          Test Basic Rendering
-        </button>
-        <button onClick={runConfigurationTest} disabled={!turnstileLoaded}>
-          Test Configuration
-        </button>
-        <button onClick={runEventHandlingTest} disabled={!turnstileLoaded}>
-          Test Event Handling
-        </button>
-        <button onClick={runMultipleWidgetsTest} disabled={!turnstileLoaded}>
-          Test Multiple Widgets
-        </button>
-        <button onClick={runThemeSwitchingTest} disabled={!turnstileLoaded}>
-          Test Theme Switching
-        </button>
-        <button onClick={runCleanupTest} disabled={!turnstileLoaded}>
-          Test Cleanup
-        </button>
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 3 }}>
+          <Button
+            variant="outlined"
+            onClick={runBasicRenderingTest}
+            disabled={!turnstileLoaded}
+            size="medium"
+          >
+            Test Basic Rendering
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={runConfigurationTest}
+            disabled={!turnstileLoaded}
+            size="medium"
+          >
+            Test Configuration
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={runEventHandlingTest}
+            disabled={!turnstileLoaded}
+            size="medium"
+          >
+            Test Event Handling
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={runMultipleWidgetsTest}
+            disabled={!turnstileLoaded}
+            size="medium"
+          >
+            Test Multiple Widgets
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={runThemeSwitchingTest}
+            disabled={!turnstileLoaded}
+            size="medium"
+          >
+            Test Theme Switching
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={runCleanupTest}
+            disabled={!turnstileLoaded}
+            size="medium"
+          >
+            Test Cleanup
+          </Button>
+        </Box>
       </div>
 
       {/* Test Results */}

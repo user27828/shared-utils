@@ -15,3 +15,4 @@ declare const countries: {
     region: string;
     population: number;
 }[];
+//# sourceMappingURL=countries.d.ts.map

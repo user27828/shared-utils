@@ -82,3 +82,4 @@ declare class Turnstile {
 declare const turnstile: Turnstile;
 export { Turnstile, OptionsManager, optionsManager };
 export default turnstile;
+//# sourceMappingURL=turnstile.d.ts.map

@@ -16,35 +16,14 @@
  * // Configuration (set once on initialization)
  * log.setOptions({ type: 'client', client: { production: ['warn', 'error'] } });
  *
- * // Show caller file information in log messages
- * log.setOptions({ showCaller: true });
- * // Now logs will include [filename.js] prefix showing where log was called from
- *
  * // Custom interceptor
  * log.setOptions({ interceptor: (level, args) => { sendToAnalytics(level, args); } });
- *
- * // Cross-utility configuration via OptionsManager
- * import { optionsManager } from 'utils/options-manager';
- * optionsManager.setGlobalOptions({
- *   log: { type: 'client', client: { production: ['warn', 'error'] }, showCaller: true },
- *   turnstile: { siteKey: 'your-key' }
- * });
  */
-import { OptionsManager, optionsManager } from "./options-manager.js";
-type LogLevel = "log" | "info" | "warn" | "error" | "debug";
-type Environment = "client" | "server";
-interface OriginalConsoleMethods {
-    log: (...args: any[]) => void;
-    info: (...args: any[]) => void;
-    warn: (...args: any[]) => void;
-    error: (...args: any[]) => void;
-    debug: (...args: any[]) => void;
-}
-declare const ORIGINAL_CONSOLE_METHODS: OriginalConsoleMethods;
+type LogLevel = 'log' | 'info' | 'warn' | 'error' | 'debug';
+type Environment = 'client' | 'server';
 interface LogOptions {
     type?: Environment;
     interceptor?: (level: LogLevel, args: any[]) => void;
-    showCaller?: boolean;
     client?: {
         namespace?: string;
         production?: LogLevel[];
@@ -57,15 +36,14 @@ interface LogOptions {
     };
 }
 declare class Log {
-    private readonly optionsManager;
-    private isProduction;
-    readonly ORIGINAL_CONSOLE_METHODS: OriginalConsoleMethods;
-    private interceptors;
-    constructor();
     /**
-     * Get current options via the options manager
+     * Options for the logging utility.
+     * These are assigned once upon environment-side initialization
+     * After including this, initialization can be set by calling log.setOptions({ type: 'client', client: { ... } })
      */
-    private get options();
+    private options;
+    private isProduction;
+    constructor();
     /**
      * Auto-detect if running in client or server environment
      */
@@ -79,10 +57,6 @@ declare class Log {
      */
     private getLocalStorageOverride;
     /**
-     * Get caller information from stack trace
-     */
-    private getCallerInfo;
-    /**
      * Check if a log level should be output
      */
     private shouldLog;
@@ -95,15 +69,11 @@ declare class Log {
      */
     private _log;
     /**
-     * Detect if we're running in a test environment
-     */
-    private isTestEnvironment;
-    /**
-     * Set logging options (delegates to OptionsManager)
+     * Set logging options
      */
     setOptions(values: LogOptions): void;
     /**
-     * Get current options (delegates to OptionsManager)
+     * Get current options (for debugging)
      */
     getOptions(): typeof this.options;
     /**
@@ -131,20 +101,10 @@ declare class Log {
      */
     enableDebug(levels?: LogLevel[] | boolean): void;
     /**
-     * Disable debug mode (client-side only)
+     * Disable debug logging in localStorage (client-side only)
      */
     disableDebug(): void;
-    /**
-     * Add an interceptor function that will be called for every log message
-     * @param {Function} interceptor - Function that receives (level, args) parameters
-     */
-    addInterceptor(interceptor: (level: LogLevel, args: any[]) => void): void;
-    /**
-     * Remove a previously added interceptor function
-     * @param {Function} interceptor - The interceptor function to remove
-     */
-    removeInterceptor(interceptor: (level: LogLevel, args: any[]) => void): void;
 }
 declare const log: Log;
-export { Log, ORIGINAL_CONSOLE_METHODS, OptionsManager, optionsManager };
+export { Log };
 export default log;

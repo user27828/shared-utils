@@ -10,8 +10,11 @@ When using `shared-utils` as a dependency in another project, there are several 
   - [📋 Table of Contents](#-table-of-contents)
   - [📋 Deployment Strategies](#-deployment-strategies)
     - [Strategy 1: Reference Worker (Recommended)](#strategy-1-reference-worker-recommended)
+      - [Setup Steps](#setup-steps)
     - [Strategy 2: Copy Worker Files (Advanced Customization)](#strategy-2-copy-worker-files-advanced-customization)
+      - [Setup Steps](#setup-steps-1)
     - [Strategy 3: Server-Side Integration Only](#strategy-3-server-side-integration-only)
+      - [Setup Steps](#setup-steps-2)
   - [🔧 Package.json Scripts for Consuming Projects](#-packagejson-scripts-for-consuming-projects)
   - [🔒 Environment Configuration](#-environment-configuration)
     - [Required Secrets (Set via Wrangler CLI)](#required-secrets-set-via-wrangler-cli)
@@ -180,7 +183,7 @@ Usage:
 yarn cf:setup-turnstile                    # Create directory structure
 yarn cf:deploy-turnstile:production        # Deploy to production
 
-# Using npm
+# Using npm (alternative)
 npm run cf:setup-turnstile                 # Create directory structure
 npm run cf:deploy-turnstile:production     # Deploy to production
 ```

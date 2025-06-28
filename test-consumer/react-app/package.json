@@ -12,9 +12,19 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
-    "@user27828/shared-utils": "file:/home/marc314/work/misc/shared-utils",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.1.2",
+    "@mui/material": "^7.1.2",
+    "@tinymce/tinymce-react": "^6.2.1",
+    "@user27828/shared-utils": "file:../packages/user27828-shared-utils-0.69.6.tgz",
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
+    "dompurify": "^3.2.6",
+    "prop-types": "^15.8.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "tinymce": "^7.9.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.66",

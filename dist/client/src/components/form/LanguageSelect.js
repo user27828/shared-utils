@@ -124,12 +124,15 @@ const LanguageSelect = ({ value, onChange, name = "languages", id = "language-se
     if (searchable) {
         return (_jsx(Autocomplete, { id: id, value: selectedLanguageObjects || [], onChange: handleChange, multiple: multiple, options: languageOptions, disableCloseOnSelect: multiple, getOptionLabel: getLanguageLabel, filterOptions: filterOptions, isOptionEqualToValue: (option, value) => option.iso639_1 === value.iso639_1 ||
                 option.iso639_2 === value.iso639_2 ||
-                option.ietf === value.ietf, renderOption: (props, option, { selected }) => (_createElement(MenuItem, { ...props, key: option.iso639_3 ||
-                    option.iso639_2 ||
-                    option.iso639_1 ||
-                    option.ietf, sx: { display: "flex", alignItems: "center" } },
-                multiple && _jsx(Checkbox, { checked: selected, sx: { mr: 1 } }),
-                _jsx(ListItemText, { primary: _jsxs(Box, { sx: { display: "flex", justifyContent: "space-between" }, children: [_jsx("span", { children: option.name }), _jsx(Typography, { variant: "caption", color: "text.secondary", children: option.ietf || option.iso639_1 })] }), secondary: option.nameLocal !== option.name ? option.nameLocal : null }))), renderTags: (value, getTagProps) => value.map((option, index) => (_createElement(Chip, { variant: "outlined", label: option.name, ...getTagProps({ index }), key: option.iso639_3 || option.iso639_2 || option.ietf }))), renderInput: (params) => (_jsx(TextField, { ...params, name: name, label: label, placeholder: placeholder, required: required, error: error, helperText: helperText, fullWidth: fullWidth, size: size, variant: variant, disabled: disabled, InputProps: {
+                option.ietf === value.ietf, renderOption: (props, option, { selected }) => {
+                const optionIndex = languageOptions.findIndex((lang) => lang.iso639_1 === option.iso639_1 &&
+                    lang.iso639_2 === option.iso639_2 &&
+                    lang.iso639_3 === option.iso639_3 &&
+                    lang.lcid === option.lcid);
+                return (_createElement(MenuItem, { ...props, key: `language-${option.iso639_1}-${option.iso639_2}-${option.iso639_3}-${option.lcid || "unknown"}-${optionIndex}`, sx: { display: "flex", alignItems: "center" } },
+                    multiple && _jsx(Checkbox, { checked: selected, sx: { mr: 1 } }),
+                    _jsx(ListItemText, { primary: _jsxs(Box, { sx: { display: "flex", justifyContent: "space-between" }, children: [_jsx("span", { children: option.name }), _jsx(Typography, { variant: "caption", color: "text.secondary", children: option.ietf || option.iso639_1 })] }), secondary: option.nameLocal !== option.name ? option.nameLocal : null })));
+            }, renderTags: (value, getTagProps) => value.map((option, index) => (_createElement(Chip, { variant: "outlined", label: option.name, ...getTagProps({ index }), key: option.iso639_3 || option.iso639_2 || option.ietf }))), renderInput: (params) => (_jsx(TextField, { ...params, name: name, label: label, placeholder: placeholder, required: required, error: error, helperText: helperText, fullWidth: fullWidth, size: size, variant: variant, disabled: disabled, InputProps: {
                     ...params.InputProps,
                     sx: { ...sx },
                 } })), disabled: disabled, ...props }));
