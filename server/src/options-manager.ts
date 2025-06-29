@@ -42,6 +42,19 @@ export class OptionsManager<T extends Record<string, any>> {
   setOption<K extends keyof T>(key: K, value: T[K]): void {
     this.options[key] = value;
   }
+
+  /**
+   * Set global options for compatibility with utils package API
+   * Accepts an object with utility keys and applies the appropriate options
+   */
+  setGlobalOptions(options: {
+    "turnstile-server"?: Partial<T>;
+    [key: string]: any;
+  }): void {
+    if (options["turnstile-server"]) {
+      this.setOptions(options["turnstile-server"]);
+    }
+  }
 }
 
 // Default turnstile options
@@ -51,5 +64,23 @@ const defaultTurnstileOptions: TurnstileOptions = {
   allowedOrigins: [],
 };
 
+/**
+ * Global options interface for compatibility with utils package API
+ */
+interface GlobalTurnstileOptions {
+  "turnstile-server"?: TurnstileOptions;
+  [key: string]: any;
+}
+
 // Global instance for turnstile options
 export const optionsManager = new OptionsManager(defaultTurnstileOptions);
+
+/**
+ * Set global options for compatibility with utils package API
+ * This allows the same API pattern: optionsManager.setGlobalOptions({ 'turnstile-server': { ... } })
+ */
+export function setGlobalOptions(options: GlobalTurnstileOptions): void {
+  if (options["turnstile-server"]) {
+    optionsManager.setOptions(options["turnstile-server"]);
+  }
+}

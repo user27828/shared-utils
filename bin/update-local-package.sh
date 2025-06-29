@@ -130,4 +130,4 @@ rm -rf shared-utils-extract
 
 echo "✅ Package updated successfully!"
 echo "📁 Tarball: $TARBALL_NAME"
-echo "� Ready to run: yarn dev"
+echo "� Ready to run: From test-consumer dir: yarn dev, from root shared-utils dir: yarn test:consumer"

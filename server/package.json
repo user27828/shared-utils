@@ -36,15 +36,15 @@
     "test:coverage": "NODE_OPTIONS=\"--experimental-vm-modules\" yarn jest --coverage"
   },
   "devDependencies": {
-    "@babel/core": "^7.27.4",
+    "@babel/core": "^7.27.7",
     "@babel/preset-env": "^7.27.2",
-    "@cloudflare/workers-types": "^4.20250620.0",
-    "@jest/globals": "^30.0.2",
+    "@cloudflare/workers-types": "^4.20250628.0",
+    "@jest/globals": "^30.0.3",
     "babel-jest": "^30.0.2",
-    "jest": "^30.0.2",
+    "jest": "^30.0.3",
     "ts-jest": "^29.4.0",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
-    "wrangler": "^4.20.5"
+    "wrangler": "^4.22.0"
   }
 }

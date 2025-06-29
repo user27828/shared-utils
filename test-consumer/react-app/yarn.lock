@@ -1058,7 +1058,7 @@ __metadata:
     "@types/react-dom": ^18.2.22
     "@typescript-eslint/eslint-plugin": ^7.2.0
     "@typescript-eslint/parser": ^7.2.0
-    "@user27828/shared-utils": "file:../packages/user27828-shared-utils-0.69.6.tgz"
+    "@user27828/shared-utils": "file:../packages/user27828-shared-utils-0.69.7.tgz"
     "@vitejs/plugin-react": ^4.2.1
     date-fns: ^4.1.0
     date-fns-tz: ^3.2.0
@@ -1314,9 +1314,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@user27828/shared-utils@file:../packages/user27828-shared-utils-0.69.6.tgz::locator=%40test-consumer%2Freact-app%40workspace%3A.":
-  version: 0.69.6
-  resolution: "@user27828/shared-utils@file:../packages/user27828-shared-utils-0.69.6.tgz::locator=%40test-consumer%2Freact-app%40workspace%3A."
+"@user27828/shared-utils@file:../packages/user27828-shared-utils-0.69.7.tgz::locator=%40test-consumer%2Freact-app%40workspace%3A.":
+  version: 0.69.7
+  resolution: "@user27828/shared-utils@file:../packages/user27828-shared-utils-0.69.7.tgz::locator=%40test-consumer%2Freact-app%40workspace%3A."
   dependencies:
     lodash-es: ^4.17.21
     typescript: ^5.8.3
@@ -1326,7 +1326,7 @@ __metadata:
     killnode: ./bin/killnode.sh
     vite-preview-envs: ./bin/vite-preview-envs.sh
     yarn-upgrade-interactive: ./bin/package-upgrades.sh
-  checksum: 7da3b495a881775f71c35a5c9babd503954ff48cfcee84369db4cc4e92601c645d5aa055c53d22c7b672b3bbfd814c619c303c4d07f8ed72a315cd1647f913f0
+  checksum: e74fd7022d1aa6b8e48dd406f6b01462dd55022a148ce8dc213041c7e79ada7d5a04a7a2be55983bb283bff8717c8964dcedbd0b516de3225d6435b8d5b8238e
   languageName: node
   linkType: hard
 

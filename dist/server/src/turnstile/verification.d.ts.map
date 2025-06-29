@@ -1,0 +1,1 @@
+{"version":3,"file":"verification.d.ts","sourceRoot":"","sources":["../../../../server/src/turnstile/verification.ts"],"names":[],"mappings":"AAAA;;;GAGG;AAEH,OAAO,KAAK,EAAE,uBAAuB,EAAE,MAAM,YAAY,CAAC;AAE1D;;GAEG;AACH,wBAAsB,oBAAoB,CACxC,KAAK,EAAE,MAAM,EACb,SAAS,EAAE,MAAM,EACjB,QAAQ,CAAC,EAAE,MAAM,GAAG,IAAI,EACxB,cAAc,CAAC,EAAE,MAAM,GACtB,OAAO,CAAC,uBAAuB,CAAC,CA0BlC"}

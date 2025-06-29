@@ -1,0 +1,18 @@
+{
+  "name": "@test-consumer/server",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "node test-runner.js",
+    "test:watch": "node --watch test-runner.js"
+  },
+  "dependencies": {
+    "@user27828/shared-utils": "file:../packages/user27828-shared-utils-0.69.6.tgz"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0"
+  }
+}

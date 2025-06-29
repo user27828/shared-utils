@@ -2,7 +2,14 @@ import React from "react";
 
 interface TestIndexProps {
   onNavigate: (
-    view: "index" | "turnstile" | "log" | "options" | "client" | "tinymce",
+    view:
+      | "index"
+      | "turnstile"
+      | "log"
+      | "options"
+      | "client"
+      | "tinymce"
+      | "server",
   ) => void;
 }
 
@@ -259,20 +266,37 @@ const TestIndex: React.FC<TestIndexProps> = ({ onNavigate }) => {
       tests: [
         {
           name: "Turnstile Verification",
-          description: "Test server-side turnstile token verification",
-          status: "todo" as const,
+          description:
+            "Test server-side turnstile token verification and enhanced verification",
+          status: "implemented" as const,
           category: "server",
         },
         {
           name: "Middleware Integration",
-          description: "Test Express/Fastify middleware integration",
-          status: "todo" as const,
+          description:
+            "Test Express/Fastify middleware creation, configuration, and execution",
+          status: "implemented" as const,
           category: "server",
         },
         {
           name: "Cloudflare Worker",
-          description: "Test Cloudflare Worker deployment and functionality",
-          status: "todo" as const,
+          description:
+            "Test Cloudflare Worker creation, HTTP handling, and environment integration",
+          status: "implemented" as const,
+          category: "server",
+        },
+        {
+          name: "Server Options & Configuration",
+          description:
+            "Test server-side options management and configuration systems",
+          status: "implemented" as const,
+          category: "server",
+        },
+        {
+          name: "Worker Utilities",
+          description:
+            "Test worker utility functions (origin validation, dev mode detection, etc.)",
+          status: "implemented" as const,
           category: "server",
         },
       ],
@@ -306,8 +330,7 @@ const TestIndex: React.FC<TestIndexProps> = ({ onNavigate }) => {
         "Future components (Advanced Editor Features, Real-time Collaboration) are planned for future implementation",
       );
     } else if (category === "server") {
-      // Server tests - show notification
-      alert("Server integration tests are planned for future implementation");
+      onNavigate("server");
     } else {
       // For other categories not yet implemented
       alert(`${category} tests are not yet implemented`);
@@ -382,12 +405,13 @@ const TestIndex: React.FC<TestIndexProps> = ({ onNavigate }) => {
           import/export, and dynamic content management
         </p>
         <p>
-          <span className="todo">⏳ Future Components</span> - Additional editor
-          integrations planned for future implementation
+          <span className="implemented">✅ Server Integration Tests</span> -
+          Server-side turnstile verification, middleware integration, Cloudflare
+          Worker compatibility, and options manager testing
         </p>
         <p>
-          <span className="todo">⏳ Server Integration</span> - Server-side
-          turnstile verification and middleware testing planned
+          <span className="todo">⏳ Future Components</span> - Additional editor
+          integrations planned for future implementation
         </p>
 
         <h3>How to Use</h3>

@@ -5,18 +5,31 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "dev": "concurrently \"yarn dev:react\" \"yarn dev:server\"",
     "dev:react": "cd react-app && yarn dev",
+    "dev:server": "cd server && node index.js",
+    "build": "yarn build:react && yarn build:server",
     "build:react": "cd react-app && yarn build",
+    "build:server": "echo 'Server tests - no build step required'",
     "test:react": "cd react-app && yarn test",
     "test:node": "cd node-consumer && yarn test",
     "test:vanilla": "cd vanilla-js-consumer && yarn test",
-    "test:all": "yarn test:react && yarn test:node && yarn test:vanilla"
+    "test:server": "cd server && node test-runner.js",
+    "test:all": "yarn test:react && yarn test:node && yarn test:vanilla && yarn test:server",
+    "kill": "../bin/killnode.sh",
+    "kill:force": "../bin/killnode.sh -9",
+    "kill:dev": "yarn kill && echo 'Killed development servers'",
+    "kill:vite": "pkill -f vite || echo 'No Vite processes found'",
+    "kill:server": "pkill -f 'node.*index.js' || echo 'No server processes found'",
+    "kill:react": "pkill -f 'vite.*react-app' || echo 'No React dev server found'",
+    "kill:all": "pkill -f 'node.*index.js' && pkill -f vite || echo 'Killed all test consumer processes'"
   },
   "dependencies": {
-    "@user27828/shared-utils": "workspace:.."
+    "@user27828/shared-utils": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^24.0.7",
+    "concurrently": "^9.2.0",
     "typescript": "^5.8.3"
   }
 }

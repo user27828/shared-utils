@@ -7,6 +7,7 @@ import LogTests from "./components/LogTests";
 import OptionsManagerTests from "./components/OptionsManagerTests";
 import ClientComponentTests from "./components/ClientComponentTests";
 import TinyMCETests from "./components/TinyMCETests";
+import ServerIntegrationTests from "./components/ServerIntegrationTests";
 
 // Create a dark theme that matches the existing dark CSS
 const darkTheme = createTheme({
@@ -56,11 +57,18 @@ const darkTheme = createTheme({
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = React.useState<
-    "index" | "turnstile" | "log" | "options" | "client" | "tinymce"
+    "index" | "turnstile" | "log" | "options" | "client" | "tinymce" | "server"
   >("index");
 
   const handleNavigate = (
-    view: "index" | "turnstile" | "log" | "options" | "client" | "tinymce",
+    view:
+      | "index"
+      | "turnstile"
+      | "log"
+      | "options"
+      | "client"
+      | "tinymce"
+      | "server",
   ) => {
     setCurrentView(view);
   };
@@ -127,6 +135,15 @@ const App: React.FC = () => {
             >
               TinyMCE Tests
             </button>
+            <button
+              onClick={() => handleNavigate("server")}
+              style={{
+                backgroundColor:
+                  currentView === "server" ? "#646cff" : "#1a1a1a",
+              }}
+            >
+              Server Tests
+            </button>
           </nav>
         </header>
 
@@ -137,6 +154,7 @@ const App: React.FC = () => {
           {currentView === "options" && <OptionsManagerTests />}
           {currentView === "client" && <ClientComponentTests />}
           {currentView === "tinymce" && <TinyMCETests darkMode={true} />}
+          {currentView === "server" && <ServerIntegrationTests />}
         </main>
       </div>
     </ThemeProvider>
