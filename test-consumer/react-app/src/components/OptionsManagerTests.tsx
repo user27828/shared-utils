@@ -1,5 +1,5 @@
 import React from "react";
-import { TestResultsRenderer, type TestResult } from "./TestResultsRenderer";
+import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 
 // Import the options manager utilities from shared-utils
 let OptionsManager: any = null;
@@ -8,7 +8,7 @@ let optionsManager: any = null;
 // Dynamically import to handle potential import issues
 const loadOptionsManager = async () => {
   try {
-    const module = await import("@user27828/shared-utils/utils");
+    const module = (await import("@user27828/shared-utils/utils")) as any;
     console.log("Imported options-manager module:", module);
     return {
       OptionsManager: module.OptionsManager,
@@ -16,88 +16,99 @@ const loadOptionsManager = async () => {
     };
   } catch (error) {
     console.error("Failed to import options-manager:", error);
-    try {
-      // Try alternative import paths
-      const altModule = await import("@user27828/shared-utils");
-      console.log("Alternative import:", altModule);
-      return {
-        OptionsManager: altModule.OptionsManager,
-        optionsManager: altModule.optionsManager,
-      };
-    } catch (altError) {
-      console.error("Alternative import also failed:", altError);
-      return { OptionsManager: null, optionsManager: null };
-    }
+    return { OptionsManager: null, optionsManager: null };
   }
 };
 
-interface OptionsManagerTestResult extends TestResult {
-  // Inherits test, status, message, timestamp from TestResult
-}
-
 const OptionsManagerTests: React.FC = () => {
-  const [testResults, setTestResults] = React.useState<
-    OptionsManagerTestResult[]
-  >([]);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [testItems, setTestItems] = React.useState<TestItem[]>([
+    {
+      name: "Basic Options Manager",
+      description: "Tests individual OptionsManager instance functionality",
+      status: "pending",
+    },
+    {
+      name: "Merge Strategy",
+      description: "Verifies array replacement and object merging strategies",
+      status: "pending",
+    },
+    {
+      name: "Global Options Manager",
+      description: "Tests cross-utility configuration via global manager",
+      status: "pending",
+    },
+    {
+      name: "Backward Compatibility",
+      description: "Ensures deprecated methods work for backward compatibility",
+      status: "pending",
+    },
+    {
+      name: "Undefined Handling",
+      description: "Verifies undefined values are properly skipped",
+      status: "pending",
+    },
+  ]);
 
   React.useEffect(() => {
     const initOptionsManager = async () => {
       const utilities = await loadOptionsManager();
       OptionsManager = utilities.OptionsManager;
       optionsManager = utilities.optionsManager;
-
-      if (!OptionsManager || !optionsManager) {
-        addTestResult(
-          "Options Manager Import",
-          "fail",
-          "Failed to import OptionsManager utilities from @user27828/shared-utils",
-        );
-      } else {
-        addTestResult(
-          "Options Manager Import",
-          "pass",
-          "Successfully imported OptionsManager utilities",
-        );
-      }
     };
 
     initOptionsManager();
   }, []);
 
-  const addTestResult = (
-    test: string,
-    status: "pass" | "fail" | "pending",
-    message: string,
+  const updateTestStatus = (
+    testName: string,
+    status: TestStatus,
+    message?: string,
+    duration?: number,
   ) => {
-    const result: OptionsManagerTestResult = {
-      test,
-      status,
-      message,
-      timestamp: new Date(),
-    };
-
-    setTestResults((prev) => [...prev, result]);
+    setTestItems((prev) =>
+      prev.map((test) =>
+        test.name === testName
+          ? {
+              ...test,
+              status,
+              message,
+              duration,
+              startTime: status === "running" ? new Date() : test.startTime,
+              endTime:
+                status === "pass" || status === "fail" ? new Date() : undefined,
+            }
+          : test,
+      ),
+    );
   };
 
   const clearResults = () => {
-    setTestResults([]);
+    setTestItems((prev) =>
+      prev.map((test) => ({
+        ...test,
+        status: "pending" as TestStatus,
+        message: undefined,
+        duration: undefined,
+        startTime: undefined,
+        endTime: undefined,
+      })),
+    );
   };
 
   const runBasicOptionsManagerTest = async () => {
+    const testName = "Basic Options Manager";
+    const startTime = Date.now();
+
     if (!OptionsManager) {
-      addTestResult(
-        "Basic Options Manager",
-        "fail",
-        "OptionsManager class not loaded",
-      );
+      updateTestStatus(testName, "fail", "OptionsManager class not loaded");
       return;
     }
 
     try {
-      addTestResult(
-        "Basic Options Manager",
-        "pending",
+      updateTestStatus(
+        testName,
+        "running",
         "Testing basic OptionsManager functionality...",
       );
 
@@ -149,30 +160,32 @@ const OptionsManagerTests: React.FC = () => {
         throw new Error("resetOptions() failed");
       }
 
-      addTestResult(
-        "Basic Options Manager",
-        "pass",
-        "✅ Instance creation, ✅ getOption(), ✅ setOption(), ✅ nested options, ✅ dot notation, ✅ reset",
-      );
+      const duration = Date.now() - startTime;
+      const successMessage =
+        "✅ Instance creation, ✅ getOption(), ✅ setOption(), ✅ nested options, ✅ dot notation, ✅ reset";
+
+      updateTestStatus(testName, "pass", successMessage, duration);
     } catch (error) {
-      addTestResult("Basic Options Manager", "fail", `Error: ${error}`);
+      const duration = Date.now() - startTime;
+      const errorMessage = `Error: ${error}`;
+
+      updateTestStatus(testName, "fail", errorMessage, duration);
     }
   };
 
   const runMergeStrategyTest = async () => {
+    const testName = "Merge Strategy";
+    const startTime = Date.now();
+
     if (!OptionsManager) {
-      addTestResult(
-        "Merge Strategy",
-        "fail",
-        "OptionsManager class not loaded",
-      );
+      updateTestStatus(testName, "fail", "OptionsManager class not loaded");
       return;
     }
 
     try {
-      addTestResult(
-        "Merge Strategy",
-        "pending",
+      updateTestStatus(
+        testName,
+        "running",
         "Testing options merging strategies...",
       );
 
@@ -232,30 +245,32 @@ const OptionsManagerTests: React.FC = () => {
         throw new Error("Batch setting with object parameter failed");
       }
 
-      addTestResult(
-        "Merge Strategy",
-        "pass",
-        "✅ Array replacement, ✅ Object merging, ✅ Property preservation, ✅ Batch setting",
-      );
+      const duration = Date.now() - startTime;
+      const successMessage =
+        "✅ Array replacement, ✅ Object merging, ✅ Property preservation, ✅ Batch setting";
+
+      updateTestStatus(testName, "pass", successMessage, duration);
     } catch (error) {
-      addTestResult("Merge Strategy", "fail", `Error: ${error}`);
+      const duration = Date.now() - startTime;
+      const errorMessage = `Error: ${error}`;
+
+      updateTestStatus(testName, "fail", errorMessage, duration);
     }
   };
 
   const runGlobalOptionsManagerTest = async () => {
+    const testName = "Global Options Manager";
+    const startTime = Date.now();
+
     if (!optionsManager || !OptionsManager) {
-      addTestResult(
-        "Global Options Manager",
-        "fail",
-        "Global optionsManager not loaded",
-      );
+      updateTestStatus(testName, "fail", "Global optionsManager not loaded");
       return;
     }
 
     try {
-      addTestResult(
-        "Global Options Manager",
-        "pending",
+      updateTestStatus(
+        testName,
+        "running",
         "Testing global options manager...",
       );
 
@@ -325,30 +340,32 @@ const OptionsManagerTests: React.FC = () => {
         throw new Error("getManager() failed");
       }
 
-      addTestResult(
-        "Global Options Manager",
-        "pass",
-        "✅ Manager registration, ✅ Global setting, ✅ GetAll, ✅ Reset all, ✅ GetManager",
-      );
+      const duration = Date.now() - startTime;
+      const successMessage =
+        "✅ Manager registration, ✅ Global setting, ✅ GetAll, ✅ Reset all, ✅ GetManager";
+
+      updateTestStatus(testName, "pass", successMessage, duration);
     } catch (error) {
-      addTestResult("Global Options Manager", "fail", `Error: ${error}`);
+      const duration = Date.now() - startTime;
+      const errorMessage = `Error: ${error}`;
+
+      updateTestStatus(testName, "fail", errorMessage, duration);
     }
   };
 
   const runBackwardCompatibilityTest = async () => {
+    const testName = "Backward Compatibility";
+    const startTime = Date.now();
+
     if (!OptionsManager) {
-      addTestResult(
-        "Backward Compatibility",
-        "fail",
-        "OptionsManager class not loaded",
-      );
+      updateTestStatus(testName, "fail", "OptionsManager class not loaded");
       return;
     }
 
     try {
-      addTestResult(
-        "Backward Compatibility",
-        "pending",
+      updateTestStatus(
+        testName,
+        "running",
         "Testing backward compatibility methods...",
       );
 
@@ -386,30 +403,32 @@ const OptionsManagerTests: React.FC = () => {
         );
       }
 
-      addTestResult(
-        "Backward Compatibility",
-        "pass",
-        "✅ setOptions() method, ✅ getOptions() method, ✅ API consistency",
-      );
+      const duration = Date.now() - startTime;
+      const successMessage =
+        "✅ setOptions() method, ✅ getOptions() method, ✅ API consistency";
+
+      updateTestStatus(testName, "pass", successMessage, duration);
     } catch (error) {
-      addTestResult("Backward Compatibility", "fail", `Error: ${error}`);
+      const duration = Date.now() - startTime;
+      const errorMessage = `Error: ${error}`;
+
+      updateTestStatus(testName, "fail", errorMessage, duration);
     }
   };
 
   const runUndefinedHandlingTest = async () => {
+    const testName = "Undefined Handling";
+    const startTime = Date.now();
+
     if (!OptionsManager) {
-      addTestResult(
-        "Undefined Handling",
-        "fail",
-        "OptionsManager class not loaded",
-      );
+      updateTestStatus(testName, "fail", "OptionsManager class not loaded");
       return;
     }
 
     try {
-      addTestResult(
-        "Undefined Handling",
-        "pending",
+      updateTestStatus(
+        testName,
+        "running",
         "Testing undefined value handling...",
       );
 
@@ -439,13 +458,38 @@ const OptionsManagerTests: React.FC = () => {
         throw new Error("Non-existent paths should return undefined");
       }
 
-      addTestResult(
-        "Undefined Handling",
-        "pass",
-        "✅ Skip undefined values, ✅ Batch undefined handling, ✅ Non-existent path access",
-      );
+      const duration = Date.now() - startTime;
+      const successMessage =
+        "✅ Skip undefined values, ✅ Batch undefined handling, ✅ Non-existent path access";
+
+      updateTestStatus(testName, "pass", successMessage, duration);
     } catch (error) {
-      addTestResult("Undefined Handling", "fail", `Error: ${error}`);
+      const duration = Date.now() - startTime;
+      const errorMessage = `Error: ${error}`;
+
+      updateTestStatus(testName, "fail", errorMessage, duration);
+    }
+  };
+
+  const runIndividualTest = async (testName: string) => {
+    switch (testName) {
+      case "Basic Options Manager":
+        await runBasicOptionsManagerTest();
+        break;
+      case "Merge Strategy":
+        await runMergeStrategyTest();
+        break;
+      case "Global Options Manager":
+        await runGlobalOptionsManagerTest();
+        break;
+      case "Backward Compatibility":
+        await runBackwardCompatibilityTest();
+        break;
+      case "Undefined Handling":
+        await runUndefinedHandlingTest();
+        break;
+      default:
+        updateTestStatus(testName, "fail", "Unknown test");
     }
   };
 
@@ -453,19 +497,18 @@ const OptionsManagerTests: React.FC = () => {
     setIsLoading(true);
     clearResults();
 
-    await runBasicOptionsManagerTest();
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    const tests = [
+      runBasicOptionsManagerTest,
+      runMergeStrategyTest,
+      runGlobalOptionsManagerTest,
+      runBackwardCompatibilityTest,
+      runUndefinedHandlingTest,
+    ];
 
-    await runMergeStrategyTest();
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    await runGlobalOptionsManagerTest();
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    await runBackwardCompatibilityTest();
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    await runUndefinedHandlingTest();
+    for (const testFn of tests) {
+      await testFn();
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
 
     setIsLoading(false);
   };
@@ -473,123 +516,15 @@ const OptionsManagerTests: React.FC = () => {
   return (
     <div>
       <h2>Options Manager Integration Tests</h2>
-
-      <div style={{ marginBottom: "1rem" }}>
-        <button
-          onClick={runAllTests}
-          disabled={isLoading}
-          style={{
-            padding: "0.75rem 1.5rem",
-            fontSize: "1rem",
-            backgroundColor: "#007acc",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: isLoading ? "not-allowed" : "pointer",
-            marginRight: "1rem",
-          }}
-        >
-          {isLoading ? "Running Tests..." : "Run All Tests"}
-        </button>
-
-        <button
-          onClick={clearResults}
-          style={{
-            padding: "0.75rem 1.5rem",
-            fontSize: "1rem",
-            backgroundColor: "#666",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            marginRight: "1rem",
-          }}
-        >
-          Clear Results
-        </button>
-
-        <button
-          onClick={runBasicOptionsManagerTest}
-          style={{
-            padding: "0.5rem 1rem",
-            fontSize: "0.9rem",
-            backgroundColor: "#5a5a5a",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            marginRight: "0.5rem",
-          }}
-        >
-          Basic Manager
-        </button>
-
-        <button
-          onClick={runMergeStrategyTest}
-          style={{
-            padding: "0.5rem 1rem",
-            fontSize: "0.9rem",
-            backgroundColor: "#5a5a5a",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            marginRight: "0.5rem",
-          }}
-        >
-          Merge Strategy
-        </button>
-
-        <button
-          onClick={runGlobalOptionsManagerTest}
-          style={{
-            padding: "0.5rem 1rem",
-            fontSize: "0.9rem",
-            backgroundColor: "#5a5a5a",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            marginRight: "0.5rem",
-          }}
-        >
-          Global Manager
-        </button>
-
-        <button
-          onClick={runBackwardCompatibilityTest}
-          style={{
-            padding: "0.5rem 1rem",
-            fontSize: "0.9rem",
-            backgroundColor: "#5a5a5a",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            marginRight: "0.5rem",
-          }}
-        >
-          Compatibility
-        </button>
-
-        <button
-          onClick={runUndefinedHandlingTest}
-          style={{
-            padding: "0.5rem 1rem",
-            fontSize: "0.9rem",
-            backgroundColor: "#5a5a5a",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            marginRight: "0.5rem",
-          }}
-        >
-          Undefined Handling
-        </button>
-      </div>
-
-      <TestResultsRenderer testResults={testResults} />
+      <TestProgress
+        title="Options Manager"
+        tests={testItems}
+        isRunning={isLoading}
+        onRunAll={runAllTests}
+        onRunIndividual={runIndividualTest}
+        onClear={clearResults}
+        showIndividualButtons={true}
+      />
 
       <div className="card" style={{ marginTop: "2rem" }}>
         <h3>About Options Manager Tests</h3>

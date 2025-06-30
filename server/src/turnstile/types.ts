@@ -32,3 +32,23 @@ export interface TurnstileServerOptions {
   apiUrl?: string;
   interceptor?: (action: string, data: any) => void;
 }
+
+/**
+ * Turnstile configuration options for the options manager
+ * This is a simplified version focused on the key configuration options
+ */
+export interface TurnstileOptions {
+  siteKey?: string;
+  secretKey?: string;
+  dev?: boolean;
+  bypassLocalhost?: boolean;
+  allowedOrigins?: string[];
+}
+
+/**
+ * Global options interface for turnstile server configuration
+ */
+export interface GlobalTurnstileOptions {
+  "turnstile-server"?: TurnstileOptions;
+  [key: string]: any;
+}

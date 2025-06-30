@@ -13,6 +13,7 @@ export default {
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   moduleNameMapper: {
     "^(\\.{1,2}/.*)\\.js$": "$1",
+    "^@shared-utils/utils$": "<rootDir>/../utils/src/options-manager.ts",
   },
   transform: {
     "^.+\\.(ts|tsx)$": [
@@ -23,6 +24,7 @@ export default {
     ],
     "^.+\\.(js|jsx)$": "babel-jest",
   },
+  transformIgnorePatterns: ["node_modules/(?!(@shared-utils/utils)/)"],
   collectCoverageFrom: ["src/**/*.ts", "!src/**/*.d.ts"],
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov", "html"],

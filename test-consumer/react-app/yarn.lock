@@ -690,6 +690,37 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@mui/lab@npm:^7.0.0-beta.14":
+  version: 7.0.0-beta.14
+  resolution: "@mui/lab@npm:7.0.0-beta.14"
+  dependencies:
+    "@babel/runtime": ^7.27.1
+    "@mui/system": ^7.1.1
+    "@mui/types": ^7.4.3
+    "@mui/utils": ^7.1.1
+    clsx: ^2.1.1
+    prop-types: ^15.8.1
+  peerDependencies:
+    "@emotion/react": ^11.5.0
+    "@emotion/styled": ^11.3.0
+    "@mui/material": ^7.1.2
+    "@mui/material-pigment-css": ^7.1.1
+    "@types/react": ^17.0.0 || ^18.0.0 || ^19.0.0
+    react: ^17.0.0 || ^18.0.0 || ^19.0.0
+    react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
+  peerDependenciesMeta:
+    "@emotion/react":
+      optional: true
+    "@emotion/styled":
+      optional: true
+    "@mui/material-pigment-css":
+      optional: true
+    "@types/react":
+      optional: true
+  checksum: 99f60049f3550d653231aa3cf60b52d181ffe522166863ab3d0b000087dd2d8292b22883de05087e9c4f43b3c55cf03263f8aae93ec9d55f2c895c3af4092b02
+  languageName: node
+  linkType: hard
+
 "@mui/material@npm:^7.1.2":
   version: 7.1.2
   resolution: "@mui/material@npm:7.1.2"
@@ -1052,6 +1083,7 @@ __metadata:
     "@emotion/react": ^11.14.0
     "@emotion/styled": ^11.14.1
     "@mui/icons-material": ^7.1.2
+    "@mui/lab": ^7.0.0-beta.14
     "@mui/material": ^7.1.2
     "@tinymce/tinymce-react": ^6.2.1
     "@types/react": ^18.2.66

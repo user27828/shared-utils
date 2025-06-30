@@ -3,7 +3,7 @@
  * This file provides a clean import interface for all Turnstile functionality
  */
 // Main verification functions
-export { getTurnstileServerOptions, verifyTurnstileTokenEnhanced, verifyTurnstileSimple, } from "./turnstile.js";
+export { getTurnstileServerOptions, verifyTurnstileTokenEnhanced, verifyTurnstileSimple, setGlobalOptions, } from "./turnstile.js";
 // Middleware
 export { createTurnstileMiddleware } from "./middleware.js";
 // Worker factory

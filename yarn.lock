@@ -2423,6 +2423,7 @@ __metadata:
     "@babel/preset-env": ^7.27.2
     "@cloudflare/workers-types": ^4.20250628.0
     "@jest/globals": ^30.0.3
+    "@shared-utils/utils": "workspace:*"
     babel-jest: ^30.0.2
     jest: ^30.0.3
     ts-jest: ^29.4.0
@@ -2451,6 +2452,7 @@ __metadata:
     "@babel/preset-env": ^7.27.2
     "@types/jest": ^30.0.0
     "@types/lodash-es": ^4.17.12
+    "@types/node": ^24.0.7
     jest: ^30.0.3
     lodash-es: ^4.17.21
     ts-jest: ^29.4.0

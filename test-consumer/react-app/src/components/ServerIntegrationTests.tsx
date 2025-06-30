@@ -4,21 +4,95 @@ import {
   Box,
   Typography,
   Container,
-  Card,
-  CardContent,
   Alert,
   Chip,
+  Divider,
 } from "@mui/material";
-import { TestResultsRenderer, type TestResult } from "./TestResultsRenderer";
+import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 
-interface ServerTestResult extends TestResult {
-  // Inherits test, status, message, timestamp from TestResult
-}
-
-const ServerIntegrationTests: React.FC = () => {
-  const [testResults, setTestResults] = useState<ServerTestResult[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+export const ServerIntegrationTests: React.FC = () => {
+  const [isRunningTestSuite, setIsRunningTestSuite] = useState<boolean>(false);
   const [serverTestsAvailable, setServerTestsAvailable] = useState(false);
+
+  const [testItems, setTestItems] = useState<TestItem[]>([
+    {
+      name: "Server Test Consumer Health Check",
+      description: "Check if server test consumer is running",
+      status: "pending",
+    },
+    {
+      name: "Server Communication Test",
+      description: "Test communication with server test consumer",
+      status: "pending",
+    },
+    {
+      name: "Server-side Functionality Tests",
+      description: "Execute and validate server-side test suite",
+      status: "pending",
+    },
+    {
+      name: "Server Test Results Validation",
+      description: "Validate and process server test results",
+      status: "pending",
+    },
+    {
+      name: "Integration Test Summary",
+      description: "Overall server integration test assessment",
+      status: "pending",
+    },
+  ]);
+
+  const updateTestStatus = (
+    testName: string,
+    status: TestStatus,
+    message?: string,
+    duration?: number,
+  ) => {
+    setTestItems((prev) =>
+      prev.map((test) =>
+        test.name === testName
+          ? {
+              ...test,
+              status,
+              message,
+              duration,
+              startTime: status === "running" ? new Date() : test.startTime,
+              endTime:
+                status === "pass" || status === "fail" ? new Date() : undefined,
+            }
+          : test,
+      ),
+    );
+  };
+
+  const clearResults = () => {
+    setTestItems((prev) =>
+      prev.map((test) => ({
+        ...test,
+        // Preserve the health check test status since it runs on mount
+        status:
+          test.name === "Server Test Consumer Health Check"
+            ? test.status
+            : ("pending" as TestStatus),
+        message:
+          test.name === "Server Test Consumer Health Check"
+            ? test.message
+            : undefined,
+        duration:
+          test.name === "Server Test Consumer Health Check"
+            ? test.duration
+            : undefined,
+        startTime:
+          test.name === "Server Test Consumer Health Check"
+            ? test.startTime
+            : undefined,
+        endTime:
+          test.name === "Server Test Consumer Health Check"
+            ? test.endTime
+            : undefined,
+      })),
+    );
+  };
 
   useEffect(() => {
     // Check if the dedicated server test consumer is running
@@ -26,116 +100,313 @@ const ServerIntegrationTests: React.FC = () => {
   }, []);
 
   const checkServerTestConsumer = async () => {
+    const testName = "Server Test Consumer Health Check";
+    const startTime = Date.now();
+    updateTestStatus(
+      testName,
+      "running",
+      "Checking server test consumer availability...",
+    );
+
     try {
       const response = await fetch("http://localhost:8030/health");
+      const duration = Date.now() - startTime;
+
       if (response.ok) {
         setServerTestsAvailable(true);
-        addTestResult(
-          "Server Test Consumer",
+        updateTestStatus(
+          testName,
           "pass",
           "Server test consumer is running at http://localhost:8030",
+          duration,
+        );
+      } else {
+        setServerTestsAvailable(false);
+        updateTestStatus(
+          testName,
+          "fail",
+          `Server responded with status: ${response.status}`,
+          duration,
         );
       }
     } catch (error) {
+      const duration = Date.now() - startTime;
       setServerTestsAvailable(false);
-      addTestResult(
-        "Server Test Consumer",
+      updateTestStatus(
+        testName,
         "fail",
         "Server test consumer not running. Start it with: cd test-consumer/server && node index.js",
+        duration,
       );
     }
   };
 
-  const addTestResult = (
-    test: string,
-    status: "pass" | "fail" | "pending",
-    message: string,
-  ) => {
-    const result: ServerTestResult = {
-      test,
-      status,
-      message,
-      timestamp: new Date(),
-    };
+  // Individual test functions
+  const runServerCommunicationTest = async () => {
+    const testName = "Server Communication Test";
+    const startTime = Date.now();
 
-    setTestResults((prev) => [...prev, result]);
-  };
+    updateTestStatus(
+      testName,
+      "running",
+      "Testing communication with server...",
+    );
 
-  const clearResults = () => {
-    setTestResults([]);
-  };
-
-  const runServerTestIntegration = async () => {
     if (!serverTestsAvailable) {
-      addTestResult(
-        "Server Integration",
+      const duration = Date.now() - startTime;
+      updateTestStatus(
+        testName,
         "fail",
         "Server test consumer is not running. Please start it first.",
+        duration,
       );
       return;
     }
 
-    setIsLoading(true);
-
     try {
-      addTestResult(
-        "Server Integration",
-        "pending",
-        "Fetching server test results...",
-      );
-
-      const response = await fetch("http://localhost:8030/test");
-      const serverResults = await response.json();
+      const response = await fetch("http://localhost:8030/health");
+      const duration = Date.now() - startTime;
 
       if (response.ok) {
-        addTestResult(
-          "Server Test Execution",
+        updateTestStatus(
+          testName,
           "pass",
-          `Server tests completed: ${serverResults.summary.passed}/${serverResults.summary.total} passed`,
+          "Successfully communicated with server test consumer",
+          duration,
         );
-
-        // Add summary of server test results
-        Object.entries(serverResults.tests).forEach(
-          ([testName, testData]: [string, any]) => {
-            addTestResult(
-              `Server: ${testName}`,
-              testData.status === "passed" ? "pass" : "fail",
-              testData.details?.message ||
-                testData.error ||
-                "No details available",
-            );
-          },
-        );
-
-        if (serverResults.summary.failed > 0) {
-          addTestResult(
-            "Server Integration",
-            "fail",
-            `Some server tests failed: ${serverResults.summary.failed} failed, ${serverResults.summary.passed} passed`,
-          );
-        } else {
-          addTestResult(
-            "Server Integration",
-            "pass",
-            `All server tests passed! Full server-side functionality verified.`,
-          );
-        }
       } else {
-        addTestResult(
-          "Server Test Execution",
+        updateTestStatus(
+          testName,
           "fail",
-          `Server test endpoint returned error: ${response.status}`,
+          `Server communication failed with status: ${response.status}`,
+          duration,
         );
       }
     } catch (error) {
-      addTestResult(
-        "Server Integration",
+      const duration = Date.now() - startTime;
+      updateTestStatus(
+        testName,
         "fail",
-        `Failed to communicate with server test consumer: ${error}`,
+        `Failed to communicate with server: ${error}`,
+        duration,
       );
-    } finally {
-      setIsLoading(false);
     }
+  };
+
+  const runServerFunctionalityTests = async () => {
+    const testName = "Server-side Functionality Tests";
+    const startTime = Date.now();
+
+    updateTestStatus(
+      testName,
+      "running",
+      "Executing server-side test suite...",
+    );
+
+    if (!serverTestsAvailable) {
+      const duration = Date.now() - startTime;
+      updateTestStatus(
+        testName,
+        "fail",
+        "Server test consumer is not running. Cannot execute server tests.",
+        duration,
+      );
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:8030/test");
+      const serverResults = await response.json();
+      const duration = Date.now() - startTime;
+
+      if (response.ok) {
+        updateTestStatus(
+          testName,
+          "pass",
+          `Server tests executed: ${serverResults.summary.passed}/${serverResults.summary.total} passed`,
+          duration,
+        );
+        return serverResults;
+      } else {
+        updateTestStatus(
+          testName,
+          "fail",
+          `Server test endpoint returned error: ${response.status}`,
+          duration,
+        );
+        return null;
+      }
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      updateTestStatus(
+        testName,
+        "fail",
+        `Failed to execute server tests: ${error}`,
+        duration,
+      );
+      return null;
+    }
+  };
+
+  const runServerResultsValidation = async (serverResults: any) => {
+    const testName = "Server Test Results Validation";
+    const startTime = Date.now();
+
+    updateTestStatus(testName, "running", "Validating server test results...");
+
+    if (!serverResults) {
+      const duration = Date.now() - startTime;
+      updateTestStatus(
+        testName,
+        "fail",
+        "No server results to validate",
+        duration,
+      );
+      return null;
+    }
+
+    try {
+      const duration = Date.now() - startTime;
+
+      // Validate structure
+      if (!serverResults.summary || !serverResults.tests) {
+        updateTestStatus(
+          testName,
+          "fail",
+          "Invalid server results structure",
+          duration,
+        );
+        return null;
+      }
+
+      const testCount = Object.keys(serverResults.tests).length;
+      const summary = serverResults.summary;
+
+      updateTestStatus(
+        testName,
+        "pass",
+        `Validated ${testCount} server test results. Summary: ${summary.passed} passed, ${summary.failed} failed`,
+        duration,
+      );
+
+      return serverResults;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      updateTestStatus(
+        testName,
+        "fail",
+        `Failed to validate server results: ${error}`,
+        duration,
+      );
+      return null;
+    }
+  };
+
+  const runIntegrationTestSummary = async (serverResults: any) => {
+    const testName = "Integration Test Summary";
+    const startTime = Date.now();
+
+    updateTestStatus(
+      testName,
+      "running",
+      "Generating integration test summary...",
+    );
+
+    try {
+      const duration = Date.now() - startTime;
+
+      if (!serverResults) {
+        updateTestStatus(
+          testName,
+          "fail",
+          "Cannot generate summary - no valid server results",
+          duration,
+        );
+        return;
+      }
+
+      const summary = serverResults.summary;
+
+      if (summary.failed > 0) {
+        updateTestStatus(
+          testName,
+          "fail",
+          `Server integration incomplete: ${summary.failed} failed, ${summary.passed} passed`,
+          duration,
+        );
+      } else {
+        updateTestStatus(
+          testName,
+          "pass",
+          `✅ Full server integration successful! All ${summary.total} server tests passed`,
+          duration,
+        );
+      }
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      updateTestStatus(
+        testName,
+        "fail",
+        `Failed to generate integration summary: ${error}`,
+        duration,
+      );
+    }
+  };
+
+  const runIndividualTest = async (testName: string) => {
+    switch (testName) {
+      case "Server Test Consumer Health Check":
+        await checkServerTestConsumer();
+        break;
+      case "Server Communication Test":
+        await runServerCommunicationTest();
+        break;
+      case "Server-side Functionality Tests":
+        await runServerFunctionalityTests();
+        break;
+      case "Server Test Results Validation":
+        // This test needs server results, so run the full sequence
+        const results = await runServerFunctionalityTests();
+        await runServerResultsValidation(results);
+        break;
+      case "Integration Test Summary":
+        // This test needs server results, so run the full sequence
+        const fullResults = await runServerFunctionalityTests();
+        const validatedResults = await runServerResultsValidation(fullResults);
+        await runIntegrationTestSummary(validatedResults);
+        break;
+      default:
+        updateTestStatus(testName, "fail", "Test not implemented yet");
+    }
+  };
+
+  const runAllTests = async () => {
+    setIsRunningTestSuite(true);
+    clearResults();
+
+    // Small delay between tests for better UX
+    const delay = (ms: number) =>
+      new Promise((resolve) => setTimeout(resolve, ms));
+
+    try {
+      // Note: Health check test runs automatically on component mount and is preserved
+
+      await runServerCommunicationTest();
+      await delay(500);
+
+      const serverResults = await runServerFunctionalityTests();
+      await delay(500);
+
+      const validatedResults = await runServerResultsValidation(serverResults);
+      await delay(500);
+
+      await runIntegrationTestSummary(validatedResults);
+      await delay(500);
+    } catch (error) {
+      console.error("Error during test execution:", error);
+    }
+
+    setIsRunningTestSuite(false);
   };
 
   const openServerTestConsumer = () => {
@@ -151,116 +422,120 @@ const ServerIntegrationTests: React.FC = () => {
       <Typography variant="body1" sx={{ mb: 3 }}>
         This test suite validates the server-side functionality of the
         @user27828/shared-utils library by communicating with the dedicated
-        server test consumer running in a Node.js environment.
+        server test consumer running in a Node.js environment using the new
+        Timeline progress interface.
       </Typography>
 
       <Alert severity="info" sx={{ mb: 3 }}>
         <strong>Architecture:</strong> Server tests run in a dedicated Node.js
-        environment at
-        <code>test-consumer/server</code> where server-side code can be properly
-        executed and tested. This browser-based interface communicates with that
-        server to fetch and display results.
+        environment at <code>test-consumer/server</code> where server-side code
+        can be properly executed and tested. This browser-based interface
+        communicates with that server to fetch and display results.
       </Alert>
 
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Server Test Consumer Status
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Server Test Consumer Status
+        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+          <Chip
+            label={serverTestsAvailable ? "✅ Running" : "❌ Not Running"}
+            color={serverTestsAvailable ? "success" : "error"}
+            variant="outlined"
+          />
+          <Typography variant="body2" color="text.secondary">
+            {serverTestsAvailable
+              ? "Server test consumer is accessible at http://localhost:8030"
+              : "Start server test consumer: cd test-consumer/server && node index.js"}
           </Typography>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-            <Chip
-              label={serverTestsAvailable ? "✅ Running" : "❌ Not Running"}
-              color={serverTestsAvailable ? "success" : "error"}
-              variant="outlined"
-            />
-            <Typography variant="body2" color="text.secondary">
-              {serverTestsAvailable
-                ? "Server test consumer is accessible at http://localhost:8030"
-                : "Start server test consumer: cd test-consumer/server && node index.js"}
-            </Typography>
-          </Box>
+        </Box>
+
+        <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
+          <Button
+            variant="contained"
+            onClick={runAllTests}
+            disabled={isRunningTestSuite}
+            size="large"
+          >
+            {isRunningTestSuite
+              ? "Running Integration Tests..."
+              : "Run All Server Integration Tests"}
+          </Button>
+
+          <Button
+            variant="outlined"
+            onClick={checkServerTestConsumer}
+            disabled={isRunningTestSuite}
+            size="large"
+          >
+            Check Server Status
+          </Button>
 
           {serverTestsAvailable && (
             <Button
               variant="outlined"
               onClick={openServerTestConsumer}
-              size="small"
+              size="large"
             >
-              Open Server Test Console
+              Open Server Console
             </Button>
           )}
-        </CardContent>
-      </Card>
-
-      <Box sx={{ mb: 4 }}>
-        <Button
-          variant="contained"
-          onClick={runServerTestIntegration}
-          disabled={isLoading}
-          size="large"
-          sx={{ mr: 2 }}
-        >
-          {isLoading
-            ? "Running Integration Tests..."
-            : "Run Server Integration Tests"}
-        </Button>
-        <Button
-          variant="outlined"
-          onClick={clearResults}
-          disabled={isLoading}
-          size="large"
-          sx={{ mr: 2 }}
-        >
-          Clear Results
-        </Button>
-        <Button
-          variant="outlined"
-          onClick={checkServerTestConsumer}
-          disabled={isLoading}
-          size="large"
-        >
-          Check Server Status
-        </Button>
+        </Box>
       </Box>
 
-      {/* Test Results */}
-      {testResults.length > 0 && (
-        <TestResultsRenderer testResults={testResults} />
-      )}
+      <Divider sx={{ mb: 3 }} />
 
-      <Card sx={{ mt: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            About Server Integration Tests
+      {/* TestProgress Timeline Component */}
+      <TestProgress
+        title="Server Integration Tests"
+        tests={testItems}
+        onRunIndividual={runIndividualTest}
+        isRunning={isRunningTestSuite}
+        showIndividualButtons={true}
+      />
+
+      <Divider sx={{ mb: 3 }} />
+
+      {/* Information Section */}
+      <Box
+        sx={{
+          p: 3,
+          backgroundColor: "rgba(255, 255, 255, 0.02)",
+          borderRadius: 2,
+          border: 1,
+          borderColor: "rgba(255, 255, 255, 0.08)",
+        }}
+      >
+        <Typography variant="h6" gutterBottom>
+          About Server Integration Tests
+        </Typography>
+        <Box component="ul" sx={{ textAlign: "left", pl: 3 }}>
+          <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+            <strong>Proper Environment:</strong> Server tests run in Node.js
+            where server-side code can be properly imported and executed
           </Typography>
-          <ul style={{ textAlign: "left", margin: 0, paddingLeft: "1.5rem" }}>
-            <li>
-              <strong>Proper Environment:</strong> Server tests run in Node.js
-              where server-side code can be properly imported and executed
-            </li>
-            <li>
-              <strong>Full Functionality:</strong> Tests actual server-side
-              Turnstile verification, middleware creation, worker factories, and
-              options management
-            </li>
-            <li>
-              <strong>Separation of Concerns:</strong> Browser tests focus on
-              client-side integration, while server tests focus on server-side
-              functionality
-            </li>
-            <li>
-              <strong>Integration Testing:</strong> This interface validates
-              that browser and server components can communicate effectively
-            </li>
-          </ul>
+          <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+            <strong>Full Functionality:</strong> Tests actual server-side
+            Turnstile verification, middleware creation, worker factories, and
+            options management
+          </Typography>
+          <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+            <strong>Separation of Concerns:</strong> Browser tests focus on
+            client-side integration, while server tests focus on server-side
+            functionality
+          </Typography>
+          <Typography component="li" variant="body2">
+            <strong>Integration Testing:</strong> This interface validates that
+            browser and server components can communicate effectively
+          </Typography>
+        </Box>
 
-          <Alert severity="success" sx={{ mt: 2 }}>
-            <strong>Best Practice:</strong> This architecture ensures each test
-            environment is optimized for its intended runtime, providing
-            comprehensive coverage across both client and server contexts.
-          </Alert>
-        </CardContent>
-      </Card>
+        <Alert severity="success" sx={{ mt: 2 }}>
+          <strong>Best Practice:</strong> This architecture ensures each test
+          environment is optimized for its intended runtime, providing
+          comprehensive coverage across both client and server contexts.
+        </Alert>
+      </Box>
     </Container>
   );
 };

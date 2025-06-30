@@ -332,25 +332,32 @@ class Log {
   private isTestEnvironment(): boolean {
     // Check for Jest environment
     if (
-      typeof global !== "undefined" &&
-      (global as any).expect &&
-      (global as any).describe &&
-      (global as any).it
+      typeof (globalThis as any).global !== "undefined" &&
+      (globalThis as any).global.expect &&
+      (globalThis as any).global.describe &&
+      (globalThis as any).global.it
     ) {
       return true;
     }
 
     // Check NODE_ENV
-    if (typeof process !== "undefined" && process.env?.NODE_ENV === "test") {
+    if (
+      typeof (globalThis as any).process !== "undefined" &&
+      (globalThis as any).process.env?.NODE_ENV === "test"
+    ) {
       return true;
     }
 
     // Check for common test runners
     if (
       typeof window === "undefined" &&
-      (typeof global !== "undefined" || typeof globalThis !== "undefined")
+      (typeof (globalThis as any).global !== "undefined" ||
+        typeof globalThis !== "undefined")
     ) {
-      const g = typeof global !== "undefined" ? global : globalThis;
+      const g =
+        typeof (globalThis as any).global !== "undefined"
+          ? (globalThis as any).global
+          : globalThis;
       if ((g as any).__coverage__ || (g as any).jasmine || (g as any).mocha) {
         return true;
       }

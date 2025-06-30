@@ -35,6 +35,9 @@
     "test:watch": "NODE_OPTIONS=\"--experimental-vm-modules\" yarn jest --watch",
     "test:coverage": "NODE_OPTIONS=\"--experimental-vm-modules\" yarn jest --coverage"
   },
+  "dependencies": {
+    "@shared-utils/utils": "workspace:*"
+  },
   "devDependencies": {
     "@babel/core": "^7.27.7",
     "@babel/preset-env": "^7.27.2",

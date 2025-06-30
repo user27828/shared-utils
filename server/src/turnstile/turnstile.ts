@@ -2,10 +2,14 @@
  * Enhanced Turnstile server-side verification with dev mode and localhost bypass
  */
 
-import { OptionsManager, optionsManager } from "../options-manager.js";
+import {
+  OptionsManager,
+  optionsManager as globalOptionsManager,
+} from "@shared-utils/utils";
 import type {
   TurnstileServerOptions,
   TurnstileVerifyResponse,
+  TurnstileOptions,
 } from "./types.js";
 import {
   isDevMode,
@@ -24,6 +28,13 @@ const defaultServerOptions: Required<TurnstileServerOptions> = {
   interceptor: () => {},
 };
 
+// Default turnstile options for the options manager
+const defaultTurnstileOptions: TurnstileOptions = {
+  dev: false,
+  bypassLocalhost: false,
+  allowedOrigins: [],
+};
+
 // Options manager for server-side configuration
 let turnstileServerManager: OptionsManager<TurnstileServerOptions> | null =
   null;
@@ -34,7 +45,15 @@ let turnstileServerManager: OptionsManager<TurnstileServerOptions> | null =
  */
 function getTurnstileServerManager(): OptionsManager<TurnstileServerOptions> {
   if (!turnstileServerManager) {
-    turnstileServerManager = new OptionsManager(defaultServerOptions);
+    turnstileServerManager = new OptionsManager(
+      "turnstile-server",
+      defaultServerOptions,
+    );
+    // Register with global options manager for cross-utility configuration
+    globalOptionsManager.registerManager(
+      "turnstile-server",
+      turnstileServerManager,
+    );
   }
   return turnstileServerManager;
 }
@@ -42,11 +61,22 @@ function getTurnstileServerManager(): OptionsManager<TurnstileServerOptions> {
 /**
  * Get current server-side Turnstile options
  * This integrates with the global optionsManager, so you can use:
- * optionsManager.setGlobalOptions({ 'turnstile-server': { ... } })
+ * globalOptionsManager.setGlobalOptions({ 'turnstile-server': { ... } })
  */
 export function getTurnstileServerOptions(): TurnstileServerOptions {
   const manager = getTurnstileServerManager();
   return manager.getOptions();
+}
+
+/**
+ * Set global options for turnstile server configuration
+ * This allows the same API pattern: setGlobalOptions({ 'turnstile-server': { ... } })
+ */
+export function setGlobalOptions(options: {
+  "turnstile-server"?: TurnstileOptions;
+  [key: string]: any;
+}): void {
+  globalOptionsManager.setGlobalOptions(options);
 }
 
 /**

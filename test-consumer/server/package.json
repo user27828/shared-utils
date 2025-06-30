@@ -10,7 +10,7 @@
     "test:watch": "node --watch test-runner.js"
   },
   "dependencies": {
-    "@user27828/shared-utils": "file:../packages/user27828-shared-utils-0.69.6.tgz"
+    "@user27828/shared-utils": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.11.0"

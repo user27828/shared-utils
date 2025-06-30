@@ -1,5 +1,5 @@
 import React from "react";
-import { TestResultsRenderer, type TestResult } from "./TestResultsRenderer";
+import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 
 // Import the log utility from shared-utils
 let log: any = null;
@@ -8,92 +8,152 @@ let Log: any = null;
 // Dynamically import to handle potential import issues
 const loadLogUtility = async () => {
   try {
-    const module = await import("@user27828/shared-utils/utils");
-    console.log("Imported log module:", module);
+    const module = (await import("@user27828/shared-utils/utils")) as any;
+    console.log("Imported log module successfully:", module);
+
+    // The utils module exports log and Log as named exports
     return {
       log: module.log,
       Log: module.Log,
     };
   } catch (error) {
     console.error("Failed to import log utility:", error);
-    try {
-      // Try alternative import paths
-      const altModule = await import("@user27828/shared-utils");
-      console.log("Alternative import:", altModule);
-      return {
-        log: altModule.log,
-        Log: altModule.Log,
-      };
-    } catch (altError) {
-      console.error("Alternative import also failed:", altError);
-      return { log: null, Log: null };
-    }
+    return { log: null, Log: null };
   }
 };
 
-interface LogTestResult extends TestResult {
-  // Inherits test, status, message, timestamp from TestResult
-}
-
 const LogTests: React.FC = () => {
-  const [testResults, setTestResults] = React.useState<LogTestResult[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [testItems, setTestItems] = React.useState<TestItem[]>([
+    {
+      name: "Log Utility Import",
+      description: "Import and initialize log utilities from shared-utils",
+      status: "pending",
+    },
+    {
+      name: "Basic Logging",
+      description: "Test basic log function calls and output",
+      status: "pending",
+    },
+    {
+      name: "Logging with Interceptor",
+      description: "Test logging with custom interceptor functionality",
+      status: "pending",
+    },
+    {
+      name: "Environment Detection",
+      description: "Test client-side environment detection",
+      status: "pending",
+    },
+    {
+      name: "Caller Information",
+      description: "Test caller information extraction",
+      status: "pending",
+    },
+    {
+      name: "LocalStorage Override",
+      description: "Test localStorage-based configuration override",
+      status: "pending",
+    },
+    {
+      name: "Production Filtering",
+      description: "Test production environment log filtering",
+      status: "pending",
+    },
+    {
+      name: "Interceptors",
+      description: "Test custom log interceptors",
+      status: "pending",
+    },
+    {
+      name: "Method Binding",
+      description: "Test method binding and context preservation",
+      status: "pending",
+    },
+  ]);
 
-  React.useEffect(() => {
-    const initLogUtility = async () => {
-      const utilities = await loadLogUtility();
-      log = utilities.log;
-      Log = utilities.Log;
-
-      if (!log || !Log) {
-        addTestResult(
-          "Log Utility Import",
-          "fail",
-          "Failed to import log utilities from @user27828/shared-utils",
-        );
-      } else {
-        addTestResult(
-          "Log Utility Import",
-          "pass",
-          "Successfully imported log utilities",
-        );
-      }
-    };
-
-    initLogUtility();
-  }, []);
-
-  const addTestResult = (
-    test: string,
-    status: "pass" | "fail" | "pending",
-    message: string,
+  const updateTestStatus = (
+    testName: string,
+    status: TestStatus,
+    message?: string,
+    duration?: number,
   ) => {
-    const result: LogTestResult = {
-      test,
-      status,
-      message,
-      timestamp: new Date(),
-    };
-
-    setTestResults((prev) => [...prev, result]);
+    setTestItems((prev) =>
+      prev.map((test) =>
+        test.name === testName
+          ? {
+              ...test,
+              status,
+              message,
+              duration,
+              startTime: status === "running" ? new Date() : test.startTime,
+              endTime:
+                status === "pass" || status === "fail" ? new Date() : undefined,
+            }
+          : test,
+      ),
+    );
   };
 
+  // Separate test function for Log Utility Import
+  const runLogUtilityImportTest = async () => {
+    const testName = "Log Utility Import";
+    const startTime = Date.now();
+
+    updateTestStatus(testName, "running", "Loading log utilities...");
+
+    const utilities = await loadLogUtility();
+    log = utilities.log;
+    Log = utilities.Log;
+
+    const duration = Date.now() - startTime;
+
+    if (!log || !Log) {
+      updateTestStatus(
+        testName,
+        "fail",
+        "Failed to import log utilities from @user27828/shared-utils",
+        duration,
+      );
+    } else {
+      updateTestStatus(
+        testName,
+        "pass",
+        "Successfully imported log utilities",
+        duration,
+      );
+    }
+  };
+
+  // Auto-run the import test on component mount
+  React.useEffect(() => {
+    runLogUtilityImportTest();
+  }, []);
+
   const clearResults = () => {
-    setTestResults([]);
+    setTestItems((prev) =>
+      prev.map((test) => ({
+        ...test,
+        status: "pending" as TestStatus,
+        message: undefined,
+        duration: undefined,
+        startTime: undefined,
+        endTime: undefined,
+      })),
+    );
   };
 
   const runBasicLoggingTest = async () => {
+    const testName = "Basic Logging";
+    const startTime = Date.now();
+
     if (!log) {
-      addTestResult("Basic Logging", "fail", "Log utility not loaded");
+      updateTestStatus(testName, "fail", "Log utility not loaded");
       return;
     }
 
     try {
-      addTestResult(
-        "Basic Logging",
-        "pending",
-        "Testing basic logging methods...",
-      );
+      updateTestStatus(testName, "running", "Testing basic logging methods...");
 
       // Debug info about environment detection
       const hostname = window.location.hostname;
@@ -210,12 +270,11 @@ const LogTests: React.FC = () => {
         });
       }
 
+      const duration = Date.now() - startTime;
+
       if (capturedLogs.length >= 5) {
-        addTestResult(
-          "Basic Logging",
-          "pass",
-          `All logging methods work: ${capturedLogs.length} logs captured - ${capturedLogs.slice(0, 3).join(", ")}...`,
-        );
+        const successMessage = `All logging methods work: ${capturedLogs.length} logs captured - ${capturedLogs.slice(0, 3).join(", ")}...`;
+        updateTestStatus(testName, "pass", successMessage, duration);
       } else {
         // More detailed failure message
         const logMethods = ["log", "info", "warn", "error", "debug"];
@@ -224,31 +283,28 @@ const LogTests: React.FC = () => {
         );
         const isProduction = window.location.hostname !== "localhost";
         const hostname = window.location.hostname;
-        addTestResult(
-          "Basic Logging",
-          "fail",
-          `Expected 5+ logs, got ${capturedLogs.length}. Available methods: ${availableMethods.join(", ")}. Hostname: ${hostname}, Production: ${isProduction}. Captured: ${capturedLogs.join(", ") || "none"}`,
-        );
+        const errorMessage = `Expected 5+ logs, got ${capturedLogs.length}. Available methods: ${availableMethods.join(", ")}. Hostname: ${hostname}, Production: ${isProduction}. Captured: ${capturedLogs.join(", ") || "none"}`;
+        updateTestStatus(testName, "fail", errorMessage, duration);
       }
     } catch (error) {
-      addTestResult("Basic Logging", "fail", `Error: ${error}`);
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", `Error: ${error}`, duration);
     }
   };
 
   const runBasicLoggingTestWithInterceptor = async () => {
+    const testName = "Logging with Interceptor";
+    const startTime = Date.now();
+
     if (!log) {
-      addTestResult(
-        "Basic Logging (Interceptor)",
-        "fail",
-        "Log utility not loaded",
-      );
+      updateTestStatus(testName, "fail", "Log utility not loaded");
       return;
     }
 
     try {
-      addTestResult(
-        "Basic Logging (Interceptor)",
-        "pending",
+      updateTestStatus(
+        testName,
+        "running",
         "Testing basic logging with interceptor...",
       );
 
@@ -277,37 +333,33 @@ const LogTests: React.FC = () => {
       // Remove interceptor
       log.removeInterceptor(interceptor);
 
+      const duration = Date.now() - startTime;
+
       if (interceptedLogs.length >= 5) {
         const levels = interceptedLogs.map((l) => l.level).join(", ");
-        addTestResult(
-          "Basic Logging (Interceptor)",
-          "pass",
-          `Intercepted ${interceptedLogs.length} logs with levels: ${levels}`,
-        );
+        const successMessage = `Intercepted ${interceptedLogs.length} logs with levels: ${levels}`;
+        updateTestStatus(testName, "pass", successMessage, duration);
       } else {
-        addTestResult(
-          "Basic Logging (Interceptor)",
-          "fail",
-          `Expected 5+ intercepted logs, got ${interceptedLogs.length}. Logs: ${JSON.stringify(interceptedLogs)}`,
-        );
+        const errorMessage = `Expected 5+ intercepted logs, got ${interceptedLogs.length}. Logs: ${JSON.stringify(interceptedLogs)}`;
+        updateTestStatus(testName, "fail", errorMessage, duration);
       }
     } catch (error) {
-      addTestResult("Basic Logging (Interceptor)", "fail", `Error: ${error}`);
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", `Error: ${error}`, duration);
     }
   };
 
   const runEnvironmentDetectionTest = async () => {
+    const testName = "Environment Detection";
+    const startTime = Date.now();
+
     if (!Log) {
-      addTestResult("Environment Detection", "fail", "Log class not loaded");
+      updateTestStatus(testName, "fail", "Log class not loaded");
       return;
     }
 
     try {
-      addTestResult(
-        "Environment Detection",
-        "pending",
-        "Testing environment detection...",
-      );
+      updateTestStatus(testName, "running", "Testing environment detection...");
 
       // Create a new Log instance
       const testLog = new Log();
@@ -315,34 +367,42 @@ const LogTests: React.FC = () => {
       // Test environment detection method
       const detectedEnv = testLog.detectEnvironment();
 
+      const duration = Date.now() - startTime;
+
       if (detectedEnv === "client") {
-        addTestResult(
-          "Environment Detection",
+        updateTestStatus(
+          testName,
           "pass",
           `Correctly detected client environment: ${detectedEnv}`,
+          duration,
         );
       } else {
-        addTestResult(
-          "Environment Detection",
+        updateTestStatus(
+          testName,
           "fail",
           `Expected 'client', got '${detectedEnv}'`,
+          duration,
         );
       }
     } catch (error) {
-      addTestResult("Environment Detection", "fail", `Error: ${error}`);
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", `Error: ${error}`, duration);
     }
   };
 
   const runCallerInformationTest = async () => {
+    const testName = "Caller Information";
+    const startTime = Date.now();
+
     if (!Log) {
-      addTestResult("Caller Information", "fail", "Log class not loaded");
+      updateTestStatus(testName, "fail", "Log class not loaded");
       return;
     }
 
     try {
-      addTestResult(
-        "Caller Information",
-        "pending",
+      updateTestStatus(
+        testName,
+        "running",
         "Testing caller information feature...",
       );
 
@@ -372,37 +432,45 @@ const LogTests: React.FC = () => {
       const withCallerLog = capturedLogs[0] || "";
       const withoutCallerLog = capturedLogs[1] || "";
 
+      const duration = Date.now() - startTime;
+
       if (
         withCallerLog.includes("LogTests.tsx") &&
         !withoutCallerLog.includes("LogTests.tsx")
       ) {
-        addTestResult(
-          "Caller Information",
+        updateTestStatus(
+          testName,
           "pass",
           "Caller information correctly shown/hidden",
+          duration,
         );
       } else {
-        addTestResult(
-          "Caller Information",
+        updateTestStatus(
+          testName,
           "pass",
           `Caller feature working (logs: "${withCallerLog}" vs "${withoutCallerLog}")`,
+          duration,
         );
       }
     } catch (error) {
-      addTestResult("Caller Information", "fail", `Error: ${error}`);
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", `Error: ${error}`, duration);
     }
   };
 
   const runLocalStorageOverrideTest = async () => {
+    const testName = "LocalStorage Override";
+    const startTime = Date.now();
+
     if (!Log) {
-      addTestResult("LocalStorage Override", "fail", "Log class not loaded");
+      updateTestStatus(testName, "fail", "Log class not loaded");
       return;
     }
 
     try {
-      addTestResult(
-        "LocalStorage Override",
-        "pending",
+      updateTestStatus(
+        testName,
+        "running",
         "Testing localStorage debug override...",
       );
 
@@ -437,22 +505,27 @@ const LogTests: React.FC = () => {
         results.push(`❌ disableDebug failed: ${error}`);
       }
 
-      addTestResult("LocalStorage Override", "pass", results.join(", "));
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "pass", results.join(", "), duration);
     } catch (error) {
-      addTestResult("LocalStorage Override", "fail", `Error: ${error}`);
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", `Error: ${error}`, duration);
     }
   };
 
   const runProductionFilteringTest = async () => {
+    const testName = "Production Filtering";
+    const startTime = Date.now();
+
     if (!Log) {
-      addTestResult("Production Filtering", "fail", "Log class not loaded");
+      updateTestStatus(testName, "fail", "Log class not loaded");
       return;
     }
 
     try {
-      addTestResult(
-        "Production Filtering",
-        "pending",
+      updateTestStatus(
+        testName,
+        "running",
         "Testing production mode filtering...",
       );
 
@@ -513,20 +586,25 @@ const LogTests: React.FC = () => {
         `Production filtering configuration applied`,
       ];
 
-      addTestResult("Production Filtering", "pass", results.join(", "));
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "pass", results.join(", "), duration);
     } catch (error) {
-      addTestResult("Production Filtering", "fail", `Error: ${error}`);
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", `Error: ${error}`, duration);
     }
   };
 
   const runInterceptorsTest = async () => {
+    const testName = "Interceptors";
+    const startTime = Date.now();
+
     if (!Log) {
-      addTestResult("Interceptors", "fail", "Log class not loaded");
+      updateTestStatus(testName, "fail", "Log class not loaded");
       return;
     }
 
     try {
-      addTestResult("Interceptors", "pending", "Testing log interceptors...");
+      updateTestStatus(testName, "running", "Testing log interceptors...");
 
       const testLog = new Log();
       testLog.setOptions({ showCaller: false });
@@ -556,28 +634,35 @@ const LogTests: React.FC = () => {
         `Interceptor removal works`,
       ];
 
+      const duration = Date.now() - startTime;
+
       if (interceptedLogs.length === 3) {
-        addTestResult("Interceptors", "pass", results.join(", "));
+        updateTestStatus(testName, "pass", results.join(", "), duration);
       } else {
-        addTestResult(
-          "Interceptors",
+        updateTestStatus(
+          testName,
           "fail",
           `Expected 3 intercepted logs, got ${interceptedLogs.length}`,
+          duration,
         );
       }
     } catch (error) {
-      addTestResult("Interceptors", "fail", `Error: ${error}`);
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", `Error: ${error}`, duration);
     }
   };
 
   const runMethodBindingTest = async () => {
+    const testName = "Method Binding";
+    const startTime = Date.now();
+
     if (!log) {
-      addTestResult("Method Binding", "fail", "Log utility not loaded");
+      updateTestStatus(testName, "fail", "Log utility not loaded");
       return;
     }
 
     try {
-      addTestResult("Method Binding", "pending", "Testing method binding...");
+      updateTestStatus(testName, "running", "Testing method binding...");
 
       // Use the enableDebug method to bypass production restrictions
       log.enableDebug(true);
@@ -644,21 +729,60 @@ const LogTests: React.FC = () => {
         });
       }
 
+      const duration = Date.now() - startTime;
+
       if (capturedCalls >= 5) {
-        addTestResult(
-          "Method Binding",
+        updateTestStatus(
+          testName,
           "pass",
           "All destructured methods work correctly",
+          duration,
         );
       } else {
-        addTestResult(
-          "Method Binding",
+        updateTestStatus(
+          testName,
           "fail",
           `Expected 5 method calls, got ${capturedCalls}`,
+          duration,
         );
       }
     } catch (error) {
-      addTestResult("Method Binding", "fail", `Error: ${error}`);
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", `Error: ${error}`, duration);
+    }
+  };
+
+  const runIndividualTest = async (testName: string) => {
+    switch (testName) {
+      case "Log Utility Import":
+        await runLogUtilityImportTest();
+        break;
+      case "Basic Logging":
+        await runBasicLoggingTest();
+        break;
+      case "Logging with Interceptor":
+        await runBasicLoggingTestWithInterceptor();
+        break;
+      case "Environment Detection":
+        await runEnvironmentDetectionTest();
+        break;
+      case "Caller Information":
+        await runCallerInformationTest();
+        break;
+      case "LocalStorage Override":
+        await runLocalStorageOverrideTest();
+        break;
+      case "Production Filtering":
+        await runProductionFilteringTest();
+        break;
+      case "Interceptors":
+        await runInterceptorsTest();
+        break;
+      case "Method Binding":
+        await runMethodBindingTest();
+        break;
+      default:
+        updateTestStatus(testName, "fail", "Unknown test");
     }
   };
 
@@ -666,28 +790,22 @@ const LogTests: React.FC = () => {
     setIsLoading(true);
     clearResults();
 
-    await runBasicLoggingTest();
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    const tests = [
+      runLogUtilityImportTest,
+      runBasicLoggingTest,
+      runBasicLoggingTestWithInterceptor,
+      runEnvironmentDetectionTest,
+      runCallerInformationTest,
+      runLocalStorageOverrideTest,
+      runProductionFilteringTest,
+      runInterceptorsTest,
+      runMethodBindingTest,
+    ];
 
-    await runBasicLoggingTestWithInterceptor();
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    await runEnvironmentDetectionTest();
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    await runCallerInformationTest();
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    await runLocalStorageOverrideTest();
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    await runProductionFilteringTest();
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    await runInterceptorsTest();
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    await runMethodBindingTest();
+    for (const testFn of tests) {
+      await testFn();
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
 
     setIsLoading(false);
   };
@@ -695,107 +813,53 @@ const LogTests: React.FC = () => {
   return (
     <div>
       <h2>Log Utility Integration Tests</h2>
+      <TestProgress
+        title="Log Utilities"
+        tests={testItems}
+        isRunning={isLoading}
+        onRunAll={runAllTests}
+        onRunIndividual={runIndividualTest}
+        onClear={clearResults}
+        showIndividualButtons={true}
+      />
 
-      <div style={{ marginBottom: "1rem" }}>
-        <button
-          onClick={runAllTests}
-          disabled={isLoading}
-          style={{
-            padding: "0.75rem 1.5rem",
-            fontSize: "1rem",
-            backgroundColor: "#007acc",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: isLoading ? "not-allowed" : "pointer",
-            marginRight: "1rem",
-          }}
-        >
-          {isLoading ? "Running Tests..." : "Run All Tests"}
-        </button>
-
-        <button
-          onClick={clearResults}
-          style={{
-            padding: "0.75rem 1.5rem",
-            fontSize: "1rem",
-            backgroundColor: "#666",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            marginRight: "1rem",
-          }}
-        >
-          Clear Results
-        </button>
-
-        <button
-          onClick={runBasicLoggingTest}
-          style={{
-            padding: "0.5rem 1rem",
-            fontSize: "0.9rem",
-            backgroundColor: "#5a5a5a",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            marginRight: "0.5rem",
-          }}
-        >
-          Basic Logging
-        </button>
-
-        <button
-          onClick={runBasicLoggingTestWithInterceptor}
-          style={{
-            padding: "0.5rem 1rem",
-            fontSize: "0.9rem",
-            backgroundColor: "#5a5a5a",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            marginRight: "0.5rem",
-          }}
-        >
-          Basic Logging (Interceptor)
-        </button>
-
-        <button
-          onClick={runEnvironmentDetectionTest}
-          style={{
-            padding: "0.5rem 1rem",
-            fontSize: "0.9rem",
-            backgroundColor: "#5a5a5a",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            marginRight: "0.5rem",
-          }}
-        >
-          Environment Detection
-        </button>
-
-        <button
-          onClick={runMethodBindingTest}
-          style={{
-            padding: "0.5rem 1rem",
-            fontSize: "0.9rem",
-            backgroundColor: "#5a5a5a",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            marginRight: "0.5rem",
-          }}
-        >
-          Method Binding
-        </button>
+      <div className="card" style={{ marginTop: "2rem" }}>
+        <h3>About Log Utility Tests</h3>
+        <ul style={{ textAlign: "left" }}>
+          <li>
+            <strong>Basic Logging:</strong> Tests core log function calls and
+            output capture
+          </li>
+          <li>
+            <strong>Logging with Interceptor:</strong> Verifies interceptor
+            functionality for capturing logs
+          </li>
+          <li>
+            <strong>Environment Detection:</strong> Tests client-side
+            environment detection logic
+          </li>
+          <li>
+            <strong>Caller Information:</strong> Verifies caller information
+            extraction and display
+          </li>
+          <li>
+            <strong>LocalStorage Override:</strong> Tests localStorage-based
+            debug configuration
+          </li>
+          <li>
+            <strong>Production Filtering:</strong> Verifies production
+            environment log filtering
+          </li>
+          <li>
+            <strong>Interceptors:</strong> Tests custom log interceptor
+            management
+          </li>
+          <li>
+            <strong>Method Binding:</strong> Ensures destructured methods work
+            correctly
+          </li>
+        </ul>
       </div>
-
-      <TestResultsRenderer testResults={testResults} />
     </div>
   );
 };

@@ -25,6 +25,7 @@ export {
   getTurnstileServerOptions,
   verifyTurnstileTokenEnhanced,
   verifyTurnstileSimple,
+  setGlobalOptions,
 } from "./src/turnstile/index.js";
 
 // Middleware
@@ -37,7 +38,7 @@ export { createTurnstileWorker } from "./src/turnstile/index.js";
 export { verifyTurnstileToken } from "./src/turnstile/index.js";
 
 // Options management
-export { OptionsManager, optionsManager } from "./src/options-manager.js";
+export { OptionsManager, optionsManager } from "@shared-utils/utils";
 
 // Utilities
 export {
@@ -53,5 +54,7 @@ export type {
   TurnstileVerifyResponse,
   Environment,
   TurnstileServerOptions,
+  TurnstileOptions,
+  GlobalTurnstileOptions,
   TurnstileWorkerConfig,
 } from "./src/turnstile/index.js";

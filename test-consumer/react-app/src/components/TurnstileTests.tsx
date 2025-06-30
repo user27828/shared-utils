@@ -1,6 +1,6 @@
-import React from "react";
-import { Button, Box } from "@mui/material";
-import { TestResultsRenderer, type TestResult } from "./TestResultsRenderer";
+import React, { useState, useEffect, useRef } from "react";
+import { Container, Typography, Box, Button, Divider } from "@mui/material";
+import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 
 // Import the turnstile utility from shared-utils
 // Note: This will test the actual integration
@@ -26,40 +26,119 @@ const loadTurnstile = async () => {
   }
 };
 
-interface TurnstileTestResult extends TestResult {
-  // Inherits test, status, message, timestamp from TestResult
-}
-
-const TurnstileTests: React.FC = () => {
-  const [testResults, setTestResults] = React.useState<TurnstileTestResult[]>(
-    [],
-  );
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [turnstileLoaded, setTurnstileLoaded] = React.useState(false);
+export const TurnstileTests: React.FC = () => {
+  const [isRunningTestSuite, setIsRunningTestSuite] = useState<boolean>(false);
+  const [turnstileLoaded, setTurnstileLoaded] = useState(false);
 
   // Widget refs for cleanup
-  const basicWidgetRef = React.useRef<HTMLDivElement>(null);
-  const customWidgetRef = React.useRef<HTMLDivElement>(null);
-  const multipleWidget1Ref = React.useRef<HTMLDivElement>(null);
-  const multipleWidget2Ref = React.useRef<HTMLDivElement>(null);
-  const eventWidgetRef = React.useRef<HTMLDivElement>(null);
+  const basicWidgetRef = useRef<HTMLDivElement>(null);
+  const customWidgetRef = useRef<HTMLDivElement>(null);
+  const multipleWidget1Ref = useRef<HTMLDivElement>(null);
+  const multipleWidget2Ref = useRef<HTMLDivElement>(null);
+  const eventWidgetRef = useRef<HTMLDivElement>(null);
 
-  React.useEffect(() => {
+  const [testItems, setTestItems] = useState<TestItem[]>([
+    {
+      name: "Turnstile Import",
+      description: "Test importing turnstile utility from shared-utils",
+      status: "pending",
+    },
+    {
+      name: "Basic Rendering",
+      description: "Test basic widget rendering functionality",
+      status: "pending",
+    },
+    {
+      name: "Configuration Options",
+      description: "Test various configuration options",
+      status: "pending",
+    },
+    {
+      name: "Event Handling",
+      description: "Test event callback functionality",
+      status: "pending",
+    },
+    {
+      name: "Multiple Widgets",
+      description: "Test rendering multiple widgets simultaneously",
+      status: "pending",
+    },
+    {
+      name: "Theme Switching",
+      description: "Test dynamic theme switching",
+      status: "pending",
+    },
+    {
+      name: "Reset and Cleanup",
+      description: "Test cleanup and reset functionality",
+      status: "pending",
+    },
+  ]);
+
+  const updateTestStatus = (
+    testName: string,
+    status: TestStatus,
+    message?: string,
+    duration?: number,
+  ) => {
+    setTestItems((prev) =>
+      prev.map((test) =>
+        test.name === testName
+          ? {
+              ...test,
+              status,
+              message,
+              duration,
+              startTime: status === "running" ? new Date() : test.startTime,
+              endTime:
+                status === "pass" || status === "fail" ? new Date() : undefined,
+            }
+          : test,
+      ),
+    );
+  };
+
+  const clearResults = () => {
+    setTestItems((prev) =>
+      prev.map((test) => ({
+        ...test,
+        // Preserve the Turnstile Import test status since it runs on mount
+        status:
+          test.name === "Turnstile Import"
+            ? test.status
+            : ("pending" as TestStatus),
+        message: test.name === "Turnstile Import" ? test.message : undefined,
+        duration: test.name === "Turnstile Import" ? test.duration : undefined,
+        startTime:
+          test.name === "Turnstile Import" ? test.startTime : undefined,
+        endTime: test.name === "Turnstile Import" ? test.endTime : undefined,
+      })),
+    );
+  };
+
+  useEffect(() => {
     const initTurnstile = async () => {
+      const testName = "Turnstile Import";
+      const startTime = Date.now();
+      updateTestStatus(testName, "running", "Importing turnstile utility...");
+
       turnstile = await loadTurnstile();
       setTurnstileLoaded(!!turnstile);
 
+      const duration = Date.now() - startTime;
       if (!turnstile) {
-        addTestResult(
-          "Turnstile Import",
+        updateTestStatus(
+          testName,
           "fail",
           "Failed to import turnstile from @user27828/shared-utils",
+          duration,
         );
       } else {
-        addTestResult(
-          "Turnstile Import",
+        updateTestStatus(
+          testName,
           "pass",
           "Successfully imported turnstile utility",
+          duration,
         );
       }
     };
@@ -67,38 +146,20 @@ const TurnstileTests: React.FC = () => {
     initTurnstile();
   }, []);
 
-  const addTestResult = (
-    test: string,
-    status: "pass" | "fail" | "pending",
-    message: string,
-  ) => {
-    const result: TurnstileTestResult = {
-      test,
-      status,
-      message,
-      timestamp: new Date(),
-    };
-
-    setTestResults((prev) => [...prev, result]);
-  };
-
-  const clearResults = () => {
-    setTestResults([]);
-  };
-
+  // Individual test functions
   const runBasicRenderingTest = async () => {
+    const testName = "Basic Rendering";
+    const startTime = Date.now();
+
+    updateTestStatus(testName, "running", "Testing basic widget rendering...");
+
     if (!turnstile) {
-      addTestResult("Basic Rendering", "fail", "Turnstile not loaded");
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", "Turnstile not loaded", duration);
       return;
     }
 
     try {
-      addTestResult(
-        "Basic Rendering",
-        "pending",
-        "Testing basic widget rendering...",
-      );
-
       // Test basic configuration
       await turnstile.setOptions({
         siteKey: "1x00000000000000000000AA", // Test site key
@@ -111,40 +172,50 @@ const TurnstileTests: React.FC = () => {
           theme: "light",
         });
 
+        const duration = Date.now() - startTime;
         if (widgetId) {
-          addTestResult(
-            "Basic Rendering",
+          updateTestStatus(
+            testName,
             "pass",
             `Widget rendered successfully with ID: ${widgetId}`,
+            duration,
           );
         } else {
-          addTestResult(
-            "Basic Rendering",
+          updateTestStatus(
+            testName,
             "fail",
             "Widget rendering returned no ID",
+            duration,
           );
         }
       } else {
-        addTestResult("Basic Rendering", "fail", "Widget container not found");
+        const duration = Date.now() - startTime;
+        updateTestStatus(
+          testName,
+          "fail",
+          "Widget container not found",
+          duration,
+        );
       }
     } catch (error) {
-      addTestResult("Basic Rendering", "fail", `Error: ${error}`);
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", `Error: ${error}`, duration);
     }
   };
 
   const runConfigurationTest = async () => {
+    const testName = "Configuration Options";
+    const startTime = Date.now();
+
+    updateTestStatus(testName, "running", "Testing configuration options...");
+
     if (!turnstile) {
-      addTestResult("Configuration Options", "fail", "Turnstile not loaded");
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", "Turnstile not loaded", duration);
       return;
     }
 
     try {
-      addTestResult(
-        "Configuration Options",
-        "pending",
-        "Testing configuration options...",
-      );
-
       // Test various configuration options
       const configurations = [
         { theme: "dark", size: "normal" },
@@ -174,25 +245,31 @@ const TurnstileTests: React.FC = () => {
         }
       }
 
+      const duration = Date.now() - startTime;
       if (allPassed) {
-        addTestResult("Configuration Options", "pass", results.join(", "));
+        updateTestStatus(testName, "pass", results.join(", "), duration);
       } else {
-        addTestResult("Configuration Options", "fail", results.join(", "));
+        updateTestStatus(testName, "fail", results.join(", "), duration);
       }
     } catch (error) {
-      addTestResult("Configuration Options", "fail", `Error: ${error}`);
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", `Error: ${error}`, duration);
     }
   };
 
   const runEventHandlingTest = async () => {
+    const testName = "Event Handling";
+    const startTime = Date.now();
+
+    updateTestStatus(testName, "running", "Testing event callbacks...");
+
     if (!turnstile) {
-      addTestResult("Event Handling", "fail", "Turnstile not loaded");
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", "Turnstile not loaded", duration);
       return;
     }
 
     try {
-      addTestResult("Event Handling", "pending", "Testing event callbacks...");
-
       // Set up event handlers
       if (eventWidgetRef.current) {
         const widgetId = await turnstile.render(eventWidgetRef.current, {
@@ -208,40 +285,44 @@ const TurnstileTests: React.FC = () => {
           },
         });
 
+        const duration = Date.now() - startTime;
         // Since we can't actually trigger the events in test environment,
         // we'll test that the widget was created with the callbacks
         if (widgetId) {
-          addTestResult(
-            "Event Handling",
+          updateTestStatus(
+            testName,
             "pass",
             "Widget created with event callbacks successfully",
+            duration,
           );
         } else {
-          addTestResult(
-            "Event Handling",
+          updateTestStatus(
+            testName,
             "fail",
             "Failed to create widget with callbacks",
+            duration,
           );
         }
       }
     } catch (error) {
-      addTestResult("Event Handling", "fail", `Error: ${error}`);
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", `Error: ${error}`, duration);
     }
   };
 
   const runMultipleWidgetsTest = async () => {
+    const testName = "Multiple Widgets";
+    const startTime = Date.now();
+
+    updateTestStatus(testName, "running", "Testing multiple widgets...");
+
     if (!turnstile) {
-      addTestResult("Multiple Widgets", "fail", "Turnstile not loaded");
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", "Turnstile not loaded", duration);
       return;
     }
 
     try {
-      addTestResult(
-        "Multiple Widgets",
-        "pending",
-        "Testing multiple widgets...",
-      );
-
       if (multipleWidget1Ref.current && multipleWidget2Ref.current) {
         const widget1Id = await turnstile.render(multipleWidget1Ref.current, {
           sitekey: "1x00000000000000000000AA",
@@ -253,42 +334,47 @@ const TurnstileTests: React.FC = () => {
           theme: "dark",
         });
 
+        const duration = Date.now() - startTime;
         if (widget1Id && widget2Id && widget1Id !== widget2Id) {
-          addTestResult(
-            "Multiple Widgets",
+          updateTestStatus(
+            testName,
             "pass",
             `Two different widgets created: ${widget1Id}, ${widget2Id}`,
+            duration,
           );
         } else {
-          addTestResult(
-            "Multiple Widgets",
+          updateTestStatus(
+            testName,
             "fail",
             "Failed to create two distinct widgets",
+            duration,
           );
         }
       }
     } catch (error) {
-      addTestResult("Multiple Widgets", "fail", `Error: ${error}`);
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", `Error: ${error}`, duration);
     }
   };
 
   const runThemeSwitchingTest = async () => {
+    const testName = "Theme Switching";
+    const startTime = Date.now();
+
+    updateTestStatus(testName, "running", "Testing dynamic theme switching...");
+
     if (!turnstile || !customWidgetRef.current) {
-      addTestResult(
-        "Theme Switching",
+      const duration = Date.now() - startTime;
+      updateTestStatus(
+        testName,
         "fail",
         "Turnstile not loaded or container not found",
+        duration,
       );
       return;
     }
 
     try {
-      addTestResult(
-        "Theme Switching",
-        "pending",
-        "Testing dynamic theme switching...",
-      );
-
       // Create a widget with light theme
       const widgetId = await turnstile.render(customWidgetRef.current, {
         sitekey: "1x00000000000000000000AA",
@@ -307,44 +393,50 @@ const TurnstileTests: React.FC = () => {
           theme: "dark",
         });
 
+        const duration = Date.now() - startTime;
         if (newWidgetId) {
-          addTestResult(
-            "Theme Switching",
+          updateTestStatus(
+            testName,
             "pass",
             "Successfully switched themes",
+            duration,
           );
         } else {
-          addTestResult(
-            "Theme Switching",
+          updateTestStatus(
+            testName,
             "fail",
             "Failed to re-render with new theme",
+            duration,
           );
         }
       } else {
-        addTestResult(
-          "Theme Switching",
+        const duration = Date.now() - startTime;
+        updateTestStatus(
+          testName,
           "fail",
           "Initial widget creation failed",
+          duration,
         );
       }
     } catch (error) {
-      addTestResult("Theme Switching", "fail", `Error: ${error}`);
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", `Error: ${error}`, duration);
     }
   };
 
   const runCleanupTest = async () => {
+    const testName = "Reset and Cleanup";
+    const startTime = Date.now();
+
+    updateTestStatus(testName, "running", "Testing cleanup functionality...");
+
     if (!turnstile) {
-      addTestResult("Reset and Cleanup", "fail", "Turnstile not loaded");
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", "Turnstile not loaded", duration);
       return;
     }
 
     try {
-      addTestResult(
-        "Reset and Cleanup",
-        "pending",
-        "Testing cleanup functionality...",
-      );
-
       // Test cleanup methods exist and are callable
       const methods = ["reset", "remove", "cleanup"];
       const results: string[] = [];
@@ -365,182 +457,243 @@ const TurnstileTests: React.FC = () => {
         results.push(`❌ Cleanup failed: ${error}`);
       }
 
-      addTestResult("Reset and Cleanup", "pass", results.join(", "));
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "pass", results.join(", "), duration);
     } catch (error) {
-      addTestResult("Reset and Cleanup", "fail", `Error: ${error}`);
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", `Error: ${error}`, duration);
+    }
+  };
+
+  const runIndividualTest = async (testName: string) => {
+    switch (testName) {
+      case "Turnstile Import":
+        // This test runs automatically on component mount, show info message
+        updateTestStatus(
+          testName,
+          turnstileLoaded ? "pass" : "fail",
+          turnstileLoaded
+            ? "Import test runs automatically on component load"
+            : "Import failed on component load - refresh to retry",
+        );
+        break;
+      case "Basic Rendering":
+        await runBasicRenderingTest();
+        break;
+      case "Configuration Options":
+        await runConfigurationTest();
+        break;
+      case "Event Handling":
+        await runEventHandlingTest();
+        break;
+      case "Multiple Widgets":
+        await runMultipleWidgetsTest();
+        break;
+      case "Theme Switching":
+        await runThemeSwitchingTest();
+        break;
+      case "Reset and Cleanup":
+        await runCleanupTest();
+        break;
+      default:
+        updateTestStatus(testName, "fail", "Test not implemented yet");
     }
   };
 
   const runAllTests = async () => {
-    setIsLoading(true);
+    setIsRunningTestSuite(true);
     clearResults();
 
-    await runBasicRenderingTest();
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Small delay between tests for better UX
+    const delay = (ms: number) =>
+      new Promise((resolve) => setTimeout(resolve, ms));
 
-    await runConfigurationTest();
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    try {
+      // Note: Turnstile Import test runs automatically on component mount and is preserved
 
-    await runEventHandlingTest();
-    await new Promise((resolve) => setTimeout(resolve, 500));
+      await runBasicRenderingTest();
+      await delay(500);
 
-    await runMultipleWidgetsTest();
-    await new Promise((resolve) => setTimeout(resolve, 500));
+      await runConfigurationTest();
+      await delay(500);
 
-    await runThemeSwitchingTest();
-    await new Promise((resolve) => setTimeout(resolve, 500));
+      await runEventHandlingTest();
+      await delay(500);
 
-    await runCleanupTest();
+      await runMultipleWidgetsTest();
+      await delay(500);
 
-    setIsLoading(false);
+      await runThemeSwitchingTest();
+      await delay(500);
+
+      await runCleanupTest();
+      await delay(500);
+    } catch (error) {
+      console.error("Error during test execution:", error);
+    }
+
+    setIsRunningTestSuite(false);
   };
 
   return (
-    <div className="turnstile-tests">
-      <div className="card">
-        <h2>Turnstile Integration Tests</h2>
-        <p>
-          This test suite validates the integration of the Turnstile utility
-          from @user27828/shared-utils in a real React environment. Tests cover
-          rendering, configuration, events, and cleanup.
-        </p>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Turnstile Integration Tests
+      </Typography>
 
-        <div style={{ margin: "1rem 0" }}>
+      <Typography variant="body1" sx={{ mb: 3 }}>
+        This test suite validates the integration of the Turnstile utility from
+        @user27828/shared-utils in a real React environment. Tests cover
+        rendering, configuration, events, and cleanup using the new Timeline
+        progress interface.
+      </Typography>
+
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="body1" sx={{ mb: 2 }}>
           <strong>Turnstile Status:</strong>{" "}
           {turnstileLoaded ? "✅ Loaded" : "❌ Not Loaded"}
-        </div>
+        </Typography>
 
-        <Box sx={{ mb: 4 }}>
-          <Button
-            variant="contained"
-            onClick={runAllTests}
-            disabled={isLoading || !turnstileLoaded}
-            size="large"
-            sx={{ mr: 2 }}
-          >
-            {isLoading ? "Running Tests..." : "Run All Tests"}
-          </Button>
+        <Button
+          variant="contained"
+          onClick={runAllTests}
+          disabled={isRunningTestSuite || !turnstileLoaded}
+          size="large"
+        >
+          {isRunningTestSuite ? "Running Tests..." : "Run All Turnstile Tests"}
+        </Button>
+      </Box>
 
-          <Button variant="outlined" onClick={clearResults} size="large">
-            Clear Results
-          </Button>
-        </Box>
-      </div>
+      <Divider sx={{ mb: 3 }} />
 
-      {/* Test Widgets Containers */}
-      <div className="test-section">
-        <h3>Test Widget Areas</h3>
+      {/* TestProgress Timeline Component */}
+      <TestProgress
+        title="Turnstile Tests"
+        tests={testItems}
+        onRunIndividual={runIndividualTest}
+        isRunning={isRunningTestSuite}
+        showIndividualButtons={true}
+      />
 
-        <div className="turnstile-test-container">
-          <h4>Basic Widget</h4>
+      <Divider sx={{ mb: 3 }} />
+
+      {/* Test Widget Areas */}
+      <Typography variant="h5" component="h2" gutterBottom>
+        Test Widget Areas
+      </Typography>
+
+      <Box sx={{ mb: 3, display: "grid", gap: 3 }}>
+        <Box
+          sx={{
+            p: 3,
+            backgroundColor: "rgba(255, 255, 255, 0.02)",
+            borderRadius: 2,
+            border: 1,
+            borderColor: "rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            Basic Widget
+          </Typography>
           <div ref={basicWidgetRef} id="basic-turnstile"></div>
-        </div>
-
-        <div className="turnstile-test-container">
-          <h4>Custom Configuration Widget</h4>
-          <div ref={customWidgetRef} id="custom-turnstile"></div>
-        </div>
-
-        <div className="turnstile-test-container">
-          <h4>Multiple Widgets</h4>
-          <div style={{ display: "flex", gap: "1rem" }}>
-            <div>
-              <strong>Widget 1 (Light):</strong>
-              <div ref={multipleWidget1Ref} id="multiple-turnstile-1"></div>
-            </div>
-            <div>
-              <strong>Widget 2 (Dark):</strong>
-              <div ref={multipleWidget2Ref} id="multiple-turnstile-2"></div>
-            </div>
-          </div>
-        </div>
-
-        <div className="turnstile-test-container">
-          <h4>Event Handling Widget</h4>
-          <div ref={eventWidgetRef} id="event-turnstile"></div>
-        </div>
-      </div>
-
-      {/* Individual Test Buttons */}
-      <div className="test-section">
-        <h3>Individual Tests</h3>
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 3 }}>
-          <Button
-            variant="outlined"
-            onClick={runBasicRenderingTest}
-            disabled={!turnstileLoaded}
-            size="medium"
-          >
-            Test Basic Rendering
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={runConfigurationTest}
-            disabled={!turnstileLoaded}
-            size="medium"
-          >
-            Test Configuration
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={runEventHandlingTest}
-            disabled={!turnstileLoaded}
-            size="medium"
-          >
-            Test Event Handling
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={runMultipleWidgetsTest}
-            disabled={!turnstileLoaded}
-            size="medium"
-          >
-            Test Multiple Widgets
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={runThemeSwitchingTest}
-            disabled={!turnstileLoaded}
-            size="medium"
-          >
-            Test Theme Switching
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={runCleanupTest}
-            disabled={!turnstileLoaded}
-            size="medium"
-          >
-            Test Cleanup
-          </Button>
         </Box>
-      </div>
 
-      {/* Test Results */}
-      {testResults.length > 0 && (
-        <TestResultsRenderer testResults={testResults} />
-      )}
+        <Box
+          sx={{
+            p: 3,
+            backgroundColor: "rgba(255, 255, 255, 0.02)",
+            borderRadius: 2,
+            border: 1,
+            borderColor: "rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            Custom Configuration Widget
+          </Typography>
+          <div ref={customWidgetRef} id="custom-turnstile"></div>
+        </Box>
 
-      <div className="card">
-        <h3>Notes</h3>
-        <ul style={{ textAlign: "left" }}>
-          <li>
+        <Box
+          sx={{
+            p: 3,
+            backgroundColor: "rgba(255, 255, 255, 0.02)",
+            borderRadius: 2,
+            border: 1,
+            borderColor: "rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            Multiple Widgets
+          </Typography>
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+            <Box>
+              <Typography variant="subtitle2" gutterBottom>
+                Widget 1 (Light):
+              </Typography>
+              <div ref={multipleWidget1Ref} id="multiple-turnstile-1"></div>
+            </Box>
+            <Box>
+              <Typography variant="subtitle2" gutterBottom>
+                Widget 2 (Dark):
+              </Typography>
+              <div ref={multipleWidget2Ref} id="multiple-turnstile-2"></div>
+            </Box>
+          </Box>
+        </Box>
+
+        <Box
+          sx={{
+            p: 3,
+            backgroundColor: "rgba(255, 255, 255, 0.02)",
+            borderRadius: 2,
+            border: 1,
+            borderColor: "rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            Event Handling Widget
+          </Typography>
+          <div ref={eventWidgetRef} id="event-turnstile"></div>
+        </Box>
+      </Box>
+
+      <Divider sx={{ mb: 3 }} />
+
+      {/* Notes Section */}
+      <Box
+        sx={{
+          p: 3,
+          backgroundColor: "rgba(255, 255, 255, 0.02)",
+          borderRadius: 2,
+          border: 1,
+          borderColor: "rgba(255, 255, 255, 0.08)",
+        }}
+      >
+        <Typography variant="h6" gutterBottom>
+          Notes
+        </Typography>
+        <Box component="ul" sx={{ textAlign: "left", pl: 3 }}>
+          <Typography component="li" variant="body2" sx={{ mb: 1 }}>
             This test uses Cloudflare's test site key:{" "}
             <code>1x00000000000000000000AA</code>
-          </li>
-          <li>
+          </Typography>
+          <Typography component="li" variant="body2" sx={{ mb: 1 }}>
             Actual CAPTCHA verification will require a real site key and domain
-          </li>
-          <li>
+          </Typography>
+          <Typography component="li" variant="body2" sx={{ mb: 1 }}>
             Event callbacks may not trigger in test environment but their setup
             is validated
-          </li>
-          <li>
+          </Typography>
+          <Typography component="li" variant="body2">
             Tests focus on API integration rather than visual verification
-          </li>
-        </ul>
-      </div>
-    </div>
+          </Typography>
+        </Box>
+      </Box>
+    </Container>
   );
 };
 

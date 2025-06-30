@@ -8,6 +8,7 @@ export {
   getTurnstileServerOptions,
   verifyTurnstileTokenEnhanced,
   verifyTurnstileSimple,
+  setGlobalOptions,
 } from "./turnstile.js";
 
 // Middleware
@@ -34,4 +35,6 @@ export type {
   TurnstileVerifyResponse,
   Environment,
   TurnstileServerOptions,
+  TurnstileOptions,
+  GlobalTurnstileOptions,
 } from "./types.js";

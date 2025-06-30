@@ -20,7 +20,7 @@
  * ```
  */
 // Main verification functions
-export { getTurnstileServerOptions, verifyTurnstileTokenEnhanced, verifyTurnstileSimple, } from "./src/turnstile/index.js";
+export { getTurnstileServerOptions, verifyTurnstileTokenEnhanced, verifyTurnstileSimple, setGlobalOptions, } from "./src/turnstile/index.js";
 // Middleware
 export { createTurnstileMiddleware } from "./src/turnstile/index.js";
 // Worker factory
@@ -28,7 +28,7 @@ export { createTurnstileWorker } from "./src/turnstile/index.js";
 // Core verification
 export { verifyTurnstileToken } from "./src/turnstile/index.js";
 // Options management
-export { OptionsManager, optionsManager } from "./src/options-manager.js";
+export { OptionsManager, optionsManager } from "@shared-utils/utils";
 // Utilities
 export { isDevMode, isLocalhostRequest, createMockVerifyResponse, getAllowedOrigin, } from "./src/turnstile/index.js";
 //# sourceMappingURL=index.js.map

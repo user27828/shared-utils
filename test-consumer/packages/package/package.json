@@ -1,0 +1,89 @@
+{
+  "name": "@user27828/shared-utils",
+  "description": "Collection of common utilities I use for various projects",
+  "version": "0.69.7",
+  "type": "module",
+  "packageManager": "yarn@3.2.2",
+  "workspaces": [
+    "client",
+    "utils",
+    "server",
+    "test-consumer"
+  ],
+  "author": {
+    "name": "Marc Stephenson",
+    "url": "https://github.com/user27828"
+  },
+  "license": "MIT",
+  "main": "dist/utils/index.js",
+  "types": "dist/utils/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/index.js",
+      "default": "./dist/utils/index.js"
+    },
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.js",
+      "default": "./dist/client/index.js"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/index.js",
+      "default": "./dist/utils/index.js"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "import": "./dist/server/index.js",
+      "default": "./dist/server/index.js"
+    },
+    "./utils/*": "./dist/utils/*"
+  },
+  "scripts": {
+    "client": "yarn workspace @shared-utils/client",
+    "utils": "yarn workspace @shared-utils/utils",
+    "server": "yarn workspace @shared-utils/server",
+    "build": "yarn build:utils && yarn build:client && yarn build:server",
+    "build:utils": "cd utils && (yarn --version > /dev/null 2>&1 && yarn tsc --outDir ../dist/utils || npx tsc --outDir ../dist/utils)",
+    "build:client": "cd client && (yarn --version > /dev/null 2>&1 && yarn tsc --outDir ../dist/client || npx tsc --outDir ../dist/client)",
+    "build:server": "cd server && (yarn --version > /dev/null 2>&1 && yarn tsc --outDir ../dist/server || npx tsc --outDir ../dist/server)",
+    "prepare": "yarn build 2>/dev/null || echo '⚠️ Build failed during prepare, continuing...'",
+    "postinstall": "timeout 50s yarn build 2>/dev/null || echo '⚠️ Build failed during postinstall, continuing. This is a graceful failure.'",
+    "test": "cd client && yarn test && cd ../utils && yarn test && cd ../server && yarn test && cd ..",
+    "test:consumer": "[ -d test-consumer ] && cd test-consumer && yarn dev || echo '❌ test-consumer directory not found - this script is only available in the main shared-utils repository'",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "upgrade": "npx yarn-upgrade-interactive",
+    "update:data": "./bin/update-source-data.sh",
+    "update:local": "./bin/update-local-package.sh",
+    "compare:data": "./bin/compare-data.cjs"
+  },
+  "bin": {
+    "cf:setup-turnstile-worker": "./scripts/setup-turnstile-worker.sh",
+    "docker-build": "./bin/docker-build.sh",
+    "killnode": "./bin/killnode.sh",
+    "vite-preview-envs": "./bin/vite-preview-envs.sh",
+    "yarn-upgrade-interactive": "./bin/package-upgrades.sh"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.0.3",
+    "jest-environment-node": "^30.0.2",
+    "prettier": "^3.6.2",
+    "ts-jest": "^29.4.0",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "lodash-es": "^4.17.21",
+    "typescript": "^5.8.3"
+  },
+  "files": [
+    "dist/**/*",
+    "package.json",
+    "README.md",
+    "LICENSE",
+    "scripts/**/*",
+    "bin/**/*"
+  ]
+}

@@ -263,20 +263,24 @@ class Log {
      */
     isTestEnvironment() {
         // Check for Jest environment
-        if (typeof global !== "undefined" &&
-            global.expect &&
-            global.describe &&
-            global.it) {
+        if (typeof globalThis.global !== "undefined" &&
+            globalThis.global.expect &&
+            globalThis.global.describe &&
+            globalThis.global.it) {
             return true;
         }
         // Check NODE_ENV
-        if (typeof process !== "undefined" && process.env?.NODE_ENV === "test") {
+        if (typeof globalThis.process !== "undefined" &&
+            globalThis.process.env?.NODE_ENV === "test") {
             return true;
         }
         // Check for common test runners
         if (typeof window === "undefined" &&
-            (typeof global !== "undefined" || typeof globalThis !== "undefined")) {
-            const g = typeof global !== "undefined" ? global : globalThis;
+            (typeof globalThis.global !== "undefined" ||
+                typeof globalThis !== "undefined")) {
+            const g = typeof globalThis.global !== "undefined"
+                ? globalThis.global
+                : globalThis;
             if (g.__coverage__ || g.jasmine || g.mocha) {
                 return true;
             }

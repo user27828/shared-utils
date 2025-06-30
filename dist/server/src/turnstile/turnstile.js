@@ -1,7 +1,7 @@
 /**
  * Enhanced Turnstile server-side verification with dev mode and localhost bypass
  */
-import { OptionsManager } from "../options-manager.js";
+import { OptionsManager, optionsManager as globalOptionsManager, } from "@shared-utils/utils";
 import { isDevMode, isLocalhostRequest, createMockVerifyResponse, } from "./utils.js";
 import { verifyTurnstileToken } from "./verification.js";
 // Default options for server-side Turnstile verification
@@ -13,6 +13,12 @@ const defaultServerOptions = {
     apiUrl: "https://challenges.cloudflare.com/turnstile/v0/siteverify",
     interceptor: () => { },
 };
+// Default turnstile options for the options manager
+const defaultTurnstileOptions = {
+    dev: false,
+    bypassLocalhost: false,
+    allowedOrigins: [],
+};
 // Options manager for server-side configuration
 let turnstileServerManager = null;
 /**
@@ -21,18 +27,27 @@ let turnstileServerManager = null;
  */
 function getTurnstileServerManager() {
     if (!turnstileServerManager) {
-        turnstileServerManager = new OptionsManager(defaultServerOptions);
+        turnstileServerManager = new OptionsManager("turnstile-server", defaultServerOptions);
+        // Register with global options manager for cross-utility configuration
+        globalOptionsManager.registerManager("turnstile-server", turnstileServerManager);
     }
     return turnstileServerManager;
 }
 /**
  * Get current server-side Turnstile options
  * This integrates with the global optionsManager, so you can use:
- * optionsManager.setGlobalOptions({ 'turnstile-server': { ... } })
+ * globalOptionsManager.setGlobalOptions({ 'turnstile-server': { ... } })
  */
 export function getTurnstileServerOptions() {
     const manager = getTurnstileServerManager();
     return manager.getOptions();
+}
+/**
+ * Set global options for turnstile server configuration
+ * This allows the same API pattern: setGlobalOptions({ 'turnstile-server': { ... } })
+ */
+export function setGlobalOptions(options) {
+    globalOptionsManager.setGlobalOptions(options);
 }
 /**
  * Enhanced verification function with dev mode support
