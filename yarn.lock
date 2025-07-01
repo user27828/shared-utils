@@ -1390,10 +1390,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cloudflare/workers-types@npm:^4.20250628.0":
-  version: 4.20250628.0
-  resolution: "@cloudflare/workers-types@npm:4.20250628.0"
-  checksum: 719bbb05d3f8b68ffb2d0845da8868b979f05e44333b3f4e135882e94fa6b9e0fb0f3675146cf33ebcaa4b18a53df394352b4bc9c02f2aa3175a8342c1fcc389
+"@cloudflare/workers-types@npm:^4.20250701.0":
+  version: 4.20250701.0
+  resolution: "@cloudflare/workers-types@npm:4.20250701.0"
+  checksum: 4ce288965da1cf0029969e614dee153c689060336b92c78117e304cc6c31dccd65fa7da16a960bd53abfe619c35c7c9293da5848bcfd76db6f3d3ff9f9a35c7c
   languageName: node
   linkType: hard
 
@@ -2421,7 +2421,7 @@ __metadata:
   dependencies:
     "@babel/core": ^7.27.7
     "@babel/preset-env": ^7.27.2
-    "@cloudflare/workers-types": ^4.20250628.0
+    "@cloudflare/workers-types": ^4.20250701.0
     "@jest/globals": ^30.0.3
     "@shared-utils/utils": "workspace:*"
     babel-jest: ^30.0.2
@@ -2437,7 +2437,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@shared-utils/test-consumer@workspace:test-consumer"
   dependencies:
-    "@types/node": ^24.0.7
+    "@types/node": ^24.0.10
     "@user27828/shared-utils": "workspace:*"
     concurrently: ^9.2.0
     typescript: ^5.8.3
@@ -2452,7 +2452,7 @@ __metadata:
     "@babel/preset-env": ^7.27.2
     "@types/jest": ^30.0.0
     "@types/lodash-es": ^4.17.12
-    "@types/node": ^24.0.7
+    "@types/node": ^24.0.10
     jest: ^30.0.3
     lodash-es: ^4.17.21
     ts-jest: ^29.4.0
@@ -2620,12 +2620,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^24.0.7":
-  version: 24.0.7
-  resolution: "@types/node@npm:24.0.7"
+"@types/node@npm:^24.0.10":
+  version: 24.0.10
+  resolution: "@types/node@npm:24.0.10"
   dependencies:
     undici-types: ~7.8.0
-  checksum: e3986e0683cf5cf816297200deb0627e62b60d81952391ed03e292cd13463acaa0601adbce2402ecf560eac7a80bbc77f58417173cb01755a79fbed0b2165c92
+  checksum: 04e4d11a711a683d6ed71f8db86b35035771ee9c1f110cb904ca67454d3478f19c71f1f0ccd0ba5350e5ce63bea70d08c569f798f6f5a5d2a1d05c038f1f729f
   languageName: node
   linkType: hard
 
@@ -2827,6 +2827,7 @@ __metadata:
     typescript: ^5.8.3
   bin:
     "cf:setup-turnstile-worker": ./scripts/setup-turnstile-worker.sh
+    dependency-manager: ./scripts/dependency-manager.js
     docker-build: ./bin/docker-build.sh
     killnode: ./bin/killnode.sh
     vite-preview-envs: ./bin/vite-preview-envs.sh
