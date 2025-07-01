@@ -61,6 +61,7 @@
   },
   "bin": {
     "cf:setup-turnstile-worker": "./scripts/setup-turnstile-worker.sh",
+    "dependency-manager": "./scripts/dependency-manager.js",
     "docker-build": "./bin/docker-build.sh",
     "killnode": "./bin/killnode.sh",
     "vite-preview-envs": "./bin/vite-preview-envs.sh",
