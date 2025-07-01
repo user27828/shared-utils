@@ -3,7 +3,7 @@
  */
 /**
  * Check if the current environment is development
- * @param {function} param0.xCriteria - eXtra criteria to check if the environment is development - additional check to default
+ * @param options.xCriteria - eXtra criteria to check if the environment is development - additional check to default
  */
 export const isDev = ({ xCriteria = null } = {}) => {
     const hostname = window.location.hostname;
@@ -17,8 +17,8 @@ export const isDev = ({ xCriteria = null } = {}) => {
 };
 /**
  * Similar to path.join(), but for URLs - either full, absolute, or relative
- * @param  {...any} args - The URL parts to join
- * @returns {string} The joined URL
+ * @param args - The URL parts to join
+ * @returns The joined URL
  */
 export const pathJoinUrl = (...args) => {
     const parts = [];
@@ -69,12 +69,12 @@ export const pathJoinUrl = (...args) => {
 /**
  * Validates if a string is a properly formatted URL
  *
- * @param {string} url - The URL to validate
- * @param {Object} options - Validation options
- * @param {boolean} options.requireProtocol - Whether to require http/https protocol (default: false)
- * @param {boolean} options.allowQueryParams - Whether to allow query parameters (default: true)
- * @param {boolean} options.allowFragments - Whether to allow URL fragments (default: true)
- * @returns {boolean} True if the URL is valid, false otherwise
+ * @param url - The URL to validate
+ * @param options - Validation options
+ * @param options.requireProtocol - Whether to require http/https protocol (default: false)
+ * @param options.allowQueryParams - Whether to allow query parameters (default: true)
+ * @param options.allowFragments - Whether to allow URL fragments (default: true)
+ * @returns True if the URL is valid, false otherwise
  */
 export const isValidUrl = (url, options = {}) => {
     // Return false for empty values to allow optional URLs
@@ -111,8 +111,8 @@ export const isValidUrl = (url, options = {}) => {
 };
 /**
  * Format date to YYYY/MM/DD
- * @param {string} dateString - The date string to format (parsable by Date constructor)
- * @returns {string} Formatted date string in YYYY/MM/DD format or "N/A" if invalid
+ * @param dateString - The date string to format (parsable by Date constructor)
+ * @returns Formatted date string in YYYY/MM/DD format or "N/A" if invalid
  */
 export const formatDateYYMMDD = (dateString) => {
     if (!dateString) {

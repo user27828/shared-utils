@@ -14,10 +14,10 @@
     "./*": "./dist/*"
   },
   "scripts": {
-    "build": "npx tsc",
+    "build": "yarn --version > /dev/null 2>&1 && yarn tsc --outDir ../dist/utils || npx tsc --outDir ../dist/utils",
     "test": "NODE_OPTIONS=\"--experimental-vm-modules\" jest",
     "test:watch": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --watch",
-    "dev": "npx tsc --watch"
+    "dev": "npx tsc --outDir ../dist/utils --watch"
   },
   "dependencies": {
     "lodash-es": "^4.17.21"

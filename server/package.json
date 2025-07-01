@@ -24,8 +24,8 @@
   ],
   "private": true,
   "scripts": {
-    "build": "yarn tsc",
-    "dev": "yarn tsc --watch",
+    "build": "yarn --version > /dev/null 2>&1 && yarn tsc --outDir ../dist/server || npx tsc --outDir ../dist/server",
+    "dev": "yarn tsc --outDir ../dist/server --watch",
     "cf:deploy": "./deploy-turnstile-worker.sh",
     "cf:deploy:dev": "./deploy-turnstile-worker.sh dev",
     "cf:deploy:staging": "./deploy-turnstile-worker.sh staging",

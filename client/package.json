@@ -14,10 +14,10 @@
     "./*": "./dist/*"
   },
   "scripts": {
-    "build": "yarn tsc",
+    "build": "yarn --version > /dev/null 2>&1 && yarn tsc --outDir ../dist/client || npx tsc --outDir ../dist/client",
     "test": "echo 'No tests found in client package - this is expected until client tests are added' && exit 0",
     "test:watch": "jest --watch",
-    "dev": "yarn tsc --watch"
+    "dev": "yarn tsc --outDir ../dist/client --watch"
   },
   "peerDependencies": {
     "@mui/icons-material": ">=5.0.0",
