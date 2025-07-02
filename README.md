@@ -67,8 +67,13 @@ import {
   CountrySelect,
   LanguageSelect,
   FileIcon,
-  TinyMceEditor,
 } from "@user27828/shared-utils/client";
+
+// ✅ WYSIWYG Editor (requires @tinymce/tinymce-react and tinymce)
+import {
+  TinyMceEditor,
+  TinyMceBundle,
+} from "@user27828/shared-utils/client/wysiwyg";
 
 // ✅ Server functionality
 import { verifyTurnstileTokenEnhanced } from "@user27828/shared-utils/server";
@@ -110,8 +115,35 @@ React components and client-side helpers:
 
 - **Form Components**: `CountrySelect`, `LanguageSelect`
 - **File Icons**: `FileIcon` - MUI icons for 70+ file types and MIME types
-- **WYSIWYG Editors**: `TinyMceEditor`, `TinyMceBundle`
 - **Helper Functions**: Country/language utilities, CSV helpers
+
+#### 📝 WYSIWYG Editor Components
+
+WYSIWYG components are available as an optional separate import to avoid forcing TinyMCE dependencies on projects that don't need them:
+
+```bash
+# First, install the required peer dependencies
+yarn add @tinymce/tinymce-react tinymce
+```
+
+```typescript
+// Import WYSIWYG components separately
+import {
+  TinyMceEditor,
+  TinyMceBundle,
+} from "@user27828/shared-utils/client/wysiwyg";
+
+// Basic usage
+<TinyMceEditor 
+  data={content}
+  onChange={(value) => setContent(value)}
+/>
+```
+
+**Features:**
+- **Conditional Loading**: Components gracefully handle missing dependencies
+- **Lightweight**: Main client export doesn't include TinyMCE bundle
+- **Flexible**: Use `TinyMceBundle` for basic editor or `TinyMceEditor` for pre-configured setup
 
 ### 🚀 [Server](/server/README-SERVER.md)
 

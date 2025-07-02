@@ -93,3 +93,18 @@ declare module "@user27828/shared-utils/utils" {
 declare module "@user27828/shared-utils/server" {
   export * from "@user27828/shared-utils/dist/server";
 }
+
+// WYSIWYG Components - separate import path
+declare module "@user27828/shared-utils/client/wysiwyg" {
+  import React from "react";
+
+  export interface TinyMceEditorProps {
+    data?: string;
+    onChange?: (content: string) => void;
+    init?: any;
+    [key: string]: any;
+  }
+
+  export const TinyMceEditor: React.FC<TinyMceEditorProps>;
+  export const TinyMceBundle: React.FC<TinyMceEditorProps>;
+}

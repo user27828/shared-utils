@@ -28,6 +28,11 @@
       "import": "./dist/client/index.js",
       "default": "./dist/client/index.js"
     },
+    "./client/wysiwyg": {
+      "types": "./dist/client/wysiwyg.d.ts",
+      "import": "./dist/client/wysiwyg.js",
+      "default": "./dist/client/wysiwyg.js"
+    },
     "./utils": {
       "types": "./dist/utils/index.d.ts",
       "import": "./dist/utils/index.js",
@@ -77,6 +82,8 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "lodash-es": "^4.17.21",
     "typescript": "^5.8.3"
   },

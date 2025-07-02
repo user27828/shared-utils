@@ -9,7 +9,13 @@
     "declarationMap": true,
     "outDir": "../dist/client"
   },
-  "include": ["src/**/*", "index.ts", "src/data/*.js"],
-  "exclude": ["node_modules", "dist", "__tests__"],
+  "include": ["src/**/*", "index.ts", "wysiwyg.ts", "src/data/*.js"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "__tests__",
+    "src/components/wysiwyg/TinyMceBundle.js*",
+    "src/components/wysiwyg/TinyMceEditor.js*"
+  ],
   "references": [{ "path": "../utils" }]
 }

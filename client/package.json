@@ -11,6 +11,11 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./wysiwyg": {
+      "types": "./dist/wysiwyg.d.ts",
+      "import": "./dist/wysiwyg.js",
+      "default": "./dist/wysiwyg.js"
+    },
     "./*": "./dist/*"
   },
   "scripts": {
@@ -23,23 +28,32 @@
   "peerDependencies": {
     "@mui/icons-material": ">=5.0.0",
     "@mui/material": ">=5.0.0",
+    "@tinymce/tinymce-react": ">=5.0.0",
     "react": ">=16.8.0",
-    "react-dom": ">=16.8.0"
+    "react-dom": ">=16.8.0",
+    "tinymce": ">=6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@tinymce/tinymce-react": {
+      "optional": true
+    },
+    "tinymce": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@shared-utils/utils": "workspace:*",
-    "@tinymce/tinymce-react": "^6.2.1",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
     "dompurify": "^3.2.6",
-    "papaparse": "^5.5.3",
-    "tinymce": "^7.9.1"
+    "papaparse": "^5.5.3"
   },
   "devDependencies": {
     "@babel/core": "^7.28.0",
     "@babel/preset-env": "^7.28.0",
     "@mui/icons-material": "^7.2.0",
     "@mui/material": "^7.2.0",
+    "@tinymce/tinymce-react": "^6.2.1",
     "@types/dompurify": "^3.2.0",
     "@types/jest": "^30.0.0",
     "@types/papaparse": "^5.3.16",
@@ -49,6 +63,7 @@
     "jest": "^30.0.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "tinymce": "^7.9.1",
     "ts-jest": "^29.4.0",
     "typescript": "^5.8.3"
   },
