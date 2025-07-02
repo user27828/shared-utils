@@ -63,7 +63,12 @@ Use specific import paths for clarity:
 import { log, turnstile, optionsManager } from "@user27828/shared-utils/utils";
 
 // ✅ Client components (React/Next.js)
-import { CountrySelect, LanguageSelect } from "@user27828/shared-utils/client";
+import {
+  CountrySelect,
+  LanguageSelect,
+  FileIcon,
+  TinyMceEditor,
+} from "@user27828/shared-utils/client";
 
 // ✅ Server functionality
 import { verifyTurnstileTokenEnhanced } from "@user27828/shared-utils/server";
@@ -104,6 +109,7 @@ Core utilities with environment detection and centralized configuration:
 React components and client-side helpers:
 
 - **Form Components**: `CountrySelect`, `LanguageSelect`
+- **File Icons**: `FileIcon` - MUI icons for 70+ file types and MIME types
 - **WYSIWYG Editors**: `TinyMceEditor`, `TinyMceBundle`
 - **Helper Functions**: Country/language utilities, CSV helpers
 

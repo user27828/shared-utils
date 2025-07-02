@@ -39,9 +39,9 @@
     "@shared-utils/utils": "workspace:*"
   },
   "devDependencies": {
-    "@babel/core": "^7.27.7",
-    "@babel/preset-env": "^7.27.2",
-    "@cloudflare/workers-types": "^4.20250701.0",
+    "@babel/core": "^7.28.0",
+    "@babel/preset-env": "^7.28.0",
+    "@cloudflare/workers-types": "^4.20250702.0",
     "@jest/globals": "^30.0.3",
     "babel-jest": "^30.0.2",
     "jest": "^30.0.3",

@@ -35,8 +35,10 @@
     "tinymce": "^7.9.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.27.7",
-    "@babel/preset-env": "^7.27.2",
+    "@babel/core": "^7.28.0",
+    "@babel/preset-env": "^7.28.0",
+    "@mui/icons-material": "^7.2.0",
+    "@mui/material": "^7.2.0",
     "@types/dompurify": "^3.2.0",
     "@types/jest": "^30.0.0",
     "@types/papaparse": "^5.3.16",
