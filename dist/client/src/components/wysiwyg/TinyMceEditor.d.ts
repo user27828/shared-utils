@@ -1,27 +1,12 @@
-import React from 'react';
-import { Editor } from '@tinymce/tinymce-react';
-
-export interface TinyMceEditorProps {
-  /**
-   * Value for the editor
-   */
-  value?: string;
-  /**
-   * Handler for when the editor content changes
-   */
-  onChange?: (content: string) => void;
-  /**
-   * Additional editor options
-   */
-  editorOptions?: Record<string, any>;
-  /**
-   * Height of the editor
-   */
-  height?: number | string;
-  /**
-   * Whether the editor is disabled
-   */
-  disabled?: boolean;
-}
-
-export function TinyMceEditor(props: TinyMceEditorProps): JSX.Element;
+export default TinyMceEditor;
+/**
+ * Rich text editor component based on TinyMCE's free version
+ * @param {Object} props - Component props
+ * @param {string} props.data - Initial editor content
+ * @param {Function} props.onChange - Change handler function
+ */
+declare function TinyMceEditor(props: {
+    data: string;
+    onChange: Function;
+}): import("react/jsx-runtime").JSX.Element;
+//# sourceMappingURL=TinyMceEditor.d.ts.map

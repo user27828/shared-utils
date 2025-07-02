@@ -15,6 +15,7 @@ export default CalendarAdd;
  * @param {string} [props.event.location] - Event location or URL
  * @param {number} [props.event.duration] - Event duration in minutes
  * @param {string} [props.event.id] - Unique identifier for the event
+ * @param {boolean} [props.requireAuth] - Whether authentication is required for calendar access
  * @param {boolean} props.isAuthenticated - Whether the user is authenticated
  * @param {Function} props.onAuthRequired - Callback when authentication is required
  * @param {Object} [props.calendarConfig] - Calendar configuration options
@@ -23,7 +24,7 @@ export default CalendarAdd;
  * @param {number} [props.calendarConfig.defaultDuration] - Default duration in minutes
  * @param {Object} [props.buttonProps] - Props to pass to the Button component
  * @param {boolean} [props.iconOnly] - If true, renders only the icon without button text
- * @returns {JSX.Element}
+ * @returns {React.JSX.Element}
  * @component
  */
 declare function CalendarAdd({ event, requireAuth, isAuthenticated, onAuthRequired, calendarConfig, buttonProps, iconOnly, }: {
@@ -35,6 +36,7 @@ declare function CalendarAdd({ event, requireAuth, isAuthenticated, onAuthRequir
         duration?: number | undefined;
         id?: string | undefined;
     };
+    requireAuth?: boolean | undefined;
     isAuthenticated: boolean;
     onAuthRequired: Function;
     calendarConfig?: {
@@ -44,5 +46,6 @@ declare function CalendarAdd({ event, requireAuth, isAuthenticated, onAuthRequir
     } | undefined;
     buttonProps?: Object | undefined;
     iconOnly?: boolean | undefined;
-}): JSX.Element;
+}): React.JSX.Element;
+import React from "react";
 //# sourceMappingURL=CalendarAdd.d.ts.map

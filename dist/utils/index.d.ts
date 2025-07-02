@@ -1,6 +1,4 @@
-/**
- * TypeScript declarations for utilities barrel file
- */
-
-// Logging utility
-export { default as log, Log, ORIGINAL_CONSOLE_METHODS } from './src/log'; 
+import log, { Log, ORIGINAL_CONSOLE_METHODS, OptionsManager, optionsManager } from "./src/log.js";
+import turnstile, { Turnstile } from "./src/turnstile.js";
+export { log, Log, ORIGINAL_CONSOLE_METHODS, turnstile, Turnstile, OptionsManager, optionsManager, };
+//# sourceMappingURL=index.d.ts.map

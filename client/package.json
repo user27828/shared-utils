@@ -14,7 +14,8 @@
     "./*": "./dist/*"
   },
   "scripts": {
-    "build": "yarn --version > /dev/null 2>&1 && yarn tsc --outDir ../dist/client || npx tsc --outDir ../dist/client",
+    "build": "rm -f tsconfig.tsbuildinfo && (yarn --version > /dev/null 2>&1 && yarn tsc --build || npx tsc --build)",
+    "build:clean": "rm -f tsconfig.tsbuildinfo && rm -rf ../dist/client && yarn build",
     "test": "echo 'No tests found in client package - this is expected until client tests are added' && exit 0",
     "test:watch": "jest --watch",
     "dev": "yarn tsc --outDir ../dist/client --watch"
