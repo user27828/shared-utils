@@ -25,8 +25,7 @@
     "dist",
     "**/*.test.ts",
     "**/*.test.js",
-    "__tests__",
-    "../utils/**/*",
-    "../client/**/*"
-  ]
+    "__tests__"
+  ],
+  "references": [{ "path": "../utils" }]
 }

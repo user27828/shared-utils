@@ -28,7 +28,7 @@ export { createTurnstileWorker } from "./src/turnstile/index.js";
 // Core verification
 export { verifyTurnstileToken } from "./src/turnstile/index.js";
 // Options management
-export { OptionsManager, optionsManager } from "@shared-utils/utils";
+export { OptionsManager, optionsManager } from "../utils/index.js";
 // Utilities
 export { isDevMode, isLocalhostRequest, createMockVerifyResponse, getAllowedOrigin, } from "./src/turnstile/index.js";
 //# sourceMappingURL=index.js.map

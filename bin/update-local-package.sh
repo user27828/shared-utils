@@ -16,6 +16,13 @@ mkdir -p dist/client
 mkdir -p dist/utils
 mkdir -p dist/server
 
+# Ensure wysiwyg barrel files are built and preserved
+echo "🔧 Ensuring wysiwyg barrel exports are available..."
+if [ ! -f "dist/client/wysiwyg.js" ] || [ ! -f "dist/client/wysiwyg.d.ts" ]; then
+  echo "⚠️  Missing wysiwyg barrel files, rebuilding client..."
+  cd client && yarn build && cd ..
+fi
+
 # Fix the client index.d.ts file to include all exports (TypeScript compiler issue workaround)
 echo "🔧 Fixing client index.d.ts to include all exports..."
 cat >dist/client/index.d.ts <<'EOF'
@@ -56,7 +63,6 @@ export {
 // Data
 export * from "./src/data/countries";
 export * from "./src/data/languages";
-export * from "./src/data/demographic-options";
 EOF
 
 # Copy .d.ts files from source to dist
@@ -65,13 +71,6 @@ if [ -f "client/index.d.ts" ]; then
 fi
 if [ -d "client/src" ]; then
   find client/src -name "*.d.ts" -exec cp --parents {} dist/ \;
-fi
-
-if [ -f "utils/index.d.ts" ]; then
-  cp utils/index.d.ts dist/utils/
-fi
-if [ -d "utils/src" ]; then
-  find utils/src -name "*.d.ts" -exec cp --parents {} dist/ \;
 fi
 
 if [ -f "server/index.d.ts" ]; then
@@ -99,6 +98,9 @@ fi
 # Extract just the filename for package.json reference
 TARBALL_NAME=$(basename "$TARBALL")
 
+echo "🧹 Cleaning test-consumer node_modules to avoid stale dependencies..."
+rm -rf test-consumer/react-app/node_modules/@user27828/shared-utils
+
 # Update package.json in test-consumer
 cd test-consumer/react-app
 yarn remove @user27828/shared-utils 2>/dev/null || true
@@ -119,7 +121,9 @@ tar -xzf "/home/marc314/work/misc/shared-utils/test-consumer/packages/$TARBALL_N
 TARGET_DIR="/home/marc314/work/misc/shared-utils/test-consumer/react-app/node_modules/@user27828/shared-utils"
 if [ -d "$TARGET_DIR" ]; then
   cp -r package/dist/* "$TARGET_DIR/dist/"
-  echo "✅ TypeScript declaration files copied successfully"
+  # Also copy the package.json to ensure exports are preserved
+  cp package/package.json "$TARGET_DIR/package.json"
+  echo "✅ TypeScript declaration files and package.json copied successfully"
 else
   echo "❌ Target directory not found: $TARGET_DIR"
 fi

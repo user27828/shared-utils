@@ -10,12 +10,6 @@
     "outDir": "../dist/client"
   },
   "include": ["src/**/*", "index.ts", "wysiwyg.ts", "src/data/*.js"],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "__tests__",
-    "src/components/wysiwyg/TinyMceBundle.js*",
-    "src/components/wysiwyg/TinyMceEditor.js*"
-  ],
+  "exclude": ["node_modules", "dist", "__tests__"],
   "references": [{ "path": "../utils" }]
 }

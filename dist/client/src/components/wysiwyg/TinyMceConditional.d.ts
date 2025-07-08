@@ -1,4 +1,5 @@
 export default TinyMceBundle;
-export function TinyMceBundle(props: any): import("react/jsx-runtime").JSX.Element;
-export function TinyMceEditor(props: any): import("react/jsx-runtime").JSX.Element;
+export const TinyMceBundle: React.ForwardRefExoticComponent<React.RefAttributes<any>>;
+export const TinyMceEditor: React.ForwardRefExoticComponent<React.RefAttributes<any>>;
+import React from "react";
 //# sourceMappingURL=TinyMceConditional.d.ts.map

@@ -162,8 +162,7 @@ const TestIndex: React.FC<TestIndexProps> = ({ onNavigate }) => {
         },
         {
           name: "Data Validation",
-          description:
-            "Test countries, languages, and demographic data integrity",
+          description: "Test countries and languages data integrity",
           status: "implemented" as const,
           category: "client",
         },

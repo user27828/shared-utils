@@ -38,7 +38,7 @@ export { createTurnstileWorker } from "./src/turnstile/index.js";
 export { verifyTurnstileToken } from "./src/turnstile/index.js";
 
 // Options management
-export { OptionsManager, optionsManager } from "@shared-utils/utils";
+export { OptionsManager, optionsManager } from "../utils/index.js";
 
 // Utilities
 export {

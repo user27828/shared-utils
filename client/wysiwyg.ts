@@ -9,7 +9,5 @@
  * import { TinyMceBundle, TinyMceEditor } from "@shared-utils/client/wysiwyg";
  */
 
-export {
-  TinyMceBundle,
-  TinyMceEditor,
-} from "./src/components/wysiwyg/TinyMceConditional.js";
+export { default as TinyMceBundle } from "./src/components/wysiwyg/TinyMceBundle.js";
+export { default as TinyMceEditor } from "./src/components/wysiwyg/TinyMceEditor.js";

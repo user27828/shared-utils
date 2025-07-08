@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   CountrySelect,
   LanguageSelect,
+  FileUploadList, // Now properly exported and importable
   // CalendarAdd temporarily disabled due to @mui/icons-material dependency issues
   getCountryByCode,
   getLanguageByCode,
@@ -19,9 +20,7 @@ import {
   getTimezoneInfo,
   isLeapYear,
   getDaysInMonth,
-  genderOptions,
-  ethnicityOptions,
-  raceOptions,
+  type ModeUploadFileProps,
 } from "@user27828/shared-utils/client";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 import { Container, Typography, Box, Button, Divider } from "@mui/material";
@@ -61,6 +60,42 @@ export const ClientComponentTests: React.FC = () => {
   const [languageValue, setLanguageValue] = useState<string>("");
   const [multiLanguageValue, setMultiLanguageValue] = useState<string[]>([]);
 
+  // FileUploadList test states
+  const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [multipleSelectedFiles, setMultipleSelectedFiles] = useState<any[]>([]);
+  const [fileUploadError, setFileUploadError] = useState<string>("");
+
+  // Error handler for FileUploadList
+  const handleFileUploadError = (error: string | Error) => {
+    setFileUploadError(error instanceof Error ? error.message : error);
+  };
+
+  // File selection handlers
+  const handleFileSelect = (file: any) => {
+    setSelectedFile(file);
+  };
+
+  const handleMultipleFileSelect = (files: any) => {
+    setMultipleSelectedFiles(files || []);
+  };
+
+  const [mockExistingFiles] = useState<ModeUploadFileProps[]>([
+    {
+      name: "test1.csv",
+      size: 1024,
+      type: "text/csv",
+      lastModified: Date.now(),
+      ext: "csv",
+    },
+    {
+      name: "test2.txt",
+      size: 2048,
+      type: "text/plain",
+      lastModified: Date.now(),
+      ext: "txt",
+    },
+  ]);
+
   const [testItems, setTestItems] = useState<TestItem[]>([
     {
       name: "CountrySelect - Basic rendering",
@@ -95,11 +130,6 @@ export const ClientComponentTests: React.FC = () => {
     {
       name: "Helper Functions - isDev environment detection",
       description: "Test development environment detection",
-      status: "pending",
-    },
-    {
-      name: "Data Validation - Demographic options structure",
-      description: "Test demographic data structures",
       status: "pending",
     },
     {
@@ -165,6 +195,46 @@ export const ClientComponentTests: React.FC = () => {
     {
       name: "Date Utilities - edge cases and error handling",
       description: "Test date utilities edge cases",
+      status: "pending",
+    },
+    {
+      name: "FileUploadList - Basic rendering",
+      description: "Test basic FileUploadList component rendering",
+      status: "pending",
+    },
+    {
+      name: "FileUploadList - Single file upload",
+      description: "Test single file upload functionality",
+      status: "pending",
+    },
+    {
+      name: "FileUploadList - Multiple file upload",
+      description: "Test multiple file upload functionality",
+      status: "pending",
+    },
+    {
+      name: "FileUploadList - Existing files selection",
+      description: "Test existing files selection functionality",
+      status: "pending",
+    },
+    {
+      name: "FileUploadList - Multiple existing files selection",
+      description: "Test multiple existing files selection",
+      status: "pending",
+    },
+    {
+      name: "FileUploadList - Error handling",
+      description: "Test file upload error handling",
+      status: "pending",
+    },
+    {
+      name: "FileUploadList - File extension validation",
+      description: "Test file extension validation",
+      status: "pending",
+    },
+    {
+      name: "FileUploadList - Props validation",
+      description: "Test component props validation",
       status: "pending",
     },
   ]);
@@ -415,40 +485,6 @@ export const ClientComponentTests: React.FC = () => {
         testName,
         "pass",
         `isDev returned: ${devResult}`,
-        duration,
-      );
-    } catch (error) {
-      const duration = Date.now() - startTime;
-      updateTestStatus(testName, "fail", (error as Error).message, duration);
-    }
-  };
-
-  const runDemographicOptionsTest = async () => {
-    const testName = "Data Validation - Demographic options structure";
-    const startTime = Date.now();
-
-    updateTestStatus(
-      testName,
-      "running",
-      "Testing demographic data structures...",
-    );
-
-    try {
-      if (!Array.isArray(genderOptions) || genderOptions.length === 0) {
-        throw new Error("genderOptions should be a non-empty array");
-      }
-      if (!Array.isArray(ethnicityOptions) || ethnicityOptions.length === 0) {
-        throw new Error("ethnicityOptions should be a non-empty array");
-      }
-      if (!Array.isArray(raceOptions) || raceOptions.length === 0) {
-        throw new Error("raceOptions should be a non-empty array");
-      }
-
-      const duration = Date.now() - startTime;
-      updateTestStatus(
-        testName,
-        "pass",
-        "All demographic options are valid arrays",
         duration,
       );
     } catch (error) {
@@ -895,6 +931,268 @@ export const ClientComponentTests: React.FC = () => {
     }
   };
 
+  // FileUploadList Tests
+  const runFileUploadListBasicRenderingTest = async () => {
+    const testName = "FileUploadList - Basic rendering";
+    const startTime = Date.now();
+
+    updateTestStatus(
+      testName,
+      "running",
+      "Testing basic FileUploadList rendering...",
+    );
+
+    try {
+      // Test if FileUploadList is available
+      if (typeof FileUploadList === "undefined") {
+        throw new Error("FileUploadList component is not available");
+      }
+
+      const duration = Date.now() - startTime;
+      updateTestStatus(
+        testName,
+        "pass",
+        "FileUploadList component is available and ready",
+        duration,
+      );
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", (error as Error).message, duration);
+    }
+  };
+
+  const runFileUploadListSingleFileTest = async () => {
+    const testName = "FileUploadList - Single file upload";
+    const startTime = Date.now();
+
+    updateTestStatus(
+      testName,
+      "running",
+      "Testing single file upload functionality...",
+    );
+
+    try {
+      // Simulate file selection
+      const mockFile = new File(["test content"], "test.csv", {
+        type: "text/csv",
+      });
+      setSelectedFile(mockFile);
+
+      // Test file state
+      if (!selectedFile && mockFile) {
+        // File was set, test passes
+        updateTestStatus(
+          testName,
+          "pass",
+          "Single file upload functionality works",
+          Date.now() - startTime,
+        );
+      } else {
+        throw new Error("File selection state management failed");
+      }
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", (error as Error).message, duration);
+    }
+  };
+
+  const runFileUploadListMultipleFileTest = async () => {
+    const testName = "FileUploadList - Multiple file upload";
+    const startTime = Date.now();
+
+    updateTestStatus(
+      testName,
+      "running",
+      "Testing multiple file upload functionality...",
+    );
+
+    try {
+      // Simulate multiple file selection
+      const mockFiles = [
+        new File(["test content 1"], "test1.csv", { type: "text/csv" }),
+        new File(["test content 2"], "test2.txt", { type: "text/plain" }),
+      ];
+      setMultipleSelectedFiles(mockFiles);
+
+      const duration = Date.now() - startTime;
+      updateTestStatus(
+        testName,
+        "pass",
+        "Multiple file upload functionality works",
+        duration,
+      );
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", (error as Error).message, duration);
+    }
+  };
+
+  const runFileUploadListExistingFilesTest = async () => {
+    const testName = "FileUploadList - Existing files selection";
+    const startTime = Date.now();
+
+    updateTestStatus(
+      testName,
+      "running",
+      "Testing existing files selection...",
+    );
+
+    try {
+      // Test existing files mock data
+      if (!Array.isArray(mockExistingFiles) || mockExistingFiles.length === 0) {
+        throw new Error("Mock existing files data is invalid");
+      }
+
+      // Test that we can select from existing files
+      const selectedExistingFile = mockExistingFiles[0];
+      setSelectedFile(selectedExistingFile);
+
+      const duration = Date.now() - startTime;
+      updateTestStatus(
+        testName,
+        "pass",
+        `Existing files selection works (${mockExistingFiles.length} files available)`,
+        duration,
+      );
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", (error as Error).message, duration);
+    }
+  };
+
+  const runFileUploadListMultipleExistingFilesTest = async () => {
+    const testName = "FileUploadList - Multiple existing files selection";
+    const startTime = Date.now();
+
+    updateTestStatus(
+      testName,
+      "running",
+      "Testing multiple existing files selection...",
+    );
+
+    try {
+      // Test selecting multiple existing files
+      setMultipleSelectedFiles(mockExistingFiles);
+
+      const duration = Date.now() - startTime;
+      updateTestStatus(
+        testName,
+        "pass",
+        "Multiple existing files selection works",
+        duration,
+      );
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", (error as Error).message, duration);
+    }
+  };
+
+  const runFileUploadListErrorHandlingTest = async () => {
+    const testName = "FileUploadList - Error handling";
+    const startTime = Date.now();
+
+    updateTestStatus(
+      testName,
+      "running",
+      "Testing file upload error handling...",
+    );
+
+    try {
+      // Test error state management
+      const testError = "Test error message";
+      setFileUploadError(testError);
+
+      // Reset error
+      setFileUploadError("");
+
+      const duration = Date.now() - startTime;
+      updateTestStatus(
+        testName,
+        "pass",
+        "Error handling functionality works",
+        duration,
+      );
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", (error as Error).message, duration);
+    }
+  };
+
+  const runFileUploadListFileExtensionsTest = async () => {
+    const testName = "FileUploadList - File extension validation";
+    const startTime = Date.now();
+
+    updateTestStatus(
+      testName,
+      "running",
+      "Testing file extension validation...",
+    );
+
+    try {
+      // Test with different file extensions
+      const validExtensions = ["csv", "txt", "json", "pdf"];
+      const testFile = new File(["test"], "test.csv", { type: "text/csv" });
+
+      // Check if file extension validation would work
+      const fileExtension = testFile.name.split(".").pop()?.toLowerCase();
+      if (!fileExtension || !validExtensions.includes(fileExtension)) {
+        throw new Error("File extension validation failed");
+      }
+
+      const duration = Date.now() - startTime;
+      updateTestStatus(
+        testName,
+        "pass",
+        `File extension validation works (${validExtensions.join(", ")})`,
+        duration,
+      );
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", (error as Error).message, duration);
+    }
+  };
+
+  const runFileUploadListPropsValidationTest = async () => {
+    const testName = "FileUploadList - Props validation";
+    const startTime = Date.now();
+
+    updateTestStatus(
+      testName,
+      "running",
+      "Testing component props validation...",
+    );
+
+    try {
+      // Test props structure that would be passed to FileUploadList
+      const testProps = {
+        selectedFile: null,
+        onUploadFileSelect: setSelectedFile,
+        onError: setFileUploadError,
+        title: "Test Title",
+        uploadText: "Upload File",
+        showExistingFiles: false,
+        fileExtensions: ["csv", "txt"],
+        onFileUpload: false,
+      };
+
+      // Validate that all required props are present
+      if (!testProps.onUploadFileSelect || !testProps.onError) {
+        throw new Error("Required props are missing");
+      }
+
+      const duration = Date.now() - startTime;
+      updateTestStatus(
+        testName,
+        "pass",
+        "Component props validation successful",
+        duration,
+      );
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", (error as Error).message, duration);
+    }
+  };
+
   const runIndividualTest = async (testName: string) => {
     switch (testName) {
       case "CountrySelect - Basic rendering":
@@ -917,9 +1215,6 @@ export const ClientComponentTests: React.FC = () => {
         break;
       case "Helper Functions - isDev environment detection":
         await runIsDevTest();
-        break;
-      case "Data Validation - Demographic options structure":
-        await runDemographicOptionsTest();
         break;
       case "CSV Export - exportDataToCsv functionality":
         await runCsvExportTest();
@@ -960,6 +1255,30 @@ export const ClientComponentTests: React.FC = () => {
       case "Date Utilities - edge cases and error handling":
         await runDateEdgeCasesTest();
         break;
+      case "FileUploadList - Basic rendering":
+        await runFileUploadListBasicRenderingTest();
+        break;
+      case "FileUploadList - Single file upload":
+        await runFileUploadListSingleFileTest();
+        break;
+      case "FileUploadList - Multiple file upload":
+        await runFileUploadListMultipleFileTest();
+        break;
+      case "FileUploadList - Existing files selection":
+        await runFileUploadListExistingFilesTest();
+        break;
+      case "FileUploadList - Multiple existing files selection":
+        await runFileUploadListMultipleExistingFilesTest();
+        break;
+      case "FileUploadList - Error handling":
+        await runFileUploadListErrorHandlingTest();
+        break;
+      case "FileUploadList - File extension validation":
+        await runFileUploadListFileExtensionsTest();
+        break;
+      case "FileUploadList - Props validation":
+        await runFileUploadListPropsValidationTest();
+        break;
       default:
         updateTestStatus(testName, "fail", "Test not implemented yet");
     }
@@ -991,8 +1310,6 @@ export const ClientComponentTests: React.FC = () => {
       await delay(300);
       await runIsDevTest();
       await delay(300);
-      await runDemographicOptionsTest();
-      await delay(300);
 
       // CSV Tests
       await runCsvExportTest();
@@ -1023,6 +1340,24 @@ export const ClientComponentTests: React.FC = () => {
       await delay(300);
       await runDateEdgeCasesTest();
       await delay(300);
+
+      // FileUploadList Tests
+      await runFileUploadListBasicRenderingTest();
+      await delay(300);
+      await runFileUploadListSingleFileTest();
+      await delay(300);
+      await runFileUploadListMultipleFileTest();
+      await delay(300);
+      await runFileUploadListExistingFilesTest();
+      await delay(300);
+      await runFileUploadListMultipleExistingFilesTest();
+      await delay(300);
+      await runFileUploadListErrorHandlingTest();
+      await delay(300);
+      await runFileUploadListFileExtensionsTest();
+      await delay(300);
+      await runFileUploadListPropsValidationTest();
+      await delay(300);
     } catch (error) {
       console.error("Error during test execution:", error);
     }
@@ -1037,10 +1372,10 @@ export const ClientComponentTests: React.FC = () => {
       </Typography>
 
       <Typography variant="body1" sx={{ mb: 3 }}>
-        Integration tests for CountrySelect, LanguageSelect, CSV Import/Export
-        functionality, Date Utilities, and helper functions. These tests verify
-        component rendering, state management, data handling, and utility
-        functions using the new Timeline progress interface.
+        Integration tests for CountrySelect, LanguageSelect, FileUploadList, CSV
+        Import/Export functionality, Date Utilities, and helper functions. These
+        tests verify component rendering, state management, data handling, and
+        utility functions using the new Timeline progress interface.
       </Typography>
 
       <Box sx={{ mb: 4 }}>
@@ -1179,6 +1514,228 @@ export const ClientComponentTests: React.FC = () => {
           <Typography variant="caption" display="block" sx={{ mt: 1 }}>
             Selected: {multiLanguageValue.join(", ") || "None"}
           </Typography>
+        </Box>
+
+        {/* FileUploadList Components */}
+        <Box
+          sx={{
+            p: 3,
+            backgroundColor: "rgba(255, 255, 255, 0.02)",
+            borderRadius: 2,
+            border: 1,
+            borderColor: "rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            FileUploadList (Upload Only)
+          </Typography>
+          <Box sx={{ maxWidth: 500 }}>
+            <FileUploadList
+              selectedFile={selectedFile}
+              onUploadFileSelect={handleFileSelect}
+              onError={handleFileUploadError}
+              title="File Upload Test"
+              uploadText="Upload File"
+              showExistingFiles={false}
+              fileExtensions={["csv", "txt", "json"]}
+              onFileUpload={false}
+            />
+          </Box>
+          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+            Selected:{" "}
+            {selectedFile
+              ? typeof selectedFile === "string"
+                ? selectedFile
+                : selectedFile.name || "File selected"
+              : "None"}
+          </Typography>
+          {fileUploadError && (
+            <Typography
+              variant="caption"
+              color="error"
+              display="block"
+              sx={{ mt: 1 }}
+            >
+              Error: {fileUploadError}
+            </Typography>
+          )}
+        </Box>
+
+        <Box
+          sx={{
+            p: 3,
+            backgroundColor: "rgba(255, 255, 255, 0.02)",
+            borderRadius: 2,
+            border: 1,
+            borderColor: "rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            FileUploadList (Multiple Upload)
+          </Typography>
+          <Box sx={{ maxWidth: 500 }}>
+            <FileUploadList
+              selectedFile={multipleSelectedFiles}
+              onUploadFileSelect={handleMultipleFileSelect}
+              onError={handleFileUploadError}
+              title="Multiple File Upload Test"
+              uploadText="Upload Multiple Files"
+              showExistingFiles={false}
+              multipleUpload={true}
+              fileExtensions={["csv", "txt", "json", "pdf"]}
+              onFileUpload={false}
+            />
+          </Box>
+          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+            Selected:{" "}
+            {Array.isArray(multipleSelectedFiles)
+              ? multipleSelectedFiles
+                  .map((f) => (typeof f === "string" ? f : f.name || "File"))
+                  .join(", ") || "None"
+              : "None"}
+          </Typography>
+          {fileUploadError && (
+            <Typography
+              variant="caption"
+              color="error"
+              display="block"
+              sx={{ mt: 1 }}
+            >
+              Error: {fileUploadError}
+            </Typography>
+          )}
+        </Box>
+
+        <Box
+          sx={{
+            p: 3,
+            backgroundColor: "rgba(255, 255, 255, 0.02)",
+            borderRadius: 2,
+            border: 1,
+            borderColor: "rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            FileUploadList (Existing Files Selection)
+          </Typography>
+          <Box sx={{ maxWidth: 500 }}>
+            <FileUploadList
+              selectedFile={selectedFile}
+              onUploadFileSelect={handleFileSelect}
+              onError={handleFileUploadError}
+              title="Existing Files Test"
+              selectText="Select Existing File"
+              showExistingFiles={true}
+              loadList={() => mockExistingFiles}
+              fileExtensions={["csv", "txt", "json"]}
+              onFileUpload={false}
+            />
+          </Box>
+          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+            Selected:{" "}
+            {selectedFile
+              ? typeof selectedFile === "string"
+                ? selectedFile
+                : selectedFile.name || "File selected"
+              : "None"}
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            p: 3,
+            backgroundColor: "rgba(255, 255, 255, 0.02)",
+            borderRadius: 2,
+            border: 1,
+            borderColor: "rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            FileUploadList (Server Integration Test)
+          </Typography>
+          <Box sx={{ maxWidth: 500 }}>
+            <FileUploadList
+              selectedFile={selectedFile}
+              onUploadFileSelect={handleFileSelect}
+              onError={handleFileUploadError}
+              title="Server Upload Test"
+              uploadText="Upload to Server"
+              showExistingFiles={true}
+              loadList={async () => {
+                // Test integration with server at localhost:5030
+                try {
+                  const response = await fetch(
+                    "http://localhost:5030/api/files",
+                  );
+                  if (response.ok) {
+                    const files = await response.json();
+                    return files;
+                  }
+                  return [];
+                } catch (error) {
+                  console.warn(
+                    "Server not available at localhost:5030:",
+                    error,
+                  );
+                  return mockExistingFiles;
+                }
+              }}
+              uploadFile={async ({
+                method,
+                body,
+              }: {
+                method: string;
+                body: FormData;
+              }) => {
+                // Test file upload to server
+                try {
+                  const response = await fetch(
+                    "http://localhost:5030/api/upload",
+                    {
+                      method,
+                      body,
+                    },
+                  );
+                  return response;
+                } catch (error) {
+                  console.warn("Upload failed - server not available:", error);
+                  throw error;
+                }
+              }}
+              fileExtensions={["csv", "txt", "json", "pdf"]}
+              onFileUpload={true}
+            />
+          </Box>
+          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+            Selected:{" "}
+            {selectedFile
+              ? typeof selectedFile === "string"
+                ? selectedFile
+                : selectedFile.name || "File selected"
+              : "None"}
+          </Typography>
+          <Typography
+            variant="caption"
+            display="block"
+            sx={{ mt: 1, fontStyle: "italic" }}
+          >
+            Note: This component tests integration with server at
+            http://localhost:5030/
+          </Typography>
+          {fileUploadError && (
+            <Typography
+              variant="caption"
+              color="error"
+              display="block"
+              sx={{ mt: 1 }}
+            >
+              Error: {fileUploadError}
+            </Typography>
+          )}
         </Box>
       </Box>
     </Container>

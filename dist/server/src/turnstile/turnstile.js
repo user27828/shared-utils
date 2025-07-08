@@ -1,7 +1,7 @@
 /**
  * Enhanced Turnstile server-side verification with dev mode and localhost bypass
  */
-import { OptionsManager, optionsManager as globalOptionsManager, } from "@shared-utils/utils";
+import { OptionsManager, optionsManager as globalOptionsManager, } from "../../../utils/index.js";
 import { isDevMode, isLocalhostRequest, createMockVerifyResponse, } from "./utils.js";
 import { verifyTurnstileToken } from "./verification.js";
 // Default options for server-side Turnstile verification

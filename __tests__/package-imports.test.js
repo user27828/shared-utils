@@ -7,7 +7,7 @@ describe("Package Import Paths", () => {
   describe("Utils Package Imports", () => {
     it("should import utils using package-style path", () => {
       // This simulates: import { log, Log } from '@shared-utils/utils'
-      const { log, Log } = require("../utils/index.js");
+      const { log, Log } = require("../dist/utils/index.js");
 
       expect(log).toBeDefined();
       expect(Log).toBeDefined();
@@ -17,7 +17,7 @@ describe("Package Import Paths", () => {
 
     it("should work with relative imports from utils", () => {
       // This simulates: import { log } from '../utils'
-      const { log } = require("../utils/index.js");
+      const { log } = require("../dist/utils/index.js");
 
       // Mock console to test functionality
       jest.spyOn(console, "info").mockImplementation();

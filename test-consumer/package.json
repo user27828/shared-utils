@@ -11,6 +11,7 @@
     "build": "yarn build:react && yarn build:server",
     "build:react": "cd react-app && yarn build",
     "build:server": "echo 'Server tests - no build step required'",
+    "clean": "rm -fr ./node_modules && rm -fr ./react-app/node_modules && rm -fr ./server/node_modules && rm -fr ./vanilla-js-consumer/node_modules",
     "test:react": "cd react-app && yarn test",
     "test:node": "cd node-consumer && yarn test",
     "test:vanilla": "cd vanilla-js-consumer && yarn test",

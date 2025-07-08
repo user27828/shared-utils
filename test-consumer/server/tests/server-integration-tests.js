@@ -178,24 +178,25 @@ export async function runServerTests() {
           if (typeof optionsManager.setGlobalOptions !== "function") {
             // Add the method manually as a fallback for module caching issues
             optionsManager.setGlobalOptions = function (options) {
-              if (options["turnstile-server"]) {
-                this.setOptions(options["turnstile-server"]);
+              if (options["turnstile"]) {
+                this.setOption(options["turnstile"]);
               }
             };
           }
 
           // Try to call setGlobalOptions
           optionsManager.setGlobalOptions({
-            "turnstile-server": {
+            turnstile: {
               devMode: true,
               bypassLocalhost: true,
             },
           });
 
-          const currentOptions = optionsManager.getOptions();
+          const allOptions = optionsManager.getAllOptions();
+          const turnstileOptions = allOptions.turnstile || {};
           configApplied =
-            currentOptions.devMode === true &&
-            currentOptions.bypassLocalhost === true;
+            turnstileOptions.devMode === true &&
+            turnstileOptions.bypassLocalhost === true;
 
           // If we got here without error, the method exists
           hasSetGlobalOptions = true;

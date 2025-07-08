@@ -4,6 +4,7 @@
 // Components (excluding WYSIWYG components - import separately if needed)
 export { default as CountrySelect } from "./src/components/form/CountrySelect.js";
 export { default as LanguageSelect } from "./src/components/form/LanguageSelect.js";
+export { default as FileUploadList, } from "./src/components/form/FileUploadList.js";
 export { default as CalendarAdd } from "./src/components/CalendarAdd.js";
 export { default as FileIcon } from "./src/components/FileIcon.js";
 // Helpers

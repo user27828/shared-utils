@@ -43,8 +43,57 @@ declare module "@user27828/shared-utils/client" {
     autoFocus?: boolean;
   }
 
+  export interface ModeUploadFileProps {
+    name: string;
+    size: number;
+    type: string;
+    lastModified: number;
+    ext: string;
+  }
+
+  export interface FileUploadListProps {
+    selectedFile:
+      | File
+      | ModeUploadFileProps
+      | string
+      | null
+      | (File | ModeUploadFileProps | string)[];
+    onUploadFileSelect: (
+      file: File | ModeUploadFileProps | null | (File | ModeUploadFileProps)[],
+    ) => void;
+    title?: string;
+    uploadText?: string;
+    selectText?: string;
+    multipleSelect?: boolean;
+    multipleUpload?: boolean;
+    loadList?: () =>
+      | void
+      | Promise<ModeUploadFileProps[]>
+      | ModeUploadFileProps[];
+    uploadFile?: ({
+      method,
+      body,
+    }: {
+      method: string;
+      body: FormData;
+    }) => any | Promise<any>;
+    fileExtensions?: string[] | string;
+    showExistingFiles?: boolean;
+    showDeleteExistingFiles?: boolean;
+    onFileUpload?:
+      | ((event: React.ChangeEvent<HTMLInputElement>) => void | Promise<void>)
+      | boolean
+      | null;
+    onExistingFileSelect?: (
+      file: ModeUploadFileProps | null | ModeUploadFileProps[],
+    ) => void;
+    onDeleteExistingFile?: (file: ModeUploadFileProps | null) => void;
+    onError?: (error: string | Error) => void;
+  }
+
   export const CountrySelect: React.FC<CountrySelectProps>;
   export const LanguageSelect: React.FC<LanguageSelectProps>;
+  export const FileUploadList: React.FC<FileUploadListProps>;
 
   // Helper functions
   export function getCountryByCode(code: string): any;
@@ -79,11 +128,6 @@ declare module "@user27828/shared-utils/client" {
   export function getTimezoneInfo(): any;
   export function isLeapYear(year: number): boolean;
   export function getDaysInMonth(year: number, month: number): number;
-
-  // Demographic options
-  export const genderOptions: any[];
-  export const ethnicityOptions: any[];
-  export const raceOptions: any[];
 }
 
 declare module "@user27828/shared-utils/utils" {
@@ -100,8 +144,7 @@ declare module "@user27828/shared-utils/client/wysiwyg" {
 
   export interface TinyMceEditorProps {
     data?: string;
-    onChange?: (content: string) => void;
-    init?: any;
+    onChange?: (event: any, editor: { getData: () => string }) => void;
     [key: string]: any;
   }
 

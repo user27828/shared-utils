@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Editor } from "@tinymce/tinymce-react";
+import { TinyMceBundle } from "@user27828/shared-utils/client/wysiwyg";
 import { Box, Card, CardContent, Typography, Stack, Chip } from "@mui/material";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 
@@ -332,19 +332,30 @@ const TinyMCETests: React.FC<TinyMCETestsProps> = ({ darkMode }) => {
         "Testing undo/redo functionality...",
       );
 
-      const originalContent = editor.getContent();
+      // Make a change to have something to undo
+      const testText = " [Test change for undo/redo]";
+      editor.insertContent(testText);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      const modifiedContent = editor.getContent();
 
-      // Test undo/redo functionality
+      // Test undo functionality
       editor.execCommand("Undo");
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 200));
       const undoContent = editor.getContent();
 
+      // Test redo functionality
       editor.execCommand("Redo");
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 200));
       const redoContent = editor.getContent();
 
-      const undoWorked = undoContent !== originalContent;
-      const redoWorked = redoContent === originalContent;
+      // Check if undo worked (content should be back to original or close to it)
+      const undoWorked =
+        undoContent !== modifiedContent &&
+        undoContent.length < modifiedContent.length;
+      // Check if redo worked (content should be back to modified state)
+      const redoWorked =
+        redoContent === modifiedContent ||
+        redoContent.length > undoContent.length;
 
       const duration = Date.now() - startTime;
 
@@ -359,7 +370,7 @@ const TinyMCETests: React.FC<TinyMCETestsProps> = ({ darkMode }) => {
         updateTestStatus(
           testName,
           "fail",
-          `Undo/Redo not working as expected (undo: ${undoWorked}, redo: ${redoWorked})`,
+          `Undo/Redo not working as expected (undo worked: ${undoWorked}, redo worked: ${redoWorked})`,
           duration,
         );
       }
@@ -459,24 +470,46 @@ const TinyMCETests: React.FC<TinyMCETestsProps> = ({ darkMode }) => {
       updateTestStatus(testName, "running", "Testing event handling...");
 
       let eventFired = false;
+      let eventCount = 0;
+
       const testHandler = () => {
         eventFired = true;
+        eventCount++;
       };
 
-      editor.on("NodeChange", testHandler);
+      // Test multiple events for better coverage
+      editor.on("input", testHandler);
+      editor.on("change", testHandler);
+      editor.on("keyup", testHandler);
+
+      // Trigger content change to fire events
+      const originalContent = editor.getContent();
+      editor.insertContent(" [Event test]");
+
+      // Give it more time for events to fire
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      // Try to trigger another event
+      editor.focus();
       editor.selection.select(editor.getBody());
 
-      // Give it a moment for the event to fire
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Give it another moment
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
-      editor.off("NodeChange", testHandler);
+      // Clean up event listeners
+      editor.off("input", testHandler);
+      editor.off("change", testHandler);
+      editor.off("keyup", testHandler);
+
+      // Restore original content
+      editor.setContent(originalContent);
 
       const duration = Date.now() - startTime;
       updateTestStatus(
         testName,
         eventFired ? "pass" : "fail",
         eventFired
-          ? "Event handling working correctly"
+          ? `Event handling working correctly (${eventCount} events fired)`
           : "Events not firing as expected",
         duration,
       );
@@ -585,20 +618,32 @@ const TinyMCETests: React.FC<TinyMCETestsProps> = ({ darkMode }) => {
             <Typography variant="h6" gutterBottom>
               TinyMCE Rich Text Editor
             </Typography>
-            <Editor
+            <TinyMceBundle
               ref={editorRef}
               value={content}
-              onInit={(_, editor) => {
+              onInit={(_: any, editor: any) => {
                 setEditor(editor);
               }}
               onEditorChange={handleEditorChange}
               init={{
+                license_key: "gpl",
                 height: 400,
                 menubar: true,
+                toolbar:
+                  "undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist outdent indent | removeformat | help",
+                branding: false,
+                promotion: false,
+                // Use the proper dark mode configuration
                 skin: darkMode ? "oxide-dark" : "oxide",
                 content_css: darkMode ? "dark" : "default",
-                base_url: "/tinymce",
-                suffix: ".min",
+                skin_url: darkMode
+                  ? "/tinymce/skins/ui/oxide-dark"
+                  : "/tinymce/skins/ui/oxide",
+                content_style: `body { 
+                    font-family:Helvetica,Arial,sans-serif; 
+                    font-size:14px;
+                    ${darkMode ? "background-color: #2a2a2a; color: #ffffff;" : ""}
+                  }`,
                 plugins: [
                   "advlist",
                   "autolink",
@@ -618,13 +663,6 @@ const TinyMCETests: React.FC<TinyMCETestsProps> = ({ darkMode }) => {
                   "help",
                   "wordcount",
                 ],
-                toolbar:
-                  "undo redo | blocks | " +
-                  "bold italic forecolor | alignleft aligncenter " +
-                  "alignright alignjustify | bullist numlist outdent indent | " +
-                  "removeformat | table | help",
-                content_style:
-                  "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
               }}
             />
           </CardContent>
