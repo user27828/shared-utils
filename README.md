@@ -13,6 +13,7 @@ Collection of common utilities for web applications. Features centralized config
   - [Available Modules](#available-modules)
     - [📋 Utils](#-utils)
     - [🎨 Client Components](#-client-components)
+      - [📝 WYSIWYG Editor Components](#-wysiwyg-editor-components)
     - [🚀 Server](#-server)
   - [Configuration](#configuration)
     - [Centralized Configuration (Recommended)](#centralized-configuration-recommended)
@@ -20,6 +21,7 @@ Collection of common utilities for web applications. Features centralized config
       - [Next.js](#nextjs)
       - [Express.js](#expressjs)
   - [Command Line Tools](#command-line-tools)
+    - [Dependency Manager](#dependency-manager)
     - [Package Scripts Integration](#package-scripts-integration)
   - [Usage Examples](#usage-examples)
   - [Deployment Guide](#deployment-guide)
@@ -134,13 +136,14 @@ import {
 } from "@user27828/shared-utils/client/wysiwyg";
 
 // Basic usage
-<TinyMceEditor 
+<TinyMceEditor
   data={content}
   onChange={(value) => setContent(value)}
 />
 ```
 
 **Features:**
+
 - **Conditional Loading**: Components gracefully handle missing dependencies
 - **Lightweight**: Main client export doesn't include TinyMCE bundle
 - **Flexible**: Use `TinyMceBundle` for basic editor or `TinyMceEditor` for pre-configured setup
@@ -211,6 +214,67 @@ optionsManager.setGlobalOptions({
 
 - **`killnode`** - Kills Express server node processes (ignores VS Code, Electron, etc.)
 - **`yarn-upgrade`** - Interactive yarn upgrade with Cloudflare Pages compatibility
+- **`dependency-manager`** - Manages portal: resolutions for local development vs. production builds
+
+### Dependency Manager
+
+The `dependency-manager.js` script automatically handles portal: resolutions in package.json files based on the environment. This is essential for Cloudflare Workers which fail when portal: references exist in production.
+
+**Key Features:**
+
+- Auto-detects development vs. production environments
+- Enables portal resolutions for local development
+- Removes portal resolutions for production builds and CI/CD
+- Supports monorepo structures (packages/, apps/, workers/, etc.)
+- Works with both npm and yarn
+
+**Usage in Consuming Projects:**
+
+Option A - Automatic detection (recommended):
+
+```json
+{
+  "scripts": {
+    "dev": "dependency-manager && yarn dev",
+    "build": "dependency-manager && yarn build",
+    "cf:deploy": "dependency-manager && wrangler deploy"
+  }
+}
+```
+
+Option B - Explicit control:
+
+```json
+{
+  "scripts": {
+    "enable:portal": "dependency-manager --enable",
+    "disable:portal": "dependency-manager --disable",
+    "dev": "yarn enable:portal && yarn dev",
+    "build": "yarn disable:portal && yarn build"
+  }
+}
+```
+
+**Configuration:**
+
+Add a `_portalConfig` section to your package.json:
+
+```json
+{
+  "dependencies": {
+    "@user27828/shared-utils": "https://github.com/user27828/shared-utils.git#master"
+  },
+  "_portalConfig": {
+    "@user27828/shared-utils": "../path/to/shared-utils"
+  }
+}
+```
+
+**Command Line Options:**
+
+- No args: Auto-detects environment
+- `--enable`: Force enable portal resolutions
+- `--disable`: Force disable portal resolutions
 
 ### Package Scripts Integration
 
@@ -221,7 +285,9 @@ Add useful scripts to your `package.json`:
   "scripts": {
     "kill": "npx killnode -9",
     "upgrade": "npx yarn-upgrade-interactive --skip-server",
-    "dev": "npx killnode && your-dev-command"
+    "dev": "dependency-manager && npx killnode && your-dev-command",
+    "build": "dependency-manager && your-build-command",
+    "cf:deploy": "dependency-manager && wrangler deploy"
   }
 }
 ```
