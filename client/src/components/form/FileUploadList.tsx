@@ -50,7 +50,7 @@ export interface FileUploadListProps {
     | null
     | (File | ModeUploadFileProps | string)[];
   onUploadFileSelect: (
-    file: File | ModeUploadFileProps | null | (File | ModeUploadFileProps)[],
+    file: File | ModeUploadFileProps | null | (File | ModeUploadFileProps)[]
   ) => void;
   title?: string;
   uploadText?: string;
@@ -76,7 +76,7 @@ export interface FileUploadListProps {
     | boolean
     | null;
   onExistingFileSelect?: (
-    file: ModeUploadFileProps | null | ModeUploadFileProps[],
+    file: ModeUploadFileProps | null | ModeUploadFileProps[]
   ) => void;
   onDeleteExistingFile?: (file: ModeUploadFileProps | null) => void;
   onError?: (error: string | Error) => void;
@@ -129,7 +129,7 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
     File | ModeUploadFileProps | null | (File | ModeUploadFileProps)[]
   >(null); // State for selected existing upload(s)
   const [existingUploads, setExistingUploads] = useState<ModeUploadFileProps[]>(
-    [],
+    []
   ); // State for the list of existing uploads
   const [isProcessing, setIsProcessing] = useState(false); // State for tracking file processing
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -178,7 +178,7 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
         } else {
           // Multiple files selected
           const selectedFiles = existingUploads.filter((f) =>
-            selectedNames.includes(f.name),
+            selectedNames.includes(f.name)
           );
 
           setExistingUpload(selectedFiles);
@@ -194,7 +194,14 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
 
         // Check if the selected value is the upload option
         if (stringValue === "UPLOAD_OPTION") {
+          // If there are no files, always trigger upload
           handleFileClick();
+          // Also clear selection so the dropdown resets
+          setExistingUpload(null);
+          onUploadFileSelect(null);
+          if (onExistingFileSelect) {
+            onExistingFileSelect(null);
+          }
           return;
         }
 
@@ -223,7 +230,7 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
       onUploadFileSelect,
       existingUploads,
       handleFileClick,
-    ],
+    ]
   );
 
   /**
@@ -242,7 +249,7 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
         // If loadList returns a promise, wait for it to resolve
         (result as Promise<ModeUploadFileProps[]>).then(
           (data: ModeUploadFileProps[]) =>
-            setExistingUploads(isArray(data) ? data : []),
+            setExistingUploads(isArray(data) ? data : [])
         );
       } else if (isArray(result)) {
         // If loadList returns an array directly
@@ -319,7 +326,7 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
 
             if (!uploadResponse.ok) {
               throw new Error(
-                `Upload failed for ${file.name} with status: ${uploadResponse.status}`,
+                `Upload failed for ${file.name} with status: ${uploadResponse.status}`
               );
             }
 
@@ -350,7 +357,7 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
         // Find the uploaded files in the refreshed list
         const uploadedFiles =
           uploads?.filter((f: ModeUploadFileProps) =>
-            uploadResults.some((result) => f.name === result.filename),
+            uploadResults.some((result) => f.name === result.filename)
           ) || [];
 
         if (uploadedFiles.length > 0) {
@@ -389,7 +396,7 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
       _fetchExistingUploads,
       onFileUpload,
       uploadFile,
-    ],
+    ]
   );
 
   // Fetches the list of existing uploads if enabled
@@ -436,7 +443,7 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
         existingUploads.length > 0
       ) {
         let _existingUpload = existingUploads.find(
-          (f) => f.name === selectedFile,
+          (f) => f.name === selectedFile
         );
 
         if (!_existingUpload) {
@@ -467,7 +474,7 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
         const selectedNames = existingUpload
           .map((f) => f.name)
           .filter((name) =>
-            validExistingUploads.some((upload) => upload.name === name),
+            validExistingUploads.some((upload) => upload.name === name)
           );
         return selectedNames.length > 0 ? selectedNames : [];
       }
@@ -476,7 +483,7 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
       // Handle single selection (existing logic)
       const currentSelectedFileName = get(existingUpload, "name", "");
       const isActuallySelectedInList = validExistingUploads.some(
-        (upload) => upload.name === currentSelectedFileName,
+        (upload) => upload.name === currentSelectedFileName
       );
 
       const shouldDefaultToUpload = validExistingUploads.length === 0;
@@ -484,8 +491,8 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
       return currentSelectedFileName && isActuallySelectedInList
         ? currentSelectedFileName
         : shouldDefaultToUpload
-          ? "UPLOAD_OPTION"
-          : "";
+        ? "UPLOAD_OPTION"
+        : "";
     }
   };
 
@@ -536,8 +543,8 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
                           .map((f) => (isString(f) ? f : get(f, "name", "")))
                           .join(", ")
                       : isString(selectedFile)
-                        ? selectedFile
-                        : get(selectedFile, "name", "")}{" "}
+                      ? selectedFile
+                      : get(selectedFile, "name", "")}{" "}
                     Processing
                   </Stack>
                 </Alert>
@@ -574,8 +581,8 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
                     .map((f) => (isString(f) ? f : get(f, "name", "")))
                     .join(", ")
                 : isString(selectedFile)
-                  ? selectedFile
-                  : get(selectedFile, "name", "")}{" "}
+                ? selectedFile
+                : get(selectedFile, "name", "")}{" "}
               Processing
             </Stack>
           </Alert>
@@ -597,7 +604,14 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
               multiple={multipleSelect}
             >
               {/* Upload option - show based on conditions */}
-              <MenuItem value="UPLOAD_OPTION">
+              <MenuItem
+                value="UPLOAD_OPTION"
+                onClick={() => {
+                  if (effectiveSelectValue === "UPLOAD_OPTION") {
+                    handleFileClick();
+                  }
+                }}
+              >
                 {validExistingUploads.length === 0
                   ? `${uploadText} (no existing uploads)`
                   : `*${uploadText}*`}
@@ -656,7 +670,7 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
                           )}
                       </MenuItem>
                     );
-                  },
+                  }
                 )}
             </Select>
           </FormControl>

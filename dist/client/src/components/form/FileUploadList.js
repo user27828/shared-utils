@@ -94,7 +94,14 @@ onExistingFileSelect = () => { }, onDeleteExistingFile = () => { }, onError = ()
             const stringValue = singleValue ?? "";
             // Check if the selected value is the upload option
             if (stringValue === "UPLOAD_OPTION") {
+                // If there are no files, always trigger upload
                 handleFileClick();
+                // Also clear selection so the dropdown resets
+                setExistingUpload(null);
+                onUploadFileSelect(null);
+                if (onExistingFileSelect) {
+                    onExistingFileSelect(null);
+                }
                 return;
             }
             // Handle "No Selection" case (empty string)
@@ -372,7 +379,11 @@ onExistingFileSelect = () => { }, onDeleteExistingFile = () => { }, onError = ()
                                         .join(", ")
                                     : isString(selectedFile)
                                         ? selectedFile
-                                        : get(selectedFile, "name", ""), " ", "Processing"] }) })), showExistingFiles && (_jsxs(FormControl, { fullWidth: true, children: [_jsx(InputLabel, { id: "existing-upload-label", children: selectText }), _jsxs(Select, { labelId: "existing-upload-label", id: "existing-upload", value: effectiveSelectValue, label: selectText, onChange: handleExistingUploadChange, open: menuOpen, onOpen: () => setMenuOpen(true), onClose: () => setMenuOpen(false), multiple: multipleSelect, children: [_jsx(MenuItem, { value: "UPLOAD_OPTION", children: validExistingUploads.length === 0
+                                        : get(selectedFile, "name", ""), " ", "Processing"] }) })), showExistingFiles && (_jsxs(FormControl, { fullWidth: true, children: [_jsx(InputLabel, { id: "existing-upload-label", children: selectText }), _jsxs(Select, { labelId: "existing-upload-label", id: "existing-upload", value: effectiveSelectValue, label: selectText, onChange: handleExistingUploadChange, open: menuOpen, onOpen: () => setMenuOpen(true), onClose: () => setMenuOpen(false), multiple: multipleSelect, children: [_jsx(MenuItem, { value: "UPLOAD_OPTION", onClick: () => {
+                                            if (effectiveSelectValue === "UPLOAD_OPTION") {
+                                                handleFileClick();
+                                            }
+                                        }, children: validExistingUploads.length === 0
                                             ? `${uploadText} (no existing uploads)`
                                             : `*${uploadText}*` }), validExistingUploads.length > 0 && (_jsx(MenuItem, { value: "", children: "*No Selection*" })), isArray(existingUploads) &&
                                         size(existingUploads) > 0 &&

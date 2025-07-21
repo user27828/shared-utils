@@ -42,13 +42,13 @@
   "devDependencies": {
     "@babel/core": "^7.28.0",
     "@babel/preset-env": "^7.28.0",
-    "@cloudflare/workers-types": "^4.20250702.0",
-    "@jest/globals": "^30.0.3",
-    "babel-jest": "^30.0.2",
-    "jest": "^30.0.3",
+    "@cloudflare/workers-types": "^4.20250719.0",
+    "@jest/globals": "^30.0.4",
+    "babel-jest": "^30.0.4",
+    "jest": "^30.0.4",
     "ts-jest": "^29.4.0",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
-    "wrangler": "^4.22.0"
+    "wrangler": "^4.25.0"
   }
 }
