@@ -9,10 +9,10 @@
     "dev": "node src/index.js"
   },
   "dependencies": {
-    "@user27828/shared-utils": "workspace:../.."
+    "@user27828/shared-utils": "workspace:*"
   },
   "devDependencies": {
-    "jest": "^30.0.2",
-    "@types/node": "^20.0.0"
+    "@types/node": "^24.1.0",
+    "jest": "^30.0.5"
   }
 }

@@ -149,5 +149,4 @@ declare module "@user27828/shared-utils/client/wysiwyg" {
   }
 
   export const TinyMceEditor: React.FC<TinyMceEditorProps>;
-  export const TinyMceBundle: React.FC<TinyMceEditorProps>;
 }

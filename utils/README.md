@@ -69,8 +69,6 @@ turnstile.setOptions({ siteKey: "your-key" });
 
 ### Client-Side Setup
 
-### Client-Side Setup
-
 ```javascript
 import { log, optionsManager } from "@user27828/shared-utils/utils";
 

@@ -9,6 +9,6 @@
     "test": "echo 'Open http://localhost:8080 in browser to test'"
   },
   "dependencies": {
-    "@user27828/shared-utils": "workspace:../.."
+    "@user27828/shared-utils": "workspace:*"
   }
 }

@@ -3,12 +3,16 @@
   "description": "Collection of common utilities I use for various projects",
   "version": "0.69.7",
   "type": "module",
-  "packageManager": "yarn@3.2.2",
+  "packageManager": "yarn@4.9.2",
   "workspaces": [
     "client",
     "utils",
     "server",
-    "test-consumer"
+    "test-consumer",
+    "test-consumer/react-app",
+    "test-consumer/server",
+    "test-consumer/node-consumer",
+    "test-consumer/vanilla-js-consumer"
   ],
   "author": {
     "name": "Marc Stephenson",
@@ -58,7 +62,6 @@
     "test:coverage": "jest --coverage",
     "upgrade": "npx yarn-upgrade-interactive",
     "update:data": "./bin/update-source-data.sh",
-    "update:local": "./bin/update-local-package.sh",
     "compare:data": "./bin/compare-data.cjs"
   },
   "bin": {
@@ -76,15 +79,17 @@
     "jest": "^30.0.5",
     "jest-environment-node": "^30.0.5",
     "prettier": "^3.6.2",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
     "ts-jest": "^29.4.0",
     "typescript": "^5.8.3"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@tinymce/tinymce-react": "^6.3.0",
     "lodash-es": "^4.17.21",
+    "tinymce": "^8.0.1",
     "typescript": "^5.8.3"
   },
   "files": [

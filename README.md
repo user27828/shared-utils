@@ -72,10 +72,7 @@ import {
 } from "@user27828/shared-utils/client";
 
 // ✅ WYSIWYG Editor (requires @tinymce/tinymce-react and tinymce)
-import {
-  TinyMceEditor,
-  TinyMceBundle,
-} from "@user27828/shared-utils/client/wysiwyg";
+import { TinyMceEditor } from "@user27828/shared-utils/client/wysiwyg";
 
 // ✅ Server functionality
 import { verifyTurnstileTokenEnhanced } from "@user27828/shared-utils/server";
@@ -130,10 +127,7 @@ yarn add @tinymce/tinymce-react tinymce
 
 ```typescript
 // Import WYSIWYG components separately
-import {
-  TinyMceEditor,
-  TinyMceBundle,
-} from "@user27828/shared-utils/client/wysiwyg";
+import { TinyMceEditor } from "@user27828/shared-utils/client/wysiwyg";
 
 // Basic usage
 <TinyMceEditor
@@ -146,7 +140,7 @@ import {
 
 - **Conditional Loading**: Components gracefully handle missing dependencies
 - **Lightweight**: Main client export doesn't include TinyMCE bundle
-- **Flexible**: Use `TinyMceBundle` for basic editor or `TinyMceEditor` for pre-configured setup
+- **Flexible**: Use `TinyMceEditor` for pre-configured setup
 
 ### 🚀 [Server](/server/README-SERVER.md)
 

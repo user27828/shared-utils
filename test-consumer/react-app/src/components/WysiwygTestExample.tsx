@@ -4,10 +4,10 @@ import { Card, CardContent, Typography, Button, Stack } from "@mui/material";
 // Example of using the new WYSIWYG import pattern
 const loadWysiwygComponents = async () => {
   try {
-    const { TinyMceEditor, TinyMceBundle } = await import(
+    const { TinyMceEditor } = await import(
       "@user27828/shared-utils/client/wysiwyg"
     );
-    return { TinyMceEditor, TinyMceBundle };
+    return { TinyMceEditor };
   } catch (error) {
     console.warn("WYSIWYG components not available:", error);
     return null;

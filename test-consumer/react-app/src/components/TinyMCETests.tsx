@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { TinyMceBundle } from "@user27828/shared-utils/client/wysiwyg";
+import { TinyMceEditor } from "@user27828/shared-utils/client/wysiwyg";
 import { Box, Card, CardContent, Typography, Stack, Chip } from "@mui/material";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 
@@ -618,7 +618,7 @@ const TinyMCETests: React.FC<TinyMCETestsProps> = ({ darkMode }) => {
             <Typography variant="h6" gutterBottom>
               TinyMCE Rich Text Editor
             </Typography>
-            <TinyMceBundle
+            <TinyMceEditor
               ref={editorRef}
               value={content}
               onInit={(_: any, editor: any) => {
@@ -636,9 +636,9 @@ const TinyMCETests: React.FC<TinyMCETestsProps> = ({ darkMode }) => {
                 // Use the proper dark mode configuration
                 skin: darkMode ? "oxide-dark" : "oxide",
                 content_css: darkMode ? "dark" : "default",
-                skin_url: darkMode
-                  ? "/tinymce/skins/ui/oxide-dark"
-                  : "/tinymce/skins/ui/oxide",
+                // skin_url: darkMode
+                //   ? "/tinymce/skins/ui/oxide-dark"
+                //   : "/tinymce/skins/ui/oxide",
                 content_style: `body { 
                     font-family:Helvetica,Arial,sans-serif; 
                     font-size:14px;
