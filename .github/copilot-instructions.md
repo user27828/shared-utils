@@ -2,31 +2,68 @@
 
 ## Big Picture Architecture
 
-- **Monorepo Structure**: Contains core utilities (`utils/`), client components (`client/`), server logic (`server/`), data files (`data/`), and integration/test consumers (`test-consumer/`).
-- **Centralized Configuration**: Use `OptionsManager` for unified config across environments. See `utils/options-manager.js` and references in `README.md`.
-- **Environment Awareness**: Utilities auto-detect client/server context. Avoid hardcoding environment checks; use provided helpers.
+- **Monorepo Structure**: TypeScript-compiled utilities distributed from `dist/` directory. Source in `utils/src/`, `client/src/`, `server/src/` with individual `package.json` configs and TypeScript project references.
+- **ES Module Native**: Everything uses `.js` extensions in imports (TypeScript ES module pattern). Critical: imports must end with `.js` even for `.ts` files (e.g., `"./options-manager.js"`).
+- **Centralized Configuration**: `OptionsManager` is the architectural centerpiece. Each utility registers with the global `optionsManager` singleton, enabling cross-utility configuration via `setGlobalOptions()`.
+- **Environment Auto-Detection**: Log and Turnstile utilities detect client vs server context automatically. Never hardcode environment checks - use the provided detection patterns from existing utilities.
+
+## Critical TypeScript Patterns
+
+- **ES Module Imports**: Always use `.js` extensions: `import { OptionsManager } from "./options-manager.js"`
+- **TypeScript Build**: Compiles to `../dist/{utils|client|server}/` with `--outDir` flag. Each workspace builds independently.
+- **Jest ES Modules**: Uses `NODE_OPTIONS="--experimental-vm-modules"` and `preset: "ts-jest/presets/default-esm"` with complex `moduleNameMapper` configs.
+- **Lodash-ES**: Uses ES module version (`lodash-es`) with specific Jest transform patterns. Import: `import { mergeWith, cloneDeep } from "lodash-es"`
 
 ## Developer Workflows
 
-- **Build**: Use `yarn build` in the root or `yarn build:react`/`yarn build:server` for submodules. React app uses Vite.
-- **Test**: Run `yarn test:all` in `test-consumer/` for full integration. Individual suites: `yarn test:react`, `yarn test:server`, etc.
-- **Debug**: For server tests, use `node --inspect server/test-runner.js`. For React, use browser devtools with Vite dev server.
-- **Clean**: Use `yarn clean` in `test-consumer/` to remove all node_modules.
-- **Kill Dev Servers**: Use `yarn kill:all` or specific kill scripts (see `package.json` scripts).
-- **Yarn Only**: All workflows use `yarn` exclusively. Do not use `npm` or `pnpm` for any install, build, or script commands. This is verified in all scripts and configs.
+- **Build System**: `yarn build` runs workspace builds sequentially: `utils build && client build && server build`. Each workspace clears `tsconfig.tsbuildinfo` before compilation.
+- **Test Integration**: Root `yarn test` runs all workspace tests. Use `yarn test:all` in `test-consumer/` for end-to-end integration across React, Node, and vanilla JS consumers.
+- **Data Updates**: `./bin/update-source-data.sh` downloads official data from Library of Congress and DataHub.io with backup creation.
+- **Package Management**: Yarn-only monorepo. Scripts detect yarn vs npm and fail gracefully. Never use `npm` or `pnpm` commands.
+- **Development Servers**: `test-consumer/` provides isolated test environments. Use `yarn kill:all` to terminate all background processes.
+
+## OptionsManager Architecture (Critical)
+
+- **Registration Pattern**: Each utility creates an `OptionsManager` instance and registers with global `optionsManager`: `optionsManager.registerManager("log", this.optionsManager)`
+- **Cross-Utility Config**: Use `optionsManager.setGlobalOptions({ log: {...}, turnstile: {...} })` for unified configuration
+- **Flexible API**: Supports both category-based (`setOption("client", {...})`) and dot notation (`setOption("client.production", [...])`) access patterns
+- **Deep Merging**: Uses `lodash-es mergeWith` with array replacement (not concatenation) for configuration updates
 
 ## Project-Specific Conventions
 
-- **Data Updates**: Run `yarn update:data` to refresh authoritative data in `data/source/` (see `README.md`).
-- **Logging**: Use the provided `log` utility for environment-safe logging. Supports caller info and dynamic config (see `utils/README.md`).
-- **Turnstile Integration**: Use `turnstile` utility for bot protection; works client/server (see `utils/README.md`).
-- **React Function Components**: Always prefer function components for React code. Verified: all exported components in `client/src/components/` are function components; no class components are present.
+- **File Extensions**: Source files are `.ts`, imports reference `.js`, compiled output is `.js` with `.d.ts` types
+- **Logging**: `log` utility with caller information (`showCaller: true`), production filtering, and localStorage overrides for debugging
+- **Turnstile Integration**: Client-side widget rendering + server-side token verification. Supports Cloudflare Worker deployment via `wrangler.toml`
+- **React Components**: Function components only. Client exports include MUI-based file icons and country/language selectors
+- **Data Sources**: ISO standards from official sources (Library of Congress, DataHub.io) with automated download and backup scripts
 
 ## Integration Points
 
-- **Client/Server Communication**: Shared utilities are imported in both `client/` and `server/` contexts. Avoid direct cross-imports; use package boundaries.
-- **Test Consumers**: `test-consumer/` contains real-world usage examples and integration tests. Each subfolder (`react-app/`, `server/`, etc.) is a standalone consumer. **Note:** `test-consumer/` is NOT part of the distributed package and is only used for local development and testing.
-- **External Data**: Data files in `data/source/` are sourced from official URLs. Scripts automate download and backup.
+- **Package Exports**: Root exports utils, client, server, with specific paths like `/client/wysiwyg` for optional dependencies
+- **Test Consumer Architecture**: `test-consumer/` provides isolated test environments for React (`vite`), Node.js, vanilla JS, and server integration. These are NOT distributed - development/testing only
+- **TypeScript References**: Root `tsconfig.json` uses project references to coordinate workspace builds while maintaining isolation
+- **Jest Configuration**: Complex `moduleNameMapper` patterns handle ES modules, `lodash-es` transforms, and workspace imports with `transformIgnorePatterns`
+
+## AI Coding Guidance
+
+**When generating TypeScript code:**
+
+- Use `.js` extensions in imports, never `.ts`: `import { log } from "./log.js"`
+- Prefer `optionsManager.setGlobalOptions()` over individual `utility.setOptions()` calls
+- Environment detection via existing patterns, never hardcode `typeof window` checks
+- Use `lodash-es` imports: `import { mergeWith, cloneDeep } from "lodash-es"`
+
+**When working with tests:**
+
+- Run with `NODE_OPTIONS="--experimental-vm-modules"` for ES module support
+- Use existing Jest patterns for async utilities and mock configurations
+- Test both client and server contexts using provided detection mechanisms
+
+**When updating dependencies or configs:**
+
+- Maintain yarn-only workflow patterns - detect and warn about npm/pnpm usage
+- Preserve ES module configurations in Jest/TypeScript/package.json files
+- Follow monorepo patterns: individual workspace builds, centralized root scripts
 
 ## Patterns & Examples
 
