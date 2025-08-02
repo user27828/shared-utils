@@ -14,6 +14,7 @@ import { AttachFile as AttachFileIcon, DeleteForever as DeleteForeverIcon, } fro
  * @param {boolean} props.showExistingFiles - Show existing files in the associated webservice dir?
  * @param {File|string|null} props.selectedFile - Newly uploaded file becomes selected | the one selected from the list.  Uploads must
  *   populate this value from the caller to indicate upload/handling success.  Type is string if the file is already existing and not an upload
+ * @param {null|boolean|string} props.selectDefault - If null/undefined/true: select first item if present. If string: select item with that name if present. If false: do not auto-select.
  * @param {function} props.loadList - Function to load the list of existing files, if applicable
  * @param {function} props.uploadFile - Function to handle file upload, if applicable
  * @param {function} props.onUploadFileSelect - Callback function when a NEW file is selected/deselected.
@@ -36,6 +37,7 @@ uploadFile = () => { }, // Function to handle file upload, if applicable
 fileExtensions = ["csv", "tsv", "txt"], //".csv, .tsv, .txt"
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 showDeleteExistingFiles = false, selectedFile = null, // Newly uploaded file becomes selected | the one selected from the list
+selectDefault = undefined, // If null/undefined/true: select first item if present. If string: select item with that name if present. If false: do not auto-select.
 onUploadFileSelect = () => { }, onFileUpload = true, // Use local file upload capability
 onExistingFileSelect = () => { }, onDeleteExistingFile = () => { }, onError = () => { }, }) => {
     const [menuOpen, setMenuOpen] = useState(false); // Uploaded items menu
@@ -296,8 +298,9 @@ onExistingFileSelect = () => { }, onDeleteExistingFile = () => { }, onError = ()
                     // Try without extension if no exact match
                     if (!found) {
                         found = existingUploads.find((f) => {
-                            if (!f || !f.name)
+                            if (!f || !f.name) {
                                 return false;
+                            }
                             const nameWithoutExt = f.name.lastIndexOf(".") > 0
                                 ? f.name.substring(0, f.name.lastIndexOf("."))
                                 : f.name;
@@ -321,8 +324,9 @@ onExistingFileSelect = () => { }, onDeleteExistingFile = () => { }, onError = ()
                 let _existingUpload = existingUploads.find((f) => f.name === selectedFile);
                 if (!_existingUpload) {
                     _existingUpload = existingUploads.find((f) => {
-                        if (!f || !f.name)
+                        if (!f || !f.name) {
                             return false;
+                        }
                         const fileNameWithoutExt = f.name.lastIndexOf(".") > 0
                             ? f.name.substring(0, f.name.lastIndexOf("."))
                             : f.name;
@@ -338,10 +342,16 @@ onExistingFileSelect = () => { }, onDeleteExistingFile = () => { }, onError = ()
     }, [selectedFile, existingUploads, multipleSelect]);
     // Calculate the effective value for the Select component
     const getEffectiveSelectValue = () => {
-        if (!showExistingFiles)
-            return "";
+        if (!showExistingFiles) {
+            if (multipleSelect) {
+                return [];
+            }
+            else {
+                return "";
+            }
+        }
         if (multipleSelect) {
-            // Handle multiple selection
+            // Always return an array for multiple mode
             if (Array.isArray(existingUpload)) {
                 const selectedNames = existingUpload
                     .map((f) => f.name)
@@ -351,7 +361,7 @@ onExistingFileSelect = () => { }, onDeleteExistingFile = () => { }, onError = ()
             return [];
         }
         else {
-            // Handle single selection (existing logic)
+            // Single select
             const currentSelectedFileName = get(existingUpload, "name", "");
             const isActuallySelectedInList = validExistingUploads.some((upload) => upload.name === currentSelectedFileName);
             const shouldDefaultToUpload = validExistingUploads.length === 0;
@@ -367,6 +377,72 @@ onExistingFileSelect = () => { }, onDeleteExistingFile = () => { }, onError = ()
         ? existingUploads
         : [];
     const effectiveSelectValue = getEffectiveSelectValue();
+    // Auto-select default item if needed
+    useEffect(() => {
+        if (!showExistingFiles || !validExistingUploads.length) {
+            return;
+        }
+        // Only auto-select if nothing is selected
+        const nothingSelected = (!existingUpload ||
+            (Array.isArray(existingUpload) && !existingUpload.length)) &&
+            (!selectedFile || (Array.isArray(selectedFile) && !selectedFile.length));
+        if (!nothingSelected) {
+            return;
+        }
+        // If selectDefault is false, do not auto-select
+        if (selectDefault === false) {
+            return;
+        }
+        if (multipleSelect) {
+            // For multiple select, only select if selectDefault is a string and matches
+            if (typeof selectDefault === "string") {
+                const found = validExistingUploads.find((f) => f.name === selectDefault);
+                if (found) {
+                    setExistingUpload([found]);
+                    onUploadFileSelect([found]);
+                    if (onExistingFileSelect)
+                        onExistingFileSelect([found]);
+                }
+            }
+            else if (selectDefault === true || selectDefault == null) {
+                // true/null/undefined: select first if only one
+                if (validExistingUploads.length === 1) {
+                    setExistingUpload([validExistingUploads[0]]);
+                    onUploadFileSelect([validExistingUploads[0]]);
+                    if (onExistingFileSelect)
+                        onExistingFileSelect([validExistingUploads[0]]);
+                }
+            }
+        }
+        else {
+            // Single select
+            let defaultItem;
+            if (typeof selectDefault === "string") {
+                defaultItem = validExistingUploads.find((f) => f.name === selectDefault);
+            }
+            else if (selectDefault === true) {
+                // true: select first item if present
+                if (validExistingUploads.length > 0) {
+                    defaultItem = validExistingUploads[0];
+                }
+            }
+            if (defaultItem) {
+                setExistingUpload(defaultItem);
+                onUploadFileSelect(defaultItem);
+                if (onExistingFileSelect)
+                    onExistingFileSelect(defaultItem);
+            }
+        }
+    }, [
+        showExistingFiles,
+        validExistingUploads,
+        selectDefault,
+        multipleSelect,
+        existingUpload,
+        selectedFile,
+        onUploadFileSelect,
+        onExistingFileSelect,
+    ]);
     return (_jsxs(Card, { raised: true, sx: { m: 1, mt: 3 }, children: [_jsx(CardHeader, { disableTypography: true, title: title, sx: { p: 1 } }), _jsxs(CardContent, { children: [!showExistingFiles && (_jsx(_Fragment, { children: _jsxs("label", { htmlFor: "contained-button-file", children: [_jsx("input", { accept: _fileExtensions, id: "contained-button-file", type: "file", multiple: multipleUpload, onChange: handleFileUpload, ref: fileInputRef, style: { display: "none" }, "data-testid": "file-input" }), _jsx(Button, { variant: "contained", size: "small", fullWidth: true, onClick: handleFileClick, startIcon: _jsx(AttachFileIcon, {}), children: uploadText }), selectedFile && isProcessing && (_jsx(Alert, { variant: "outlined", severity: "info", icon: _jsx(CircularProgress, { size: 20 }), sx: { m: 1 }, children: _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", children: [Array.isArray(selectedFile)
                                                 ? selectedFile
                                                     .map((f) => (isString(f) ? f : get(f, "name", "")))

@@ -196,7 +196,9 @@ class Log {
   private getCallerInfo(): string | null {
     try {
       const stack = new Error().stack;
-      if (!stack) return null;
+      if (!stack) {
+        return null;
+      }
 
       const lines = stack.split("\n");
       // Skip Error line, this method, _log method, and the public log method

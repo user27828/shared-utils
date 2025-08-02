@@ -142,8 +142,9 @@ class Log {
     getCallerInfo() {
         try {
             const stack = new Error().stack;
-            if (!stack)
+            if (!stack) {
                 return null;
+            }
             const lines = stack.split("\n");
             // Skip Error line, this method, _log method, and the public log method
             // Look for the first line that's not from this log utility

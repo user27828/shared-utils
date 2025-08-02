@@ -48,6 +48,7 @@
 
 **When generating TypeScript code:**
 
+- Always use curly braces for conditional return statements, even for single-line returns. Do not use single-line returns without braces.
 - Use `.js` extensions in imports, never `.ts`: `import { log } from "./log.js"`
 - Prefer `optionsManager.setGlobalOptions()` over individual `utility.setOptions()` calls
 - Environment detection via existing patterns, never hardcode `typeof window` checks
