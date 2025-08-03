@@ -15,12 +15,18 @@ export interface FileUploadListProps {
     selectedFile: File | ModeUploadFileProps | string | null | (File | ModeUploadFileProps | string)[];
     onUploadFileSelect: (file: File | ModeUploadFileProps | null | (File | ModeUploadFileProps)[]) => void;
     selectDefault?: string | null | boolean;
+    selectDefaultAction?: null | boolean;
     title?: string;
     uploadText?: string;
     selectText?: string;
     multipleSelect?: boolean;
     multipleUpload?: boolean;
-    loadList?: () => void | Promise<ModeUploadFileProps[]> | ModeUploadFileProps[];
+    /**
+     * Function or array to load the list of existing files, if applicable.
+     * If a function, it can return void, a Promise of ModeUploadFileProps[], or ModeUploadFileProps[].
+     * If an array, it is used directly as the list of files.
+     */
+    loadList?: (() => void | Promise<ModeUploadFileProps[]> | ModeUploadFileProps[]) | ModeUploadFileProps[];
     uploadFile?: ({ method, body, }: {
         method: string;
         body: FormData;
@@ -39,8 +45,9 @@ export interface FileUploadListProps {
  * @param {boolean} props.showExistingFiles - Show existing files in the associated webservice dir?
  * @param {File|string|null} props.selectedFile - Newly uploaded file becomes selected | the one selected from the list.  Uploads must
  *   populate this value from the caller to indicate upload/handling success.  Type is string if the file is already existing and not an upload
- * @param {null|boolean|string} props.selectDefault - If null/undefined/true: select first item if present. If string: select item with that name if present. If false: do not auto-select.
- * @param {function} props.loadList - Function to load the list of existing files, if applicable
+ * @param {null|boolean|string} props.selectDefault - If true: select first item if present. If string: select item with that name if present. If false: do not auto-select.
+ * @param {null|boolean} props.selectDefaultAction - If true: selectDefault trigger will run the usual onClick action, else, nothing
+ * @param {function|ModeUploadFileProps[]} props.loadList - Function or array to load the list of existing files, if applicable. If a function, it can return void, a Promise of ModeUploadFileProps[], or ModeUploadFileProps[]. If an array, it is used directly as the list of files.
  * @param {function} props.uploadFile - Function to handle file upload, if applicable
  * @param {function} props.onUploadFileSelect - Callback function when a NEW file is selected/deselected.
  * @param {function} props.onExistingFileSelect - Action to take if/when an existing file is selected

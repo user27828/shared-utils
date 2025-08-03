@@ -6,6 +6,7 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
  */
 import { useEffect, useState, useRef, useCallback, } from "react";
 import { get, isArray, isFunction, isNumber, isString, size } from "lodash-es";
+import { formatFileSize } from "../../../../utils";
 import { Alert, Button, Card, CardContent, CardHeader, CircularProgress, FormControl, IconButton, InputLabel, ListItemIcon, MenuItem, Select, Stack, } from "@mui/material";
 import { AttachFile as AttachFileIcon, DeleteForever as DeleteForeverIcon, } from "@mui/icons-material";
 /**
@@ -14,8 +15,9 @@ import { AttachFile as AttachFileIcon, DeleteForever as DeleteForeverIcon, } fro
  * @param {boolean} props.showExistingFiles - Show existing files in the associated webservice dir?
  * @param {File|string|null} props.selectedFile - Newly uploaded file becomes selected | the one selected from the list.  Uploads must
  *   populate this value from the caller to indicate upload/handling success.  Type is string if the file is already existing and not an upload
- * @param {null|boolean|string} props.selectDefault - If null/undefined/true: select first item if present. If string: select item with that name if present. If false: do not auto-select.
- * @param {function} props.loadList - Function to load the list of existing files, if applicable
+ * @param {null|boolean|string} props.selectDefault - If true: select first item if present. If string: select item with that name if present. If false: do not auto-select.
+ * @param {null|boolean} props.selectDefaultAction - If true: selectDefault trigger will run the usual onClick action, else, nothing
+ * @param {function|ModeUploadFileProps[]} props.loadList - Function or array to load the list of existing files, if applicable. If a function, it can return void, a Promise of ModeUploadFileProps[], or ModeUploadFileProps[]. If an array, it is used directly as the list of files.
  * @param {function} props.uploadFile - Function to handle file upload, if applicable
  * @param {function} props.onUploadFileSelect - Callback function when a NEW file is selected/deselected.
  * @param {function} props.onExistingFileSelect - Action to take if/when an existing file is selected
@@ -32,12 +34,13 @@ import { AttachFile as AttachFileIcon, DeleteForever as DeleteForeverIcon, } fro
  * @returns {React.JSX}
  * @component
  */
-const FileUploadList = ({ title = "", uploadText = "Upload File...", selectText = "Existing Uploads", multipleSelect = false, multipleUpload = false, showExistingFiles = false, loadList = () => { }, // Function to load the list of existing files, if applicable
+const FileUploadList = ({ title = "", uploadText = "Upload File...", selectText = "Existing Uploads", multipleSelect = false, multipleUpload = false, showExistingFiles = false, loadList = () => { }, // Function or array to load the list of existing files, if applicable
 uploadFile = () => { }, // Function to handle file upload, if applicable
 fileExtensions = ["csv", "tsv", "txt"], //".csv, .tsv, .txt"
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 showDeleteExistingFiles = false, selectedFile = null, // Newly uploaded file becomes selected | the one selected from the list
-selectDefault = undefined, // If null/undefined/true: select first item if present. If string: select item with that name if present. If false: do not auto-select.
+selectDefault = undefined, // If true: select first item if present. If string: select item with that name if present. If false: do not auto-select.
+selectDefaultAction = null, // If true: selectDefault trigger will run the usual onClick action, else, nothing
 onUploadFileSelect = () => { }, onFileUpload = true, // Use local file upload capability
 onExistingFileSelect = () => { }, onDeleteExistingFile = () => { }, onError = () => { }, }) => {
     const [menuOpen, setMenuOpen] = useState(false); // Uploaded items menu
@@ -134,7 +137,17 @@ onExistingFileSelect = () => { }, onDeleteExistingFile = () => { }, onError = ()
      * @returns {ModeUploadFileProps[] | void}
      */
     const _fetchExistingUploads = useCallback(() => {
-        if (!isFunction(loadList) || !showExistingFiles) {
+        if (!showExistingFiles) {
+            setExistingUploads([]);
+            return;
+        }
+        // If loadList is an array, use it directly
+        if (isArray(loadList)) {
+            setExistingUploads(loadList);
+            return loadList;
+        }
+        // If loadList is a function, call it
+        if (!isFunction(loadList)) {
             setExistingUploads([]);
             return;
         }
@@ -217,7 +230,6 @@ onExistingFileSelect = () => { }, onDeleteExistingFile = () => { }, onError = ()
                     }
                     const result = await uploadResponse.json();
                     uploadResults.push(result);
-                    console.log(`File ${file.name} uploaded successfully:`, result);
                 }
                 catch (error) {
                     const errorMessage = `Error uploading ${file.name}: ${error}`;
@@ -284,7 +296,7 @@ onExistingFileSelect = () => { }, onDeleteExistingFile = () => { }, onError = ()
         if (showExistingFiles) {
             _fetchExistingUploads();
         }
-    }, [showExistingFiles]); // Re-fetch if apiUrl or showExistingFiles changes
+    }, [showExistingFiles, _fetchExistingUploads]); // Re-fetch if apiUrl or showExistingFiles changes
     // Separate effect to sync selectedFile with existingUpload for existing files
     useEffect(() => {
         if (multipleSelect) {
@@ -377,71 +389,76 @@ onExistingFileSelect = () => { }, onDeleteExistingFile = () => { }, onError = ()
         ? existingUploads
         : [];
     const effectiveSelectValue = getEffectiveSelectValue();
-    // Auto-select default item if needed
+    // Auto-select default item and trigger action if needed
     useEffect(() => {
         if (!showExistingFiles || !validExistingUploads.length) {
             return;
         }
-        // Only auto-select if nothing is selected
-        const nothingSelected = (!existingUpload ||
-            (Array.isArray(existingUpload) && !existingUpload.length)) &&
-            (!selectedFile || (Array.isArray(selectedFile) && !selectedFile.length));
-        if (!nothingSelected) {
-            return;
-        }
-        // If selectDefault is false, do not auto-select
-        if (selectDefault === false) {
-            return;
-        }
+        // Determine the default item based on props
+        let defaultItem;
+        let defaultItems;
         if (multipleSelect) {
-            // For multiple select, only select if selectDefault is a string and matches
             if (typeof selectDefault === "string") {
                 const found = validExistingUploads.find((f) => f.name === selectDefault);
                 if (found) {
-                    setExistingUpload([found]);
-                    onUploadFileSelect([found]);
-                    if (onExistingFileSelect)
-                        onExistingFileSelect([found]);
+                    defaultItems = [found];
                 }
             }
-            else if (selectDefault === true || selectDefault == null) {
-                // true/null/undefined: select first if only one
-                if (validExistingUploads.length === 1) {
-                    setExistingUpload([validExistingUploads[0]]);
-                    onUploadFileSelect([validExistingUploads[0]]);
-                    if (onExistingFileSelect)
-                        onExistingFileSelect([validExistingUploads[0]]);
-                }
+            else if ((selectDefault === true || selectDefault == null) &&
+                validExistingUploads.length === 1) {
+                defaultItems = [validExistingUploads[0]];
             }
         }
         else {
-            // Single select
-            let defaultItem;
             if (typeof selectDefault === "string") {
                 defaultItem = validExistingUploads.find((f) => f.name === selectDefault);
             }
-            else if (selectDefault === true) {
-                // true: select first item if present
-                if (validExistingUploads.length > 0) {
-                    defaultItem = validExistingUploads[0];
+            else if (selectDefault === true && validExistingUploads.length > 0) {
+                defaultItem = validExistingUploads[0];
+            }
+        }
+        const finalDefault = multipleSelect ? defaultItems : defaultItem;
+        if (!finalDefault) {
+            return;
+        }
+        // Check if nothing is selected yet OR if selectDefault has changed to a different file
+        const nothingSelected = (!existingUpload ||
+            (Array.isArray(existingUpload) && !existingUpload.length)) &&
+            (!selectedFile || (Array.isArray(selectedFile) && !selectedFile.length));
+        const shouldUpdateSelection = nothingSelected ||
+            (typeof selectDefault === "string" &&
+                existingUpload &&
+                !Array.isArray(existingUpload) &&
+                existingUpload.name !== selectDefault &&
+                selectDefault !== null); // Don't update if selectDefault is being cleared
+        // If nothing is selected or selectDefault changed to a different file, set the default
+        if (shouldUpdateSelection && selectDefault !== false) {
+            setExistingUpload(finalDefault);
+        }
+        // If action is enabled, trigger the callbacks when selection changes
+        if (selectDefaultAction === true && shouldUpdateSelection) {
+            if (multipleSelect && defaultItems) {
+                onUploadFileSelect(defaultItems);
+                if (onExistingFileSelect) {
+                    onExistingFileSelect(defaultItems);
                 }
             }
-            if (defaultItem) {
-                setExistingUpload(defaultItem);
+            else if (!multipleSelect && defaultItem) {
                 onUploadFileSelect(defaultItem);
-                if (onExistingFileSelect)
+                if (onExistingFileSelect) {
                     onExistingFileSelect(defaultItem);
+                }
             }
         }
     }, [
         showExistingFiles,
         validExistingUploads,
         selectDefault,
+        selectDefaultAction,
         multipleSelect,
-        existingUpload,
-        selectedFile,
         onUploadFileSelect,
         onExistingFileSelect,
+        selectedFile,
     ]);
     return (_jsxs(Card, { raised: true, sx: { m: 1, mt: 3 }, children: [_jsx(CardHeader, { disableTypography: true, title: title, sx: { p: 1 } }), _jsxs(CardContent, { children: [!showExistingFiles && (_jsx(_Fragment, { children: _jsxs("label", { htmlFor: "contained-button-file", children: [_jsx("input", { accept: _fileExtensions, id: "contained-button-file", type: "file", multiple: multipleUpload, onChange: handleFileUpload, ref: fileInputRef, style: { display: "none" }, "data-testid": "file-input" }), _jsx(Button, { variant: "contained", size: "small", fullWidth: true, onClick: handleFileClick, startIcon: _jsx(AttachFileIcon, {}), children: uploadText }), selectedFile && isProcessing && (_jsx(Alert, { variant: "outlined", severity: "info", icon: _jsx(CircularProgress, { size: 20 }), sx: { m: 1 }, children: _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", children: [Array.isArray(selectedFile)
                                                 ? selectedFile
@@ -474,7 +491,7 @@ onExistingFileSelect = () => { }, onDeleteExistingFile = () => { }, onError = ()
                                             return (_jsxs(MenuItem, { value: filename, sx: {
                                                     display: "flex",
                                                     justifyContent: "space-between",
-                                                }, children: [filename, " (", (size / (1024 * 1024)).toFixed(2), " MB)", showDeleteExistingFiles &&
+                                                }, children: [filename, " (", formatFileSize(size, { useBinary: false }), ")", showDeleteExistingFiles &&
                                                         menuOpen &&
                                                         filename &&
                                                         size && (_jsx(ListItemIcon, { children: _jsx(IconButton, { edge: "end", "aria-label": "delete", size: "small", onClick: (event) => {

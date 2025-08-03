@@ -11,6 +11,7 @@ import React, {
   useCallback,
 } from "react";
 import { get, isArray, isFunction, isNumber, isString, size } from "lodash-es";
+import { formatFileSize } from "../../../../utils";
 import {
   Alert,
   Button,
@@ -53,14 +54,19 @@ export interface FileUploadListProps {
     file: File | ModeUploadFileProps | null | (File | ModeUploadFileProps)[],
   ) => void;
   selectDefault?: string | null | boolean; // If true: select first item if present. If string: select item with that name if present. If false: do not auto-select.
+  selectDefaultAction?: null | boolean; // If true: selectDefault trigger will run the usual onClick action, else, nothing
   title?: string;
   uploadText?: string;
   selectText?: string;
   multipleSelect?: boolean;
   multipleUpload?: boolean;
-  loadList?: () =>
-    | void
-    | Promise<ModeUploadFileProps[]>
+  /**
+   * Function or array to load the list of existing files, if applicable.
+   * If a function, it can return void, a Promise of ModeUploadFileProps[], or ModeUploadFileProps[].
+   * If an array, it is used directly as the list of files.
+   */
+  loadList?:
+    | (() => void | Promise<ModeUploadFileProps[]> | ModeUploadFileProps[])
     | ModeUploadFileProps[];
   uploadFile?: ({
     method,
@@ -90,7 +96,8 @@ export interface FileUploadListProps {
  * @param {File|string|null} props.selectedFile - Newly uploaded file becomes selected | the one selected from the list.  Uploads must
  *   populate this value from the caller to indicate upload/handling success.  Type is string if the file is already existing and not an upload
  * @param {null|boolean|string} props.selectDefault - If true: select first item if present. If string: select item with that name if present. If false: do not auto-select.
- * @param {function} props.loadList - Function to load the list of existing files, if applicable
+ * @param {null|boolean} props.selectDefaultAction - If true: selectDefault trigger will run the usual onClick action, else, nothing
+ * @param {function|ModeUploadFileProps[]} props.loadList - Function or array to load the list of existing files, if applicable. If a function, it can return void, a Promise of ModeUploadFileProps[], or ModeUploadFileProps[]. If an array, it is used directly as the list of files.
  * @param {function} props.uploadFile - Function to handle file upload, if applicable
  * @param {function} props.onUploadFileSelect - Callback function when a NEW file is selected/deselected.
  * @param {function} props.onExistingFileSelect - Action to take if/when an existing file is selected
@@ -114,13 +121,14 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
   multipleSelect = false,
   multipleUpload = false,
   showExistingFiles = false,
-  loadList = () => {}, // Function to load the list of existing files, if applicable
+  loadList = () => {}, // Function or array to load the list of existing files, if applicable
   uploadFile = () => {}, // Function to handle file upload, if applicable
   fileExtensions = ["csv", "tsv", "txt"], //".csv, .tsv, .txt"
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   showDeleteExistingFiles = false,
   selectedFile = null, // Newly uploaded file becomes selected | the one selected from the list
   selectDefault = undefined, // If true: select first item if present. If string: select item with that name if present. If false: do not auto-select.
+  selectDefaultAction = null, // If true: selectDefault trigger will run the usual onClick action, else, nothing
   onUploadFileSelect = () => {},
   onFileUpload = true, // Use local file upload capability
   onExistingFileSelect = () => {},
@@ -241,7 +249,19 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
    * @returns {ModeUploadFileProps[] | void}
    */
   const _fetchExistingUploads = useCallback(() => {
-    if (!isFunction(loadList) || !showExistingFiles) {
+    if (!showExistingFiles) {
+      setExistingUploads([]);
+      return;
+    }
+
+    // If loadList is an array, use it directly
+    if (isArray(loadList)) {
+      setExistingUploads(loadList);
+      return loadList;
+    }
+
+    // If loadList is a function, call it
+    if (!isFunction(loadList)) {
       setExistingUploads([]);
       return;
     }
@@ -335,7 +355,6 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
 
             const result = await uploadResponse.json();
             uploadResults.push(result);
-            console.log(`File ${file.name} uploaded successfully:`, result);
           } catch (error) {
             const errorMessage = `Error uploading ${file.name}: ${error}`;
             console.error(errorMessage);
@@ -407,7 +426,7 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
     if (showExistingFiles) {
       _fetchExistingUploads();
     }
-  }, [showExistingFiles]); // Re-fetch if apiUrl or showExistingFiles changes
+  }, [showExistingFiles, _fetchExistingUploads]); // Re-fetch if apiUrl or showExistingFiles changes
 
   // Separate effect to sync selectedFile with existingUpload for existing files
   useEffect(() => {
@@ -514,73 +533,87 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
 
   const effectiveSelectValue = getEffectiveSelectValue();
 
-  // Auto-select default item if needed
+  // Auto-select default item and trigger action if needed
   useEffect(() => {
     if (!showExistingFiles || !validExistingUploads.length) {
       return;
     }
-    // Only auto-select if nothing is selected
-    const nothingSelected =
-      (!existingUpload ||
-        (Array.isArray(existingUpload) && !existingUpload.length)) &&
-      (!selectedFile || (Array.isArray(selectedFile) && !selectedFile.length));
-    if (!nothingSelected) {
-      return;
-    }
 
-    // If selectDefault is false, do not auto-select
-    if (selectDefault === false) {
-      return;
-    }
+    // Determine the default item based on props
+    let defaultItem: ModeUploadFileProps | undefined;
+    let defaultItems: ModeUploadFileProps[] | undefined;
 
     if (multipleSelect) {
-      // For multiple select, only select if selectDefault is a string and matches
       if (typeof selectDefault === "string") {
         const found = validExistingUploads.find(
           (f) => f.name === selectDefault,
         );
         if (found) {
-          setExistingUpload([found]);
-          onUploadFileSelect([found]);
-          if (onExistingFileSelect) onExistingFileSelect([found]);
+          defaultItems = [found];
         }
-      } else if (selectDefault === true || selectDefault == null) {
-        // true/null/undefined: select first if only one
-        if (validExistingUploads.length === 1) {
-          setExistingUpload([validExistingUploads[0]]);
-          onUploadFileSelect([validExistingUploads[0]]);
-          if (onExistingFileSelect)
-            onExistingFileSelect([validExistingUploads[0]]);
-        }
+      } else if (
+        (selectDefault === true || selectDefault == null) &&
+        validExistingUploads.length === 1
+      ) {
+        defaultItems = [validExistingUploads[0]];
       }
     } else {
-      // Single select
-      let defaultItem: ModeUploadFileProps | undefined;
       if (typeof selectDefault === "string") {
         defaultItem = validExistingUploads.find(
           (f) => f.name === selectDefault,
         );
-      } else if (selectDefault === true) {
-        // true: select first item if present
-        if (validExistingUploads.length > 0) {
-          defaultItem = validExistingUploads[0];
-        }
+      } else if (selectDefault === true && validExistingUploads.length > 0) {
+        defaultItem = validExistingUploads[0];
       }
-      if (defaultItem) {
-        setExistingUpload(defaultItem);
+    }
+
+    const finalDefault = multipleSelect ? defaultItems : defaultItem;
+    if (!finalDefault) {
+      return;
+    }
+
+    // Check if nothing is selected yet OR if selectDefault has changed to a different file
+    const nothingSelected =
+      (!existingUpload ||
+        (Array.isArray(existingUpload) && !existingUpload.length)) &&
+      (!selectedFile || (Array.isArray(selectedFile) && !selectedFile.length));
+
+    const shouldUpdateSelection =
+      nothingSelected ||
+      (typeof selectDefault === "string" &&
+        existingUpload &&
+        !Array.isArray(existingUpload) &&
+        existingUpload.name !== selectDefault &&
+        selectDefault !== null); // Don't update if selectDefault is being cleared
+
+    // If nothing is selected or selectDefault changed to a different file, set the default
+    if (shouldUpdateSelection && selectDefault !== false) {
+      setExistingUpload(finalDefault);
+    }
+
+    // If action is enabled, trigger the callbacks when selection changes
+    if (selectDefaultAction === true && shouldUpdateSelection) {
+      if (multipleSelect && defaultItems) {
+        onUploadFileSelect(defaultItems);
+        if (onExistingFileSelect) {
+          onExistingFileSelect(defaultItems);
+        }
+      } else if (!multipleSelect && defaultItem) {
         onUploadFileSelect(defaultItem);
-        if (onExistingFileSelect) onExistingFileSelect(defaultItem);
+        if (onExistingFileSelect) {
+          onExistingFileSelect(defaultItem);
+        }
       }
     }
   }, [
     showExistingFiles,
     validExistingUploads,
     selectDefault,
+    selectDefaultAction,
     multipleSelect,
-    existingUpload,
-    selectedFile,
     onUploadFileSelect,
     onExistingFileSelect,
+    selectedFile,
   ]);
 
   return (
@@ -723,7 +756,8 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
                           justifyContent: "space-between",
                         }}
                       >
-                        {filename} ({(size / (1024 * 1024)).toFixed(2)} MB)
+                        {filename} ({formatFileSize(size, { useBinary: false })}
+                        )
                         {/* Delete button - wrapped in conditional to prevent crashes */}
                         {showDeleteExistingFiles &&
                           menuOpen &&

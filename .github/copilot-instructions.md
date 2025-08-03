@@ -49,6 +49,7 @@
 **When generating TypeScript code:**
 
 - Always use curly braces for conditional return statements, even for single-line returns. Do not use single-line returns without braces.
+- Never use single-line conditional execution (e.g., `if (x) doY();`). Always enclose the conditional block in curly braces, even for a single statement. Exception: single-line function definitions and returns are allowed.
 - Use `.js` extensions in imports, never `.ts`: `import { log } from "./log.js"`
 - Prefer `optionsManager.setGlobalOptions()` over individual `utility.setOptions()` calls
 - Environment detection via existing patterns, never hardcode `typeof window` checks
@@ -90,6 +91,18 @@
 - `utils/README.md`, `client/`, `server/`, `test-consumer/`, `data/source/`, `bin/`
 - `test-consumer/package.json` for integration scripts
 - `utils/options-manager.js` for config patterns
+
+## Utility Function Patterns
+
+- All shared utility functions (e.g., formatFileSize, formatDate) should read global options from optionsManager using a category key (e.g., files, dates), and allow per-call overrides via function parameters.
+- Keep implementations simple: read global options, then override with function arguments.
+- Document all available options in the README and in JSDoc comments.
+
+## FileUploadList Component
+
+- selectDefaultAction: Always ensure this prop triggers the onClick/onSelect action for the default selection, even if the value is already selected.
+- Use the global log (window.log) for debug output in client code. Do not import log directly in consumer code; rely on the global.
+- Never use single-line conditional execution (e.g., if (x) doY();). Always use curly braces for conditionals, except for single-line function definitions and returns.
 
 ---
 

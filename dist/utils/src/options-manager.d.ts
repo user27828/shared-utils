@@ -25,10 +25,12 @@
  *   turnstile: { siteKey: 'key' }
  * });
  */
-type UtilityName = "log" | "turnstile" | string;
+type UtilityName = "log" | "turnstile" | "files" | "dates" | string;
 interface GlobalOptions {
     log?: any;
     turnstile?: any;
+    files?: any;
+    dates?: any;
     [key: string]: any;
 }
 /**

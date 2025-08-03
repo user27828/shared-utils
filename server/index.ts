@@ -58,3 +58,13 @@ export type {
   GlobalTurnstileOptions,
   TurnstileWorkerConfig,
 } from "./src/turnstile/index.js";
+
+import { log } from "../utils/index.js";
+
+// Attach log to globalThis if not already set
+if (
+  typeof globalThis !== "undefined" &&
+  typeof (globalThis as any).log === "undefined"
+) {
+  (globalThis as any).log = log;
+}

@@ -35,3 +35,13 @@ export {
 export * from "./src/data/countries.js";
 export * from "./src/data/languages.js";
 export * from "./src/data/demographic-options.js";
+
+// Attach log to window if in browser and not already set
+if (
+  typeof window !== "undefined" &&
+  typeof (window as any).log === "undefined"
+) {
+  import("../utils/index.js").then(({ log }) => {
+    (window as any).log = log;
+  });
+}

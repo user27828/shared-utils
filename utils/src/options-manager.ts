@@ -28,11 +28,13 @@
 
 import { mergeWith, cloneDeep, get, has } from "lodash-es";
 
-type UtilityName = "log" | "turnstile" | string; // string=future utilities
+type UtilityName = "log" | "turnstile" | "files" | "dates" | string; // string=future utilities
 
 interface GlobalOptions {
   log?: any;
   turnstile?: any;
+  files?: any;
+  dates?: any;
   [key: string]: any; // future utilities
 }
 

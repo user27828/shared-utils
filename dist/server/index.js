@@ -31,4 +31,10 @@ export { verifyTurnstileToken } from "./src/turnstile/index.js";
 export { OptionsManager, optionsManager } from "../utils/index.js";
 // Utilities
 export { isDevMode, isLocalhostRequest, createMockVerifyResponse, getAllowedOrigin, } from "./src/turnstile/index.js";
+import { log } from "../utils/index.js";
+// Attach log to globalThis if not already set
+if (typeof globalThis !== "undefined" &&
+    typeof globalThis.log === "undefined") {
+    globalThis.log = log;
+}
 //# sourceMappingURL=index.js.map

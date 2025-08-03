@@ -823,7 +823,7 @@ optionsManager.setGlobalOptions({
 **Before (still works):**
 
 ```javascript
-import { log, turnstile } from "@shared-utils/utils";
+import { log, turnstile } from "@user27828/shared-utils/utils";
 
 log.setOptions({ type: "client" });
 turnstile.setOptions({ siteKey: "key" });
@@ -832,7 +832,7 @@ turnstile.setOptions({ siteKey: "key" });
 **After (recommended for new projects):**
 
 ```javascript
-import { optionsManager } from "@shared-utils/utils";
+import { optionsManager } from "@user27828/shared-utils/utils";
 
 optionsManager.setGlobalOptions({
   log: { type: "client" },
@@ -937,19 +937,63 @@ const customManager = new OptionsManager<CustomUtilityOptions>("custom", {
 
 ---
 
-## Contributing
+## File Utilities
 
-When adding new utilities to this package, follow the OptionsManager integration pattern:
+### formatFileSize
 
-1. Create your utility class with OptionsManager integration
-2. Register with the global options manager
-3. Export both singleton and class from the utility
-4. Update the utils/index.ts exports
-5. Add TypeScript definitions
-6. Write comprehensive tests
+Formats a file size in bytes into a human-readable string, with support for binary/decimal units, precision, and style. Reads global options from optionsManager (category: `files.size`).
 
-See `HYBRID_OPTIONS_MANAGER.md` for detailed implementation guidelines.
+```js
+import { formatFileSize } from "@user27828/shared-utils/utils";
+
+formatFileSize(1024); // "1 KB"
+formatFileSize(1536, { useBinary: true, precision: 1 }); // "1.5 KiB"
+formatFileSize(1048576, { unitStyle: "long" }); // "1 megabyte"
+
+// With global options
+optionsManager.setGlobalOptions({
+  files: { size: { useBinary: true, precision: 0 } },
+});
+formatFileSize(2048); // "2 KiB"
+```
+
+#### Options
+
+- `useBinary` (boolean): Use 1024 (true) or 1000 (false) as the base. Default: false.
+- `precision` (number): Number of decimal places. Default: 2.
+- `unitStyle` ('short'|'long'|'narrow'): Unit display style. Default: 'short'.
+
+### formatDate
+
+Formats a date string or Date object into a human-readable string, with support for locale and formatting options. Reads global options from optionsManager (category: `dates`).
+
+```js
+import { formatDate } from "@user27828/shared-utils/utils";
+
+formatDate("2025-08-03T12:34:56Z"); // "Aug 3, 2025, 12:34 PM"
+formatDate(new Date(), {
+  locale: "en-GB",
+  formatOptions: { dateStyle: "medium", timeStyle: "short" },
+});
+
+// With global options
+optionsManager.setGlobalOptions({
+  dates: { locale: "en-GB", formatOptions: { dateStyle: "long" } },
+});
+formatDate("2025-08-03T12:34:56Z"); // "3 August 2025"
+```
+
+#### Options
+
+- `locale` (string): Locale string (e.g., 'en-US'). Default: 'en-US'.
+- `formatOptions` (object): Intl.DateTimeFormat options (dateStyle, timeStyle, etc.). Default: `{ year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }`.
 
 ---
 
-[🔝 Back to Top](#utils) | **[🏠 Back to Main README](../README.md)**
+## FileUploadList Component (Client)
+
+- `selectDefaultAction`: When true, triggers the onClick/onSelect action for the default selection, even if the value is already selected.
+- Uses global `log` (set up in client/index.ts) for debug output. Do not import log directly in consumer code; use the global.
+- Follows strict code style: never use single-line conditional execution (always use curly braces for conditionals).
+
+---
