@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./jest-output",
+    "composite": false,
+    "tsBuildInfoFile": null,
+    "incremental": false
+  }
+}

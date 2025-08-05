@@ -73,17 +73,22 @@
     "yarn-upgrade-interactive": "./bin/package-upgrades.sh"
   },
   "devDependencies": {
-    "@mui/icons-material": "^7.2.0",
-    "@mui/material": "^7.2.0",
+    "@mui/icons-material": "^7.3.0",
+    "@mui/material": "^7.3.0",
+    "@testing-library/jest-dom": "^6.6.4",
     "@types/jest": "^30.0.0",
     "@types/nanoid": "^3.0.0",
+    "@vitest/coverage-c8": "^0.33.0",
+    "@vitest/ui": "^3.2.4",
     "jest": "^30.0.5",
     "jest-environment-node": "^30.0.5",
+    "jsdom": "^26.1.0",
     "prettier": "^3.6.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "ts-jest": "^29.4.0",
-    "typescript": "^5.9.2"
+    "ts-jest": "^29.4.1",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

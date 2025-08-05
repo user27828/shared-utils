@@ -1,5 +1,6 @@
 import { optionsManager } from "./options-manager.js";
 import { nanoid } from "nanoid";
+
 /**
  * Format file size in human readable format with configurable options
  * @param {number} bytes - File size in bytes

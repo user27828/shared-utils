@@ -15,6 +15,7 @@
     "allowImportingTsExtensions": false,
     "noEmitOnError": true,
     "types": ["@cloudflare/workers-types"],
+    "isolatedModules": true,
     "composite": true,
     "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "outDir": "../dist/server"

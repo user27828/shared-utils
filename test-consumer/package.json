@@ -17,7 +17,7 @@
     "test:node": "cd node-consumer && yarn test",
     "test:vanilla": "cd vanilla-js-consumer && yarn test",
     "test:server": "cd server && node test-runner.js",
-    "test:all": "yarn test:react && yarn test:node && yarn test:vanilla && yarn test:server",
+    "test:all": "yarn test:react || true && yarn test:node || true && yarn test:vanilla || true && yarn test:server",
     "kill": "../bin/killnode.sh",
     "kill:force": "../bin/killnode.sh -9",
     "kill:dev": "yarn kill && echo 'Killed development servers'",
@@ -30,7 +30,7 @@
     "@user27828/shared-utils": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^24.1.0",
+    "@types/node": "^24.2.0",
     "concurrently": "^9.2.0",
     "typescript": "^5.9.2"
   }

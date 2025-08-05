@@ -29,6 +29,8 @@ export default {
     "^@shared-utils/utils$": "<rootDir>/../dist/utils/index.js",
     "^shared-utils/utils$": "<rootDir>/../dist/utils/index.js",
     "^shared-utils$": "<rootDir>/../dist/utils/index.js",
+    // Map ESM-style .js imports in source to .ts files for Jest
+    "^\\./options-manager\\.js$": "<rootDir>/src/options-manager.ts",
   },
-  transformIgnorePatterns: ["node_modules/(?!(lodash-es)/)"],
+  transformIgnorePatterns: ["node_modules/(?!(lodash-es|nanoid)/)"],
 };
