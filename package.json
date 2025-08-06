@@ -73,8 +73,8 @@
     "yarn-upgrade-interactive": "./bin/package-upgrades.sh"
   },
   "devDependencies": {
-    "@mui/icons-material": "^7.3.0",
-    "@mui/material": "^7.3.0",
+    "@mui/icons-material": "^7.3.1",
+    "@mui/material": "^7.3.1",
     "@testing-library/jest-dom": "^6.6.4",
     "@types/jest": "^30.0.0",
     "@types/nanoid": "^3.0.0",

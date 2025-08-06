@@ -11,7 +11,7 @@ import React, {
   useCallback,
 } from "react";
 import { get, isArray, isFunction, isNumber, isString, size } from "lodash-es";
-import { formatFileSize } from "../../../../utils";
+import { formatFileSize } from "../../../../utils/index.js";
 import {
   Alert,
   Button,

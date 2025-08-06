@@ -6,7 +6,7 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
  */
 import { useEffect, useState, useRef, useCallback, } from "react";
 import { get, isArray, isFunction, isNumber, isString, size } from "lodash-es";
-import { formatFileSize } from "../../../../utils";
+import { formatFileSize } from "../../../../utils/index.js";
 import { Alert, Button, Card, CardContent, CardHeader, CircularProgress, FormControl, IconButton, InputLabel, ListItemIcon, MenuItem, Select, Stack, } from "@mui/material";
 import { AttachFile as AttachFileIcon, DeleteForever as DeleteForeverIcon, } from "@mui/icons-material";
 /**
