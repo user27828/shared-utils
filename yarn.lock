@@ -1497,10 +1497,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cloudflare/workers-types@npm:^4.20250806.0":
-  version: 4.20250806.0
-  resolution: "@cloudflare/workers-types@npm:4.20250806.0"
-  checksum: 10/18a0cb7ad8427ad28a24e2a7a2da3afbcc3f7578689d17be6d985d3cacd4e851c0097cdaa8c007c41e08b06f3919a1d9ac238b8a0cc55b91dad27720e34f1a1d
+"@cloudflare/workers-types@npm:^4.20250807.0":
+  version: 4.20250807.0
+  resolution: "@cloudflare/workers-types@npm:4.20250807.0"
+  checksum: 10/c7fb58de69549bbc55ace6b9bcf0979d3cbf95bb1ab7c3b5491475826c215f3f100e3258072a62b6216d79ee9f6c26996624dc13fceaa42e069a8e6a417740aa
   languageName: node
   linkType: hard
 
@@ -3070,10 +3070,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@rolldown/pluginutils@npm:1.0.0-beta.27":
-  version: 1.0.0-beta.27
-  resolution: "@rolldown/pluginutils@npm:1.0.0-beta.27"
-  checksum: 10/4f7da788d88b33d029d5acf84c63be27c62d7c53017476f2e3026172cf94062cb399cd15194c89574578f192016bbcb1e040ce6811b3bb9ec4d4faa2ad386459
+"@rolldown/pluginutils@npm:1.0.0-beta.30":
+  version: 1.0.0-beta.30
+  resolution: "@rolldown/pluginutils@npm:1.0.0-beta.30"
+  checksum: 10/2016282c4b3116d5ad1184d36fd6c080d9e1c243265c51761d8c14c00ab128dbc70cfbccbab76184ed881b4947196459b37c9ae6abed742eed9fe51d988fabce
   languageName: node
   linkType: hard
 
@@ -3272,7 +3272,7 @@ __metadata:
   dependencies:
     "@babel/core": "npm:^7.28.0"
     "@babel/preset-env": "npm:^7.28.0"
-    "@cloudflare/workers-types": "npm:^4.20250806.0"
+    "@cloudflare/workers-types": "npm:^4.20250807.0"
     "@jest/globals": "npm:^30.0.5"
     "@shared-utils/utils": "workspace:*"
     babel-jest: "npm:^30.0.5"
@@ -3280,7 +3280,7 @@ __metadata:
     ts-jest: "npm:^29.4.1"
     tsx: "npm:^4.20.3"
     typescript: "npm:^5.9.2"
-    wrangler: "npm:^4.28.0"
+    wrangler: "npm:^4.28.1"
   languageName: unknown
   linkType: soft
 
@@ -3375,7 +3375,7 @@ __metadata:
     "@typescript-eslint/eslint-plugin": "npm:^8.39.0"
     "@typescript-eslint/parser": "npm:^8.39.0"
     "@user27828/shared-utils": "workspace:*"
-    "@vitejs/plugin-react": "npm:^4.7.0"
+    "@vitejs/plugin-react": "npm:^5.0.0"
     date-fns: "npm:^4.1.0"
     date-fns-tz: "npm:^3.2.0"
     dompurify: "npm:^3.2.6"
@@ -3387,7 +3387,7 @@ __metadata:
     react-dom: "npm:^19.1.1"
     tinymce: "npm:^8.0.1"
     typescript: "npm:^5.9.2"
-    vite: "npm:^7.0.6"
+    vite: "npm:^7.1.0"
     vitest: "npm:^3.2.4"
   languageName: unknown
   linkType: soft
@@ -4066,6 +4066,9 @@ __metadata:
     ts-jest: "npm:^29.4.1"
     typescript: "npm:^5.9.2"
     vitest: "npm:^3.2.4"
+  peerDependencies:
+    react: ">=16.8.0"
+    react-dom: ">=16.8.0"
   bin:
     "cf:setup-turnstile-worker": ./scripts/setup-turnstile-worker.sh
     dependency-manager: ./scripts/dependency-manager.js
@@ -4076,19 +4079,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@vitejs/plugin-react@npm:^4.7.0":
-  version: 4.7.0
-  resolution: "@vitejs/plugin-react@npm:4.7.0"
+"@vitejs/plugin-react@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "@vitejs/plugin-react@npm:5.0.0"
   dependencies:
     "@babel/core": "npm:^7.28.0"
     "@babel/plugin-transform-react-jsx-self": "npm:^7.27.1"
     "@babel/plugin-transform-react-jsx-source": "npm:^7.27.1"
-    "@rolldown/pluginutils": "npm:1.0.0-beta.27"
+    "@rolldown/pluginutils": "npm:1.0.0-beta.30"
     "@types/babel__core": "npm:^7.20.5"
     react-refresh: "npm:^0.17.0"
   peerDependencies:
     vite: ^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0
-  checksum: 10/619a5d650ce0e8e2f37dae369b803990c6647e81ec983a00e44a734b3feeefd5a32c20fbee56d496fbc239cad6b949797dddf7c6d9f23c48100c5b2b5dc41e1f
+  checksum: 10/915ebbe48c6f3be46e237316d142a7ebdda06808c8c197ac2b55985602919f00f5567ee38330b757c681203fe8a26677b0c8de4eadd5fe351ddf0ed654916c8f
   languageName: node
   linkType: hard
 
@@ -7812,7 +7815,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rollup@npm:^4.40.0":
+"rollup@npm:^4.40.0, rollup@npm:^4.43.0":
   version: 4.46.2
   resolution: "rollup@npm:4.46.2"
   dependencies:
@@ -8831,7 +8834,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:^5.0.0 || ^6.0.0 || ^7.0.0-0, vite@npm:^7.0.6":
+"vite@npm:^5.0.0 || ^6.0.0 || ^7.0.0-0":
   version: 7.0.6
   resolution: "vite@npm:7.0.6"
   dependencies:
@@ -8883,6 +8886,61 @@ __metadata:
   bin:
     vite: bin/vite.js
   checksum: 10/729ddefd6710b0b5aa38a62a537f3dc28577edaf57958c815a1964f1e348a1c7cb17ce8f708675668d7e80d95fb62f7c433b718fe12d80dd8a756ccec519bc2a
+  languageName: node
+  linkType: hard
+
+"vite@npm:^7.1.0":
+  version: 7.1.0
+  resolution: "vite@npm:7.1.0"
+  dependencies:
+    esbuild: "npm:^0.25.0"
+    fdir: "npm:^6.4.6"
+    fsevents: "npm:~2.3.3"
+    picomatch: "npm:^4.0.3"
+    postcss: "npm:^8.5.6"
+    rollup: "npm:^4.43.0"
+    tinyglobby: "npm:^0.2.14"
+  peerDependencies:
+    "@types/node": ^20.19.0 || >=22.12.0
+    jiti: ">=1.21.0"
+    less: ^4.0.0
+    lightningcss: ^1.21.0
+    sass: ^1.70.0
+    sass-embedded: ^1.70.0
+    stylus: ">=0.54.8"
+    sugarss: ^5.0.0
+    terser: ^5.16.0
+    tsx: ^4.8.1
+    yaml: ^2.4.2
+  dependenciesMeta:
+    fsevents:
+      optional: true
+  peerDependenciesMeta:
+    "@types/node":
+      optional: true
+    jiti:
+      optional: true
+    less:
+      optional: true
+    lightningcss:
+      optional: true
+    sass:
+      optional: true
+    sass-embedded:
+      optional: true
+    stylus:
+      optional: true
+    sugarss:
+      optional: true
+    terser:
+      optional: true
+    tsx:
+      optional: true
+    yaml:
+      optional: true
+  bin:
+    vite: bin/vite.js
+  checksum: 10/255f17e7933306e05a6ae7136c8e7d29b48e35e2c657da75f515a8a6b802c008e46fdd62e4ec35a3aca64cdd17ad1dc3998c6c4a32650c79d5f7f3b0f9ddcbb8
   languageName: node
   linkType: hard
 
@@ -9067,9 +9125,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"wrangler@npm:^4.28.0":
-  version: 4.28.0
-  resolution: "wrangler@npm:4.28.0"
+"wrangler@npm:^4.28.1":
+  version: 4.28.1
+  resolution: "wrangler@npm:4.28.1"
   dependencies:
     "@cloudflare/kv-asset-handler": "npm:0.4.0"
     "@cloudflare/unenv-preset": "npm:2.6.0"
@@ -9091,7 +9149,7 @@ __metadata:
   bin:
     wrangler: bin/wrangler.js
     wrangler2: bin/wrangler.js
-  checksum: 10/45a829d3148a8f4e12f3f29d3d2d72db93920704d56c0293cfa27593cbe8bb0be44587fcc304580c795130ef8f02f69ae179974449291383ebeb4c1590955bb8
+  checksum: 10/b8abf4a2d72e937178d4cfc1880f690a92dd006a2fcbfb521b66e8974a2ad60657b3d0ed5d00ea5207e42ea047d8266573a0c3e518846f944cda2c45fc498432
   languageName: node
   linkType: hard
 

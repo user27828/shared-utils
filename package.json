@@ -102,6 +102,10 @@
     "papaparse": "^5.5.3",
     "tinymce": "^8.0.1"
   },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
   "files": [
     "dist/**/*",
     "package.json",

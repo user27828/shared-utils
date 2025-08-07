@@ -2,11 +2,6 @@ export default {
   testEnvironment: "node",
   preset: "ts-jest/presets/default-esm",
   extensionsToTreatAsEsm: [".ts"],
-  globals: {
-    "ts-jest": {
-      useESM: true,
-    },
-  },
   setupFilesAfterEnv: ["<rootDir>/jest.setup.mjs"],
   testMatch: ["**/__tests__/**/*.{js,ts}", "**/*.test.{js,ts}"],
   testPathIgnorePatterns: [

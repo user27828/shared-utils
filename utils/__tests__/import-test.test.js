@@ -10,5 +10,5 @@ describe('Import Test', () => {
     expect(module.turnstile).toBeDefined();
     expect(module.OptionsManager).toBeDefined();
     expect(module.optionsManager).toBeDefined();
-  });
+  }, 20000); // Increase timeout to 20s for ESM import
 });
