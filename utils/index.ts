@@ -12,6 +12,7 @@ import {
   getFileExtension,
   removeFileExtension,
   isValidFilename,
+  isValidEmail,
   formatDate,
 } from "./src/functions.js";
 
@@ -36,5 +37,6 @@ export {
   getFileExtension,
   removeFileExtension,
   isValidFilename,
+  isValidEmail,
   formatDate,
 };

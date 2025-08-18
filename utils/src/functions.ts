@@ -229,6 +229,22 @@ export const isValidFilename = (
 };
 
 /**
+ * Simple email validation - this is too permissive vs RFC5322, but also assumes that
+ * the user places some importance to having a valid email address.  Further strictness
+ * can be used with strict=true, but it's still not as strict as RFC5322
+ * @param {string} email - Email address
+ * @param {boolean} [strict=false] - Whether to use strict validation - closer to RFC5322.
+ * @returns {boolean}
+ */
+export const isValidEmail = (
+  email: string,
+  strict: boolean = false,
+): boolean =>
+  !strict
+    ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    : /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email);
+
+/**
  * Format date in a human-readable format with configurable options
  * @param {string|Date} dateInput - Date string or Date object
  * @param {object} [options] - Formatting options
