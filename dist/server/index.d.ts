@@ -20,6 +20,8 @@
  * ```
  */
 export { getTurnstileServerOptions, verifyTurnstileTokenEnhanced, verifyTurnstileSimple, setGlobalOptions, } from "./src/turnstile/index.js";
+export { default as env, getClientUrl } from "./src/env.js";
+import "./src/env.js";
 export { createTurnstileMiddleware } from "./src/turnstile/index.js";
 export { createTurnstileWorker } from "./src/turnstile/index.js";
 export { verifyTurnstileToken } from "./src/turnstile/index.js";

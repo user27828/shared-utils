@@ -30,7 +30,7 @@ export declare const formatFileSize: (bytes: number, options?: {
  */
 export declare const sanitizeFilename: (filename: string, options?: {
     regex?: RegExp;
-    replace?: string;
+    replace?: string | RegExp;
 }) => string;
 /**
  * Convert bytes to specific unit

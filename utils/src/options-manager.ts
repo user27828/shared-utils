@@ -26,9 +26,16 @@
  * });
  */
 
-import { mergeWith, cloneDeep, get, has } from "lodash-es";
+import { mergeWith, cloneDeep, get, has, set } from "lodash-es";
 
-type UtilityName = "log" | "turnstile" | "files" | "dates" | string; // string=future utilities
+type UtilityName =
+  | "log"
+  | "turnstile"
+  | "files"
+  | "dates"
+  | "site"
+  | "ENV"
+  | string; // string=future utilities
 
 interface GlobalOptions {
   log?: any;
@@ -69,6 +76,20 @@ export class OptionsManager<T extends Record<string, any>> {
     keyOrObject: K | Partial<T>,
     value?: T[K],
   ): void {
+    // Disallow writes when this manager is marked readonly via __READONLY__
+    // This allows higher-level code to lock options after initialization.
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const asAny: any = this.options as any;
+      if (asAny && asAny.__READONLY__ === true) {
+        throw new Error(
+          `OptionsManager: cannot modify options for '${this.utilityName}' because it is readonly`,
+        );
+      }
+    } catch (e) {
+      // If anything weird happens checking readonly, fail fast by rethrowing
+      throw e;
+    }
     if (
       typeof keyOrObject === "object" &&
       keyOrObject !== null &&
@@ -100,23 +121,30 @@ export class OptionsManager<T extends Record<string, any>> {
       if (value === undefined) {
         return; // Don't set undefined values
       }
-      this.options = mergeWith(
-        {},
-        this.options,
-        { [keyOrObject]: value },
-        (objValue, srcValue) => {
-          // Skip undefined values
-          if (srcValue === undefined) {
-            return objValue;
-          }
-          // Replace arrays instead of merging them
-          if (Array.isArray(srcValue)) {
-            return srcValue;
-          }
-          // Let lodash handle other cases (objects, primitives)
-          return undefined;
-        },
-      );
+      // Support dot-notation writes like "category.path.to.key"
+      if (typeof keyOrObject === "string" && keyOrObject.includes(".")) {
+        const newOptions = cloneDeep(this.options) as any;
+        set(newOptions, keyOrObject as string, value);
+        this.options = newOptions;
+      } else {
+        this.options = mergeWith(
+          {},
+          this.options,
+          { [keyOrObject]: value },
+          (objValue, srcValue) => {
+            // Skip undefined values
+            if (srcValue === undefined) {
+              return objValue;
+            }
+            // Replace arrays instead of merging them
+            if (Array.isArray(srcValue)) {
+              return srcValue;
+            }
+            // Let lodash handle other cases (objects, primitives)
+            return undefined;
+          },
+        );
+      }
     }
   }
 
@@ -241,6 +269,36 @@ class GlobalOptionsManager {
   }
 
   /**
+   * Convenience helper to set options on a specific utility manager in one call.
+   * Patterns:
+   *  optionsManager.setOption('site', { files: { uploadDirectory: '/tmp' } })
+   *  optionsManager.setOption('site', 'files.uploadDirectory', '/tmp')
+   */
+  setOption(utilityName: UtilityName, keyOrObject: any): void;
+  setOption(utilityName: UtilityName, keyOrPath: string, value: any): void;
+  setOption(utilityName: UtilityName, keyOrPath?: any, value?: any): void {
+    const manager = this.managers.get(utilityName);
+    if (!manager) {
+      return;
+    }
+
+    // Pattern: (utilityName, object) -> merge multiple keys
+    if (
+      value === undefined &&
+      (typeof keyOrPath === "object" || keyOrPath === undefined)
+    ) {
+      // If no second arg provided or it's an object, pass-through to manager.setOption
+      manager.setOption(keyOrPath);
+      return;
+    }
+
+    // Pattern: (utilityName, keyOrPath, value) -> set specific category/path
+    if (typeof keyOrPath === "string") {
+      manager.setOption(keyOrPath, value);
+    }
+  }
+
+  /**
    * Get options for all registered utilities
    */
   getAllOptions(): GlobalOptions {
@@ -275,10 +333,79 @@ class GlobalOptionsManager {
   getRegisteredUtilities(): UtilityName[] {
     return Array.from(this.managers.keys());
   }
+
+  /**
+   * Convenience helper to fetch an option from a specific utility manager in one call.
+   * Examples:
+   *  optionsManager.getOption('site') -> returns all site options
+   *  optionsManager.getOption('site', 'files.uploadDirectory') -> returns nested value
+   *  optionsManager.getOption('site', 'files', 'uploadDirectory') -> returns nested value
+   */
+  getOption<T = any>(utilityName: UtilityName): T | undefined;
+  getOption<T = any>(
+    utilityName: UtilityName,
+    categoryKeyOrPath: string,
+  ): T | undefined;
+  getOption<T = any>(
+    utilityName: UtilityName,
+    categoryKeyOrPath?: string,
+    path?: string,
+  ): T | undefined {
+    const manager = this.managers.get(utilityName);
+    if (!manager) {
+      return undefined;
+    }
+
+    if (categoryKeyOrPath === undefined) {
+      return manager.getOption() as T;
+    }
+
+    if (path !== undefined) {
+      // Pattern: (utilityName, categoryKey, path)
+      return manager.getOption(categoryKeyOrPath as any, path) as T;
+    }
+
+    // If categoryKeyOrPath contains a dot, let manager handle it as a full path
+    return manager.getOption(categoryKeyOrPath as any) as T;
+  }
 }
 
 // Create singleton instance for cross-utility configuration
 export const optionsManager = new GlobalOptionsManager();
+
+// Bind commonly-used methods onto the instance as own-properties to improve
+// interoperability when this module is consumed across different bundlers
+// and module systems (some consumers call `optionsManager.getOption(...)`
+// directly after importing). These bindings are simple runtime shims and
+// intentionally use `any` to avoid changing the exported type shape.
+{
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const om: any = optionsManager as any;
+  if (typeof om.getOption === "function") {
+    om.getOption = om.getOption.bind(om);
+  }
+  if (typeof om.setGlobalOptions === "function") {
+    om.setGlobalOptions = om.setGlobalOptions.bind(om);
+  }
+  if (typeof om.getAllOptions === "function") {
+    om.getAllOptions = om.getAllOptions.bind(om);
+  }
+  if (typeof om.resetAllOptions === "function") {
+    om.resetAllOptions = om.resetAllOptions.bind(om);
+  }
+  if (typeof om.registerManager === "function") {
+    om.registerManager = om.registerManager.bind(om);
+  }
+  if (typeof om.getManager === "function") {
+    om.getManager = om.getManager.bind(om);
+  }
+  if (typeof om.getRegisteredUtilities === "function") {
+    om.getRegisteredUtilities = om.getRegisteredUtilities.bind(om);
+  }
+  if (typeof om.setOption === "function") {
+    om.setOption = om.setOption.bind(om);
+  }
+}
 
 // Export types for external use
 export type { UtilityName, GlobalOptions };

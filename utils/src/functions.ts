@@ -21,7 +21,7 @@ export const formatFileSize = (
     useBinary?: boolean;
     precision?: number;
     unitStyle?: "short" | "long" | "narrow";
-  },
+  }
 ): string => {
   if (bytes === 0) {
     return "0 Bytes";
@@ -103,28 +103,87 @@ export const sanitizeFilename = (
   filename: string,
   options?: {
     regex?: RegExp;
-    replace?: string;
-  },
+    replace?: string | RegExp;
+  }
 ): string => {
   // Read from optionsManager if available, then apply overrides from options param
   const globalOptions = optionsManager.getAllOptions()?.files || {};
   const filenameRegex =
     options?.regex ?? globalOptions?.filenameRegex ?? /^[a-zA-Z0-9\-_.]+$/;
-  const filenameRegexReplace =
+  const rawReplace =
     options?.replace ?? globalOptions?.filenameRegexReplace ?? "-";
+  // Determine replacement string to insert when swapping invalid chars.
+  // If the caller passed a RegExp (e.g. /-+/g) we default to '-' as the inserted
+  // character but will use the RegExp later to normalize repeated occurrences.
+  const filenameRegexReplace =
+    typeof rawReplace === "string"
+      ? rawReplace
+      : typeof rawReplace === "object"
+      ? "-"
+      : "-";
 
   const baseName = filename.split(".").slice(0, -1).join(".");
   const extension = filename.split(".").pop() || "";
 
-  // Replace invalid characters with the replacement character
+  // Build a replacement regex that targets characters NOT allowed by filenameRegex.
+  // If filenameRegex is a simple character-class based regex (e.g. /^[a-zA-Z0-9\-_.]+$/)
+  // we can invert the class to replace invalid characters. For complex regexes,
+  // fall back to a conservative allowed-chars set.
+  let invalidCharRegex: RegExp;
+  try {
+    const source = filenameRegex.source;
+    // If the regex is anchored and contains a simple character class like [a-zA-Z0-9\-_.]+,
+    // extract the class and invert it.
+    const classMatch = source.match(/\[([^\]]+)\]/);
+    if (classMatch && classMatch[1]) {
+      // Build negated class - escape any forward slash
+      const negated = `[^${classMatch[1]}]`;
+      invalidCharRegex = new RegExp(negated, "g");
+    } else {
+      // Fallback conservative regex: anything not alnum, hyphen, underscore, or dot
+      invalidCharRegex = /[^a-zA-Z0-9\-_.]/g;
+    }
+  } catch {
+    invalidCharRegex = /[^a-zA-Z0-9\-_.]/g;
+  }
+
+  // Replace invalid characters in the base name
   const sanitizedBaseName = baseName.replace(
-    /[^a-zA-Z0-9\-_.]/g,
-    filenameRegexReplace,
+    invalidCharRegex,
+    filenameRegexReplace
   );
 
-  // If the filename doesn't match the regex after sanitization, create a safe version
-  const testFilename = sanitizedBaseName + (extension ? `.${extension}` : "");
-  if (!filenameRegex.test(testFilename)) {
+  // If caller supplied a RegExp for replace, use it to normalize repeats (e.g. /-+/g -> '-')
+  let normalizedBaseName = sanitizedBaseName;
+  if (rawReplace instanceof RegExp) {
+    try {
+      normalizedBaseName = normalizedBaseName.replace(
+        rawReplace,
+        filenameRegexReplace
+      );
+    } catch (e) {
+      // Fall back to simple normalization below if the provided RegExp fails
+      normalizedBaseName = sanitizedBaseName;
+    }
+  }
+
+  // Normalize repeated replacement characters (e.g., multiple spaces -> single '-')
+  // Escape the replacement string for use in a dynamic RegExp
+  const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const repEsc = escapeRegExp(filenameRegexReplace);
+  normalizedBaseName = normalizedBaseName.replace(
+    new RegExp(`${repEsc}{2,}`, "g"),
+    filenameRegexReplace
+  );
+
+  // Trim replacement characters from ends
+  const trimmedBaseName = normalizedBaseName.replace(
+    new RegExp(`^${filenameRegexReplace}+|${filenameRegexReplace}+$`, "g"),
+    ""
+  );
+
+  const testFilename = trimmedBaseName + (extension ? `.${extension}` : "");
+  if (!filenameRegex.test(testFilename) || trimmedBaseName.length === 0) {
     const uniqueId = `${nanoid(6)}-${Date.now()}`;
     return `file_${uniqueId}${extension ? `.${extension}` : ""}`;
   }
@@ -145,7 +204,7 @@ export const sanitizeFilename = (
 export const convertBytesToUnit = (
   bytes: number,
   unit: "B" | "KB" | "MB" | "GB" | "TB" | "PB",
-  useBinary = true,
+  useBinary = true
 ): number => {
   if (unit === "B") {
     return bytes;
@@ -174,7 +233,7 @@ export const convertBytesToUnit = (
  */
 export const getFileExtension = (
   filename: string,
-  includeDot = false,
+  includeDot = false
 ): string => {
   const lastDotIndex = filename.lastIndexOf(".");
   if (lastDotIndex === -1 || lastDotIndex === 0) {
@@ -216,7 +275,7 @@ export const isValidFilename = (
   filename: string,
   options?: {
     filenameRegex?: RegExp;
-  },
+  }
 ): boolean => {
   // Read from optionsManager if available, then apply overrides from options param
   const globalOptions = optionsManager.getAllOptions()?.files || {};
@@ -236,10 +295,7 @@ export const isValidFilename = (
  * @param {boolean} [strict=false] - Whether to use strict validation - closer to RFC5322.
  * @returns {boolean}
  */
-export const isValidEmail = (
-  email: string,
-  strict: boolean = false,
-): boolean =>
+export const isValidEmail = (email: string, strict: boolean = false): boolean =>
   !strict
     ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
     : /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email);
@@ -260,7 +316,7 @@ export const formatDate = (
   options?: {
     locale?: string;
     formatOptions?: Intl.DateTimeFormatOptions;
-  },
+  }
 ): string => {
   // Read from optionsManager if available, then apply overrides from options param
   const globalOptions = optionsManager.getAllOptions()?.dates || {};

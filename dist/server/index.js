@@ -21,6 +21,11 @@
  */
 // Main verification functions
 export { getTurnstileServerOptions, verifyTurnstileTokenEnhanced, verifyTurnstileSimple, setGlobalOptions, } from "./src/turnstile/index.js";
+// Env utilities (exported here so CommonJS consumers can import from
+// '@user27828/shared-utils/server')
+export { default as env, getClientUrl } from "./src/env.js";
+// Force env module evaluation for side-effects (ensure dotenv/load runs)
+import "./src/env.js";
 // Middleware
 export { createTurnstileMiddleware } from "./src/turnstile/index.js";
 // Worker factory

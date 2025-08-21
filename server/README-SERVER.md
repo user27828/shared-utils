@@ -319,6 +319,28 @@ app.post("/api/form", verifyTurnstile, (req, res) => {
 });
 ```
 
+## Environment loader and dotenv integration
+
+This repository includes a server-side environment loader that builds a safe, read-only view of runtime configuration and exposes it to consumers via the global `OptionsManager` under the `ENV` key. Key behaviors and conventions:
+
+- The loader discovers and parses environment values from the running environment and from a `.env` file when present. It does not mutate `process.env`; instead it builds an internal `envCache` view and exposes that computed environment to consumers with:
+
+  optionsManager.setGlobalOptions({ ENV: { /_ computed env _/ }, **READONLY**: true })
+
+- The loader reads `ENV_JSON_KEYS` only from the parsed dotenv file. When present it must be a CSV string, for example:
+
+```
+ENV_JSON_KEYS=LLM_DEFAULT, LLM_FALLBACK
+```
+
+The loader normalizes that CSV into an array of keys and will attempt `JSON.parse` on each listed environment value in the in-memory `envCache`. Parsing errors are ignored and the original string value is preserved for callers that expect strings.
+
+- The loader may heuristically coerce boolean-like values when a consumer `.d.ts` provides a simple boolean hint (e.g. `FEATURE_FLAG: boolean;`). It recognizes `"true"`, `"false"`, `"1"`, and `"0"` when coercing. This heuristic is intended for convenience in tests and simple projects; prefer explicit runtime validation for robust type-driven behavior.
+
+- The loader filters out a canonical list of platform/runtime environment variables (PATH, HOME, npm lifecycle variables, CI provider keys, etc.) from the environment object returned to consumers to avoid leaking noisy system values. If you need to expose additional keys, set them explicitly via `optionsManager.setGlobalOptions()` in your application.
+
+Note: The loader no longer attempts to discover `ENV_JSON_KEYS` by inspecting or requiring consumer source files — the only source for `ENV_JSON_KEYS` is the parsed dotenv file (CSV) or explicit runtime configuration you set via the `OptionsManager` before the loader runs.
+
 ## Cloudflare Worker Deployment
 
 [🔝 Back to Top](#server-side-turnstile-integration)

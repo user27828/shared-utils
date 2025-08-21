@@ -734,7 +734,7 @@ The OptionsManager provides a unified configuration system for all utilities whi
 
 ### Basic Usage
 
-```javascript
+````javascript
 import { optionsManager } from "@shared-utils/utils";
 
 // Configure multiple utilities at once
@@ -755,7 +755,43 @@ optionsManager.setGlobalOptions({
     },
   },
 });
+
+## Global get/set option patterns
+
+The `optionsManager` singleton exposes convenience helpers so consumers can both read and write options for registered utilities in a single call. This works from ESM and CommonJS consumers (for CommonJS, ensure you import the compiled package from `dist` via your bundler or runtime).
+
+Examples:
+
+```javascript
+import { optionsManager } from "@user27828/shared-utils/utils";
+
+// Read all options for a utility
+const siteOptions = optionsManager.getOption('site');
+
+// Read a nested value using dotted path
+const uploadDir = optionsManager.getOption('site', 'files.uploadDirectory');
+// or
+const uploadDir2 = optionsManager.getOption('site.files.uploadDirectory');
+
+// Set options by merging an object
+optionsManager.setOption('site', { files: { uploadDirectory: '/tmp/uploads' } });
+
+// Set a single nested value using dotted path
+optionsManager.setOption('site', 'files.uploadDirectory', '/tmp/uploads');
+````
+
+Note: If a consuming project still sees the previous behavior (for example, `optionsManager.getOption is not a function`), make sure the consumer is resolving the updated package version (reinstall/relink). For local development using a linked package, run:
+
+```bash
+# In the shared-utils package
+yarn build
+yarn link
+
+# In the consuming project
+yarn link "@user27828/shared-utils"
 ```
+
+````
 
 ### Configuration Inspection
 
@@ -768,7 +804,7 @@ console.log("Turnstile config:", allOptions.turnstile);
 // List registered utilities
 const utilities = optionsManager.getRegisteredUtilities();
 console.log("Available utilities:", utilities); // ['log', 'turnstile']
-```
+````
 
 ### Bulk Operations
 

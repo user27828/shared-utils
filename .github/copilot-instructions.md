@@ -22,12 +22,22 @@
 - **Package Management**: Yarn-only monorepo. Scripts detect yarn vs npm and fail gracefully. Never use `npm` or `pnpm` commands.
 - **Development Servers**: `test-consumer/` provides isolated test environments. Use `yarn kill:all` to terminate all background processes.
 
+Note: when running `yarn test:consumer`, the command starts Vite (React dev server) which does not exit on its own; automated runs should execute with a timeout or use a forced stop (for example, run the process in the foreground and terminate after X seconds, or run `vite --force`/`yarn test:consumer -- --timeout <ms>` in CI). This prevents Copilot or automation from hanging waiting for the process to terminate.
+
 ## OptionsManager Architecture (Critical)
 
 - **Registration Pattern**: Each utility creates an `OptionsManager` instance and registers with global `optionsManager`: `optionsManager.registerManager("log", this.optionsManager)`
 - **Cross-Utility Config**: Use `optionsManager.setGlobalOptions({ log: {...}, turnstile: {...} })` for unified configuration
 - **Flexible API**: Supports both category-based (`setOption("client", {...})`) and dot notation (`setOption("client.production", [...])`) access patterns
 - **Deep Merging**: Uses `lodash-es mergeWith` with array replacement (not concatenation) for configuration updates
+
+### Environment loader integration
+
+- The server package exposes an environment loader that builds an in-memory `envCache` from `process.env` and an optional `.env` file.
+- The loader reads `ENV_JSON_KEYS` only from the parsed dotenv file (CSV string). For example:
+  ENV_JSON_KEYS=LLM_DEFAULT, LLM_FALLBACK
+  Keys listed in `ENV_JSON_KEYS` are JSON.parsed from the loaded dotenv values and stored in the global options under the `ENV` key.
+- After building the computed environment the loader stores it via `optionsManager.setGlobalOptions({ ENV: {...}, __READONLY__: true })` so consumers can read it with `optionsManager.getOption('ENV')`.
 
 ## Project-Specific Conventions
 
@@ -57,8 +67,9 @@
 
 **When working with tests:**
 
-- Run with `NODE_OPTIONS="--experimental-vm-modules"` for ES module support
-- Use existing Jest patterns for async utilities and mock configurations
+- Use Vitest for new tests (prefer `vitest` over `jest`). Vitest provides fast ESM-native testing and better compatibility with Vite-based consumers.
+- Run with `NODE_OPTIONS="--experimental-vm-modules"` for ES module support when required
+- For existing Jest-based suites keep compatibility, but prefer writing new tests in Vitest format and update existing docs/tests when migrating
 - Test both client and server contexts using provided detection mechanisms
 
 **When updating dependencies or configs:**

@@ -25,7 +25,7 @@
  *   turnstile: { siteKey: 'key' }
  * });
  */
-type UtilityName = "log" | "turnstile" | "files" | "dates" | string;
+type UtilityName = "log" | "turnstile" | "files" | "dates" | "site" | "ENV" | string;
 interface GlobalOptions {
     log?: any;
     turnstile?: any;
@@ -99,6 +99,14 @@ declare class GlobalOptionsManager {
      */
     setGlobalOptions(options: GlobalOptions): void;
     /**
+     * Convenience helper to set options on a specific utility manager in one call.
+     * Patterns:
+     *  optionsManager.setOption('site', { files: { uploadDirectory: '/tmp' } })
+     *  optionsManager.setOption('site', 'files.uploadDirectory', '/tmp')
+     */
+    setOption(utilityName: UtilityName, keyOrObject: any): void;
+    setOption(utilityName: UtilityName, keyOrPath: string, value: any): void;
+    /**
      * Get options for all registered utilities
      */
     getAllOptions(): GlobalOptions;
@@ -114,6 +122,15 @@ declare class GlobalOptionsManager {
      * Get all registered utility names
      */
     getRegisteredUtilities(): UtilityName[];
+    /**
+     * Convenience helper to fetch an option from a specific utility manager in one call.
+     * Examples:
+     *  optionsManager.getOption('site') -> returns all site options
+     *  optionsManager.getOption('site', 'files.uploadDirectory') -> returns nested value
+     *  optionsManager.getOption('site', 'files', 'uploadDirectory') -> returns nested value
+     */
+    getOption<T = any>(utilityName: UtilityName): T | undefined;
+    getOption<T = any>(utilityName: UtilityName, categoryKeyOrPath: string): T | undefined;
 }
 export declare const optionsManager: GlobalOptionsManager;
 export type { UtilityName, GlobalOptions };
