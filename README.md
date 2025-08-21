@@ -150,6 +150,18 @@ Server-side functionality and Cloudflare Workers:
 - **Deployment Scripts**: Automated Cloudflare Worker deployment
 - **Configuration Templates**: Ready-to-use examples
 
+Server utilities
+
+- **getClientIp(req)**: Robust helper to extract the client's IP address from a Request-like object. It checks common proxy headers (x-forwarded-for, x-real-ip, cf-connecting-ip, etc.), handles IPv6 formats (including bracketed addresses and IPv4-mapped IPv6 ::ffff:), and falls back to socket properties such as `req.ip`, `req.connection.remoteAddress`, or `req.socket.remoteAddress`.
+
+Usage example:
+
+```typescript
+import { getClientIp } from "@user27828/shared-utils/server";
+
+const ip = getClientIp(req);
+```
+
 [🔝 Back to Top](#shared-utils)
 
 ## Configuration
@@ -305,7 +317,7 @@ For deploying Turnstile workers in your own projects:
 
 ### 📖 Documentation
 
-- **[Worker Deployment Guide](./WORKER_DEPLOYMENT_GUIDE.md)** - Complete deployment strategies
+- **[Worker Deployment Guide](./doc/WORKER_DEPLOYMENT_GUIDE.md)** - Complete deployment strategies
 - **[Example Integration](./examples/CONSUMING_PROJECT_EXAMPLE.md)** - Step-by-step example
 
 ### Quick Setup

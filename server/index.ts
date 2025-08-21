@@ -55,6 +55,9 @@ export {
   getAllowedOrigin,
 } from "./src/turnstile/index.js";
 
+// IP utilities
+export { getClientIp } from "./src/ip.js";
+
 // Types
 export type {
   TurnstileVerifyRequest,

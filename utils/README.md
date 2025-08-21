@@ -33,11 +33,8 @@ Centralized configuration system providing unified options management across all
 > **Note**: For installation instructions, see the [main README](../README.md#installation).
 
 ```javascript
-// Import utilities individually
+// Import utilities from the published package
 import { log, turnstile, optionsManager } from "@user27828/shared-utils/utils";
-
-// Import utility classes for custom instances
-import { Log, Turnstile, OptionsManager } from "@user27828/shared-utils/utils";
 ```
 
 [🔝 Back to Top](#utils)
@@ -75,10 +72,7 @@ import { log, optionsManager } from "@user27828/shared-utils/utils";
 optionsManager.setGlobalOptions({
   log: { type: "client", client: { namespace: "MyApp" } },
 });
-
-// Use throughout your app
-log("App starting...");
-log.info("User logged in");
+log.info("App starting...");
 ```
 
 ### Server-Side Setup
@@ -344,21 +338,12 @@ export default function handler(req, res) {
 
 ---
 
-# Turnstile Utility
+## Turnstile Utility
 
-Cloudflare Turnstile integration for bot protection with automatic environment detection and minimal configuration.
-
-## Installation & Import
+Cloudflare Turnstile integration (client widget + server verification). Import from the utils package:
 
 ```javascript
-// Import the turnstile utility directly
-import { turnstile } from "@shared-utils/utils";
-
-// Or import the Turnstile class for custom instances
-import { Turnstile } from "@shared-utils/utils";
-
-// Legacy import (still supported)
-import turnstile from "@shared-utils/utils/src/turnstile";
+import { turnstile } from "@user27828/shared-utils/utils";
 ```
 
 ## Features

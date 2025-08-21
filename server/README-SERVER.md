@@ -32,38 +32,32 @@ This enhanced Turnstile worker provides a modular and flexible way to integrate 
 ### 1. Install and Import
 
 ```javascript
-import { optionsManager } from "@shared-utils/utils";
-import { createTurnstileMiddleware } from "@shared-utils/server/turnstile-worker";
+import { optionsManager } from "@user27828/shared-utils/utils";
+import { createTurnstileMiddleware } from "@user27828/shared-utils/server";
 ```
 
 ### 2. Basic Setup (Express.js)
 
 ```javascript
 import express from "express";
-import { optionsManager } from "@shared-utils/utils";
-import { createTurnstileMiddleware } from "@shared-utils/server/turnstile-worker";
+import { optionsManager } from "@user27828/shared-utils/utils";
+import { createTurnstileMiddleware } from "@user27828/shared-utils/server";
 
 const app = express();
 app.use(express.json());
 
-// Configure Turnstile using unified optionsManager (recommended)
 optionsManager.setGlobalOptions({
   "turnstile-server": {
     secretKey: process.env.TURNSTILE_SECRET_KEY,
-    devMode: process.env.NODE_ENV === "development", // Auto-bypass in dev
-    bypassLocalhost: true, // Allow localhost requests
+    devMode: process.env.NODE_ENV === "development",
+    bypassLocalhost: true,
   },
 });
 
-// Create middleware (automatically uses global configuration)
 const verifyTurnstile = createTurnstileMiddleware();
-
-// Use on protected routes
-app.post("/api/contact", verifyTurnstile, (req, res) => {
-  // req.turnstile contains verification data
-  console.log("Verified request from:", req.turnstile.hostname);
-  res.json({ success: true });
-});
+app.post("/api/contact", verifyTurnstile, (req, res) =>
+  res.json({ success: true }),
+);
 
 app.listen(3000);
 ```
@@ -143,26 +137,14 @@ app.post("/api/custom", async (req, res) => {
 ### 3. Advanced Verification Pattern
 
 ```javascript
-import { verifyTurnstileTokenEnhanced } from "@shared-utils/server/turnstile-worker";
+import { verifyTurnstileTokenEnhanced } from "@user27828/shared-utils/server";
 
 app.post("/api/advanced", async (req, res) => {
-  const mockRequest = {
-    headers: { get: (name) => req.headers[name.toLowerCase()] },
-  };
-
   const result = await verifyTurnstileTokenEnhanced(
     req.body.token,
     process.env.TURNSTILE_SECRET_KEY,
     req.ip,
-    undefined, // idempotencyKey
-    {
-      devMode: false, // Force production verification
-      bypassLocalhost: false,
-      interceptor: (action, data) => console.log(action, data),
-    },
-    mockRequest,
   );
-
   res.json({ success: result.success });
 });
 ```
