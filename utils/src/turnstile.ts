@@ -1,7 +1,7 @@
 /**
  * Cloudflare Turnstile Widget and Verification Utility
  */
-import { OptionsManager, optionsManager } from "./options-manager.js";
+import { OptionsManager } from "./options-manager.js";
 
 type TurnstileTheme = "light" | "dark" | "auto";
 type TurnstileSize = "normal" | "compact";
@@ -99,7 +99,21 @@ class Turnstile {
     };
 
     this.optionsManager = new OptionsManager("turnstile", defaultOptions);
-    optionsManager.registerManager("turnstile", this.optionsManager);
+    // Register with the global options manager if present. Prefer the
+    // canonical singleton exposed on globalThis (Symbol.for) to avoid
+    // creating another direct import path to the singleton which can confuse
+    // consumers. Fall back to legacy __shared_utils_optionsManager if present.
+    try {
+      const g: any = globalThis as any;
+      const GLOBAL_KEY = Symbol.for("@shared-utils/options-manager");
+      const globalOm =
+        (g && g.__shared_utils_optionsManager) || (g && g[GLOBAL_KEY]);
+      if (globalOm && typeof globalOm.registerManager === "function") {
+        globalOm.registerManager("turnstile", this.optionsManager);
+      }
+    } catch (e) {
+      // ignore registration failures
+    }
 
     this.render = this.render.bind(this);
     this.verify = this.verify.bind(this);
@@ -379,5 +393,5 @@ class Turnstile {
 const turnstile = new Turnstile();
 
 // Export both the instance and the class, plus OptionsManager components
-export { Turnstile, OptionsManager, optionsManager };
+export { Turnstile };
 export default turnstile;

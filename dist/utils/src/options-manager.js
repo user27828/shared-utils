@@ -164,11 +164,35 @@ export class OptionsManager {
 class GlobalOptionsManager {
     constructor() {
         this.managers = new Map();
+        // Options that were set via setGlobalOptions before a utility registered.
+        // We store these separately so getRegisteredUtilities() only reflects
+        // utilities that explicitly called registerManager(). These pending
+        // options will be merged into the real manager when registerManager
+        // is invoked.
+        this.pendingOptions = new Map();
     }
     /**
      * Register a utility's options manager
      */
     registerManager(utilityName, manager) {
+        // registration trace removed (avoid console output in tests)
+        // If options were set earlier for this utility before it registered,
+        // merge them into the incoming manager now and remove the pending
+        // entry. This preserves early configuration without creating a
+        // placeholder manager in the registered map.
+        const pending = this.pendingOptions.get(utilityName);
+        if (pending !== undefined) {
+            try {
+                manager.setOption(pending);
+            }
+            catch (e) {
+                // Ignore merge errors to avoid breaking registration
+            }
+            this.pendingOptions.delete(utilityName);
+        }
+        // Replace any existing manager with the incoming manager. Do not
+        // merge options from the old manager into the new one; that would
+        // cause unexpected carry-over between tests or registration calls.
         this.managers.set(utilityName, manager);
     }
     /**
@@ -177,8 +201,33 @@ class GlobalOptionsManager {
     setGlobalOptions(options) {
         for (const [utilityName, utilityOptions] of Object.entries(options)) {
             const manager = this.managers.get(utilityName);
-            if (manager && utilityOptions) {
-                manager.setOption(utilityOptions);
+            if (manager) {
+                if (utilityOptions) {
+                    manager.setOption(utilityOptions);
+                }
+            }
+            else {
+                // Utility hasn't registered yet; stash options for later.
+                if (utilityOptions) {
+                    const existingPending = this.pendingOptions.get(utilityName);
+                    if (existingPending) {
+                        // Merge incoming pending options with existing pending options
+                        // using the same semantics as setOption (replace arrays).
+                        const merged = mergeWith({}, existingPending, utilityOptions, (objValue, srcValue) => {
+                            if (srcValue === undefined) {
+                                return objValue;
+                            }
+                            if (Array.isArray(srcValue)) {
+                                return srcValue;
+                            }
+                            return undefined;
+                        });
+                        this.pendingOptions.set(utilityName, merged);
+                    }
+                    else {
+                        this.pendingOptions.set(utilityName, utilityOptions);
+                    }
+                }
             }
         }
     }
@@ -245,8 +294,39 @@ class GlobalOptionsManager {
         return manager.getOption(categoryKeyOrPath);
     }
 }
-// Create singleton instance for cross-utility configuration
-export const optionsManager = new GlobalOptionsManager();
+// Create or reuse a singleton instance for cross-utility configuration.
+// Use a well-known symbol (Symbol.for) on globalThis so that even if the
+// module is imported multiple times from different paths or bundlers, all
+// consumers get the same instance.
+const GLOBAL_OPTIONS_MANAGER_KEY = Symbol.for("@shared-utils/options-manager");
+let _optionsManager;
+try {
+    const g = globalThis;
+    if (g && g[GLOBAL_OPTIONS_MANAGER_KEY]) {
+        _optionsManager = g[GLOBAL_OPTIONS_MANAGER_KEY];
+    }
+    else {
+        _optionsManager = new GlobalOptionsManager();
+        if (g) {
+            g[GLOBAL_OPTIONS_MANAGER_KEY] = _optionsManager;
+            // Backwards-compatible reference
+            g.__shared_utils_optionsManager = _optionsManager;
+        }
+        try {
+            // Temporary debug: trace singleton creation
+            // eslint-disable-next-line no-console
+            console.log("[DEBUG] options-manager: singleton created and stored on Symbol.for('@shared-utils/options-manager')");
+        }
+        catch (e) {
+            // ignore
+        }
+    }
+}
+catch (e) {
+    // If anything goes wrong accessing globalThis, just create a local instance
+    _optionsManager = new GlobalOptionsManager();
+}
+export const optionsManager = _optionsManager;
 // Bind commonly-used methods onto the instance as own-properties to improve
 // interoperability when this module is consumed across different bundlers
 // and module systems (some consumers call `optionsManager.getOption(...)`

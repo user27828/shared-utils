@@ -30,7 +30,6 @@
  *   turnstile: { siteKey: 'your-key' }
  * });
  */
-import { OptionsManager, optionsManager } from "./options-manager.js";
 type LogLevel = "log" | "info" | "warn" | "error" | "debug";
 type Environment = "client" | "server";
 interface OriginalConsoleMethods {
@@ -146,6 +145,6 @@ declare class Log {
     removeInterceptor(interceptor: (level: LogLevel, args: any[]) => void): void;
 }
 declare const log: Log;
-export { Log, ORIGINAL_CONSOLE_METHODS, OptionsManager, optionsManager };
+export { Log, ORIGINAL_CONSOLE_METHODS };
 export default log;
 //# sourceMappingURL=log.d.ts.map

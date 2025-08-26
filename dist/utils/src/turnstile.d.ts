@@ -1,7 +1,3 @@
-/**
- * Cloudflare Turnstile Widget and Verification Utility
- */
-import { OptionsManager, optionsManager } from "./options-manager.js";
 type TurnstileTheme = "light" | "dark" | "auto";
 type TurnstileSize = "normal" | "compact";
 type TurnstileAction = string;
@@ -80,6 +76,6 @@ declare class Turnstile {
     cleanup(): void;
 }
 declare const turnstile: Turnstile;
-export { Turnstile, OptionsManager, optionsManager };
+export { Turnstile };
 export default turnstile;
 //# sourceMappingURL=turnstile.d.ts.map

@@ -127,8 +127,8 @@ describe("GitHub Installation Verification", () => {
     // Create a test file that imports from the server module
     const testFile = path.join(tempDir, "test-import.mjs");
     const testCode = `
-import { OptionsManager } from '@user27828/shared-utils/server';
-console.log('Server import successful:', typeof OptionsManager);
+import { OptionsManager } from '@user27828/shared-utils/utils';
+console.log('Utils import successful:', typeof OptionsManager);
 `;
 
     fs.writeFileSync(testFile, testCode);

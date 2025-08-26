@@ -31,7 +31,7 @@
  * });
  */
 
-import { OptionsManager, optionsManager } from "./options-manager.js";
+import { OptionsManager } from "./options-manager.js";
 
 type LogLevel = "log" | "info" | "warn" | "error" | "debug";
 type Environment = "client" | "server";
@@ -104,8 +104,23 @@ class Log {
     // Initialize options manager
     this.optionsManager = new OptionsManager("log", defaultOptions);
 
-    // Register with global options manager
-    optionsManager.registerManager("log", this.optionsManager);
+    // Register with global options manager if it's available on globalThis.
+    // We avoid importing the global optionsManager directly here so this
+    // module doesn't create a second import path for the singleton. The
+    // canonical optionsManager sets `globalThis.__shared_utils_optionsManager`.
+    try {
+      const g: any = globalThis as any;
+      const GLOBAL_KEY = Symbol.for("@shared-utils/options-manager");
+      const globalOm =
+        (g && g.__shared_utils_optionsManager) ||
+        (g && g[GLOBAL_KEY]) ||
+        (g && g.__shared_utils_pkg && g.__shared_utils_pkg.optionsManager);
+      if (globalOm && typeof globalOm.registerManager === "function") {
+        globalOm.registerManager("log", this.optionsManager);
+      }
+    } catch (e) {
+      // ignore registration failures
+    }
 
     this.ORIGINAL_CONSOLE_METHODS = ORIGINAL_CONSOLE_METHODS; // Assign module-level const to instance property
     // Bind methods to maintain context when destructured
@@ -494,6 +509,6 @@ class Log {
 // Create singleton instance
 const log = new Log();
 
-// Export both the instance and the class, plus OptionsManager components
-export { Log, ORIGINAL_CONSOLE_METHODS, OptionsManager, optionsManager };
+// Export both the instance and the class
+export { Log, ORIGINAL_CONSOLE_METHODS };
 export default log;

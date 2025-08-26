@@ -90,6 +90,7 @@ export declare class OptionsManager<T extends Record<string, any>> {
  */
 declare class GlobalOptionsManager {
     private managers;
+    private pendingOptions;
     /**
      * Register a utility's options manager
      */

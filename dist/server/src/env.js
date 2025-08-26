@@ -184,91 +184,86 @@ const buildBaseEnv = (opts) => {
     return out;
 };
 // Integrate with OptionsManager if available
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const sharedPkg = globalThis.__shared_utils_pkg || undefined;
-if (sharedPkg && sharedPkg.optionsManager) {
-    optionsManager = sharedPkg.optionsManager;
-}
-else {
-    // Try common package specifiers first, then fall back to the relative utils
-    // path used in monorepo layouts. If none are available, create a tiny
-    // in-memory options manager so this module still functions without the
-    // full utils package installed.
-    try {
+// Use a global registry approach to ensure singleton behavior across modules
+// Check if optionsManager is already registered globally
+if (typeof globalThis !== "undefined") {
+    const g = globalThis;
+    // Support test-injected package shim: some tests attach a mock package
+    // to globalThis.__shared_utils_pkg = { optionsManager } so detect that
+    // and prefer it before attempting to require the real package.
+    if (g.__shared_utils_pkg && g.__shared_utils_pkg.optionsManager) {
+        g.__shared_utils_optionsManager = g.__shared_utils_pkg.optionsManager;
+    }
+    if (!g.__shared_utils_optionsManager) {
+        // Try to load the real optionsManager and register it globally
         try {
-            // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-            const pkg = require("@user27828/shared-utils");
-            optionsManager = pkg?.optionsManager;
-        }
-        catch (e) {
-            // ignore
-        }
-        if (!optionsManager) {
+            let pkg = undefined;
             try {
                 // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-                const pkg = require("@user27828/shared-utils/utils");
-                optionsManager = pkg?.optionsManager;
+                pkg = require("@user27828/shared-utils/utils");
             }
             catch (e) {
-                // ignore
-            }
-        }
-        if (!optionsManager) {
-            try {
-                // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-                const utilsPkg = require("../utils/index.js");
-                optionsManager = utilsPkg?.optionsManager;
-            }
-            catch (e) {
-                // ignore
-            }
-        }
-    }
-    catch (e) {
-        // ignore
-    }
-    if (!optionsManager) {
-        // Create a minimal in-memory optionsManager to avoid hard failures in
-        // consumers that don't install @user27828/shared-utils/utils.
-        const _managers = new Map();
-        optionsManager = {
-            registerManager(name, manager) {
-                _managers.set(name, manager);
-            },
-            getManager(name) {
-                return _managers.get(name);
-            },
-            // allow consumers to set global options if needed
-            setGlobalOptions(_opts) {
-                // noop for minimal implementation
-            },
-        };
-        // Provide a tiny local OptionsManager class used when the real module
-        // isn't available. It supports the small API used in this file.
-        class LocalOptionsManager {
-            name;
-            options;
-            constructor(name, initial = {}) {
-                this.name = name;
-                this.options = { ...(initial || {}) };
-            }
-            getOption(key) {
-                return this.options[key];
-            }
-            setOption(obj) {
-                for (const [k, v] of Object.entries(obj || {})) {
-                    this.options[k] = v;
+                try {
+                    // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
+                    pkg = require("../utils/index.js");
+                }
+                catch (e2) {
+                    // ignore
                 }
             }
-            getOptions() {
-                return { ...this.options };
+            if (pkg && pkg.optionsManager) {
+                g.__shared_utils_optionsManager = pkg.optionsManager;
             }
         }
-        // Attach LocalOptionsManager constructor so other code that attempts to
-        // require the options-manager module can still construct a manager when
-        // needed via our internal registration flow.
-        optionsManager.__LocalOptionsManager = LocalOptionsManager;
+        catch (e) {
+            // ignore import errors during early module evaluation
+        }
     }
+    // Use the globally registered optionsManager
+    optionsManager = g.__shared_utils_optionsManager;
+}
+// If we still don't have optionsManager, create a minimal one that will be replaced later
+if (!optionsManager) {
+    // Create a minimal in-memory optionsManager to avoid hard failures in
+    // consumers that don't install @user27828/shared-utils/utils.
+    const _managers = new Map();
+    optionsManager = {
+        registerManager(name, manager) {
+            _managers.set(name, manager);
+        },
+        getManager(name) {
+            return _managers.get(name);
+        },
+        // allow consumers to set global options if needed
+        setGlobalOptions(_opts) {
+            // noop for minimal implementation
+        },
+    };
+    // Provide a tiny local OptionsManager class used when the real module
+    // isn't available. It supports the small API used in this file.
+    class LocalOptionsManager {
+        name;
+        options;
+        constructor(name, initial = {}) {
+            this.name = name;
+            this.options = { ...(initial || {}) };
+        }
+        getOption(key) {
+            return this.options[key];
+        }
+        setOption(obj) {
+            for (const [k, v] of Object.entries(obj || {})) {
+                this.options[k] = v;
+            }
+        }
+        getOptions() {
+            return { ...this.options };
+        }
+    }
+    // Attach LocalOptionsManager constructor so other code that attempts to
+    // require the options-manager module can still construct a manager when
+    // needed via our internal registration flow.
+    optionsManager.__LocalOptionsManager = LocalOptionsManager;
 }
 const findEnvFile = () => {
     // If an options manager exists, allow callers to override the dotenv path
@@ -369,10 +364,12 @@ const computeProjectFallbackKey = () => {
  */
 const loadEnvironmentVariables = () => {
     if (envCache !== null) {
+        log.debug("[ENV DEBUG] Returning cached environment");
         return envCache;
     }
+    log.debug("[ENV DEBUG] Loading environment for first time");
     const envPath = findEnvFile();
-    maybeDebug(`Evaluated env path: ${envPath}`);
+    log.debug(`[ENV DEBUG] Evaluated env path: ${envPath}`);
     // If optionsManager provides DETECT_ENV_VARS, and all keys are already present
     // in process.env, we should skip loading .env to avoid overwriting caller state.
     try {
@@ -382,7 +379,6 @@ const loadEnvironmentVariables = () => {
         if (Array.isArray(detect) && detect.length > 0) {
             const allPresent = detect.every((k) => process.env[k] !== undefined);
             if (allPresent) {
-                console.debug("DETECT_ENV_VARS satisfied; skipping dotenv load");
                 // Ensure we still expose ENV via options manager. Build a curated
                 // env object that excludes noisy platform variables when we haven't
                 // loaded a .env file.
@@ -390,6 +386,59 @@ const loadEnvironmentVariables = () => {
                 try {
                     if (optionsManager &&
                         typeof optionsManager.setGlobalOptions === "function") {
+                        // Register ENV manager before setting global options
+                        try {
+                            const existing = typeof optionsManager.getManager === "function"
+                                ? optionsManager.getManager("ENV")
+                                : undefined;
+                            if (!existing) {
+                                let envManagerRegistered = false;
+                                // Try LocalOptionsManager first
+                                const LocalCtor = optionsManager.__LocalOptionsManager;
+                                if (typeof LocalCtor === "function") {
+                                    try {
+                                        const m = new LocalCtor("ENV", { ...base });
+                                        if (typeof optionsManager.registerManager === "function") {
+                                            optionsManager.registerManager("ENV", m);
+                                            envManagerRegistered = true;
+                                        }
+                                    }
+                                    catch (e) {
+                                        // ignore constructor failures
+                                    }
+                                }
+                                // Fallback to minimal manager
+                                if (!envManagerRegistered) {
+                                    try {
+                                        const minimal = {
+                                            options: { ...base },
+                                            getOption(key) {
+                                                if (key === undefined)
+                                                    return { ...this.options };
+                                                return this.options[key];
+                                            },
+                                            setOption(obj) {
+                                                for (const [k, v] of Object.entries(obj || {})) {
+                                                    this.options[k] = v;
+                                                }
+                                            },
+                                            getOptions() {
+                                                return { ...this.options };
+                                            },
+                                        };
+                                        if (typeof optionsManager.registerManager === "function") {
+                                            optionsManager.registerManager("ENV", minimal);
+                                        }
+                                    }
+                                    catch (e) {
+                                        // ignore
+                                    }
+                                }
+                            }
+                        }
+                        catch (e) {
+                            // ignore registration errors
+                        }
                         try {
                             optionsManager.setGlobalOptions({
                                 ENV: { ...base },
@@ -590,31 +639,113 @@ const loadEnvironmentVariables = () => {
     catch (e) {
         // ignore d.ts boolean parsing failures
     }
+    console.log("[ENV DEBUG] Final env processing - about to inject into optionsManager");
+    console.log("[ENV DEBUG] optionsManager available:", !!optionsManager);
+    console.log("[ENV DEBUG] envCache keys:", envCache ? Object.keys(envCache).length : "null");
     // Inject the computed environment into the global options under the
     // `ENV` key so consumers can inspect it via optionsManager.getOption('ENV')
     try {
+        console.log("[ENV DEBUG] Starting ENV manager registration...");
+        console.log("[ENV DEBUG] optionsManager available:", !!optionsManager);
+        console.log("[ENV DEBUG] setGlobalOptions available:", typeof optionsManager?.setGlobalOptions);
         if (optionsManager &&
             typeof optionsManager.setGlobalOptions === "function") {
-            // Store the computed ENV under the global options as `ENV` so
-            // consumers can read optionsManager.getOption('ENV') or the
-            // unified global options.
+            // Ensure an 'ENV' manager is registered so setGlobalOptions will
+            // apply the values. Some consumers rely on optionsManager.getOption('ENV', key)
+            // which only works if a manager exists for the 'ENV' utility.
             try {
-                optionsManager.setGlobalOptions({
-                    ENV: { ...envCache },
-                    __READONLY__: true,
-                });
+                const existing = typeof optionsManager.getManager === "function"
+                    ? optionsManager.getManager("ENV")
+                    : undefined;
+                console.log("[ENV DEBUG] Existing ENV manager found:", !!existing);
+                if (!existing) {
+                    let envManagerRegistered = false;
+                    // Prefer a provided LocalOptionsManager constructor when available
+                    const LocalCtor = optionsManager.__LocalOptionsManager;
+                    console.log("[ENV DEBUG] LocalCtor available:", typeof LocalCtor);
+                    if (typeof LocalCtor === "function") {
+                        try {
+                            const m = new LocalCtor("ENV", { ...(envCache || {}) });
+                            if (typeof optionsManager.registerManager === "function") {
+                                optionsManager.registerManager("ENV", m);
+                                envManagerRegistered = true;
+                                console.log("[ENV DEBUG] Successfully registered ENV manager using LocalOptionsManager");
+                            }
+                        }
+                        catch (e) {
+                            console.log("[ENV DEBUG] Failed to register ENV manager using LocalCtor:", e);
+                        }
+                    }
+                    // As a last-resort, register a minimal manager that supports
+                    // the small API used by consumers (getOption, setOption, getOptions)
+                    if (!envManagerRegistered) {
+                        console.log("[ENV DEBUG] Attempting minimal manager registration");
+                        try {
+                            const minimal = {
+                                options: { ...(envCache || {}) },
+                                getOption(key) {
+                                    if (key === undefined)
+                                        return { ...this.options };
+                                    return this.options[key];
+                                },
+                                setOption(obj) {
+                                    for (const [k, v] of Object.entries(obj || {})) {
+                                        this.options[k] = v;
+                                    }
+                                },
+                                getOptions() {
+                                    return { ...this.options };
+                                },
+                            };
+                            if (typeof optionsManager.registerManager === "function") {
+                                optionsManager.registerManager("ENV", minimal);
+                                envManagerRegistered = true;
+                                console.log("[ENV DEBUG] Successfully registered ENV manager using minimal implementation");
+                            }
+                        }
+                        catch (e) {
+                            console.log("[ENV DEBUG] Failed to register minimal ENV manager:", e);
+                        }
+                    }
+                    if (!envManagerRegistered) {
+                        console.log("[ENV DEBUG] WARNING: Failed to register ENV manager - getManager('ENV') will return undefined");
+                    }
+                }
+                else {
+                    console.log("[ENV DEBUG] ENV manager already exists, updating options");
+                }
+                // Store the computed ENV under the global options as `ENV` so
+                // consumers can read optionsManager.getOption('ENV') or the
+                // unified global options.
+                try {
+                    console.log("[ENV DEBUG] Setting global options...");
+                    optionsManager.setGlobalOptions({
+                        ENV: { ...envCache },
+                        __READONLY__: true,
+                    });
+                    console.log("[ENV DEBUG] Successfully set global ENV options");
+                }
+                catch (e) {
+                    console.log("[ENV DEBUG] Failed to set global ENV options:", e);
+                    try {
+                        console.warn("Failed to set global ENV options:", e);
+                    }
+                    catch (__) {
+                        // ignore
+                    }
+                }
             }
             catch (e) {
-                try {
-                    console.warn("Failed to set global ENV options:", e);
-                }
-                catch (__) {
-                    // ignore
-                }
+                console.log("[ENV DEBUG] Registration error:", e);
+                // ignore registration failures and continue
             }
+        }
+        else {
+            console.log("[ENV DEBUG] optionsManager or setGlobalOptions not available");
         }
     }
     catch (e) {
+        console.log("[ENV DEBUG] Top-level error:", e);
         // ignore failures to set global options
     }
     return envCache;

@@ -44,9 +44,6 @@ export { createTurnstileWorker } from "./src/turnstile/index.js";
 // Core verification
 export { verifyTurnstileToken } from "./src/turnstile/index.js";
 
-// Options management
-export { OptionsManager, optionsManager } from "../utils/index.js";
-
 // Utilities
 export {
   isDevMode,
