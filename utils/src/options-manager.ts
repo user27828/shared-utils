@@ -447,9 +447,9 @@ try {
     try {
       // Temporary debug: trace singleton creation
       // eslint-disable-next-line no-console
-      console.log(
-        "[DEBUG] options-manager: singleton created and stored on Symbol.for('@shared-utils/options-manager')",
-      );
+      // console.log(
+      //   "[DEBUG] options-manager: singleton created and stored on Symbol.for('@shared-utils/options-manager')",
+      // );
     } catch (e) {
       // ignore
     }

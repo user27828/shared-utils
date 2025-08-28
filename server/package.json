@@ -42,14 +42,14 @@
   "devDependencies": {
     "@babel/core": "^7.28.3",
     "@babel/preset-env": "^7.28.3",
-    "@cloudflare/workers-types": "^4.20250821.0",
-    "@jest/globals": "^30.0.5",
+    "@cloudflare/workers-types": "^4.20250828.0",
+    "@jest/globals": "^30.1.1",
     "@types/node": "^24.3.0",
-    "babel-jest": "^30.0.5",
-    "jest": "^30.0.5",
+    "babel-jest": "^30.1.1",
+    "jest": "^30.1.1",
     "ts-jest": "^29.4.1",
-    "tsx": "^4.20.4",
+    "tsx": "^4.20.5",
     "typescript": "^5.9.2",
-    "wrangler": "^4.32.0"
+    "wrangler": "^4.33.0"
   }
 }

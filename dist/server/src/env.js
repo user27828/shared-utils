@@ -364,12 +364,9 @@ const computeProjectFallbackKey = () => {
  */
 const loadEnvironmentVariables = () => {
     if (envCache !== null) {
-        log.debug("[ENV DEBUG] Returning cached environment");
         return envCache;
     }
-    log.debug("[ENV DEBUG] Loading environment for first time");
     const envPath = findEnvFile();
-    log.debug(`[ENV DEBUG] Evaluated env path: ${envPath}`);
     // If optionsManager provides DETECT_ENV_VARS, and all keys are already present
     // in process.env, we should skip loading .env to avoid overwriting caller state.
     try {
@@ -639,15 +636,9 @@ const loadEnvironmentVariables = () => {
     catch (e) {
         // ignore d.ts boolean parsing failures
     }
-    console.log("[ENV DEBUG] Final env processing - about to inject into optionsManager");
-    console.log("[ENV DEBUG] optionsManager available:", !!optionsManager);
-    console.log("[ENV DEBUG] envCache keys:", envCache ? Object.keys(envCache).length : "null");
     // Inject the computed environment into the global options under the
     // `ENV` key so consumers can inspect it via optionsManager.getOption('ENV')
     try {
-        console.log("[ENV DEBUG] Starting ENV manager registration...");
-        console.log("[ENV DEBUG] optionsManager available:", !!optionsManager);
-        console.log("[ENV DEBUG] setGlobalOptions available:", typeof optionsManager?.setGlobalOptions);
         if (optionsManager &&
             typeof optionsManager.setGlobalOptions === "function") {
             // Ensure an 'ENV' manager is registered so setGlobalOptions will
@@ -657,29 +648,25 @@ const loadEnvironmentVariables = () => {
                 const existing = typeof optionsManager.getManager === "function"
                     ? optionsManager.getManager("ENV")
                     : undefined;
-                console.log("[ENV DEBUG] Existing ENV manager found:", !!existing);
                 if (!existing) {
                     let envManagerRegistered = false;
                     // Prefer a provided LocalOptionsManager constructor when available
                     const LocalCtor = optionsManager.__LocalOptionsManager;
-                    console.log("[ENV DEBUG] LocalCtor available:", typeof LocalCtor);
                     if (typeof LocalCtor === "function") {
                         try {
                             const m = new LocalCtor("ENV", { ...(envCache || {}) });
                             if (typeof optionsManager.registerManager === "function") {
                                 optionsManager.registerManager("ENV", m);
                                 envManagerRegistered = true;
-                                console.log("[ENV DEBUG] Successfully registered ENV manager using LocalOptionsManager");
                             }
                         }
                         catch (e) {
-                            console.log("[ENV DEBUG] Failed to register ENV manager using LocalCtor:", e);
+                            // nada
                         }
                     }
                     // As a last-resort, register a minimal manager that supports
                     // the small API used by consumers (getOption, setOption, getOptions)
                     if (!envManagerRegistered) {
-                        console.log("[ENV DEBUG] Attempting minimal manager registration");
                         try {
                             const minimal = {
                                 options: { ...(envCache || {}) },
@@ -700,30 +687,24 @@ const loadEnvironmentVariables = () => {
                             if (typeof optionsManager.registerManager === "function") {
                                 optionsManager.registerManager("ENV", minimal);
                                 envManagerRegistered = true;
-                                console.log("[ENV DEBUG] Successfully registered ENV manager using minimal implementation");
                             }
                         }
                         catch (e) {
-                            console.log("[ENV DEBUG] Failed to register minimal ENV manager:", e);
+                            // Nada
                         }
                     }
                     if (!envManagerRegistered) {
                         console.log("[ENV DEBUG] WARNING: Failed to register ENV manager - getManager('ENV') will return undefined");
                     }
                 }
-                else {
-                    console.log("[ENV DEBUG] ENV manager already exists, updating options");
-                }
                 // Store the computed ENV under the global options as `ENV` so
                 // consumers can read optionsManager.getOption('ENV') or the
                 // unified global options.
                 try {
-                    console.log("[ENV DEBUG] Setting global options...");
                     optionsManager.setGlobalOptions({
                         ENV: { ...envCache },
                         __READONLY__: true,
                     });
-                    console.log("[ENV DEBUG] Successfully set global ENV options");
                 }
                 catch (e) {
                     console.log("[ENV DEBUG] Failed to set global ENV options:", e);
