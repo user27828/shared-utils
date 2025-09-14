@@ -1,6 +1,7 @@
 import React from "react";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { CssBaseline } from "@mui/material";
+import { CssBaseline, IconButton, Box } from "@mui/material";
+import { Brightness4, Brightness7 } from "@mui/icons-material";
 import TestIndex from "./components/TestIndex";
 import TurnstileTests from "./components/TurnstileTests";
 import LogTests from "./components/LogTests";
@@ -9,7 +10,21 @@ import ClientComponentTests from "./components/ClientComponentTests";
 import TinyMCETests from "./components/TinyMCETests";
 import ServerIntegrationTests from "./components/ServerIntegrationTests";
 
-// Create a dark theme that matches the existing dark CSS
+// Create light theme
+const lightTheme = createTheme({
+  palette: {
+    mode: "light",
+    primary: {
+      main: "#646cff",
+    },
+    background: {
+      default: "#ffffff",
+      paper: "#f5f5f5",
+    },
+  },
+});
+
+// Create dark theme that matches the existing dark CSS
 const darkTheme = createTheme({
   palette: {
     mode: "dark",
@@ -60,6 +75,9 @@ const App: React.FC = () => {
     "index" | "turnstile" | "log" | "options" | "client" | "tinymce" | "server"
   >("index");
 
+  // Theme state - default to dark mode
+  const [isDarkMode, setIsDarkMode] = React.useState(true);
+
   const handleNavigate = (
     view:
       | "index"
@@ -73,20 +91,50 @@ const App: React.FC = () => {
     setCurrentView(view);
   };
 
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+  };
+
+  const currentTheme = isDarkMode ? darkTheme : lightTheme;
+
   return (
-    <ThemeProvider theme={darkTheme}>
+    <ThemeProvider theme={currentTheme}>
       <CssBaseline />
       <div className="App">
         <header>
-          <h1>Shared Utils Test Consumer</h1>
-          <p>Integration testing environment for @user27828/shared-utils</p>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 2,
+            }}
+          >
+            <div>
+              <h1>Shared Utils Test Consumer</h1>
+              <p>Integration testing environment for @user27828/shared-utils</p>
+            </div>
+            <IconButton
+              onClick={toggleTheme}
+              color="inherit"
+              sx={{ ml: 1 }}
+              aria-label="toggle theme"
+            >
+              {isDarkMode ? <Brightness7 /> : <Brightness4 />}
+            </IconButton>
+          </Box>
 
           <nav style={{ margin: "1rem 0" }}>
             <button
               onClick={() => handleNavigate("index")}
               style={{
                 backgroundColor:
-                  currentView === "index" ? "#646cff" : "#1a1a1a",
+                  currentView === "index"
+                    ? "#646cff"
+                    : isDarkMode
+                      ? "#1a1a1a"
+                      : "#e0e0e0",
+                color: isDarkMode ? "#ffffff" : "#000000",
               }}
             >
               Test Index
@@ -95,7 +143,12 @@ const App: React.FC = () => {
               onClick={() => handleNavigate("turnstile")}
               style={{
                 backgroundColor:
-                  currentView === "turnstile" ? "#646cff" : "#1a1a1a",
+                  currentView === "turnstile"
+                    ? "#646cff"
+                    : isDarkMode
+                      ? "#1a1a1a"
+                      : "#e0e0e0",
+                color: isDarkMode ? "#ffffff" : "#000000",
               }}
             >
               Turnstile Tests
@@ -103,7 +156,13 @@ const App: React.FC = () => {
             <button
               onClick={() => handleNavigate("log")}
               style={{
-                backgroundColor: currentView === "log" ? "#646cff" : "#1a1a1a",
+                backgroundColor:
+                  currentView === "log"
+                    ? "#646cff"
+                    : isDarkMode
+                      ? "#1a1a1a"
+                      : "#e0e0e0",
+                color: isDarkMode ? "#ffffff" : "#000000",
               }}
             >
               Log Tests
@@ -112,7 +171,12 @@ const App: React.FC = () => {
               onClick={() => handleNavigate("options")}
               style={{
                 backgroundColor:
-                  currentView === "options" ? "#646cff" : "#1a1a1a",
+                  currentView === "options"
+                    ? "#646cff"
+                    : isDarkMode
+                      ? "#1a1a1a"
+                      : "#e0e0e0",
+                color: isDarkMode ? "#ffffff" : "#000000",
               }}
             >
               Options Manager
@@ -121,7 +185,12 @@ const App: React.FC = () => {
               onClick={() => handleNavigate("client")}
               style={{
                 backgroundColor:
-                  currentView === "client" ? "#646cff" : "#1a1a1a",
+                  currentView === "client"
+                    ? "#646cff"
+                    : isDarkMode
+                      ? "#1a1a1a"
+                      : "#e0e0e0",
+                color: isDarkMode ? "#ffffff" : "#000000",
               }}
             >
               Client Components
@@ -130,7 +199,12 @@ const App: React.FC = () => {
               onClick={() => handleNavigate("tinymce")}
               style={{
                 backgroundColor:
-                  currentView === "tinymce" ? "#646cff" : "#1a1a1a",
+                  currentView === "tinymce"
+                    ? "#646cff"
+                    : isDarkMode
+                      ? "#1a1a1a"
+                      : "#e0e0e0",
+                color: isDarkMode ? "#ffffff" : "#000000",
               }}
             >
               TinyMCE Tests
@@ -139,7 +213,12 @@ const App: React.FC = () => {
               onClick={() => handleNavigate("server")}
               style={{
                 backgroundColor:
-                  currentView === "server" ? "#646cff" : "#1a1a1a",
+                  currentView === "server"
+                    ? "#646cff"
+                    : isDarkMode
+                      ? "#1a1a1a"
+                      : "#e0e0e0",
+                color: isDarkMode ? "#ffffff" : "#000000",
               }}
             >
               Server Tests
@@ -153,7 +232,7 @@ const App: React.FC = () => {
           {currentView === "log" && <LogTests />}
           {currentView === "options" && <OptionsManagerTests />}
           {currentView === "client" && <ClientComponentTests />}
-          {currentView === "tinymce" && <TinyMCETests darkMode={true} />}
+          {currentView === "tinymce" && <TinyMCETests darkMode={isDarkMode} />}
           {currentView === "server" && <ServerIntegrationTests />}
         </main>
       </div>
