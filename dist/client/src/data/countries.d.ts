@@ -14,5 +14,6 @@ declare const countries: {
     continent: string;
     region: string;
     population: number;
+    flagEmoji: string;
 }[];
 //# sourceMappingURL=countries.d.ts.map

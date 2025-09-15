@@ -2,7 +2,6 @@
  * Data - countries
  */
 const countries = [
-    // Special "Not Selected" entry always first
     {
         name: "Not Selected/Other",
         nameLocal: "Not Selected/Other",
@@ -15,8 +14,8 @@ const countries = [
         continent: "",
         region: "",
         population: 0,
+        flagEmoji: ""
     },
-    // The rest of the countries in alphabetical order by name
     {
         name: "Afghanistan",
         nameLocal: "افغانستان",
@@ -29,6 +28,7 @@ const countries = [
         continent: "AS",
         region: "",
         population: 40.1,
+        flagEmoji: "🇦🇫"
     },
     {
         name: "American Samoa",
@@ -42,6 +42,7 @@ const countries = [
         continent: "OC",
         region: "Polynesia",
         population: 0.055,
+        flagEmoji: "🇦🇸"
     },
     {
         name: "Albania",
@@ -55,6 +56,7 @@ const countries = [
         continent: "EU",
         region: "",
         population: 2.8,
+        flagEmoji: "🇦🇱"
     },
     {
         name: "Algeria",
@@ -68,6 +70,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 44.6,
+        flagEmoji: "🇩🇿"
     },
     {
         name: "Andorra",
@@ -81,6 +84,7 @@ const countries = [
         continent: "EU",
         region: "",
         population: 0.08,
+        flagEmoji: "🇦🇩"
     },
     {
         name: "Angola",
@@ -94,6 +98,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 33.9,
+        flagEmoji: "🇦🇴"
     },
     {
         name: "Antigua and Barbuda",
@@ -107,6 +112,7 @@ const countries = [
         continent: "NA",
         region: "CARICOM",
         population: 0.1,
+        flagEmoji: "🇦🇬"
     },
     {
         name: "Antarctica",
@@ -120,6 +126,7 @@ const countries = [
         continent: "AN",
         region: "",
         population: 0,
+        flagEmoji: "🇦🇶"
     },
     {
         name: "Argentina",
@@ -133,6 +140,7 @@ const countries = [
         continent: "SA",
         region: "MERCOSUR",
         population: 45.8,
+        flagEmoji: "🇦🇷"
     },
     {
         name: "Armenia",
@@ -146,6 +154,7 @@ const countries = [
         continent: "AS",
         region: "",
         population: 3.0,
+        flagEmoji: "🇦🇲"
     },
     {
         name: "Aruba",
@@ -159,6 +168,7 @@ const countries = [
         continent: "NA",
         region: "Caribbean",
         population: 0.11,
+        flagEmoji: "🇦🇼"
     },
     {
         name: "Australia",
@@ -172,6 +182,7 @@ const countries = [
         continent: "OC",
         region: "Oceania",
         population: 25.7,
+        flagEmoji: "🇦🇺"
     },
     {
         name: "Austria",
@@ -185,6 +196,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 9.0,
+        flagEmoji: "🇦🇹"
     },
     {
         name: "Azerbaijan",
@@ -198,6 +210,7 @@ const countries = [
         continent: "AS",
         region: "",
         population: 10.1,
+        flagEmoji: "🇦🇿"
     },
     {
         name: "Bahamas",
@@ -211,6 +224,7 @@ const countries = [
         continent: "NA",
         region: "CARICOM",
         population: 0.4,
+        flagEmoji: "🇧🇸"
     },
     {
         name: "Bahrain",
@@ -224,6 +238,7 @@ const countries = [
         continent: "AS",
         region: "GCC",
         population: 1.7,
+        flagEmoji: "🇧🇭"
     },
     {
         name: "Bangladesh",
@@ -237,6 +252,7 @@ const countries = [
         continent: "AS",
         region: "SAARC",
         population: 166.3,
+        flagEmoji: "🇧🇩"
     },
     {
         name: "Barbados",
@@ -250,6 +266,7 @@ const countries = [
         continent: "NA",
         region: "CARICOM",
         population: 0.3,
+        flagEmoji: "🇧🇧"
     },
     {
         name: "Belarus",
@@ -263,6 +280,7 @@ const countries = [
         continent: "EU",
         region: "",
         population: 9.4,
+        flagEmoji: "🇧🇾"
     },
     {
         name: "Belgium",
@@ -276,6 +294,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 11.6,
+        flagEmoji: "🇧🇪"
     },
     {
         name: "Belize",
@@ -289,6 +308,7 @@ const countries = [
         continent: "NA",
         region: "CARICOM",
         population: 0.4,
+        flagEmoji: "🇧🇿"
     },
     {
         name: "Benin",
@@ -302,6 +322,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 12.5,
+        flagEmoji: "🇧🇯"
     },
     {
         name: "Bhutan",
@@ -315,6 +336,7 @@ const countries = [
         continent: "AS",
         region: "SAARC",
         population: 0.8,
+        flagEmoji: "🇧🇹"
     },
     {
         name: "Bolivia",
@@ -328,6 +350,7 @@ const countries = [
         continent: "SA",
         region: "",
         population: 11.8,
+        flagEmoji: "🇧🇴"
     },
     {
         name: "Bosnia and Herzegovina",
@@ -341,6 +364,7 @@ const countries = [
         continent: "EU",
         region: "",
         population: 3.3,
+        flagEmoji: "🇧🇦"
     },
     {
         name: "Botswana",
@@ -354,6 +378,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 2.4,
+        flagEmoji: "🇧🇼"
     },
     {
         name: "Brazil",
@@ -367,6 +392,7 @@ const countries = [
         continent: "SA",
         region: "Americas",
         population: 212.6,
+        flagEmoji: "🇧🇷"
     },
     {
         name: "Brunei",
@@ -380,6 +406,7 @@ const countries = [
         continent: "AS",
         region: "ASEAN",
         population: 0.4,
+        flagEmoji: "🇧🇳"
     },
     {
         name: "Bulgaria",
@@ -393,6 +420,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 6.9,
+        flagEmoji: "🇧🇬"
     },
     {
         name: "Burkina Faso",
@@ -406,6 +434,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 21.5,
+        flagEmoji: "🇧🇫"
     },
     {
         name: "Burundi",
@@ -419,6 +448,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 12.3,
+        flagEmoji: "🇧🇮"
     },
     {
         name: "Cambodia",
@@ -432,6 +462,7 @@ const countries = [
         continent: "AS",
         region: "ASEAN",
         population: 16.9,
+        flagEmoji: "🇰🇭"
     },
     {
         name: "Cameroon",
@@ -445,6 +476,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 27.2,
+        flagEmoji: "🇨🇲"
     },
     {
         name: "Canada",
@@ -458,6 +490,7 @@ const countries = [
         continent: "NA",
         region: "",
         population: 38.2,
+        flagEmoji: "🇨🇦"
     },
     {
         name: "Cape Verde",
@@ -471,6 +504,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 0.6,
+        flagEmoji: "🇨🇻"
     },
     {
         name: "Central African Republic",
@@ -484,6 +518,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 4.9,
+        flagEmoji: "🇨🇫"
     },
     {
         name: "Chad",
@@ -497,6 +532,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 16.9,
+        flagEmoji: "🇹🇩"
     },
     {
         name: "Chile",
@@ -510,6 +546,7 @@ const countries = [
         continent: "SA",
         region: "",
         population: 19.2,
+        flagEmoji: "🇨🇱"
     },
     {
         name: "China",
@@ -523,6 +560,7 @@ const countries = [
         continent: "AS",
         region: "Asia",
         population: 1410.0,
+        flagEmoji: "🇨🇳"
     },
     {
         name: "Colombia",
@@ -536,6 +574,7 @@ const countries = [
         continent: "SA",
         region: "",
         population: 51.3,
+        flagEmoji: "🇨🇴"
     },
     {
         name: "Comoros",
@@ -549,6 +588,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 0.9,
+        flagEmoji: "🇰🇲"
     },
     {
         name: "Congo (Democratic Republic)",
@@ -562,6 +602,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 92.4,
+        flagEmoji: "🇨🇩"
     },
     {
         name: "Congo (Republic)",
@@ -575,6 +616,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 5.7,
+        flagEmoji: "🇨🇬"
     },
     {
         name: "Costa Rica",
@@ -588,6 +630,7 @@ const countries = [
         continent: "NA",
         region: "",
         population: 5.1,
+        flagEmoji: "🇨🇷"
     },
     {
         name: "Côte d'Ivoire",
@@ -601,6 +644,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 26.4,
+        flagEmoji: "🇨🇮"
     },
     {
         name: "Croatia",
@@ -614,6 +658,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 4.0,
+        flagEmoji: "🇭🇷"
     },
     {
         name: "Cuba",
@@ -627,6 +672,7 @@ const countries = [
         continent: "NA",
         region: "",
         population: 11.3,
+        flagEmoji: "🇨🇺"
     },
     {
         name: "Cyprus",
@@ -640,6 +686,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 1.2,
+        flagEmoji: "🇨🇾"
     },
     {
         name: "Czech Republic",
@@ -653,6 +700,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 10.7,
+        flagEmoji: "🇨🇿"
     },
     {
         name: "Denmark",
@@ -666,6 +714,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 5.8,
+        flagEmoji: "🇩🇰"
     },
     {
         name: "Djibouti",
@@ -679,6 +728,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 1.0,
+        flagEmoji: "🇩🇯"
     },
     {
         name: "Dominica",
@@ -692,6 +742,7 @@ const countries = [
         continent: "NA",
         region: "CARICOM",
         population: 0.07,
+        flagEmoji: "🇩🇲"
     },
     {
         name: "Dominican Republic",
@@ -705,6 +756,7 @@ const countries = [
         continent: "NA",
         region: "",
         population: 10.8,
+        flagEmoji: "🇩🇴"
     },
     {
         name: "Ecuador",
@@ -718,6 +770,7 @@ const countries = [
         continent: "SA",
         region: "MERCOSUR",
         population: 17.6,
+        flagEmoji: "🇪🇨"
     },
     {
         name: "Egypt",
@@ -731,6 +784,7 @@ const countries = [
         continent: "AF",
         region: "MENA",
         population: 102.3,
+        flagEmoji: "🇪🇬"
     },
     {
         name: "El Salvador",
@@ -744,6 +798,7 @@ const countries = [
         continent: "NA",
         region: "",
         population: 6.5,
+        flagEmoji: "🇸🇻"
     },
     {
         name: "Equatorial Guinea",
@@ -757,6 +812,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 1.4,
+        flagEmoji: "🇬🇶"
     },
     {
         name: "Eritrea",
@@ -770,6 +826,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 3.5,
+        flagEmoji: "🇪🇷"
     },
     {
         name: "Estonia",
@@ -783,6 +840,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 1.3,
+        flagEmoji: "🇪🇪"
     },
     {
         name: "Ethiopia",
@@ -796,6 +854,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 114.9,
+        flagEmoji: "🇪🇹"
     },
     {
         name: "Eswatini",
@@ -809,6 +868,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 1.2,
+        flagEmoji: "🇸🇿"
     },
     {
         name: "Fiji",
@@ -822,6 +882,7 @@ const countries = [
         continent: "OC",
         region: "",
         population: 0.9,
+        flagEmoji: "🇫🇯"
     },
     {
         name: "Finland",
@@ -835,6 +896,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 5.5,
+        flagEmoji: "🇫🇮"
     },
     {
         name: "France",
@@ -848,6 +910,7 @@ const countries = [
         continent: "EU",
         region: "Europe",
         population: 67.4,
+        flagEmoji: "🇫🇷"
     },
     {
         name: "Gabon",
@@ -861,6 +924,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 2.2,
+        flagEmoji: "🇬🇦"
     },
     {
         name: "Gambia",
@@ -874,6 +938,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 2.4,
+        flagEmoji: "🇬🇲"
     },
     {
         name: "Georgia",
@@ -887,6 +952,7 @@ const countries = [
         continent: "AS",
         region: "",
         population: 3.7,
+        flagEmoji: "🇬🇪"
     },
     {
         name: "Germany",
@@ -900,6 +966,7 @@ const countries = [
         continent: "EU",
         region: "Europe",
         population: 83.1,
+        flagEmoji: "🇩🇪"
     },
     {
         name: "Ghana",
@@ -913,6 +980,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 31.1,
+        flagEmoji: "🇬🇭"
     },
     {
         name: "Greece",
@@ -926,6 +994,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 10.7,
+        flagEmoji: "🇬🇷"
     },
     {
         name: "Grenada",
@@ -939,6 +1008,7 @@ const countries = [
         continent: "NA",
         region: "CARICOM",
         population: 0.11,
+        flagEmoji: "🇬🇩"
     },
     {
         name: "Guatemala",
@@ -952,6 +1022,7 @@ const countries = [
         continent: "NA",
         region: "",
         population: 17.2,
+        flagEmoji: "🇬🇹"
     },
     {
         name: "Guinea",
@@ -965,6 +1036,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 13.4,
+        flagEmoji: "🇬🇳"
     },
     {
         name: "Guinea-Bissau",
@@ -978,6 +1050,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 1.9,
+        flagEmoji: "🇬🇼"
     },
     {
         name: "Guyana",
@@ -991,6 +1064,7 @@ const countries = [
         continent: "SA",
         region: "",
         population: 0.8,
+        flagEmoji: "🇬🇾"
     },
     {
         name: "Haiti",
@@ -1004,6 +1078,7 @@ const countries = [
         continent: "NA",
         region: "",
         population: 11.4,
+        flagEmoji: "🇭🇹"
     },
     {
         name: "Honduras",
@@ -1017,6 +1092,7 @@ const countries = [
         continent: "NA",
         region: "",
         population: 9.9,
+        flagEmoji: "🇭🇳"
     },
     {
         name: "Hungary",
@@ -1030,6 +1106,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 9.7,
+        flagEmoji: "🇭🇺"
     },
     {
         name: "Iceland",
@@ -1043,6 +1120,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 0.34,
+        flagEmoji: "🇮🇸"
     },
     {
         name: "India",
@@ -1056,6 +1134,7 @@ const countries = [
         continent: "AS",
         region: "Asia",
         population: 1380.0,
+        flagEmoji: "🇮🇳"
     },
     {
         name: "Indonesia",
@@ -1069,6 +1148,7 @@ const countries = [
         continent: "AS",
         region: "ASEAN",
         population: 273.5,
+        flagEmoji: "🇮🇩"
     },
     {
         name: "Iran",
@@ -1082,6 +1162,7 @@ const countries = [
         continent: "AS",
         region: "MENA",
         population: 83.2,
+        flagEmoji: "🇮🇷"
     },
     {
         name: "Iraq",
@@ -1095,6 +1176,7 @@ const countries = [
         continent: "AS",
         region: "MENA",
         population: 40.2,
+        flagEmoji: "🇮🇶"
     },
     {
         name: "Ireland",
@@ -1108,6 +1190,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 4.9,
+        flagEmoji: "🇮🇪"
     },
     {
         name: "Israel",
@@ -1121,6 +1204,7 @@ const countries = [
         continent: "AS",
         region: "MENA",
         population: 9.3,
+        flagEmoji: "🇮🇱"
     },
     {
         name: "Italy",
@@ -1134,6 +1218,7 @@ const countries = [
         continent: "EU",
         region: "Europe",
         population: 60.4,
+        flagEmoji: "🇮🇹"
     },
     {
         name: "Jamaica",
@@ -1147,6 +1232,7 @@ const countries = [
         continent: "NA",
         region: "CARICOM",
         population: 2.9,
+        flagEmoji: "🇯🇲"
     },
     {
         name: "Japan",
@@ -1160,6 +1246,7 @@ const countries = [
         continent: "AS",
         region: "Asia",
         population: 126.3,
+        flagEmoji: "🇯🇵"
     },
     {
         name: "Jordan",
@@ -1173,6 +1260,7 @@ const countries = [
         continent: "AS",
         region: "MENA",
         population: 10.2,
+        flagEmoji: "🇯🇴"
     },
     {
         name: "Kazakhstan",
@@ -1186,6 +1274,7 @@ const countries = [
         continent: "AS",
         region: "",
         population: 18.8,
+        flagEmoji: "🇰🇿"
     },
     {
         name: "Kenya",
@@ -1199,6 +1288,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 53.8,
+        flagEmoji: "🇰🇪"
     },
     {
         name: "Kiribati",
@@ -1212,6 +1302,7 @@ const countries = [
         continent: "OC",
         region: "",
         population: 0.12,
+        flagEmoji: "🇰🇮"
     },
     {
         name: "Kosovo",
@@ -1225,6 +1316,7 @@ const countries = [
         continent: "EU",
         region: "",
         population: 1.8,
+        flagEmoji: "🇽🇰"
     },
     {
         name: "Korea (North)",
@@ -1238,6 +1330,7 @@ const countries = [
         continent: "AS",
         region: "",
         population: 25.8,
+        flagEmoji: "🇰🇵"
     },
     {
         name: "Korea (South)",
@@ -1251,6 +1344,7 @@ const countries = [
         continent: "AS",
         region: "",
         population: 51.8,
+        flagEmoji: "🇰🇷"
     },
     {
         name: "Kuwait",
@@ -1264,6 +1358,7 @@ const countries = [
         continent: "AS",
         region: "GCC",
         population: 4.3,
+        flagEmoji: "🇰🇼"
     },
     {
         name: "Kyrgyzstan",
@@ -1277,6 +1372,7 @@ const countries = [
         continent: "AS",
         region: "",
         population: 6.6,
+        flagEmoji: "🇰🇬"
     },
     {
         name: "Laos",
@@ -1290,6 +1386,7 @@ const countries = [
         continent: "AS",
         region: "ASEAN",
         population: 7.3,
+        flagEmoji: "🇱🇦"
     },
     {
         name: "Latvia",
@@ -1303,6 +1400,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 1.9,
+        flagEmoji: "🇱🇻"
     },
     {
         name: "Lebanon",
@@ -1316,6 +1414,7 @@ const countries = [
         continent: "AS",
         region: "MENA",
         population: 6.8,
+        flagEmoji: "🇱🇧"
     },
     {
         name: "Lesotho",
@@ -1329,6 +1428,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 2.1,
+        flagEmoji: "🇱🇸"
     },
     {
         name: "Liberia",
@@ -1342,6 +1442,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 5.1,
+        flagEmoji: "🇱🇷"
     },
     {
         name: "Libya",
@@ -1355,6 +1456,7 @@ const countries = [
         continent: "AF",
         region: "MENA",
         population: 6.8,
+        flagEmoji: "🇱🇾"
     },
     {
         name: "Liechtenstein",
@@ -1368,6 +1470,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 0.04,
+        flagEmoji: "🇱🇮"
     },
     {
         name: "Lithuania",
@@ -1381,6 +1484,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 2.8,
+        flagEmoji: "🇱🇹"
     },
     {
         name: "Luxembourg",
@@ -1394,6 +1498,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 0.63,
+        flagEmoji: "🇱🇺"
     },
     {
         name: "Madagascar",
@@ -1407,6 +1512,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 27.0,
+        flagEmoji: "🇲🇬"
     },
     {
         name: "Malawi",
@@ -1420,6 +1526,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 19.1,
+        flagEmoji: "🇲🇼"
     },
     {
         name: "Malaysia",
@@ -1433,6 +1540,7 @@ const countries = [
         continent: "AS",
         region: "ASEAN",
         population: 32.4,
+        flagEmoji: "🇲🇾"
     },
     {
         name: "Maldives",
@@ -1446,6 +1554,7 @@ const countries = [
         continent: "AS",
         region: "SAARC",
         population: 0.5,
+        flagEmoji: "🇲🇻"
     },
     {
         name: "Mali",
@@ -1459,6 +1568,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 20.3,
+        flagEmoji: "🇲🇱"
     },
     {
         name: "Malta",
@@ -1472,6 +1582,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 0.5,
+        flagEmoji: "🇲🇹"
     },
     {
         name: "Marshall Islands",
@@ -1485,6 +1596,7 @@ const countries = [
         continent: "OC",
         region: "",
         population: 0.06,
+        flagEmoji: "🇲🇭"
     },
     {
         name: "Mauritania",
@@ -1498,6 +1610,7 @@ const countries = [
         continent: "AF",
         region: "MENA",
         population: 4.5,
+        flagEmoji: "🇲🇷"
     },
     {
         name: "Mauritius",
@@ -1511,6 +1624,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 1.3,
+        flagEmoji: "🇲🇺"
     },
     {
         name: "Mexico",
@@ -1524,6 +1638,7 @@ const countries = [
         continent: "NA",
         region: "Americas",
         population: 128.9,
+        flagEmoji: "🇲🇽"
     },
     {
         name: "Micronesia",
@@ -1537,6 +1652,7 @@ const countries = [
         continent: "OC",
         region: "",
         population: 0.11,
+        flagEmoji: "🇫🇲"
     },
     {
         name: "Moldova",
@@ -1550,6 +1666,7 @@ const countries = [
         continent: "EU",
         region: "",
         population: 2.6,
+        flagEmoji: "🇲🇩"
     },
     {
         name: "Monaco",
@@ -1563,6 +1680,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 0.04,
+        flagEmoji: "🇲🇨"
     },
     {
         name: "Mongolia",
@@ -1576,6 +1694,7 @@ const countries = [
         continent: "AS",
         region: "",
         population: 3.3,
+        flagEmoji: "🇲🇳"
     },
     {
         name: "Montenegro",
@@ -1589,6 +1708,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 0.62,
+        flagEmoji: "🇲🇪"
     },
     {
         name: "North Macedonia",
@@ -1602,6 +1722,7 @@ const countries = [
         continent: "EU",
         region: "",
         population: 2.1,
+        flagEmoji: "🇲🇰"
     },
     {
         name: "Morocco",
@@ -1615,6 +1736,7 @@ const countries = [
         continent: "AF",
         region: "MENA",
         population: 36.0,
+        flagEmoji: "🇲🇦"
     },
     {
         name: "Mozambique",
@@ -1628,6 +1750,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 31.3,
+        flagEmoji: "🇲🇿"
     },
     {
         name: "Myanmar",
@@ -1641,6 +1764,7 @@ const countries = [
         continent: "AS",
         region: "ASEAN",
         population: 54.8,
+        flagEmoji: "🇲🇲"
     },
     {
         name: "Namibia",
@@ -1654,6 +1778,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 2.5,
+        flagEmoji: "🇳🇦"
     },
     {
         name: "Nauru",
@@ -1667,6 +1792,7 @@ const countries = [
         continent: "OC",
         region: "",
         population: 0.01,
+        flagEmoji: "🇳🇷"
     },
     {
         name: "Nepal",
@@ -1680,6 +1806,7 @@ const countries = [
         continent: "AS",
         region: "SAARC",
         population: 29.1,
+        flagEmoji: "🇳🇵"
     },
     {
         name: "Netherlands",
@@ -1693,6 +1820,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 17.4,
+        flagEmoji: "🇳🇱"
     },
     {
         name: "New Zealand",
@@ -1706,6 +1834,7 @@ const countries = [
         continent: "OC",
         region: "",
         population: 5.1,
+        flagEmoji: "🇳🇿"
     },
     {
         name: "Nicaragua",
@@ -1719,6 +1848,7 @@ const countries = [
         continent: "NA",
         region: "",
         population: 6.6,
+        flagEmoji: "🇳🇮"
     },
     {
         name: "Niger",
@@ -1732,6 +1862,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 24.2,
+        flagEmoji: "🇳🇪"
     },
     {
         name: "Nigeria",
@@ -1745,6 +1876,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 206.1,
+        flagEmoji: "🇳🇬"
     },
     {
         name: "Norway",
@@ -1758,6 +1890,7 @@ const countries = [
         continent: "EU",
         region: "",
         population: 5.4,
+        flagEmoji: "🇳🇴"
     },
     {
         name: "Oman",
@@ -1771,6 +1904,7 @@ const countries = [
         continent: "AS",
         region: "MENA",
         population: 5.1,
+        flagEmoji: "🇴🇲"
     },
     {
         name: "Pakistan",
@@ -1784,6 +1918,7 @@ const countries = [
         continent: "AS",
         region: "SAARC",
         population: 220.9,
+        flagEmoji: "🇵🇰"
     },
     {
         name: "Palestine",
@@ -1797,6 +1932,7 @@ const countries = [
         continent: "AS",
         region: "MENA",
         population: 5.1,
+        flagEmoji: "🇵🇸"
     },
     {
         name: "Palau",
@@ -1810,6 +1946,7 @@ const countries = [
         continent: "OC",
         region: "",
         population: 0.018,
+        flagEmoji: "🇵🇼"
     },
     {
         name: "Panama",
@@ -1823,6 +1960,7 @@ const countries = [
         continent: "NA",
         region: "CARICOM",
         population: 4.3,
+        flagEmoji: "🇵🇦"
     },
     {
         name: "Papua New Guinea",
@@ -1836,6 +1974,7 @@ const countries = [
         continent: "OC",
         region: "",
         population: 8.9,
+        flagEmoji: "🇵🇬"
     },
     {
         name: "Paraguay",
@@ -1849,6 +1988,7 @@ const countries = [
         continent: "SA",
         region: "MERCOSUR",
         population: 7.0,
+        flagEmoji: "🇵🇾"
     },
     {
         name: "Peru",
@@ -1862,6 +2002,7 @@ const countries = [
         continent: "SA",
         region: "",
         population: 33.0,
+        flagEmoji: "🇵🇪"
     },
     {
         name: "Philippines",
@@ -1875,6 +2016,7 @@ const countries = [
         continent: "AS",
         region: "ASEAN",
         population: 109.6,
+        flagEmoji: "🇵🇭"
     },
     {
         name: "Poland",
@@ -1888,6 +2030,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 38.3,
+        flagEmoji: "🇵🇱"
     },
     {
         name: "Portugal",
@@ -1901,6 +2044,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 10.3,
+        flagEmoji: "🇵🇹"
     },
     {
         name: "Qatar",
@@ -1914,6 +2058,7 @@ const countries = [
         continent: "AS",
         region: "GCC",
         population: 2.8,
+        flagEmoji: "🇶🇦"
     },
     {
         name: "Romania",
@@ -1927,6 +2072,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 19.4,
+        flagEmoji: "🇷🇴"
     },
     {
         name: "Russia",
@@ -1940,6 +2086,7 @@ const countries = [
         continent: "EU/AS",
         region: "Europe",
         population: 144.1,
+        flagEmoji: "🇷🇺"
     },
     {
         name: "Rwanda",
@@ -1953,6 +2100,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 12.6,
+        flagEmoji: "🇷🇼"
     },
     {
         name: "Saint Kitts and Nevis",
@@ -1966,6 +2114,7 @@ const countries = [
         continent: "NA",
         region: "CARICOM",
         population: 0.05,
+        flagEmoji: "🇰🇳"
     },
     {
         name: "Saint Lucia",
@@ -1979,6 +2128,7 @@ const countries = [
         continent: "NA",
         region: "CARICOM",
         population: 0.18,
+        flagEmoji: "🇱🇨"
     },
     {
         name: "Saint Vincent and the Grenadines",
@@ -1992,6 +2142,7 @@ const countries = [
         continent: "NA",
         region: "CARICOM",
         population: 0.11,
+        flagEmoji: "🇻🇨"
     },
     {
         name: "Samoa",
@@ -2005,6 +2156,7 @@ const countries = [
         continent: "OC",
         region: "",
         population: 0.2,
+        flagEmoji: "🇼🇸"
     },
     {
         name: "San Marino",
@@ -2018,6 +2170,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 0.034,
+        flagEmoji: "🇸🇲"
     },
     {
         name: "Sao Tome and Principe",
@@ -2031,6 +2184,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 0.22,
+        flagEmoji: "🇸🇹"
     },
     {
         name: "Saudi Arabia",
@@ -2044,6 +2198,7 @@ const countries = [
         continent: "AS",
         region: "MENA",
         population: 34.8,
+        flagEmoji: "🇸🇦"
     },
     {
         name: "Senegal",
@@ -2057,6 +2212,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 16.3,
+        flagEmoji: "🇸🇳"
     },
     {
         name: "Serbia",
@@ -2070,6 +2226,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 6.9,
+        flagEmoji: "🇷🇸"
     },
     {
         name: "Seychelles",
@@ -2083,6 +2240,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 0.1,
+        flagEmoji: "🇸🇨"
     },
     {
         name: "Sierra Leone",
@@ -2096,6 +2254,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 7.8,
+        flagEmoji: "🇸🇱"
     },
     {
         name: "Singapore",
@@ -2109,6 +2268,7 @@ const countries = [
         continent: "AS",
         region: "ASEAN",
         population: 5.9,
+        flagEmoji: "🇸🇬"
     },
     {
         name: "Slovakia",
@@ -2122,6 +2282,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 5.5,
+        flagEmoji: "🇸🇰"
     },
     {
         name: "Slovenia",
@@ -2135,6 +2296,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 2.1,
+        flagEmoji: "🇸🇮"
     },
     {
         name: "Solomon Islands",
@@ -2148,6 +2310,7 @@ const countries = [
         continent: "OC",
         region: "",
         population: 0.7,
+        flagEmoji: "🇸🇧"
     },
     {
         name: "Somalia",
@@ -2161,6 +2324,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 15.9,
+        flagEmoji: "🇸🇴"
     },
     {
         name: "South Africa",
@@ -2174,6 +2338,7 @@ const countries = [
         continent: "AF",
         region: "Africa",
         population: 60.0,
+        flagEmoji: "🇿🇦"
     },
     {
         name: "South Sudan",
@@ -2187,6 +2352,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 11.0,
+        flagEmoji: "🇸🇸"
     },
     {
         name: "Spain",
@@ -2200,6 +2366,7 @@ const countries = [
         continent: "EU",
         region: "Europe",
         population: 46.9,
+        flagEmoji: "🇪🇸"
     },
     {
         name: "Sri Lanka",
@@ -2213,6 +2380,7 @@ const countries = [
         continent: "AS",
         region: "SAARC",
         population: 21.8,
+        flagEmoji: "🇱🇰"
     },
     {
         name: "Sudan",
@@ -2226,6 +2394,7 @@ const countries = [
         continent: "AF",
         region: "MENA",
         population: 45.0,
+        flagEmoji: "🇸🇩"
     },
     {
         name: "Suriname",
@@ -2239,6 +2408,7 @@ const countries = [
         continent: "SA",
         region: "",
         population: 0.6,
+        flagEmoji: "🇸🇷"
     },
     {
         name: "Sweden",
@@ -2252,6 +2422,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 10.4,
+        flagEmoji: "🇸🇪"
     },
     {
         name: "Switzerland",
@@ -2265,6 +2436,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 8.6,
+        flagEmoji: "🇨🇭"
     },
     {
         name: "Syria",
@@ -2278,6 +2450,7 @@ const countries = [
         continent: "AS",
         region: "MENA",
         population: 17.5,
+        flagEmoji: "🇸🇾"
     },
     {
         name: "Taiwan",
@@ -2291,6 +2464,7 @@ const countries = [
         continent: "AS",
         region: "",
         population: 23.6,
+        flagEmoji: "🇹🇼"
     },
     {
         name: "Tajikistan",
@@ -2304,6 +2478,7 @@ const countries = [
         continent: "AS",
         region: "",
         population: 9.5,
+        flagEmoji: "🇹🇯"
     },
     {
         name: "Tanzania",
@@ -2317,6 +2492,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 62.0,
+        flagEmoji: "🇹🇿"
     },
     {
         name: "Thailand",
@@ -2330,6 +2506,7 @@ const countries = [
         continent: "AS",
         region: "ASEAN",
         population: 69.8,
+        flagEmoji: "🇹🇭"
     },
     {
         name: "Timor-Leste",
@@ -2343,6 +2520,7 @@ const countries = [
         continent: "AS",
         region: "ASEAN",
         population: 1.3,
+        flagEmoji: "🇹🇱"
     },
     {
         name: "Togo",
@@ -2356,6 +2534,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 8.3,
+        flagEmoji: "🇹🇬"
     },
     {
         name: "Tonga",
@@ -2369,6 +2548,7 @@ const countries = [
         continent: "OC",
         region: "",
         population: 0.1,
+        flagEmoji: "🇹🇴"
     },
     {
         name: "Trinidad and Tobago",
@@ -2382,6 +2562,7 @@ const countries = [
         continent: "NA",
         region: "CARICOM",
         population: 1.4,
+        flagEmoji: "🇹🇹"
     },
     {
         name: "Tunisia",
@@ -2395,6 +2576,7 @@ const countries = [
         continent: "AF",
         region: "MENA",
         population: 11.8,
+        flagEmoji: "🇹🇳"
     },
     {
         name: "Turkey",
@@ -2408,6 +2590,7 @@ const countries = [
         continent: "EU/AS",
         region: "",
         population: 84.3,
+        flagEmoji: "🇹🇷"
     },
     {
         name: "Turkmenistan",
@@ -2421,6 +2604,7 @@ const countries = [
         continent: "AS",
         region: "",
         population: 6.0,
+        flagEmoji: "🇹🇲"
     },
     {
         name: "Tuvalu",
@@ -2434,6 +2618,7 @@ const countries = [
         continent: "OC",
         region: "",
         population: 0.01,
+        flagEmoji: "🇹🇻"
     },
     {
         name: "Uganda",
@@ -2447,6 +2632,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 45.7,
+        flagEmoji: "🇺🇬"
     },
     {
         name: "Ukraine",
@@ -2460,6 +2646,7 @@ const countries = [
         continent: "EU",
         region: "",
         population: 41.2,
+        flagEmoji: "🇺🇦"
     },
     {
         name: "United Arab Emirates",
@@ -2473,6 +2660,7 @@ const countries = [
         continent: "AS",
         region: "MENA",
         population: 9.9,
+        flagEmoji: "🇦🇪"
     },
     {
         name: "United Kingdom",
@@ -2486,6 +2674,7 @@ const countries = [
         continent: "EU",
         region: "Europe",
         population: 67.2,
+        flagEmoji: "🇬🇧"
     },
     {
         name: "United States",
@@ -2499,6 +2688,7 @@ const countries = [
         continent: "NA",
         region: "Americas",
         population: 331.9,
+        flagEmoji: "🇺🇸"
     },
     {
         name: "Uruguay",
@@ -2512,6 +2702,7 @@ const countries = [
         continent: "SA",
         region: "MERCOSUR",
         population: 3.5,
+        flagEmoji: "🇺🇾"
     },
     {
         name: "Uzbekistan",
@@ -2525,6 +2716,7 @@ const countries = [
         continent: "AS",
         region: "",
         population: 34.2,
+        flagEmoji: "🇺🇿"
     },
     {
         name: "Vanuatu",
@@ -2538,6 +2730,7 @@ const countries = [
         continent: "OC",
         region: "",
         population: 0.3,
+        flagEmoji: "🇻🇺"
     },
     {
         name: "Vatican City",
@@ -2551,6 +2744,7 @@ const countries = [
         continent: "EU",
         region: "EU",
         population: 0.001,
+        flagEmoji: "🇻🇦"
     },
     {
         name: "Venezuela",
@@ -2564,6 +2758,7 @@ const countries = [
         continent: "SA",
         region: "MERCOSUR",
         population: 28.5,
+        flagEmoji: "🇻🇪"
     },
     {
         name: "Vietnam",
@@ -2577,6 +2772,7 @@ const countries = [
         continent: "AS",
         region: "ASEAN",
         population: 97.3,
+        flagEmoji: "🇻🇳"
     },
     {
         name: "Western Sahara",
@@ -2590,6 +2786,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 0.6,
+        flagEmoji: "🇪🇭"
     },
     {
         name: "Yemen",
@@ -2603,6 +2800,7 @@ const countries = [
         continent: "AS",
         region: "",
         population: 30.5,
+        flagEmoji: "🇾🇪"
     },
     {
         name: "Zambia",
@@ -2616,6 +2814,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 18.4,
+        flagEmoji: "🇿🇲"
     },
     {
         name: "Zimbabwe",
@@ -2629,6 +2828,7 @@ const countries = [
         continent: "AF",
         region: "",
         population: 15.0,
-    },
+        flagEmoji: "🇿🇼"
+    }
 ];
 export default countries;
