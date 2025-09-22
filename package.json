@@ -3,7 +3,7 @@
   "description": "Collection of common utilities I use for various projects",
   "version": "0.69.7",
   "type": "module",
-  "packageManager": "yarn@4.9.2",
+  "packageManager": "yarn@4.10.2",
   "workspaces": [
     "client",
     "utils",
@@ -56,6 +56,7 @@
     "build": "yarn utils build && yarn client build && yarn server build",
     "prepare": "yarn build 2>/dev/null || echo '⚠️ Build failed during prepare, continuing...'",
     "postinstall": "timeout 50s yarn build 2>/dev/null || echo '⚠️ Build failed during postinstall, continuing. This is a graceful failure.'",
+    "clean": "rm -fr ./node_modules/{*,.*} .yarn/cache || true",
     "test": "cd client && yarn test && cd ../utils && yarn test && cd ../server && yarn test && cd ..",
     "test:consumer": "[ -d test-consumer ] && cd test-consumer && yarn dev || echo '❌ test-consumer directory not found - this script is only available in the main shared-utils repository'",
     "test:watch": "jest --watch",
@@ -86,7 +87,7 @@
     "prettier": "^3.6.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "ts-jest": "^29.4.1",
+    "ts-jest": "^29.4.4",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   },
@@ -96,16 +97,20 @@
     "@tinymce/tinymce-react": "^6.3.0",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
-    "dompurify": "^3.2.6",
+    "dompurify": "^3.2.7",
     "dotenv": "^17.2.2",
     "lodash-es": "^4.17.21",
     "nanoid": "^5.1.5",
     "papaparse": "^5.5.3",
-    "tinymce": "^8.0.2"
+    "tinymce": "^8.1.2"
   },
   "peerDependencies": {
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"
+  },
+  "resolutions": {
+    "@emotion/react": "11.14.0",
+    "@emotion/styled": "11.14.1"
   },
   "files": [
     "dist/**/*",
