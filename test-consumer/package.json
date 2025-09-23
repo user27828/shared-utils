@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Integration tests and real-world usage examples for shared-utils",
   "type": "module",
-  "packageManager": "yarn@4.9.2",
+  "packageManager": "yarn@4.10.2",
   "private": true,
   "scripts": {
     "dev": "concurrently \"yarn dev:react\" \"yarn dev:server\"",

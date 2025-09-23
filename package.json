@@ -74,8 +74,6 @@
     "yarn-upgrade-interactive": "./bin/package-upgrades.sh"
   },
   "devDependencies": {
-    "@mui/icons-material": "^7.3.2",
-    "@mui/material": "^7.3.2",
     "@testing-library/jest-dom": "^6.8.0",
     "@types/jest": "^30.0.0",
     "@types/nanoid": "^3.0.0",
@@ -92,8 +90,6 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
     "@tinymce/tinymce-react": "^6.3.0",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
@@ -107,10 +103,6 @@
   "peerDependencies": {
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"
-  },
-  "resolutions": {
-    "@emotion/react": "11.14.0",
-    "@emotion/styled": "11.14.1"
   },
   "files": [
     "dist/**/*",
