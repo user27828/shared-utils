@@ -3,19 +3,21 @@
  * @jest-environment node
  */
 
-describe('Package Import Test', () => {
-  it('should import OptionsManager from package', async () => {
-    const { OptionsManager, optionsManager } = await import('@shared-utils/utils');
-    
+describe("Package Import Test", () => {
+  it("should import OptionsManager from package", async () => {
+    const { OptionsManager, optionsManager } = await import(
+      "@shared-utils/utils"
+    );
+
     expect(OptionsManager).toBeDefined();
-    expect(typeof OptionsManager).toBe('function');
+    expect(typeof OptionsManager).toBe("function");
     expect(optionsManager).toBeDefined();
-    expect(typeof optionsManager.getRegisteredUtilities).toBe('function');
-    
+    expect(typeof optionsManager.getRegisteredUtilities).toBe("function");
+
     // Test basic functionality
-    const manager = new OptionsManager('test', { defaultValue: 42 });
+    const manager = new OptionsManager("test", { defaultValue: 42 });
     expect(manager.getOptions()).toEqual({ defaultValue: 42 });
-    
-    console.log('✅ Import test passed!');
-  });
+
+    console.log("✅ Import test passed!");
+  }, 10000); // Timeout for ESM import
 });

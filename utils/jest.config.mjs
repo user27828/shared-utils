@@ -24,8 +24,17 @@ export default {
     "^@shared-utils/utils$": "<rootDir>/../dist/utils/index.js",
     "^shared-utils/utils$": "<rootDir>/../dist/utils/index.js",
     "^shared-utils$": "<rootDir>/../dist/utils/index.js",
-    // Map ESM-style .js imports in source to .ts files for Jest
+    // Specific mappers for detectFormat source imports (strip .js to resolve to .ts)
     "^\\./options-manager\\.js$": "<rootDir>/src/options-manager.ts",
+    // For source imports like '../src/*.js' -> '../src/*' (resolves to .ts)
+    "^(\\.{1,2}/src/.*)\\.js$": "$1",
+    // For detectFormat/types.js -> types.ts
+    "^\\./types\\.js$": "<rootDir>/src/detectFormat/types.ts",
+    // For detectFormat/formats/*.js -> formats/*.ts
+    "^\\./formats/([a-z]+)\\.js$": "<rootDir>/src/detectFormat/formats/$1.ts",
   },
-  transformIgnorePatterns: ["node_modules/(?!(lodash-es|nanoid)/)"],
+  transformIgnorePatterns: [
+    "<rootDir>/../dist/.*",
+    "node_modules/(?!(lodash-es|nanoid)/)",
+  ],
 };

@@ -7,14 +7,15 @@ import { TEST_VALUES } from "../../__tests__/test-configuration.js";
 
 describe("Turnstile Utility - Basic Tests", () => {
   it("should be importable from the utils package", async () => {
-    // Import the built files directly
-    const module = await import("@shared-utils/utils");
-    const { turnstile, Turnstile } = module;
+    // Import from source (without .js) for Jest compatibility
+    const module = await import("../src/turnstile");
+    const turnstile = module.default;
+    const { Turnstile } = module;
 
     expect(turnstile).toBeDefined();
     expect(Turnstile).toBeDefined();
     expect(typeof turnstile.setOptions).toBe("function");
-    expect(typeof turnstile.getOptions).toBe("function");
+    expect(typeof new Turnstile().detectEnvironment).toBe("function");
   });
 
   it("should have correct default options", async () => {

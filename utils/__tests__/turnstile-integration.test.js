@@ -63,7 +63,7 @@ describe("Turnstile Integration", () => {
     console.log("📦 Available methods:", requiredMethods.join(", "));
     console.log("🔧 Environment detection:", options.environment);
     console.log("🚀 Ready for production use!");
-  });
+  }, 10000); // Increase timeout for ESM import
 
   it("should maintain consistency with log utility patterns", async () => {
     const { log, turnstile } = await import("@shared-utils/utils");

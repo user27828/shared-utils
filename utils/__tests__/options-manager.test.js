@@ -7,9 +7,10 @@ describe("OptionsManager Unit Tests", () => {
   let OptionsManager, optionsManager;
 
   beforeAll(async () => {
-    const utils = await import("@shared-utils/utils");
-    OptionsManager = utils.OptionsManager;
-    optionsManager = utils.optionsManager;
+    // Import directly from source (without .js) to resolve to .ts
+    const module = await import("../src/options-manager");
+    OptionsManager = module.OptionsManager;
+    optionsManager = module.optionsManager;
   });
 
   describe("OptionsManager Class", () => {

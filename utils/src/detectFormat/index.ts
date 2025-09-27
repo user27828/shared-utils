@@ -1,12 +1,12 @@
-import type { FormatCheck } from "./types";
-import { mdCheck } from "./formats/md";
-import { htmlCheck } from "./formats/html";
-import { jsonCheck } from "./formats/json";
-import { xmlCheck } from "./formats/xml";
-import { csvCheck } from "./formats/csv";
-import { yamlCheck } from "./formats/yaml";
-import { txtCheck } from "./formats/txt";
-import { texCheck } from "./formats/tex";
+import type { FormatCheck } from "./types.js";
+import { mdCheck } from "./formats/md.js";
+import { htmlCheck } from "./formats/html.js";
+import { jsonCheck } from "./formats/json.js";
+import { xmlCheck } from "./formats/xml.js";
+import { csvCheck } from "./formats/csv.js";
+import { yamlCheck } from "./formats/yaml.js";
+import { txtCheck } from "./formats/txt.js";
+import { texCheck } from "./formats/tex.js";
 
 /**
  * File format utilities
