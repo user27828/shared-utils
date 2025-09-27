@@ -69,7 +69,19 @@ export const detectFormatFromText = async ({
 
   const checkFormats = formats.length ? formats : textFormatChecks;
 
-  const sample = content.slice(0, 2000);
+  // Create better samples for detection - head + tail for container detection
+  const sampleSize = 2000;
+  let sample: string;
+
+  if (content.length <= sampleSize * 2) {
+    // If content is small enough, use the full content
+    sample = content;
+  } else {
+    // For larger content, combine head and tail samples
+    const head = content.slice(0, sampleSize);
+    const tail = content.slice(-sampleSize);
+    sample = head + "\n...[CONTENT_TRUNCATED]...\n" + tail;
+  }
 
   // Static format checks
   const formatChecks: Record<string, FormatCheck> = {
