@@ -26,6 +26,10 @@ Cloudflare Turnstile integration for bot protection with client-side widgets and
 
 Centralized configuration system providing unified options management across all utilities.
 
+### File Format Detection
+
+Automatic detection of text-based file formats including Markdown, HTML, JSON, XML, CSV, YAML, and LaTeX with confidence scoring and format prioritization - `utils/detectFormatFromText`
+
 [🔝 Back to Top](#utils)
 
 ## Installation & Import
@@ -362,7 +366,7 @@ import { turnstile } from "@user27828/shared-utils/utils";
 
 ```javascript
 // In your main client entry point
-import { turnstile } from "@shared-utils/utils";
+import { turnstile } from "@user27828/shared-utils/utils";
 
 // Configure with your site key
 turnstile.setOptions({
@@ -407,7 +411,7 @@ function submitForm() {
 
 ```javascript
 // In your server code
-import { turnstile } from "@shared-utils/utils";
+import { turnstile } from "@user27828/shared-utils/utils";
 
 // Configure with your secret key
 turnstile.setOptions({
@@ -1009,6 +1013,68 @@ formatDate("2025-08-03T12:34:56Z"); // "3 August 2025"
 - `locale` (string): Locale string (e.g., 'en-US'). Default: 'en-US'.
 - `formatOptions` (object): Intl.DateTimeFormat options (dateStyle, timeStyle, etc.). Default: `{ year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }`.
 
+### detectFormatFromText
+
+Automatically detects the format of text content by analyzing syntax patterns and structure. Supports multiple text-based formats including Markdown, HTML, JSON, XML, CSV, YAML, LaTeX, and plain text. Uses confidence scoring to determine the most likely format.
+
+```js
+import { detectFormatFromText } from "@user27828/shared-utils/utils";
+
+// Detect format from content string
+const result = await detectFormatFromText({
+  content: '{"key": "value", "array": [1, 2, 3]}',
+});
+// Returns: { format: "json", mimeType: "application/json", extension: "json", confidence: 1.0 }
+
+// Detect format from file path (Node.js only)
+const fileResult = await detectFormatFromText({
+  filePath: "/path/to/document.md",
+});
+// Returns: { format: "md", mimeType: "text/markdown", extension: "md", confidence: 0.9 }
+
+// Limit detection to specific formats
+const limitedResult = await detectFormatFromText({
+  content: "name,age\nJohn,30\nJane,25",
+  formats: ["json", "csv", "txt"],
+});
+// Returns: { format: "csv", mimeType: "text/csv", extension: "csv", confidence: 0.8 }
+```
+
+#### Parameters
+
+- `content` (string, optional): Text content to analyze. Either `content` or `filePath` is required.
+- `filePath` (string, optional): File path to read content from (Node.js environments only). Either `content` or `filePath` is required.
+- `formats` (string[], optional): Array of format names to check against. Defaults to all supported formats: `["md", "html", "json", "xml", "csv", "yaml", "txt", "tex"]`.
+
+#### Returns
+
+Returns a Promise that resolves to an object with:
+
+- `format` (string): Detected format identifier (`"md"`, `"html"`, `"json"`, etc.)
+- `mimeType` (string): MIME type for the detected format
+- `extension` (string): File extension for the detected format
+- `confidence` (number): Confidence score from 0.0 to 1.0
+- `reasons` (string[]): Array of strings explaining why this format was detected
+
+#### Supported Formats
+
+- **Markdown** (`md`): Headers (`#`), bold (`**`), links (`[]()`), lists, code blocks, tables
+- **HTML** (`html`): DOCTYPE, tags with attributes, self-closing elements
+- **JSON** (`json`): Valid JSON objects, arrays, and primitive values
+- **XML** (`xml`): XML declaration, namespace attributes, structured elements
+- **CSV** (`csv`): Comma-separated values with multiple rows
+- **YAML** (`yaml`): Key-value pairs, lists, indentation-based structure
+- **LaTeX** (`tex`): Commands (`\command`), environments (`\begin{env}`)
+- **Plain Text** (`txt`): Default fallback when no specific format is detected
+
+#### Error Handling
+
+Throws an error if:
+
+- Neither `content` nor `filePath` is provided
+- `filePath` is used in non-Node.js environments
+- File reading fails (file not found, permission denied, etc.)
+
 ---
 
 ## FileUploadList Component (Client)
@@ -1016,5 +1082,3 @@ formatDate("2025-08-03T12:34:56Z"); // "3 August 2025"
 - `selectDefaultAction`: When true, triggers the onClick/onSelect action for the default selection, even if the value is already selected.
 - Uses global `log` (set up in client/index.ts) for debug output. Do not import log directly in consumer code; use the global.
 - Follows strict code style: never use single-line conditional execution (always use curly braces for conditionals).
-
----

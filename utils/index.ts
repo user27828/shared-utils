@@ -14,6 +14,7 @@ import {
   isValidEmail,
   formatDate,
 } from "./src/functions.js";
+import { detectFormatFromText } from "./src/detectFormat/index.js";
 
 export {
   // Logging utilities
@@ -38,4 +39,5 @@ export {
   isValidFilename,
   isValidEmail,
   formatDate,
+  detectFormatFromText, // plain text format detection
 };

@@ -410,8 +410,9 @@ const loadEnvironmentVariables = () => {
                                         const minimal = {
                                             options: { ...base },
                                             getOption(key) {
-                                                if (key === undefined)
+                                                if (key === undefined) {
                                                     return { ...this.options };
+                                                }
                                                 return this.options[key];
                                             },
                                             setOption(obj) {
@@ -671,8 +672,9 @@ const loadEnvironmentVariables = () => {
                             const minimal = {
                                 options: { ...(envCache || {}) },
                                 getOption(key) {
-                                    if (key === undefined)
+                                    if (key === undefined) {
                                         return { ...this.options };
+                                    }
                                     return this.options[key];
                                 },
                                 setOption(obj) {

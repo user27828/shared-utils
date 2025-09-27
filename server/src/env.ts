@@ -444,7 +444,9 @@ const loadEnvironmentVariables = (): Record<string, any> => {
                     const minimal = {
                       options: { ...base },
                       getOption(key?: string) {
-                        if (key === undefined) return { ...this.options };
+                        if (key === undefined) {
+                          return { ...this.options };
+                        }
                         return this.options[key];
                       },
                       setOption(obj: Record<string, any>) {
@@ -705,7 +707,9 @@ const loadEnvironmentVariables = (): Record<string, any> => {
               const minimal = {
                 options: { ...(envCache || {}) },
                 getOption(key?: string) {
-                  if (key === undefined) return { ...this.options };
+                  if (key === undefined) {
+                    return { ...this.options };
+                  }
                   return this.options[key];
                 },
                 setOption(obj: Record<string, any>) {
