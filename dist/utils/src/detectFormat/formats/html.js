@@ -1,7 +1,7 @@
 export const htmlCheck = {
     quickCheck: (text) => {
         const trimmed = text.trim();
-        return (trimmed.startsWith("<!DOCTYPE html>") ||
+        return (trimmed.toLowerCase().startsWith("<!doctype html>") ||
             /<([a-z][a-z0-9]*)/i.test(text.slice(0, 1000)));
     },
     comprehensiveCheck: (text) => {
@@ -26,6 +26,10 @@ export const htmlCheck = {
         // HTML-specific: common attributes or self-closing tags
         const hasHtmlAttrs = /class=|id=|href=|src=|style=|alt=|title=/i.test(text) ||
             /<[^>]*\/>/i.test(text);
+        const hasDoctype = text.trim().toLowerCase().startsWith("<!doctype html>");
+        if (hasDoctype && openTags > 0 && hasHtmlAttrs) {
+            return true;
+        }
         // For HTML detection: need at least 1 tag
         if (openTags === 0) {
             return false;
