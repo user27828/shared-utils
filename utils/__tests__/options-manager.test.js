@@ -3,16 +3,9 @@
  * @jest-environment node
  */
 
+import { OptionsManager, optionsManager } from "../src/options-manager.js";
+
 describe("OptionsManager Unit Tests", () => {
-  let OptionsManager, optionsManager;
-
-  beforeAll(async () => {
-    // Import directly from source (without .js) to resolve to .ts
-    const module = await import("../src/options-manager");
-    OptionsManager = module.OptionsManager;
-    optionsManager = module.optionsManager;
-  });
-
   describe("OptionsManager Class", () => {
     let manager;
     const defaultOptions = {

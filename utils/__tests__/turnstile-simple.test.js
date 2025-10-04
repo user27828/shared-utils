@@ -4,37 +4,31 @@
  */
 
 import { TEST_VALUES } from "../../__tests__/test-configuration.js";
+import turnstile, { Turnstile } from "../src/turnstile.js";
+import { turnstile as sharedUtilsTurnstile } from "@shared-utils/utils";
 
 describe("Turnstile Utility - Basic Tests", () => {
-  it("should be importable from the utils package", async () => {
-    // Import from source (without .js) for Jest compatibility
-    const module = await import("../src/turnstile");
-    const turnstile = module.default;
-    const { Turnstile } = module;
-
+  it("should be importable from the utils package", () => {
     expect(turnstile).toBeDefined();
     expect(Turnstile).toBeDefined();
     expect(typeof turnstile.setOptions).toBe("function");
     expect(typeof new Turnstile().detectEnvironment).toBe("function");
   });
 
-  it("should have correct default options", async () => {
-    const { turnstile } = await import("@shared-utils/utils");
-    const options = turnstile.getOptions();
+  it("should have correct default options", () => {
+    const options = sharedUtilsTurnstile.getOptions();
     expect(options.environment).toBe("server"); // Should detect server in Node.js
     expect(options.apiUrl).toBe(TEST_VALUES.cloudflareApiUrl);
     expect(options.scriptUrl).toBe(TEST_VALUES.cloudflareScriptUrl);
   });
 
-  it("should allow setting options", async () => {
-    const { turnstile } = await import("@shared-utils/utils");
-
-    turnstile.setOptions({
+  it("should allow setting options", () => {
+    sharedUtilsTurnstile.setOptions({
       siteKey: TEST_VALUES.siteKey,
       secretKey: TEST_VALUES.secretKey,
     });
 
-    const options = turnstile.getOptions();
+    const options = sharedUtilsTurnstile.getOptions();
     expect(options.siteKey).toBe(TEST_VALUES.siteKey);
     expect(options.secretKey).toBe(TEST_VALUES.secretKey);
   });

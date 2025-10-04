@@ -19,9 +19,6 @@ export default {
     // Map any direct imports from utils/src/ to compiled JS
     "^../utils/src/(.*)$": "<rootDir>/../dist/utils/$1",
     "^.*utils/src/(.*)$": "<rootDir>/../dist/utils/$1",
-    // Map absolute path imports from utils/src/ (Node ESM realpath)
-    "^/home/marc314/work/misc/shared-utils/utils/src/(.*)$":
-      "<rootDir>/../dist/utils/$1",
     // Map relative utils imports from server source to compiled JS
     "^../../../utils/index\\.js$": "<rootDir>/../dist/utils/index.js",
     // Map the specific utils folder import that's causing issues

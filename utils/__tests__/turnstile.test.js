@@ -5,6 +5,7 @@
 
 import { jest } from "@jest/globals";
 import { TEST_VALUES } from "../../__tests__/test-configuration.js";
+import turnstile, { Turnstile } from "../src/turnstile.js";
 
 // Mock fetch globally
 global.fetch = jest.fn();
@@ -30,11 +31,8 @@ global.URLSearchParams = class URLSearchParams {
 };
 
 describe("Turnstile Utility", () => {
-  let turnstile, Turnstile;
-
-  beforeEach(async () => {
-    // Reset modules and mocks
-    jest.resetModules();
+  beforeEach(() => {
+    // Clear mocks but don't reset modules (causes issues with ES modules)
     jest.clearAllMocks();
 
     // Mock DOM environment
@@ -67,13 +65,12 @@ describe("Turnstile Utility", () => {
       },
     };
 
-    // Import after mocking globals
-    const module = await import("../../dist/utils/src/turnstile.js");
-    turnstile = module.default;
-    Turnstile = module.Turnstile;
-
     // Reset singleton state to prevent cross-test pollution
     turnstile.resetOptions();
+
+    // Override environment to client since we've mocked window/document
+    // (detectEnvironment was called at module load time before mocks existed)
+    turnstile.setOptions({ environment: "client" });
 
     // Mock the script loading to be already loaded for tests
     turnstile.scriptLoaded = true;
@@ -159,7 +156,8 @@ describe("Turnstile Utility", () => {
     it("should throw error without site key", async () => {
       // Reset options completely and set siteKey to undefined
       turnstile.resetOptions();
-      turnstile.setOptions({ siteKey: undefined });
+      // Re-set environment to client after reset (since detectEnvironment was called at module load)
+      turnstile.setOptions({ environment: "client", siteKey: undefined });
 
       await expect(turnstile.render("#test-container")).rejects.toThrow(
         TEST_VALUES.errorMessages.siteKeyRequired,
