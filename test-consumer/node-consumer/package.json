@@ -12,7 +12,7 @@
     "@user27828/shared-utils": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^24.6.2",
+    "@types/node": "^24.7.0",
     "jest": "^30.2.0"
   }
 }
