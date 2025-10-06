@@ -4308,6 +4308,7 @@ __metadata:
     date-fns-tz: "npm:^3.2.0"
     dompurify: "npm:^3.2.7"
     dotenv: "npm:^17.2.3"
+    dotenv-expand: "npm:^12.0.3"
     jest: "npm:^30.2.0"
     jest-environment-node: "npm:^30.2.0"
     jsdom: "npm:^27.0.0"
@@ -5331,6 +5332,22 @@ __metadata:
     "@types/trusted-types":
       optional: true
   checksum: 10/51b7866fb834ee62d6c415f41ece5ce11db7b463f60a822932a1f832573a40b98be7715550298690e7647988fbe086db1098bda9b10548b3166fc975eb9bd849
+  languageName: node
+  linkType: hard
+
+"dotenv-expand@npm:^12.0.3":
+  version: 12.0.3
+  resolution: "dotenv-expand@npm:12.0.3"
+  dependencies:
+    dotenv: "npm:^16.4.5"
+  checksum: 10/d9aaf051805c8fa64e7e3620936ecb38229a93f5603883e53856d6f57cd4ae93fb74baefdf0b03b1c0608bc3eefbbcb23912972d7303b6191a5c0e1688a8652f
+  languageName: node
+  linkType: hard
+
+"dotenv@npm:^16.4.5":
+  version: 16.6.1
+  resolution: "dotenv@npm:16.6.1"
+  checksum: 10/1d1897144344447ffe62aa1a6d664f4cd2e0784e0aff787eeeec1940ded32f8e4b5b506d665134fc87157baa086fce07ec6383970a2b6d2e7985beaed6a4cc14
   languageName: node
   linkType: hard
 
