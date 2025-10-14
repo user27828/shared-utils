@@ -33,6 +33,49 @@ vscode_patterns=(
     "extensionHost"
 )
 
+# Additional IDE and development tool patterns to exclude
+ide_patterns=(
+    # JetBrains IDEs
+    "jetbrains"
+    "intellij"
+    "webstorm"
+    "pycharm"
+    "phpstorm"
+    "rider"
+    "goland"
+    "rubymine"
+    "clion"
+    
+    # Other editors
+    "sublime"
+    "atom"
+    "nova"
+    "brackets"
+    
+    # Language servers and formatters
+    "language-server"
+    "lsp-server"
+    "deno-lsp"
+    "rome"
+    "biome"
+    "prettier-server"
+    
+    # MCP servers - infrastructure tools
+    "mcp-server-"
+    "/mcp-server"
+    
+    # Package manager infrastructure (core operations, not dev servers)
+    "npm/cli"
+    "pnpm/cli"
+    "/corepack"
+    
+    # Database/API tools
+    "postman"
+    "insomnia"
+    "mongodb-compass"
+    "redis-desktop"
+)
+
 # Maximum number of times to loop to murder instances
 max_iterations=10
 
@@ -82,7 +125,7 @@ is_vscode_related() {
 
 usage() {
     echo "Usage: $0 [-9]"
-    echo "  -9    Force kill processes using SIGKILL"
+    echo "  -9    Force murder-death-kill processes using SIGKILL"
     exit 1
 }
 
@@ -96,9 +139,20 @@ while getopts "9" opt; do
 done
 
 while [ $iteration -lt $max_iterations ]; do
-    # Find all node processes - ONLY match actual node executables for safety
-    # Removed broad pattern matching to prevent false positives 
-    node_pids=$(ps -eo pid,comm,cmd | awk '$2 == "node" {print $1}' | sort -n)
+    # Find all node processes - match actual node executables and common node-based tools
+    # This captures:
+    # - Processes with comm="node" 
+    # - Processes with executable path ending in /node
+    # - Common node dev tools: ts-node, nodemon
+    # 
+    # NOTE: This may NOT catch wrapper processes like yarn/concurrently that spawn node.
+    # If you need to kill entire process trees, consider using pkill -P or process groups.
+    node_pids=$(ps -eo pid,comm,cmd | awk '
+        $2 == "node" || 
+        ($3 ~ /\/node$/ || $3 ~ /\/node /) || 
+        ($3 ~ /ts-node/ || $3 ~ /nodemon/ || $3 ~ /node_modules\/.bin\/(ts-node|nodemon)/)
+        {print $1}
+    ' | sort -n -u)
     
     # Validate ps command succeeded and produced reasonable output
     if [ $? -ne 0 ]; then
@@ -151,7 +205,16 @@ while [ $iteration -lt $max_iterations ]; do
         if [ "$skip" = false ]; then
             for pattern in "${vscode_patterns[@]}"; do
                 if [[ $cmd == *"$pattern"* ]]; then
-                    echo " - Skipping PID $pid (VS Code pattern '$pattern'): $cmd"
+                    skip=true
+                    break
+                fi
+            done
+        fi
+        
+        # Additional check for other IDE and development tool patterns
+        if [ "$skip" = false ]; then
+            for pattern in "${ide_patterns[@]}"; do
+                if [[ $cmd == *"$pattern"* ]]; then
                     skip=true
                     break
                 fi
@@ -160,7 +223,6 @@ while [ $iteration -lt $max_iterations ]; do
         
         # Check if process is VS Code-related via parent process tree
         if [ "$skip" = false ] && is_vscode_related "$pid"; then
-            echo " - Skipping PID $pid (VS Code related): $cmd"
             skip=true
         fi
         
@@ -169,7 +231,6 @@ while [ $iteration -lt $max_iterations ]; do
             if command -v pwdx >/dev/null 2>&1; then
                 process_cwd=$(pwdx "$pid" 2>/dev/null | cut -d: -f2- | xargs)
                 if [[ -n "$process_cwd" ]] && [[ $process_cwd == *".vscode"* || $process_cwd == *"Visual Studio Code"* || $process_cwd == *"Microsoft VS Code"* ]]; then
-                    echo " - Skipping PID $pid (VS Code directory): $cmd"
                     skip=true
                 fi
             fi
@@ -180,7 +241,6 @@ while [ $iteration -lt $max_iterations ]; do
             # Limit memory consumption and add timeout for safety
             env_vars=$(timeout 5s head -c 1048576 "/proc/$pid/environ" 2>/dev/null | tr '\0' '\n' | grep -E "(VSCODE|ELECTRON|CODE_)" 2>/dev/null)
             if [[ -n "$env_vars" ]]; then
-                echo " - Skipping PID $pid (VS Code environment): $cmd"
                 skip=true
             fi
         fi
@@ -189,11 +249,13 @@ while [ $iteration -lt $max_iterations ]; do
             continue # Skip to the next PID
         fi
 
-        # ATOMIC VERIFICATION: Double-check process is still a node process immediately before kill
+        # ATOMIC VERIFICATION: Double-check process is still a node-related process immediately before kill
         # This prevents race conditions where process changes between detection and killing
         current_comm=$(ps -o comm= "$pid" 2>/dev/null)
-        if [[ "$current_comm" != "node" ]]; then
-            echo " - Skipping PID $pid (no longer a node process): $cmd"
+        current_full_cmd=$(ps -o cmd= "$pid" 2>/dev/null)
+        
+        # Verify it's still a node process (comm is "node" OR full command contains node executable)
+        if [[ "$current_comm" != "node" ]] && ! [[ "$current_full_cmd" =~ (/node[[:space:]]|/node$|ts-node|nodemon) ]]; then
             continue
         fi
 
@@ -213,7 +275,11 @@ while [ $iteration -lt $max_iterations ]; do
         # Kill processes individually to track success/failure
         for pid in $kill_pids; do
             # Final atomic check before kill
-            if [[ "$(ps -o comm= "$pid" 2>/dev/null)" == "node" ]]; then
+            current_comm=$(ps -o comm= "$pid" 2>/dev/null)
+            current_full_cmd=$(ps -o cmd= "$pid" 2>/dev/null)
+            
+            # Verify it's still a node process
+            if [[ "$current_comm" == "node" ]] || [[ "$current_full_cmd" =~ (/node[[:space:]]|/node$|ts-node|nodemon) ]]; then
                 if $force_kill; then
                     if kill -9 "$pid" 2>/dev/null; then
                         successful_kills="$successful_kills $pid"
@@ -228,7 +294,8 @@ while [ $iteration -lt $max_iterations ]; do
                     fi
                 fi
             else
-                echo " - PID $pid no longer a node process, skipping"
+                # Silent skip - process no longer node-related
+                continue
             fi
         done
         
@@ -242,10 +309,10 @@ while [ $iteration -lt $max_iterations ]; do
         fi
         
         if [ -n "$failed_kills" ]; then
-            echo " + Failed to kill PIDs:$failed_kills (processes may have already terminated)"
+            echo " + Failed to murder-death-kill PIDs:$failed_kills (processes may have already terminated)"
         fi
     else
-        echo " - No Node processes found to kill."
+        echo " - No Node processes found to murder-death-kill."
         break  # Exit the loop if no processes are found
     fi
 
