@@ -16,7 +16,6 @@ export const isDev = ({ xCriteria = null }: IsDevOptions = {}): boolean => {
 
   // Browser-safe environment check - avoid process.env which requires Node.js modules
   const isDevelopmentEnv =
-    process?.env?.NODE_ENV === "development" ||
     hostname.includes("dev") ||
     hostname.includes("localhost") ||
     window.location.port === "5173" || // Vite dev server

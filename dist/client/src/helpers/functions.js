@@ -9,8 +9,7 @@ export const isDev = ({ xCriteria = null } = {}) => {
     const hostname = window.location.hostname;
     const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
     // Browser-safe environment check - avoid process.env which requires Node.js modules
-    const isDevelopmentEnv = process?.env?.NODE_ENV === "development" ||
-        hostname.includes("dev") ||
+    const isDevelopmentEnv = hostname.includes("dev") ||
         hostname.includes("localhost") ||
         window.location.port === "5173" || // Vite dev server
         window.location.port === "3000"; // Common dev port
