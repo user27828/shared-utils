@@ -36,6 +36,8 @@ export { verifyTurnstileToken } from "./src/turnstile/index.js";
 export { isDevMode, isLocalhostRequest, createMockVerifyResponse, getAllowedOrigin, } from "./src/turnstile/index.js";
 // IP utilities
 export { getClientIp } from "./src/ip.js";
+// Helper functions
+export { isDev } from "./src/functions.js";
 import { log } from "../utils/index.js";
 // Attach log to globalThis if not already set
 if (typeof globalThis !== "undefined" &&

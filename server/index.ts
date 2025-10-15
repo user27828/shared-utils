@@ -55,6 +55,9 @@ export {
 // IP utilities
 export { getClientIp } from "./src/ip.js";
 
+// Helper functions
+export { isDev } from "./src/functions.js";
+
 // Types
 export type {
   TurnstileVerifyRequest,
@@ -65,6 +68,8 @@ export type {
   GlobalTurnstileOptions,
   TurnstileWorkerConfig,
 } from "./src/turnstile/index.js";
+
+export type { IsDevOptions } from "./src/functions.js";
 
 import { log } from "../utils/index.js";
 

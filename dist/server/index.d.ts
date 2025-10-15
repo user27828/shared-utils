@@ -27,5 +27,7 @@ export { createTurnstileWorker } from "./src/turnstile/index.js";
 export { verifyTurnstileToken } from "./src/turnstile/index.js";
 export { isDevMode, isLocalhostRequest, createMockVerifyResponse, getAllowedOrigin, } from "./src/turnstile/index.js";
 export { getClientIp } from "./src/ip.js";
+export { isDev } from "./src/functions.js";
 export type { TurnstileVerifyRequest, TurnstileVerifyResponse, Environment, TurnstileServerOptions, TurnstileOptions, GlobalTurnstileOptions, TurnstileWorkerConfig, } from "./src/turnstile/index.js";
+export type { IsDevOptions } from "./src/functions.js";
 //# sourceMappingURL=index.d.ts.map
