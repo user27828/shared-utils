@@ -25,26 +25,31 @@
     ".": {
       "types": "./dist/utils/index.d.ts",
       "import": "./dist/utils/index.js",
+      "require": "./dist/utils/index.js",
       "default": "./dist/utils/index.js"
     },
     "./client": {
       "types": "./dist/client/index.d.ts",
       "import": "./dist/client/index.js",
+      "require": "./dist/client/index.js",
       "default": "./dist/client/index.js"
     },
     "./client/wysiwyg": {
       "types": "./dist/client/wysiwyg.d.ts",
       "import": "./dist/client/wysiwyg.js",
+      "require": "./dist/client/wysiwyg.js",
       "default": "./dist/client/wysiwyg.js"
     },
     "./utils": {
       "types": "./dist/utils/index.d.ts",
       "import": "./dist/utils/index.js",
+      "require": "./dist/utils/index.js",
       "default": "./dist/utils/index.js"
     },
     "./server": {
       "types": "./dist/server/index.d.ts",
       "import": "./dist/server/index.js",
+      "require": "./dist/server/index.js",
       "default": "./dist/server/index.js"
     },
     "./utils/*": "./dist/utils/*"
