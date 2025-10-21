@@ -465,16 +465,11 @@ function updateDependencies() {
             }
           }
         } else if (env === "production") {
-          // Remove portal from resolutions for production and revert to package version
+          // Remove portal from resolutions for production
+          // Yarn will fall back to the dependencies entry
           if (pkg.resolutions?.[packageName]?.includes("portal:")) {
-            const packageVersion = portalConfig.packages?.[packageName];
-            if (packageVersion) {
-              pkg.resolutions[packageName] = packageVersion;
-              changes.push(`Reverted ${packageName} to ${packageVersion}`);
-            } else {
-              delete pkg.resolutions[packageName];
-              changes.push(`Removed ${packageName} from resolutions`);
-            }
+            delete pkg.resolutions[packageName];
+            changes.push(`Removed ${packageName} from resolutions`);
             hasChanges = true;
 
             // Clean up empty resolutions object
