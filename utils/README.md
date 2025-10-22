@@ -11,6 +11,7 @@ Core utilities for common application needs with environment detection and centr
 - [Quick Start](#quick-start)
 - [API Reference](#api-reference)
 - [Examples](#examples)
+- [isDev - Development Environment Detection](#isdev---development-environment-detection)
 
 ## Available Utilities
 
@@ -1074,6 +1075,40 @@ Throws an error if:
 - Neither `content` nor `filePath` is provided
 - `filePath` is used in non-Node.js environments
 - File reading fails (file not found, permission denied, etc.)
+
+---
+
+## isDev - Development Environment Detection
+
+Unified development environment detection for both client and server.
+
+```typescript
+isDev(options?: IsDevOptions): boolean
+```
+
+**Options:**
+
+- `devMode?: boolean` - Explicit override (highest priority)
+- `environment?: "client" | "server"` - Specify environment (auto-detected if omitted)
+- `env?: EnvironmentObject` - Custom environment variables
+- `xCriteria?: () => boolean` - Custom evaluation callback
+
+**Behavior:**
+
+- Auto-detects client (browser) vs server (Node.js)
+- Checks `NODE_ENV`, `DEV_MODE`, `DEV` environment variables
+- Client: also checks for localhost and dev hostnames
+- Returns true if in development mode, false otherwise
+
+**Example:**
+
+```javascript
+import { isDev } from "@user27828/shared-utils/utils";
+
+if (isDev()) console.log("Development mode");
+if (isDev({ environment: "server" })) console.log("Server dev");
+if (isDev({ devMode: true })) console.log("Force dev mode");
+```
 
 ---
 

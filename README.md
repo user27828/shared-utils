@@ -107,6 +107,7 @@ Core utilities with environment detection and centralized configuration:
 - **Logging**: Production-safe console wrapper
 - **Turnstile**: Cloudflare bot protection integration
 - **OptionsManager**: Unified configuration system
+- **isDev**: Development environment detection utility
 
 ### 🎨 [Client Components](/client)
 

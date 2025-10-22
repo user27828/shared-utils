@@ -5,7 +5,7 @@
 - **Monorepo Structure**: TypeScript-compiled utilities distributed from `dist/` directory. Source in `utils/src/`, `client/src/`, `server/src/` with individual `package.json` configs and TypeScript project references.
 - **ES Module Native**: Everything uses `.js` extensions in imports (TypeScript ES module pattern). Critical: imports must end with `.js` even for `.ts` files (e.g., `"./options-manager.js"`).
 - **Centralized Configuration**: `OptionsManager` is the architectural centerpiece. Each utility registers with the global `optionsManager` singleton, enabling cross-utility configuration via `setGlobalOptions()`.
-- **Environment Auto-Detection**: Log and Turnstile utilities detect client vs server context automatically. Never hardcode environment checks - use the provided detection patterns from existing utilities.
+- **Environment Auto-Detection**: Use the consolidated `isDev()` function for development environment detection. Log and Turnstile utilities auto-detect client vs server context. Never hardcode environment checks - use `isDev()` or the provided detection patterns from existing utilities.
 
 ## Critical TypeScript Patterns
 
@@ -62,7 +62,7 @@ Note: when running `yarn test:consumer`, the command starts Vite (React dev serv
 - Never use single-line conditional execution (e.g., `if (x) doY();`). Always enclose the conditional block in curly braces, even for a single statement. Exception: single-line function definitions and returns are allowed.
 - Use `.js` extensions in imports, never `.ts`: `import { log } from "./log.js"`
 - Prefer `optionsManager.setGlobalOptions()` over individual `utility.setOptions()` calls
-- Environment detection via existing patterns, never hardcode `typeof window` checks
+- Use `isDev()` for environment detection, never hardcode `typeof window` checks or `process.env.NODE_ENV` comparisons
 - Use `lodash-es` imports: `import { mergeWith, cloneDeep } from "lodash-es"`
 
 **When working with tests:**
