@@ -6,5 +6,5 @@ import type { TurnstileVerifyResponse } from "./types.js";
 /**
  * Verify Turnstile token with Cloudflare API
  */
-export declare function verifyTurnstileToken(token: string, secretKey: string, remoteip?: string | null, idempotencyKey?: string): Promise<TurnstileVerifyResponse>;
+export declare const verifyTurnstileToken: (token: string, secretKey: string, remoteip?: string | null, idempotencyKey?: string) => Promise<TurnstileVerifyResponse>;
 //# sourceMappingURL=verification.d.ts.map

@@ -23,7 +23,6 @@ export { verifyTurnstileToken } from "./verification.js";
 
 // Utilities
 export {
-  isDevMode,
   isLocalhostRequest,
   createMockVerifyResponse,
   getAllowedOrigin,

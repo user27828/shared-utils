@@ -10,31 +10,12 @@ import type {
 } from "./types.js";
 
 /**
- * Detect if we're running in a development environment
- */
-export function isDevMode(
-  options?: TurnstileServerOptions,
-  env?: Environment,
-): boolean {
-  if (options?.devMode !== undefined) {
-    return options.devMode;
-  }
-  if (env?.DEV_MODE === "true") {
-    return true;
-  }
-  if (env?.NODE_ENV === "development") {
-    return true;
-  }
-  return false;
-}
-
-/**
  * Check if the request is coming from localhost
  */
-export function isLocalhostRequest(
+export const isLocalhostRequest = (
   request: Request,
   remoteip?: string,
-): boolean {
+): boolean => {
   const origin = request.headers.get("Origin");
   const referer = request.headers.get("Referer");
 
@@ -80,12 +61,12 @@ export function isLocalhostRequest(
   }
 
   return false;
-}
+};
 
 /**
  * Create a mock successful verification response for dev mode
  */
-export function createMockVerifyResponse(): TurnstileVerifyResponse {
+export const createMockVerifyResponse = (): TurnstileVerifyResponse => {
   return {
     success: true,
     challenge_ts: new Date().toISOString(),
@@ -93,12 +74,15 @@ export function createMockVerifyResponse(): TurnstileVerifyResponse {
     action: "dev-mode",
     cdata: "dev-bypass",
   };
-}
+};
 
 /**
  * Get allowed origin for CORS
  */
-export function getAllowedOrigin(request: Request, env: Environment): string {
+export const getAllowedOrigin = (
+  request: Request,
+  env: Environment,
+): string => {
   const origin = request.headers.get("Origin");
 
   if (!env.ALLOWED_ORIGINS) {
@@ -112,4 +96,4 @@ export function getAllowedOrigin(request: Request, env: Environment): string {
   }
 
   return allowedOrigins[0] || "*";
-}
+};

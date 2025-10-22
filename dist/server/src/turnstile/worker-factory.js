@@ -22,7 +22,7 @@ import { verifyTurnstileTokenEnhanced, getAllowedOrigin } from "./index.js";
  * });
  * ```
  */
-export function createTurnstileWorker(config = {}) {
+export const createTurnstileWorker = (config = {}) => {
     return {
         async fetch(request, env) {
             // Handle CORS preflight
@@ -112,5 +112,5 @@ export function createTurnstileWorker(config = {}) {
             }
         },
     };
-}
+};
 //# sourceMappingURL=worker-factory.js.map

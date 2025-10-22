@@ -46,7 +46,6 @@ export { verifyTurnstileToken } from "./src/turnstile/index.js";
 
 // Utilities
 export {
-  isDevMode,
   isLocalhostRequest,
   createMockVerifyResponse,
   getAllowedOrigin,
@@ -69,7 +68,7 @@ export type {
   TurnstileWorkerConfig,
 } from "./src/turnstile/index.js";
 
-export type { IsDevOptions } from "./src/functions.js";
+export type { IsDevOptions } from "../utils/index.js";
 
 import { log } from "../utils/index.js";
 

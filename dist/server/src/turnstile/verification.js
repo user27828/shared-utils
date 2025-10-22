@@ -5,7 +5,7 @@
 /**
  * Verify Turnstile token with Cloudflare API
  */
-export async function verifyTurnstileToken(token, secretKey, remoteip, idempotencyKey) {
+export const verifyTurnstileToken = async (token, secretKey, remoteip, idempotencyKey) => {
     const formData = new FormData();
     formData.append("secret", secretKey);
     formData.append("response", token);
@@ -23,5 +23,5 @@ export async function verifyTurnstileToken(token, secretKey, remoteip, idempoten
         throw new Error(`Turnstile API error: ${response.status}`);
     }
     return await response.json();
-}
+};
 //# sourceMappingURL=verification.js.map

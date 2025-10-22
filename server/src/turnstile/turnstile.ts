@@ -5,17 +5,14 @@
 import {
   OptionsManager,
   optionsManager as globalOptionsManager,
+  isDev,
 } from "../../../utils/index.js";
 import type {
   TurnstileServerOptions,
   TurnstileVerifyResponse,
   TurnstileOptions,
 } from "./types.js";
-import {
-  isDevMode,
-  isLocalhostRequest,
-  createMockVerifyResponse,
-} from "./utils.js";
+import { isLocalhostRequest, createMockVerifyResponse } from "./utils.js";
 import { verifyTurnstileToken } from "./verification.js";
 
 // Default options for server-side Turnstile verification
@@ -43,55 +40,59 @@ let turnstileServerManager: OptionsManager<TurnstileServerOptions> | null =
  * Initialize or get the server options manager
  * Integrates with the global optionsManager for unified configuration
  */
-function getTurnstileServerManager(): OptionsManager<TurnstileServerOptions> {
-  if (!turnstileServerManager) {
-    turnstileServerManager = new OptionsManager(
-      "turnstile-server",
-      defaultServerOptions,
-    );
-    // Register with global options manager for cross-utility configuration
-    globalOptionsManager.registerManager(
-      "turnstile-server",
-      turnstileServerManager,
-    );
-  }
-  return turnstileServerManager;
-}
+const getTurnstileServerManager =
+  (): OptionsManager<TurnstileServerOptions> => {
+    if (!turnstileServerManager) {
+      turnstileServerManager = new OptionsManager(
+        "turnstile-server",
+        defaultServerOptions,
+      );
+      // Register with global options manager for cross-utility configuration
+      globalOptionsManager.registerManager(
+        "turnstile-server",
+        turnstileServerManager,
+      );
+    }
+    return turnstileServerManager;
+  };
 
 /**
  * Get current server-side Turnstile options
  * This integrates with the global optionsManager, so you can use:
  * globalOptionsManager.setGlobalOptions({ 'turnstile-server': { ... } })
  */
-export function getTurnstileServerOptions(): TurnstileServerOptions {
+export const getTurnstileServerOptions = (): TurnstileServerOptions => {
   const manager = getTurnstileServerManager();
   return manager.getOptions();
-}
+};
 
 /**
  * Set global options for turnstile server configuration
  * This allows the same API pattern: setGlobalOptions({ 'turnstile-server': { ... } })
  */
-export function setGlobalOptions(options: {
+export const setGlobalOptions = (options: {
   "turnstile-server"?: TurnstileOptions;
   [key: string]: any;
-}): void {
+}): void => {
   globalOptionsManager.setGlobalOptions(options);
-}
+};
 
 /**
  * Enhanced verification function with dev mode support
  */
-export async function verifyTurnstileTokenEnhanced(
+export const verifyTurnstileTokenEnhanced = async (
   token: string,
   secretKey: string,
   remoteip?: string | null,
   idempotencyKey?: string,
   options?: TurnstileServerOptions,
   request?: Request,
-): Promise<TurnstileVerifyResponse> {
+): Promise<TurnstileVerifyResponse> => {
   const serverOptions = options || getTurnstileServerOptions();
-  const devMode = isDevMode(serverOptions);
+  const devMode = isDev({
+    devMode: serverOptions.devMode,
+    environment: "server",
+  });
   const isLocalhost = request
     ? isLocalhostRequest(request, remoteip || undefined)
     : false;
@@ -155,17 +156,17 @@ export async function verifyTurnstileTokenEnhanced(
 
   // Standard verification
   return await verifyTurnstileToken(token, secretKey, remoteip, idempotencyKey);
-}
+};
 
 /**
  * Simple verification function for custom implementations
  */
-export async function verifyTurnstileSimple(
+export const verifyTurnstileSimple = async (
   token: string,
   secretKey?: string,
   remoteip?: string,
   options?: Partial<TurnstileServerOptions>,
-): Promise<TurnstileVerifyResponse> {
+): Promise<TurnstileVerifyResponse> => {
   const serverOptions = { ...getTurnstileServerOptions(), ...options };
 
   if (secretKey) {
@@ -179,4 +180,4 @@ export async function verifyTurnstileSimple(
     undefined,
     serverOptions,
   );
-}
+};

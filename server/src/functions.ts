@@ -2,24 +2,14 @@
  * Helper functions
  */
 
-export interface IsDevOptions {
-  xCriteria?: (() => boolean) | null;
-}
+import { isDev as utilsIsDev } from "../../utils/index.js";
 
 /**
- * Check if the current environment is development (server-side)
- * @param options.xCriteria - eXtra criteria to check if the environment is development - additional check to default
+ * @deprecated Use the consolidated `isDev` from '@shared-utils/utils' instead.
+ * This version will be removed in a future release.
  */
-export const isDev = ({ xCriteria = null }: IsDevOptions = {}): boolean => {
-  const nodeEnv = process.env.NODE_ENV;
-  const isDevelopmentEnv = nodeEnv === "development";
-  const isDevEnv = process.env.DEV === "true" || process.env.DEV === "1";
-
-  let result = isDevelopmentEnv || isDevEnv;
-
-  if (typeof xCriteria === "function") {
-    result = result || xCriteria();
-  }
-
-  return result;
-};
+export const isDev = ({
+  xCriteria = null,
+}: {
+  xCriteria?: (() => boolean) | null;
+} = {}): boolean => utilsIsDev({ xCriteria, environment: "server" });

@@ -1,14 +1,13 @@
 /**
  * Shared functions
  */
-export interface IsDevOptions {
-    xCriteria?: (() => boolean) | null;
-}
 /**
- * Check if the current environment is development
- * @param options.xCriteria - eXtra criteria to check if the environment is development - additional check to default
+ * @deprecated Use the consolidated `isDev` from '@shared-utils/utils' instead.
+ * This version will be removed in a future release.
  */
-export declare const isDev: ({ xCriteria }?: IsDevOptions) => boolean;
+export declare const isDev: ({ xCriteria, }?: {
+    xCriteria?: (() => boolean) | null;
+}) => boolean;
 /**
  * Similar to path.join(), but for URLs - either full, absolute, or relative
  * @param args - The URL parts to join

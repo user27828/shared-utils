@@ -5,6 +5,7 @@
 
 import { jest } from "@jest/globals";
 import { TEST_VALUES } from "../../__tests__/test-configuration.js";
+import { isDev } from "../../utils/index.js";
 
 describe("Turnstile Utils", () => {
   let utils;
@@ -13,32 +14,32 @@ describe("Turnstile Utils", () => {
     utils = await import("../src/turnstile/utils.js");
   });
 
-  describe("isDevMode", () => {
-    test("should return true when options.devMode is true", () => {
-      expect(utils.isDevMode({ devMode: true })).toBe(true);
+  describe("isDev (Turnstile integration)", () => {
+    test("should return true when devMode option is true", () => {
+      expect(isDev({ devMode: true, environment: "server" })).toBe(true);
     });
 
-    test("should return false when options.devMode is false", () => {
-      expect(utils.isDevMode({ devMode: false })).toBe(false);
+    test("should return false when devMode option is false", () => {
+      expect(isDev({ devMode: false, environment: "server" })).toBe(false);
     });
 
     test("should return true when DEV_MODE env var is true", () => {
       const env = { DEV_MODE: "true" };
-      expect(utils.isDevMode(undefined, env)).toBe(true);
+      expect(isDev({ env, environment: "server" })).toBe(true);
     });
 
     test("should return true when NODE_ENV is development", () => {
       const env = { NODE_ENV: "development" };
-      expect(utils.isDevMode(undefined, env)).toBe(true);
+      expect(isDev({ env, environment: "server" })).toBe(true);
     });
 
     test("should return false by default", () => {
-      expect(utils.isDevMode()).toBe(false);
+      expect(isDev({ environment: "server" })).toBe(false);
     });
 
-    test("should prioritize options over env vars", () => {
+    test("should prioritize devMode option over env vars", () => {
       const env = { NODE_ENV: "development" };
-      expect(utils.isDevMode({ devMode: false }, env)).toBe(false);
+      expect(isDev({ devMode: false, env, environment: "server" })).toBe(false);
     });
   });
 

@@ -7,21 +7,21 @@ import type { TurnstileServerOptions, TurnstileVerifyResponse, TurnstileOptions 
  * This integrates with the global optionsManager, so you can use:
  * globalOptionsManager.setGlobalOptions({ 'turnstile-server': { ... } })
  */
-export declare function getTurnstileServerOptions(): TurnstileServerOptions;
+export declare const getTurnstileServerOptions: () => TurnstileServerOptions;
 /**
  * Set global options for turnstile server configuration
  * This allows the same API pattern: setGlobalOptions({ 'turnstile-server': { ... } })
  */
-export declare function setGlobalOptions(options: {
+export declare const setGlobalOptions: (options: {
     "turnstile-server"?: TurnstileOptions;
     [key: string]: any;
-}): void;
+}) => void;
 /**
  * Enhanced verification function with dev mode support
  */
-export declare function verifyTurnstileTokenEnhanced(token: string, secretKey: string, remoteip?: string | null, idempotencyKey?: string, options?: TurnstileServerOptions, request?: Request): Promise<TurnstileVerifyResponse>;
+export declare const verifyTurnstileTokenEnhanced: (token: string, secretKey: string, remoteip?: string | null, idempotencyKey?: string, options?: TurnstileServerOptions, request?: Request) => Promise<TurnstileVerifyResponse>;
 /**
  * Simple verification function for custom implementations
  */
-export declare function verifyTurnstileSimple(token: string, secretKey?: string, remoteip?: string, options?: Partial<TurnstileServerOptions>): Promise<TurnstileVerifyResponse>;
+export declare const verifyTurnstileSimple: (token: string, secretKey?: string, remoteip?: string, options?: Partial<TurnstileServerOptions>) => Promise<TurnstileVerifyResponse>;
 //# sourceMappingURL=turnstile.d.ts.map

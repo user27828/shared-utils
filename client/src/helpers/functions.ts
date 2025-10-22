@@ -2,33 +2,17 @@
  * Shared functions
  */
 
-export interface IsDevOptions {
-  xCriteria?: (() => boolean) | null;
-}
+import { isDev as utilsIsDev } from "../../../utils/index.js";
 
 /**
- * Check if the current environment is development
- * @param options.xCriteria - eXtra criteria to check if the environment is development - additional check to default
+ * @deprecated Use the consolidated `isDev` from '@shared-utils/utils' instead.
+ * This version will be removed in a future release.
  */
-export const isDev = ({ xCriteria = null }: IsDevOptions = {}): boolean => {
-  const hostname = window.location.hostname;
-  const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
-
-  // Browser-safe environment check - avoid process.env which requires Node.js modules
-  const isDevelopmentEnv =
-    hostname.includes("dev") ||
-    hostname.includes("localhost") ||
-    window.location.port === "5173" || // Vite dev server
-    window.location.port === "3000"; // Common dev port
-
-  let result = isLocalhost || isDevelopmentEnv;
-
-  if (typeof xCriteria === "function") {
-    result = result || xCriteria();
-  }
-
-  return result;
-};
+export const isDev = ({
+  xCriteria = null,
+}: {
+  xCriteria?: (() => boolean) | null;
+} = {}): boolean => utilsIsDev({ xCriteria, environment: "client" });
 
 /**
  * Similar to path.join(), but for URLs - either full, absolute, or relative

@@ -13,9 +13,9 @@ import {
  * Automatically uses the global optionsManager configuration
  * Configure using: optionsManager.setGlobalOptions({ 'turnstile-server': { ... } })
  */
-export function createTurnstileMiddleware(
+export const createTurnstileMiddleware = (
   options?: Partial<TurnstileServerOptions>,
-) {
+) => {
   // If options are provided, warn about deprecated usage
   if (options) {
     console.warn(
@@ -81,4 +81,4 @@ export function createTurnstileMiddleware(
       });
     }
   };
-}
+};

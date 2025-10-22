@@ -725,16 +725,11 @@ export async function runServerTests() {
     // Test 14: Cloudflare Worker Utilities Integration
     console.log("Testing Cloudflare Worker utilities integration...");
     try {
-      const {
-        getAllowedOrigin,
-        isDevMode,
-        isLocalhostRequest,
-        createMockVerifyResponse,
-      } = serverModule;
+      const { getAllowedOrigin, isLocalhostRequest, createMockVerifyResponse } =
+        serverModule;
 
       const utilities = [
         { name: "getAllowedOrigin", func: getAllowedOrigin },
-        { name: "isDevMode", func: isDevMode },
         { name: "isLocalhostRequest", func: isLocalhostRequest },
         { name: "createMockVerifyResponse", func: createMockVerifyResponse },
       ];
@@ -753,21 +748,7 @@ export async function runServerTests() {
             };
 
             // Test specific utilities with mock data
-            if (name === "isDevMode") {
-              try {
-                const testEnv = { DEV_MODE: "true", NODE_ENV: "development" };
-                const result = func(testEnv);
-                testResult.testExecution = {
-                  success: true,
-                  result: typeof result === "boolean",
-                };
-              } catch (err) {
-                testResult.testExecution = {
-                  success: false,
-                  error: err.message,
-                };
-              }
-            } else if (name === "createMockVerifyResponse") {
+            if (name === "createMockVerifyResponse") {
               try {
                 const mockResponse = func(true);
                 testResult.testExecution = {

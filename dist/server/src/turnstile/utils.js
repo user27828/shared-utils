@@ -3,24 +3,9 @@
  * Common functions used across server-side implementations
  */
 /**
- * Detect if we're running in a development environment
- */
-export function isDevMode(options, env) {
-    if (options?.devMode !== undefined) {
-        return options.devMode;
-    }
-    if (env?.DEV_MODE === "true") {
-        return true;
-    }
-    if (env?.NODE_ENV === "development") {
-        return true;
-    }
-    return false;
-}
-/**
  * Check if the request is coming from localhost
  */
-export function isLocalhostRequest(request, remoteip) {
+export const isLocalhostRequest = (request, remoteip) => {
     const origin = request.headers.get("Origin");
     const referer = request.headers.get("Referer");
     // Check origin header
@@ -58,11 +43,11 @@ export function isLocalhostRequest(request, remoteip) {
         }
     }
     return false;
-}
+};
 /**
  * Create a mock successful verification response for dev mode
  */
-export function createMockVerifyResponse() {
+export const createMockVerifyResponse = () => {
     return {
         success: true,
         challenge_ts: new Date().toISOString(),
@@ -70,11 +55,11 @@ export function createMockVerifyResponse() {
         action: "dev-mode",
         cdata: "dev-bypass",
     };
-}
+};
 /**
  * Get allowed origin for CORS
  */
-export function getAllowedOrigin(request, env) {
+export const getAllowedOrigin = (request, env) => {
     const origin = request.headers.get("Origin");
     if (!env.ALLOWED_ORIGINS) {
         return "*"; // Allow all origins if not configured
@@ -84,5 +69,5 @@ export function getAllowedOrigin(request, env) {
         return origin;
     }
     return allowedOrigins[0] || "*";
-}
+};
 //# sourceMappingURL=utils.js.map

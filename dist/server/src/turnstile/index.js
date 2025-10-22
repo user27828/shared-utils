@@ -11,5 +11,5 @@ export { createTurnstileWorker } from "./worker-factory.js";
 // Core verification
 export { verifyTurnstileToken } from "./verification.js";
 // Utilities
-export { isDevMode, isLocalhostRequest, createMockVerifyResponse, getAllowedOrigin, } from "./utils.js";
+export { isLocalhostRequest, createMockVerifyResponse, getAllowedOrigin, } from "./utils.js";
 //# sourceMappingURL=index.js.map

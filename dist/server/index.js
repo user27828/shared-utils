@@ -33,7 +33,7 @@ export { createTurnstileWorker } from "./src/turnstile/index.js";
 // Core verification
 export { verifyTurnstileToken } from "./src/turnstile/index.js";
 // Utilities
-export { isDevMode, isLocalhostRequest, createMockVerifyResponse, getAllowedOrigin, } from "./src/turnstile/index.js";
+export { isLocalhostRequest, createMockVerifyResponse, getAllowedOrigin, } from "./src/turnstile/index.js";
 // IP utilities
 export { getClientIp } from "./src/ip.js";
 // Helper functions

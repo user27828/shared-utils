@@ -8,12 +8,12 @@ import type { TurnstileVerifyResponse } from "./types.js";
 /**
  * Verify Turnstile token with Cloudflare API
  */
-export async function verifyTurnstileToken(
+export const verifyTurnstileToken = async (
   token: string,
   secretKey: string,
   remoteip?: string | null,
   idempotencyKey?: string,
-): Promise<TurnstileVerifyResponse> {
+): Promise<TurnstileVerifyResponse> => {
   const formData = new FormData();
   formData.append("secret", secretKey);
   formData.append("response", token);
@@ -39,4 +39,4 @@ export async function verifyTurnstileToken(
   }
 
   return await response.json();
-}
+};

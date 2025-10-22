@@ -40,7 +40,7 @@ export interface TurnstileWorkerConfig {
  * });
  * ```
  */
-export function createTurnstileWorker(config: TurnstileWorkerConfig = {}) {
+export const createTurnstileWorker = (config: TurnstileWorkerConfig = {}) => {
   return {
     async fetch(request: Request, env: Environment): Promise<Response> {
       // Handle CORS preflight
@@ -153,4 +153,4 @@ export function createTurnstileWorker(config: TurnstileWorkerConfig = {}) {
       }
     },
   };
-}
+};

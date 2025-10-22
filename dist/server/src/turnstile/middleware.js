@@ -7,7 +7,7 @@ import { getTurnstileServerOptions, verifyTurnstileTokenEnhanced, } from "./turn
  * Automatically uses the global optionsManager configuration
  * Configure using: optionsManager.setGlobalOptions({ 'turnstile-server': { ... } })
  */
-export function createTurnstileMiddleware(options) {
+export const createTurnstileMiddleware = (options) => {
     // If options are provided, warn about deprecated usage
     if (options) {
         console.warn('[DEPRECATED] Pass options to createTurnstileMiddleware. Use optionsManager.setGlobalOptions({ "turnstile-server": options }) instead');
@@ -55,5 +55,5 @@ export function createTurnstileMiddleware(options) {
             });
         }
     };
-}
+};
 //# sourceMappingURL=middleware.js.map

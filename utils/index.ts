@@ -5,6 +5,7 @@ import { OptionsManager, optionsManager } from "./src/options-manager.js";
 import log, { Log, ORIGINAL_CONSOLE_METHODS } from "./src/log.js";
 import turnstile, { Turnstile } from "./src/turnstile.js";
 import {
+  isDev,
   formatFileSize,
   sanitizeFilename,
   convertBytesToUnit,
@@ -14,6 +15,7 @@ import {
   isValidEmail,
   formatDate,
 } from "./src/functions.js";
+import type { IsDevOptions, EnvironmentObject } from "./src/functions.js";
 import { detectFormatFromText } from "./src/detectFormat/index.js";
 
 export {
@@ -30,6 +32,9 @@ export {
   OptionsManager,
   optionsManager,
 
+  // Environment utilities
+  isDev,
+
   // File utilities
   formatFileSize,
   sanitizeFilename,
@@ -40,4 +45,10 @@ export {
   isValidEmail,
   formatDate,
   detectFormatFromText, // plain text format detection
+};
+
+export type {
+  // Environment utilities
+  IsDevOptions,
+  EnvironmentObject,
 };

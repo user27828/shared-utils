@@ -32,7 +32,7 @@ export interface TurnstileWorkerConfig {
  * });
  * ```
  */
-export declare function createTurnstileWorker(config?: TurnstileWorkerConfig): {
+export declare const createTurnstileWorker: (config?: TurnstileWorkerConfig) => {
     fetch(request: Request, env: Environment): Promise<Response>;
 };
 //# sourceMappingURL=worker-factory.d.ts.map
