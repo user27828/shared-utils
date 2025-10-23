@@ -1,7 +1,19 @@
 /**
  * Data - languages
  */
-const languages = [
+interface Language {
+  iso639_1: string;
+  iso639_2: string;
+  iso639_3: string;
+  name: string;
+  nameLocal: string;
+  ietf: string;
+  ietfRegions: Record<string, string>;
+  lcid: number;
+  speakers: number;
+}
+
+const languages: Language[] = [
   // Special "Not Selected" entry always first
   {
     iso639_1: "",

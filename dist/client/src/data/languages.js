@@ -1,6 +1,3 @@
-/**
- * Data - languages
- */
 const languages = [
     // Special "Not Selected" entry always first
     {
