@@ -13,6 +13,6 @@
     "@user27828/shared-utils": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^24.10.4"
+    "@types/node": "^25.0.3"
   }
 }

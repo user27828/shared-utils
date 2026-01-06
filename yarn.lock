@@ -4065,7 +4065,7 @@ __metadata:
     "@cloudflare/workers-types": "npm:^4.20260103.0"
     "@jest/globals": "npm:^30.2.0"
     "@shared-utils/utils": "workspace:*"
-    "@types/node": "npm:^24.10.4"
+    "@types/node": "npm:^25.0.3"
     babel-jest: "npm:^30.2.0"
     jest: "npm:^30.2.0"
     ts-jest: "npm:^29.4.6"
@@ -4079,7 +4079,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@shared-utils/test-consumer@workspace:test-consumer"
   dependencies:
-    "@types/node": "npm:^24.10.4"
+    "@types/node": "npm:^25.0.3"
     "@user27828/shared-utils": "workspace:*"
     concurrently: "npm:^9.2.1"
     typescript: "npm:^5.9.3"
@@ -4094,7 +4094,7 @@ __metadata:
     "@babel/preset-env": "npm:^7.28.5"
     "@types/jest": "npm:^30.0.0"
     "@types/lodash-es": "npm:^4.17.12"
-    "@types/node": "npm:^24.10.4"
+    "@types/node": "npm:^25.0.3"
     jest: "npm:^30.2.0"
     lodash-es: "npm:^4.17.22"
     ts-jest: "npm:^29.4.6"
@@ -4152,7 +4152,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@test-consumer/node-consumer@workspace:test-consumer/node-consumer"
   dependencies:
-    "@types/node": "npm:^24.10.4"
+    "@types/node": "npm:^25.0.3"
     "@user27828/shared-utils": "workspace:*"
     jest: "npm:^30.2.0"
   languageName: unknown
@@ -4194,7 +4194,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@test-consumer/server@workspace:test-consumer/server"
   dependencies:
-    "@types/node": "npm:^24.10.4"
+    "@types/node": "npm:^25.0.3"
     "@user27828/shared-utils": "workspace:*"
   languageName: unknown
   linkType: soft
@@ -4458,12 +4458,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^24.10.4":
-  version: 24.10.4
-  resolution: "@types/node@npm:24.10.4"
+"@types/node@npm:^25.0.3":
+  version: 25.0.3
+  resolution: "@types/node@npm:25.0.3"
   dependencies:
     undici-types: "npm:~7.16.0"
-  checksum: 10/a0b318b99a97103d151589a10e20d7d3ce93188a0e6466040eb2ce5fae33ca6785306737b4006560fe3152073cbb2b14747b854fa303296275c22afc8a37da2a
+  checksum: 10/5889b00f398eff4d4af28c3e5e97976f65c39a63fa3d7011f35cbf8640675fa6835e5dd47dce94d6ba48667711ddcd1f5c9bc5d93233e6a8e9ea1e502e8aa5a4
   languageName: node
   linkType: hard
 
