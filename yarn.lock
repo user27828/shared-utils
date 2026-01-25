@@ -5076,6 +5076,7 @@ __metadata:
     jest-environment-node: "npm:^30.2.0"
     jsdom: "npm:^27.4.0"
     lodash-es: "npm:^4.17.23"
+    marked: "npm:^17.0.1"
     nanoid: "npm:^5.1.6"
     papaparse: "npm:^5.5.3"
     prettier: "npm:^3.8.1"
@@ -8246,6 +8247,15 @@ __metadata:
   dependencies:
     tmpl: "npm:1.0.5"
   checksum: 10/4c66ddfc654537333da952c084f507fa4c30c707b1635344eb35be894d797ba44c901a9cebe914aa29a7f61357543ba09b09dddbd7f65b4aee756b450f169f40
+  languageName: node
+  linkType: hard
+
+"marked@npm:^17.0.1":
+  version: 17.0.1
+  resolution: "marked@npm:17.0.1"
+  bin:
+    marked: bin/marked.js
+  checksum: 10/8d39cf5a1eb97288d09d47dba57a613b8c45a212287b27aa16b4bc41baaebb147340c359d379da1bc6d351474d169aa3a63f981770b67f7663ed0a479dd950c2
   languageName: node
   linkType: hard
 
