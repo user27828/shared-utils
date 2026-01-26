@@ -56,6 +56,37 @@ import "tinymce/skins/ui/oxide/content";
 import "tinymce/skins/content/dark/content";
 import "tinymce/skins/ui/oxide-dark/content";
 
+export type TinyMceFilePickerMeta = {
+  filetype?: "file" | "image" | "media";
+  fieldname?: string;
+};
+
+export type TinyMcePickRequest = {
+  value: string;
+  meta: TinyMceFilePickerMeta;
+};
+
+export type TinyMcePickResult = {
+  url: string;
+  title?: string;
+  text?: string;
+  alt?: string;
+};
+
+export type TinyMceProgressFn = (percent: number) => void;
+
+export type TinyMceImageUploadRequest = {
+  blob: Blob;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  progress?: TinyMceProgressFn;
+};
+
+export type TinyMceImageUploadResult = {
+  url: string;
+};
+
 export interface TinyMceEditorProps {
   /**
    * Initial editor content
@@ -69,6 +100,28 @@ export interface TinyMceEditorProps {
    * Callback to receive the TinyMCE editor instance
    */
   onEditorInstance?: (editor: any) => void;
+
+  /**
+   * Optional hook to provide a custom file picker (e.g. open a media library).
+   *
+   * If provided, TinyMceEditor will wire this into TinyMCE's `file_picker_callback`.
+   */
+  onPickFile?: (request: TinyMcePickRequest) => Promise<TinyMcePickResult | null>;
+
+  /**
+   * Optional hook to upload images (pasted/dragged/selected) and return a URL.
+   *
+   * If provided, TinyMceEditor will wire this into TinyMCE's `images_upload_handler`.
+   */
+  onUploadImage?: (
+    request: TinyMceImageUploadRequest,
+  ) => Promise<TinyMceImageUploadResult>;
+
+  /**
+   * Optional URL canonicalizer.
+   * Useful when you want inserted URLs to always use a canonical public route.
+   */
+  canonicalizeUrl?: (url: string) => string;
   /**
    * Additional props passed to the TinyMCE editor
    */
@@ -79,7 +132,15 @@ export interface TinyMceEditorProps {
  * Rich text editor component based on TinyMCE's free version
  */
 const TinyMceEditor: React.FC<TinyMceEditorProps> = (props) => {
-  const { data, onChange, onEditorInstance, ...otherProps } = props;
+  const {
+    data,
+    onChange,
+    onEditorInstance,
+    onPickFile,
+    onUploadImage,
+    canonicalizeUrl,
+    ...otherProps
+  } = props;
   const editorRef = useRef<any>(null);
   const initialValueRef = useRef<string>(data || "");
 
@@ -125,6 +186,91 @@ const TinyMceEditor: React.FC<TinyMceEditorProps> = (props) => {
     promotion: false,
   };
 
+  const filePickerCallback =
+    onPickFile &&
+    ((callback: any, value: string, meta: any) => {
+      void (async () => {
+        const pick = await onPickFile({
+          value,
+          meta: {
+            filetype: meta?.filetype,
+            fieldname: meta?.fieldname,
+          },
+        });
+
+        if (!pick) {
+          return;
+        }
+
+        const url = canonicalizeUrl ? canonicalizeUrl(pick.url) : pick.url;
+        const callbackMeta: Record<string, any> = {};
+
+        // TinyMCE supports a limited set of meta fields per picker type.
+        if (meta?.filetype === "image") {
+          if (pick.alt) {
+            callbackMeta.alt = pick.alt;
+          }
+          if (pick.title) {
+            callbackMeta.title = pick.title;
+          }
+        } else if (meta?.filetype === "file") {
+          if (pick.text) {
+            callbackMeta.text = pick.text;
+          }
+          if (pick.title) {
+            callbackMeta.title = pick.title;
+          }
+        } else {
+          if (pick.text) {
+            callbackMeta.text = pick.text;
+          }
+          if (pick.title) {
+            callbackMeta.title = pick.title;
+          }
+        }
+
+        callback(url, callbackMeta);
+      })().catch((err) => {
+        // Keep shared-utils standalone; no external logger dependency.
+        console.error("TinyMceEditor file_picker_callback failed", err);
+      });
+    });
+
+  const imagesUploadHandler =
+    onUploadImage &&
+    (async (blobInfo: any, progress: any) => {
+      try {
+        const blob: Blob = blobInfo?.blob?.() || blobInfo;
+        const filename: string =
+          (typeof blobInfo?.filename === "function" && blobInfo.filename()) ||
+          "image";
+        const mimeType: string = blob?.type || "application/octet-stream";
+        const sizeBytes: number = typeof blob?.size === "number" ? blob.size : 0;
+
+        if (typeof progress === "function") {
+          progress(0);
+        }
+
+        const result = await onUploadImage({
+          blob,
+          filename,
+          mimeType,
+          sizeBytes,
+          progress: typeof progress === "function" ? progress : undefined,
+        });
+
+        if (typeof progress === "function") {
+          progress(100);
+        }
+
+        const url = canonicalizeUrl ? canonicalizeUrl(result.url) : result.url;
+        return url;
+      } catch (err: any) {
+        console.error("TinyMceEditor images_upload_handler failed", err);
+        throw new Error(err?.message || "Image upload failed");
+      }
+    });
+
   return (
     <Editor
       // No API key needed for self-hosted or community version
@@ -135,7 +281,10 @@ const TinyMceEditor: React.FC<TinyMceEditorProps> = (props) => {
       initialValue={initialValueRef.current}
       value={data || ""}
       onEditorChange={handleEditorChange}
-      init={merge({}, defaultInit, otherProps.init)}
+      init={merge({}, defaultInit, otherProps.init, {
+        ...(filePickerCallback ? { file_picker_callback: filePickerCallback } : {}),
+        ...(imagesUploadHandler ? { images_upload_handler: imagesUploadHandler } : {}),
+      })}
       {...otherProps}
     />
   );

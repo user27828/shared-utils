@@ -43,6 +43,31 @@ import "tinymce/skins/content/default/content";
 import "tinymce/skins/ui/oxide/content";
 import "tinymce/skins/content/dark/content";
 import "tinymce/skins/ui/oxide-dark/content";
+export type TinyMceFilePickerMeta = {
+    filetype?: "file" | "image" | "media";
+    fieldname?: string;
+};
+export type TinyMcePickRequest = {
+    value: string;
+    meta: TinyMceFilePickerMeta;
+};
+export type TinyMcePickResult = {
+    url: string;
+    title?: string;
+    text?: string;
+    alt?: string;
+};
+export type TinyMceProgressFn = (percent: number) => void;
+export type TinyMceImageUploadRequest = {
+    blob: Blob;
+    filename: string;
+    mimeType: string;
+    sizeBytes: number;
+    progress?: TinyMceProgressFn;
+};
+export type TinyMceImageUploadResult = {
+    url: string;
+};
 export interface TinyMceEditorProps {
     /**
      * Initial editor content
@@ -58,6 +83,23 @@ export interface TinyMceEditorProps {
      * Callback to receive the TinyMCE editor instance
      */
     onEditorInstance?: (editor: any) => void;
+    /**
+     * Optional hook to provide a custom file picker (e.g. open a media library).
+     *
+     * If provided, TinyMceEditor will wire this into TinyMCE's `file_picker_callback`.
+     */
+    onPickFile?: (request: TinyMcePickRequest) => Promise<TinyMcePickResult | null>;
+    /**
+     * Optional hook to upload images (pasted/dragged/selected) and return a URL.
+     *
+     * If provided, TinyMceEditor will wire this into TinyMCE's `images_upload_handler`.
+     */
+    onUploadImage?: (request: TinyMceImageUploadRequest) => Promise<TinyMceImageUploadResult>;
+    /**
+     * Optional URL canonicalizer.
+     * Useful when you want inserted URLs to always use a canonical public route.
+     */
+    canonicalizeUrl?: (url: string) => string;
     /**
      * Additional props passed to the TinyMCE editor
      */

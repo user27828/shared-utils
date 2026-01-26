@@ -60,7 +60,7 @@ import "tinymce/skins/ui/oxide-dark/content";
  * Rich text editor component based on TinyMCE's free version
  */
 const TinyMceEditor = (props) => {
-    const { data, onChange, onEditorInstance, ...otherProps } = props;
+    const { data, onChange, onEditorInstance, onPickFile, onUploadImage, canonicalizeUrl, ...otherProps } = props;
     const editorRef = useRef(null);
     const initialValueRef = useRef(data || "");
     useEffect(() => {
@@ -100,6 +100,81 @@ const TinyMceEditor = (props) => {
         branding: false,
         promotion: false,
     };
+    const filePickerCallback = onPickFile &&
+        ((callback, value, meta) => {
+            void (async () => {
+                const pick = await onPickFile({
+                    value,
+                    meta: {
+                        filetype: meta?.filetype,
+                        fieldname: meta?.fieldname,
+                    },
+                });
+                if (!pick) {
+                    return;
+                }
+                const url = canonicalizeUrl ? canonicalizeUrl(pick.url) : pick.url;
+                const callbackMeta = {};
+                // TinyMCE supports a limited set of meta fields per picker type.
+                if (meta?.filetype === "image") {
+                    if (pick.alt) {
+                        callbackMeta.alt = pick.alt;
+                    }
+                    if (pick.title) {
+                        callbackMeta.title = pick.title;
+                    }
+                }
+                else if (meta?.filetype === "file") {
+                    if (pick.text) {
+                        callbackMeta.text = pick.text;
+                    }
+                    if (pick.title) {
+                        callbackMeta.title = pick.title;
+                    }
+                }
+                else {
+                    if (pick.text) {
+                        callbackMeta.text = pick.text;
+                    }
+                    if (pick.title) {
+                        callbackMeta.title = pick.title;
+                    }
+                }
+                callback(url, callbackMeta);
+            })().catch((err) => {
+                // Keep shared-utils standalone; no external logger dependency.
+                console.error("TinyMceEditor file_picker_callback failed", err);
+            });
+        });
+    const imagesUploadHandler = onUploadImage &&
+        (async (blobInfo, progress) => {
+            try {
+                const blob = blobInfo?.blob?.() || blobInfo;
+                const filename = (typeof blobInfo?.filename === "function" && blobInfo.filename()) ||
+                    "image";
+                const mimeType = blob?.type || "application/octet-stream";
+                const sizeBytes = typeof blob?.size === "number" ? blob.size : 0;
+                if (typeof progress === "function") {
+                    progress(0);
+                }
+                const result = await onUploadImage({
+                    blob,
+                    filename,
+                    mimeType,
+                    sizeBytes,
+                    progress: typeof progress === "function" ? progress : undefined,
+                });
+                if (typeof progress === "function") {
+                    progress(100);
+                }
+                const url = canonicalizeUrl ? canonicalizeUrl(result.url) : result.url;
+                return url;
+            }
+            catch (err) {
+                console.error("TinyMceEditor images_upload_handler failed", err);
+                throw new Error(err?.message || "Image upload failed");
+            }
+        });
     return (_jsx(Editor
     // No API key needed for self-hosted or community version
     , { 
@@ -108,7 +183,10 @@ const TinyMceEditor = (props) => {
             editorRef.current = editor;
             if (onEditorInstance)
                 onEditorInstance(editor);
-        }, initialValue: initialValueRef.current, value: data || "", onEditorChange: handleEditorChange, init: merge({}, defaultInit, otherProps.init), ...otherProps }));
+        }, initialValue: initialValueRef.current, value: data || "", onEditorChange: handleEditorChange, init: merge({}, defaultInit, otherProps.init, {
+            ...(filePickerCallback ? { file_picker_callback: filePickerCallback } : {}),
+            ...(imagesUploadHandler ? { images_upload_handler: imagesUploadHandler } : {}),
+        }), ...otherProps }));
 };
 TinyMceEditor.displayName = "TinyMceEditor";
 export default TinyMceEditor;
