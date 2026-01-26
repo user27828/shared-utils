@@ -26,6 +26,7 @@
     "dev": "yarn tsc --outDir ../dist/client --watch"
   },
   "peerDependencies": {
+    "@mdxeditor/editor": ">=3.0.0",
     "@mui/icons-material": ">=5.0.0",
     "@mui/material": ">=5.0.0",
     "@tinymce/tinymce-react": ">=5.0.0",
@@ -34,6 +35,9 @@
     "tinymce": ">=6.0.0"
   },
   "peerDependenciesMeta": {
+    "@mdxeditor/editor": {
+      "optional": true
+    },
     "@tinymce/tinymce-react": {
       "optional": true
     },

@@ -71,8 +71,13 @@ import {
   FileIcon,
 } from "@user27828/shared-utils/client";
 
-// ✅ WYSIWYG Editor (requires @tinymce/tinymce-react and tinymce)
-import { TinyMceEditor } from "@user27828/shared-utils/client/wysiwyg";
+// ✅ WYSIWYG Editors (requires peer dependencies)
+// TinyMCE: yarn add @tinymce/tinymce-react tinymce
+// MDXEditor: yarn add @mdxeditor/editor
+import {
+  TinyMceEditor,
+  MDXEditor,
+} from "@user27828/shared-utils/client/wysiwyg";
 
 // ✅ Server functionality
 import { verifyTurnstileTokenEnhanced } from "@user27828/shared-utils/server";
@@ -119,29 +124,71 @@ React components and client-side helpers:
 
 #### 📝 WYSIWYG Editor Components
 
-WYSIWYG components are available as an optional separate import to avoid forcing TinyMCE dependencies on projects that don't need them:
+WYSIWYG components are available as an optional separate import to avoid forcing editor dependencies on projects that don't need them. Two editors are available:
+
+**TinyMCE Editor** (Rich HTML editor):
 
 ```bash
-# First, install the required peer dependencies
+# Install required peer dependencies
 yarn add @tinymce/tinymce-react tinymce
 ```
 
 ```typescript
-// Import WYSIWYG components separately
 import { TinyMceEditor } from "@user27828/shared-utils/client/wysiwyg";
 
-// Basic usage
 <TinyMceEditor
-  data={content}
-  onChange={(value) => setContent(value)}
+  data={htmlContent}
+  onChange={(event, editor) => setContent(editor.getData())}
+  onUploadImage={async (request) => {
+    // Upload image and return URL
+    return { url: "https://example.com/image.png" };
+  }}
 />
 ```
+
+**MDXEditor** (Markdown editor):
+
+```bash
+# Install required peer dependencies
+yarn add @mdxeditor/editor
+```
+
+```typescript
+import { MDXEditor } from "@user27828/shared-utils/client/wysiwyg";
+
+<MDXEditor
+  data={markdownContent}
+  onChange={(event, editor) => setContent(editor.getData())}
+  darkMode={true}
+  height={400}
+  onUploadImage={async (request) => {
+    // Upload image and return URL
+    return { url: "https://example.com/image.png" };
+  }}
+/>
+```
+
+**MDXEditor Props:**
+
+| Prop               | Type                          | Description                                             |
+| ------------------ | ----------------------------- | ------------------------------------------------------- |
+| `data`             | `string`                      | Initial markdown content                                |
+| `onChange`         | `(event, editor) => void`     | Change handler (use `editor.getData()` to get markdown) |
+| `onEditorInstance` | `(editor) => void`            | Callback to receive editor methods reference            |
+| `onUploadImage`    | `(request) => Promise<{url}>` | Image upload handler                                    |
+| `darkMode`         | `boolean`                     | Enable dark theme styling                               |
+| `height`           | `string \| number`            | Editor height (default: 400)                            |
+| `showToolbar`      | `boolean`                     | Show/hide toolbar (default: true)                       |
+| `placeholder`      | `string`                      | Placeholder text                                        |
+| `readOnly`         | `boolean`                     | Read-only mode                                          |
 
 **Features:**
 
 - **Conditional Loading**: Components gracefully handle missing dependencies
-- **Lightweight**: Main client export doesn't include TinyMCE bundle
-- **Flexible**: Use `TinyMceEditor` for pre-configured setup
+- **Lightweight**: Main client export doesn't include editor bundles
+- **Consistent API**: Both editors use similar `data`/`onChange` patterns
+- **Dark Mode**: Built-in dark theme support for both editors
+- **Image Upload**: Unified image upload handler interface
 
 ### 🚀 [Server](/server/README-SERVER.md)
 

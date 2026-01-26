@@ -9,6 +9,7 @@ interface TestIndexProps {
       | "options"
       | "client"
       | "tinymce"
+      | "mdxeditor"
       | "server",
   ) => void;
 }
@@ -238,6 +239,42 @@ const TestIndex: React.FC<TestIndexProps> = ({ onNavigate }) => {
           description: "Test real-time content manipulation and statistics",
           status: "implemented" as const,
           category: "tinymce",
+        },
+      ],
+    },
+    {
+      name: "MDXEditor Integration Tests",
+      description: "Markdown editor integration with shared-utils data",
+      tests: [
+        {
+          name: "Basic Editor Setup",
+          description: "Test MDXEditor initialization with dark/light themes",
+          status: "implemented" as const,
+          category: "mdxeditor",
+        },
+        {
+          name: "Content Management",
+          description: "Test save/load markdown content functionality",
+          status: "implemented" as const,
+          category: "mdxeditor",
+        },
+        {
+          name: "Markdown Formatting",
+          description: "Test markdown formatting and syntax support",
+          status: "implemented" as const,
+          category: "mdxeditor",
+        },
+        {
+          name: "Editor API",
+          description: "Test getMarkdown, setMarkdown, insertMarkdown methods",
+          status: "implemented" as const,
+          category: "mdxeditor",
+        },
+        {
+          name: "Focus Management",
+          description: "Test editor focus functionality",
+          status: "implemented" as const,
+          category: "mdxeditor",
         },
       ],
     },

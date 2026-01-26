@@ -8,6 +8,7 @@ import LogTests from "./components/LogTests";
 import OptionsManagerTests from "./components/OptionsManagerTests";
 import ClientComponentTests from "./components/ClientComponentTests";
 import TinyMCETests from "./components/TinyMCETests";
+import MDXEditorTests from "./components/MDXEditorTests";
 import ServerIntegrationTests from "./components/ServerIntegrationTests";
 
 // Create light theme
@@ -72,7 +73,14 @@ const darkTheme = createTheme({
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = React.useState<
-    "index" | "turnstile" | "log" | "options" | "client" | "tinymce" | "server"
+    | "index"
+    | "turnstile"
+    | "log"
+    | "options"
+    | "client"
+    | "tinymce"
+    | "mdxeditor"
+    | "server"
   >("index");
 
   // Theme state - default to dark mode
@@ -86,6 +94,7 @@ const App: React.FC = () => {
       | "options"
       | "client"
       | "tinymce"
+      | "mdxeditor"
       | "server",
   ) => {
     setCurrentView(view);
@@ -210,6 +219,20 @@ const App: React.FC = () => {
               TinyMCE Tests
             </button>
             <button
+              onClick={() => handleNavigate("mdxeditor")}
+              style={{
+                backgroundColor:
+                  currentView === "mdxeditor"
+                    ? "#646cff"
+                    : isDarkMode
+                      ? "#1a1a1a"
+                      : "#e0e0e0",
+                color: isDarkMode ? "#ffffff" : "#000000",
+              }}
+            >
+              MDXEditor Tests
+            </button>
+            <button
               onClick={() => handleNavigate("server")}
               style={{
                 backgroundColor:
@@ -233,6 +256,9 @@ const App: React.FC = () => {
           {currentView === "options" && <OptionsManagerTests />}
           {currentView === "client" && <ClientComponentTests />}
           {currentView === "tinymce" && <TinyMCETests darkMode={isDarkMode} />}
+          {currentView === "mdxeditor" && (
+            <MDXEditorTests darkMode={isDarkMode} />
+          )}
           {currentView === "server" && <ServerIntegrationTests />}
         </main>
       </div>

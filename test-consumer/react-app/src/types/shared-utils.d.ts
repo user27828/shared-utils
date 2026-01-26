@@ -149,4 +149,47 @@ declare module "@user27828/shared-utils/client/wysiwyg" {
   }
 
   export const TinyMceEditor: React.FC<TinyMceEditorProps>;
+
+  // MDXEditor types
+  export interface MDXEditorMethods {
+    getMarkdown: () => string;
+    setMarkdown: (markdown: string) => void;
+    insertMarkdown: (markdown: string) => void;
+    focus: (
+      callbackFn?: (() => void) | undefined,
+      opts?: { defaultSelection?: "rootStart" | "rootEnd" },
+    ) => void;
+  }
+
+  export interface MDXEditorImageUploadRequest {
+    file: File;
+    filename: string;
+    mimeType: string;
+    sizeBytes: number;
+  }
+
+  export interface MDXEditorImageUploadResult {
+    url: string;
+  }
+
+  export interface MDXEditorComponentProps {
+    data?: string;
+    onChange?: (event: any, editor: { getData: () => string }) => void;
+    onEditorInstance?: (editor: MDXEditorMethods) => void;
+    onUploadImage?: (
+      request: MDXEditorImageUploadRequest,
+    ) => Promise<MDXEditorImageUploadResult>;
+    canonicalizeUrl?: (url: string) => string;
+    darkMode?: boolean;
+    height?: string | number;
+    imageAutocompleteSuggestions?: string[];
+    showToolbar?: boolean;
+    className?: string;
+    placeholder?: string;
+    readOnly?: boolean;
+  }
+
+  export const MDXEditor: React.ForwardRefExoticComponent<
+    MDXEditorComponentProps & React.RefAttributes<MDXEditorMethods>
+  >;
 }
