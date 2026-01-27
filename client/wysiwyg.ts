@@ -12,7 +12,14 @@
  * import { TinyMceEditor, MDXEditor } from "@shared-utils/client/wysiwyg";
  */
 
-export { default as TinyMceEditor } from "./src/components/wysiwyg/TinyMceEditor.js";
+export {
+  default as TinyMceEditor,
+  type TinyMceEditorProps,
+  type TinyMcePickRequest,
+  type TinyMcePickResult,
+  type TinyMceImageUploadRequest,
+  type TinyMceImageUploadResult,
+} from "./src/components/wysiwyg/TinyMceEditor.js";
 export {
   default as MDXEditor,
   type MDXEditorComponentProps,

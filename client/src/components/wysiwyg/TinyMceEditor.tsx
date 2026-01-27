@@ -122,6 +122,21 @@ export interface TinyMceEditorProps {
    * Useful when you want inserted URLs to always use a canonical public route.
    */
   canonicalizeUrl?: (url: string) => string;
+
+  /**
+   * Optional URL path to TinyMCE UI skin directory.
+   * Use this when serving skins as static files (required for Vite).
+   * Example: "/tinymce/skins/ui/oxide" or "/tinymce/skins/ui/oxide-dark"
+   */
+  skinUrl?: string;
+
+  /**
+   * Optional URL path to TinyMCE content CSS file.
+   * Use this when serving skins as static files (required for Vite).
+   * Example: "/tinymce/skins/content/default/content.css"
+   */
+  contentCss?: string;
+
   /**
    * Additional props passed to the TinyMCE editor
    */
@@ -139,6 +154,8 @@ const TinyMceEditor: React.FC<TinyMceEditorProps> = (props) => {
     onPickFile,
     onUploadImage,
     canonicalizeUrl,
+    skinUrl,
+    contentCss,
     ...otherProps
   } = props;
   const editorRef = useRef<any>(null);
@@ -276,12 +293,16 @@ const TinyMceEditor: React.FC<TinyMceEditorProps> = (props) => {
       // No API key needed for self-hosted or community version
       onInit={(evt: any, editor: any) => {
         editorRef.current = editor;
-        if (onEditorInstance) onEditorInstance(editor);
+        if (onEditorInstance) {
+          onEditorInstance(editor);
+        }
       }}
       initialValue={initialValueRef.current}
       value={data || ""}
       onEditorChange={handleEditorChange}
       init={merge({}, defaultInit, otherProps.init, {
+        ...(skinUrl ? { skin_url: skinUrl } : {}),
+        ...(contentCss ? { content_css: contentCss } : {}),
         ...(filePickerCallback ? { file_picker_callback: filePickerCallback } : {}),
         ...(imagesUploadHandler ? { images_upload_handler: imagesUploadHandler } : {}),
       })}

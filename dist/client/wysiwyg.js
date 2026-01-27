@@ -11,5 +11,5 @@
  * Usage:
  * import { TinyMceEditor, MDXEditor } from "@shared-utils/client/wysiwyg";
  */
-export { default as TinyMceEditor } from "./src/components/wysiwyg/TinyMceEditor.js";
+export { default as TinyMceEditor, } from "./src/components/wysiwyg/TinyMceEditor.js";
 export { default as MDXEditor, } from "./src/components/wysiwyg/MDXEditor.js";

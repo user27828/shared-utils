@@ -60,7 +60,7 @@ import "tinymce/skins/ui/oxide-dark/content";
  * Rich text editor component based on TinyMCE's free version
  */
 const TinyMceEditor = (props) => {
-    const { data, onChange, onEditorInstance, onPickFile, onUploadImage, canonicalizeUrl, ...otherProps } = props;
+    const { data, onChange, onEditorInstance, onPickFile, onUploadImage, canonicalizeUrl, skinUrl, contentCss, ...otherProps } = props;
     const editorRef = useRef(null);
     const initialValueRef = useRef(data || "");
     useEffect(() => {
@@ -181,9 +181,12 @@ const TinyMceEditor = (props) => {
         // No API key needed for self-hosted or community version
         onInit: (evt, editor) => {
             editorRef.current = editor;
-            if (onEditorInstance)
+            if (onEditorInstance) {
                 onEditorInstance(editor);
+            }
         }, initialValue: initialValueRef.current, value: data || "", onEditorChange: handleEditorChange, init: merge({}, defaultInit, otherProps.init, {
+            ...(skinUrl ? { skin_url: skinUrl } : {}),
+            ...(contentCss ? { content_css: contentCss } : {}),
             ...(filePickerCallback ? { file_picker_callback: filePickerCallback } : {}),
             ...(imagesUploadHandler ? { images_upload_handler: imagesUploadHandler } : {}),
         }), ...otherProps }));

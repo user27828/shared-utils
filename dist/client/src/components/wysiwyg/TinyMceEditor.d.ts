@@ -101,6 +101,18 @@ export interface TinyMceEditorProps {
      */
     canonicalizeUrl?: (url: string) => string;
     /**
+     * Optional URL path to TinyMCE UI skin directory.
+     * Use this when serving skins as static files (required for Vite).
+     * Example: "/tinymce/skins/ui/oxide" or "/tinymce/skins/ui/oxide-dark"
+     */
+    skinUrl?: string;
+    /**
+     * Optional URL path to TinyMCE content CSS file.
+     * Use this when serving skins as static files (required for Vite).
+     * Example: "/tinymce/skins/content/default/content.css"
+     */
+    contentCss?: string;
+    /**
      * Additional props passed to the TinyMCE editor
      */
     [key: string]: any;
