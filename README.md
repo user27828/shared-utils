@@ -73,9 +73,11 @@ import {
 
 // ✅ WYSIWYG Editors (requires peer dependencies)
 // TinyMCE: yarn add @tinymce/tinymce-react tinymce
+// CKEditor 5: yarn add ckeditor5 @ckeditor/ckeditor5-react
 // MDXEditor: yarn add @mdxeditor/editor
 import {
   TinyMceEditor,
+  CKEditor5Classic,
   MDXEditor,
 } from "@user27828/shared-utils/client/wysiwyg";
 
@@ -124,7 +126,7 @@ React components and client-side helpers:
 
 #### 📝 WYSIWYG Editor Components
 
-WYSIWYG components are available as an optional separate import to avoid forcing editor dependencies on projects that don't need them. Two editors are available:
+WYSIWYG components are available as an optional separate import to avoid forcing editor dependencies on projects that don't need them. Three editors are available:
 
 **TinyMCE Editor** (Rich HTML editor):
 
@@ -133,7 +135,7 @@ WYSIWYG components are available as an optional separate import to avoid forcing
 yarn add @tinymce/tinymce-react tinymce
 ```
 
-```typescript
+````typescript
 import { TinyMceEditor } from "@user27828/shared-utils/client/wysiwyg";
 
 <TinyMceEditor
@@ -144,14 +146,39 @@ import { TinyMceEditor } from "@user27828/shared-utils/client/wysiwyg";
     return { url: "https://example.com/image.png" };
   }}
 />
+
+**CKEditor 5 Classic** (Rich HTML editor):
+
+```bash
+# Install required peer dependencies
+yarn add ckeditor5 @ckeditor/ckeditor5-react
+````
+
+```typescript
+import { CKEditor5Classic } from "@user27828/shared-utils/client/wysiwyg";
+
+<CKEditor5Classic
+  data={htmlContent}
+  onChange={(_event, editor) => setContent(editor.getData())}
+  onPickFile={async (request) => {
+    // Provide custom picker UI for image/file/media and return a URL.
+    return null;
+  }}
+  onUploadImage={async (request) => {
+    // Upload image and return URL
+    return { url: "https://example.com/image.png" };
+  }}
+/>
 ```
+
+````
 
 **MDXEditor** (Markdown editor):
 
 ```bash
 # Install required peer dependencies
 yarn add @mdxeditor/editor
-```
+````
 
 ```typescript
 import { MDXEditor } from "@user27828/shared-utils/client/wysiwyg";
@@ -387,6 +414,8 @@ wrangler secret put TURNSTILE_SECRET_KEY
 - **[Utils Documentation](./utils/README.md)** - Complete API reference for logging, Turnstile, and OptionsManager
 - **[Server Documentation](./server/README-SERVER.md)** - Server-side integration and Cloudflare Workers
 - **[Deployment Guide](./doc/WORKER_DEPLOYMENT_GUIDE.md)** - Complete deployment strategies
+- **[TinyMCE Setup Guide](./doc/TINYMCE_SETUP.md)** - Notes for bundlers (especially Vite)
+- **[CKEditor 5 Setup Guide](./doc/CKEDITOR_SETUP.md)** - Peer deps, upload/picker hooks, extensibility
 - **[Example Integration](./examples/CONSUMING_PROJECT_EXAMPLE.md)** - Step-by-step integration example
 
 [🔝 Back to Top](#shared-utils)

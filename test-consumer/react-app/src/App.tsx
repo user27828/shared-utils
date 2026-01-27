@@ -9,6 +9,7 @@ import OptionsManagerTests from "./components/OptionsManagerTests";
 import ClientComponentTests from "./components/ClientComponentTests";
 import TinyMCETests from "./components/TinyMCETests";
 import MDXEditorTests from "./components/MDXEditorTests";
+import CKEditorTests from "./components/CKEditorTests";
 import ServerIntegrationTests from "./components/ServerIntegrationTests";
 
 // Create light theme
@@ -80,6 +81,7 @@ const App: React.FC = () => {
     | "client"
     | "tinymce"
     | "mdxeditor"
+    | "ckeditor"
     | "server"
   >("index");
 
@@ -95,6 +97,7 @@ const App: React.FC = () => {
       | "client"
       | "tinymce"
       | "mdxeditor"
+      | "ckeditor"
       | "server",
   ) => {
     setCurrentView(view);
@@ -233,6 +236,20 @@ const App: React.FC = () => {
               MDXEditor Tests
             </button>
             <button
+              onClick={() => handleNavigate("ckeditor")}
+              style={{
+                backgroundColor:
+                  currentView === "ckeditor"
+                    ? "#646cff"
+                    : isDarkMode
+                      ? "#1a1a1a"
+                      : "#e0e0e0",
+                color: isDarkMode ? "#ffffff" : "#000000",
+              }}
+            >
+              CKEditor Tests
+            </button>
+            <button
               onClick={() => handleNavigate("server")}
               style={{
                 backgroundColor:
@@ -258,6 +275,9 @@ const App: React.FC = () => {
           {currentView === "tinymce" && <TinyMCETests darkMode={isDarkMode} />}
           {currentView === "mdxeditor" && (
             <MDXEditorTests darkMode={isDarkMode} />
+          )}
+          {currentView === "ckeditor" && (
+            <CKEditorTests darkMode={isDarkMode} />
           )}
           {currentView === "server" && <ServerIntegrationTests />}
         </main>

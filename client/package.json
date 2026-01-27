@@ -26,19 +26,27 @@
     "dev": "yarn tsc --outDir ../dist/client --watch"
   },
   "peerDependencies": {
+    "@ckeditor/ckeditor5-react": ">=9.0.0",
     "@mdxeditor/editor": ">=3.0.0",
     "@mui/icons-material": ">=5.0.0",
     "@mui/material": ">=5.0.0",
     "@tinymce/tinymce-react": ">=5.0.0",
+    "ckeditor5": ">=44.0.0",
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0",
     "tinymce": ">=6.0.0"
   },
   "peerDependenciesMeta": {
+    "@ckeditor/ckeditor5-react": {
+      "optional": true
+    },
     "@mdxeditor/editor": {
       "optional": true
     },
     "@tinymce/tinymce-react": {
+      "optional": true
+    },
+    "ckeditor5": {
       "optional": true
     },
     "tinymce": {

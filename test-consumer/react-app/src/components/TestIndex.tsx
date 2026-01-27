@@ -10,6 +10,7 @@ interface TestIndexProps {
       | "client"
       | "tinymce"
       | "mdxeditor"
+      | "ckeditor"
       | "server",
   ) => void;
 }
@@ -279,6 +280,39 @@ const TestIndex: React.FC<TestIndexProps> = ({ onNavigate }) => {
       ],
     },
     {
+      name: "CKEditor 5 Integration Tests",
+      description: "CKEditor 5 (GPL) integration with shared-utils hooks",
+      tests: [
+        {
+          name: "Basic Editor Setup",
+          description:
+            "Test CKEditor initialization with dark/light themes and GPL licensing",
+          status: "implemented" as const,
+          category: "ckeditor",
+        },
+        {
+          name: "Media Embed",
+          description: "Test embedding media URLs without cloud services",
+          status: "implemented" as const,
+          category: "ckeditor",
+        },
+        {
+          name: "Paste Markdown",
+          description:
+            "Test PasteFromMarkdownExperimental converting Markdown on paste",
+          status: "implemented" as const,
+          category: "ckeditor",
+        },
+        {
+          name: "Custom File Picker",
+          description:
+            "Test custom picker UI integration via onPickFile (image/file/media)",
+          status: "implemented" as const,
+          category: "ckeditor",
+        },
+      ],
+    },
+    {
       name: "Future Components Tests",
       description: "Additional React components for future implementation",
       tests: [
@@ -360,6 +394,10 @@ const TestIndex: React.FC<TestIndexProps> = ({ onNavigate }) => {
       onNavigate("client");
     } else if (category === "tinymce") {
       onNavigate("tinymce");
+    } else if (category === "mdxeditor") {
+      onNavigate("mdxeditor");
+    } else if (category === "ckeditor") {
+      onNavigate("ckeditor");
     } else if (category === "components") {
       // Future components - show notification
       alert(

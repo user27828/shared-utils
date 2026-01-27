@@ -150,6 +150,55 @@ declare module "@user27828/shared-utils/client/wysiwyg" {
 
   export const TinyMceEditor: React.FC<TinyMceEditorProps>;
 
+  export interface CKEditor5FilePickerMeta {
+    filetype?: "file" | "image" | "media";
+  }
+
+  export interface CKEditor5PickRequest {
+    value: string;
+    meta: CKEditor5FilePickerMeta;
+  }
+
+  export interface CKEditor5PickResult {
+    url: string;
+    title?: string;
+    text?: string;
+    alt?: string;
+    kind?: "file" | "image" | "media";
+  }
+
+  export interface CKEditor5ImageUploadRequest {
+    file: File;
+    filename: string;
+    mimeType: string;
+    sizeBytes: number;
+    progress?: (percent: number) => void;
+  }
+
+  export interface CKEditor5ImageUploadResult {
+    url: string;
+  }
+
+  export interface CKEditor5ClassicProps {
+    data?: string;
+    onChange?: (event: any, editor: { getData: () => string }) => void;
+    onEditorInstance?: (editor: any) => void;
+    onPickFile?: (
+      request: CKEditor5PickRequest,
+    ) => Promise<CKEditor5PickResult | null>;
+    onUploadImage?: (
+      request: CKEditor5ImageUploadRequest,
+    ) => Promise<CKEditor5ImageUploadResult>;
+    canonicalizeUrl?: (url: string) => string;
+    darkMode?: boolean;
+    readOnly?: boolean;
+    height?: string | number;
+    config?: Record<string, any>;
+    additionalPlugins?: any[];
+  }
+
+  export const CKEditor5Classic: React.FC<CKEditor5ClassicProps>;
+
   // MDXEditor types
   export interface MDXEditorMethods {
     getMarkdown: () => string;
