@@ -10,6 +10,7 @@ import ClientComponentTests from "./components/ClientComponentTests";
 import TinyMCETests from "./components/TinyMCETests";
 import MDXEditorTests from "./components/MDXEditorTests";
 import CKEditorTests from "./components/CKEditorTests";
+import EasyMDETests from "./components/EasyMDETests";
 import ServerIntegrationTests from "./components/ServerIntegrationTests";
 
 // Create light theme
@@ -80,6 +81,7 @@ const App: React.FC = () => {
     | "options"
     | "client"
     | "tinymce"
+    | "easymde"
     | "mdxeditor"
     | "ckeditor"
     | "server"
@@ -96,6 +98,7 @@ const App: React.FC = () => {
       | "options"
       | "client"
       | "tinymce"
+      | "easymde"
       | "mdxeditor"
       | "ckeditor"
       | "server",
@@ -222,6 +225,20 @@ const App: React.FC = () => {
               TinyMCE Tests
             </button>
             <button
+              onClick={() => handleNavigate("easymde")}
+              style={{
+                backgroundColor:
+                  currentView === "easymde"
+                    ? "#646cff"
+                    : isDarkMode
+                      ? "#1a1a1a"
+                      : "#e0e0e0",
+                color: isDarkMode ? "#ffffff" : "#000000",
+              }}
+            >
+              EasyMDE Tests
+            </button>
+            <button
               onClick={() => handleNavigate("mdxeditor")}
               style={{
                 backgroundColor:
@@ -273,6 +290,7 @@ const App: React.FC = () => {
           {currentView === "options" && <OptionsManagerTests />}
           {currentView === "client" && <ClientComponentTests />}
           {currentView === "tinymce" && <TinyMCETests darkMode={isDarkMode} />}
+          {currentView === "easymde" && <EasyMDETests darkMode={isDarkMode} />}
           {currentView === "mdxeditor" && (
             <MDXEditorTests darkMode={isDarkMode} />
           )}

@@ -74,10 +74,12 @@ import {
 // ✅ WYSIWYG Editors (requires peer dependencies)
 // TinyMCE: yarn add @tinymce/tinymce-react tinymce
 // CKEditor 5: yarn add ckeditor5 @ckeditor/ckeditor5-react
+// EasyMDE: yarn add easymde
 // MDXEditor: yarn add @mdxeditor/editor
 import {
   TinyMceEditor,
   CKEditor5Classic,
+  EasyMDEEditor,
   MDXEditor,
 } from "@user27828/shared-utils/client/wysiwyg";
 
@@ -126,7 +128,37 @@ React components and client-side helpers:
 
 #### 📝 WYSIWYG Editor Components
 
-WYSIWYG components are available as an optional separate import to avoid forcing editor dependencies on projects that don't need them. Three editors are available:
+WYSIWYG components are available as an optional separate import to avoid forcing editor dependencies on projects that don't need them. The core editors are available, and a unified factory export is provided.
+
+For a full guide (recommended), see [doc/WYSIWYG_SETUP.md](./doc/WYSIWYG_SETUP.md).
+
+**Unified factory (default export)**:
+
+```typescript
+import WysiwygEditor from "@user27828/shared-utils/client/wysiwyg";
+
+<WysiwygEditor
+  editor="tinymce" // "tinymce" | "ckeditor" | "easymde"
+  value={content}
+  readOnly={false}
+  height={420}
+  onChange={(nextValue) => setContent(nextValue)}
+  onPickAsset={async ({ kind }) => {
+    // kind: "file" | "image" | "media"
+    return null;
+  }}
+  onUploadImage={async ({ file, blob, filename }) => {
+    // Upload and return URL
+    return { url: "https://example.com/image.png" };
+  }}
+/>
+```
+
+**Key behavior**:
+
+- `value` stays in each editor's native format: HTML for TinyMCE/CKEditor, Markdown for EasyMDE.
+- Use `onPickAsset` for inserting images/files/media with a single hook.
+- Use `onUploadImage` for paste/drag-drop uploads.
 
 **TinyMCE Editor** (Rich HTML editor):
 
@@ -135,7 +167,7 @@ WYSIWYG components are available as an optional separate import to avoid forcing
 yarn add @tinymce/tinymce-react tinymce
 ```
 
-````typescript
+```typescript
 import { TinyMceEditor } from "@user27828/shared-utils/client/wysiwyg";
 
 <TinyMceEditor
@@ -146,13 +178,14 @@ import { TinyMceEditor } from "@user27828/shared-utils/client/wysiwyg";
     return { url: "https://example.com/image.png" };
   }}
 />
+```
 
 **CKEditor 5 Classic** (Rich HTML editor):
 
 ```bash
 # Install required peer dependencies
 yarn add ckeditor5 @ckeditor/ckeditor5-react
-````
+```
 
 ```typescript
 import { CKEditor5Classic } from "@user27828/shared-utils/client/wysiwyg";
@@ -171,14 +204,40 @@ import { CKEditor5Classic } from "@user27828/shared-utils/client/wysiwyg";
 />
 ```
 
-````
+**EasyMDE** (Markdown editor):
+
+```bash
+# Install required peer dependencies
+yarn add easymde
+```
+
+```typescript
+import { EasyMDEEditor } from "@user27828/shared-utils/client/wysiwyg";
+
+<EasyMDEEditor
+  value={markdownContent}
+  onChange={(nextValue) => setContent(nextValue)}
+  onPickAsset={async ({ kind }) => {
+    // kind: "file" | "image" | "media"
+    return null;
+  }}
+  onUploadImage={async (request) => {
+    // Upload image and return URL
+    return { url: "https://example.com/image.png" };
+  }}
+  options={{
+    spellChecker: false,
+    status: false,
+  }}
+/>
+```
 
 **MDXEditor** (Markdown editor):
 
 ```bash
 # Install required peer dependencies
 yarn add @mdxeditor/editor
-````
+```
 
 ```typescript
 import { MDXEditor } from "@user27828/shared-utils/client/wysiwyg";
@@ -414,6 +473,7 @@ wrangler secret put TURNSTILE_SECRET_KEY
 - **[Utils Documentation](./utils/README.md)** - Complete API reference for logging, Turnstile, and OptionsManager
 - **[Server Documentation](./server/README-SERVER.md)** - Server-side integration and Cloudflare Workers
 - **[Deployment Guide](./doc/WORKER_DEPLOYMENT_GUIDE.md)** - Complete deployment strategies
+- **[WYSIWYG Setup Guide](./doc/WYSIWYG_SETUP.md)** - Unified editor API, picker/upload hooks, and per-editor configuration
 - **[TinyMCE Setup Guide](./doc/TINYMCE_SETUP.md)** - Notes for bundlers (especially Vite)
 - **[CKEditor 5 Setup Guide](./doc/CKEDITOR_SETUP.md)** - Peer deps, upload/picker hooks, extensibility
 - **[Example Integration](./examples/CONSUMING_PROJECT_EXAMPLE.md)** - Step-by-step integration example

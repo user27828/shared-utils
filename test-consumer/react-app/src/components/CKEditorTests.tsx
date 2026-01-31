@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  CKEditor5Classic,
-  type CKEditor5PickRequest,
-  type CKEditor5PickResult,
+import WysiwygEditor, {
+  type WysiwygPickRequest,
+  type WysiwygPickResult,
+  type WysiwygAssetKind,
+  type WysiwygImageUploadRequest,
 } from "@user27828/shared-utils/client/wysiwyg";
 import {
   Box,
@@ -26,8 +27,8 @@ interface CKEditorTestsProps {
 
 type PickerState = {
   open: boolean;
-  request: CKEditor5PickRequest | null;
-  resolve: ((value: CKEditor5PickResult | null) => void) | null;
+  request: WysiwygPickRequest | null;
+  resolve: ((value: WysiwygPickResult | null) => void) | null;
   reject: ((reason?: any) => void) | null;
 };
 
@@ -130,8 +131,8 @@ const CKEditorTests: React.FC<CKEditorTestsProps> = ({ darkMode }) => {
     );
   };
 
-  const onPickFile = async (request: CKEditor5PickRequest) => {
-    return await new Promise<CKEditor5PickResult | null>((resolve, reject) => {
+  const onPickAsset = async (request: WysiwygPickRequest) => {
+    return await new Promise<WysiwygPickResult | null>((resolve, reject) => {
       setPickerState({
         open: true,
         request,
@@ -140,12 +141,7 @@ const CKEditorTests: React.FC<CKEditorTestsProps> = ({ darkMode }) => {
       });
 
       // Provide a helpful default URL for the chosen type.
-      const defaultKind =
-        request.meta.filetype === "media"
-          ? "media"
-          : request.meta.filetype === "file"
-            ? "file"
-            : "image";
+      const defaultKind: WysiwygAssetKind = request.kind;
 
       setPickerKind(defaultKind);
 
@@ -192,7 +188,12 @@ const CKEditorTests: React.FC<CKEditorTestsProps> = ({ darkMode }) => {
     });
   };
 
-  const onUploadImage = async ({ file }: { file: File }) => {
+  const onUploadImage = async (request: WysiwygImageUploadRequest) => {
+    const file = request.file;
+    if (!file) {
+      throw new Error("CKEditor tests expect a File-based upload request");
+    }
+
     const url = await fileToDataUrl(file);
     return { url };
   };
@@ -468,18 +469,21 @@ const CKEditorTests: React.FC<CKEditorTestsProps> = ({ darkMode }) => {
             CKEditor 5 Editor
           </Typography>
 
-          <CKEditor5Classic
-            data={content}
-            darkMode={darkMode}
-            onEditorInstance={(instance) => {
+          <WysiwygEditor
+            editor="ckeditor"
+            value={content}
+            height={520}
+            onEditorInstance={(instance: any) => {
               setEditor(instance);
             }}
-            onChange={(_event: any, editorLike: any) => {
-              setContent(editorLike.getData());
+            onChange={(nextValue: string) => {
+              setContent(nextValue);
             }}
-            onPickFile={onPickFile}
-            onUploadImage={onUploadImage as any}
-            height={520}
+            onPickAsset={onPickAsset}
+            onUploadImage={onUploadImage}
+            ckeditor={{
+              darkMode,
+            }}
           />
         </CardContent>
       </Card>
@@ -515,7 +519,7 @@ const CKEditorTests: React.FC<CKEditorTestsProps> = ({ darkMode }) => {
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             This dialog simulates an asset picker UI. It resolves the
-            `onPickFile()` promise back to the editor.
+            `onPickAsset()` promise back to the editor.
           </Typography>
 
           <Stack

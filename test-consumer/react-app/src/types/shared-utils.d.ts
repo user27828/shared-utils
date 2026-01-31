@@ -142,6 +142,70 @@ declare module "@user27828/shared-utils/server" {
 declare module "@user27828/shared-utils/client/wysiwyg" {
   import React from "react";
 
+  export type WysiwygEditorKind = "tinymce" | "ckeditor" | "easymde";
+  export type WysiwygAssetKind = "file" | "image" | "media";
+
+  export type WysiwygPickRequest = {
+    value: string;
+    kind: WysiwygAssetKind;
+  };
+
+  export type WysiwygPickResult = {
+    url: string;
+    title?: string;
+    text?: string;
+    alt?: string;
+    kind?: WysiwygAssetKind;
+  };
+
+  export type WysiwygProgressFn = (percent: number) => void;
+
+  export type WysiwygImageUploadRequest = {
+    file?: File;
+    blob?: Blob;
+    filename: string;
+    mimeType: string;
+    sizeBytes: number;
+    progress?: WysiwygProgressFn;
+  };
+
+  export type WysiwygImageUploadResult = {
+    url: string;
+  };
+
+  export type WysiwygChangeContext = {
+    editor: WysiwygEditorKind;
+    instance: any;
+    rawEvent?: any;
+  };
+
+  export interface WysiwygEditorProps {
+    editor?: WysiwygEditorKind;
+    value?: string;
+    readOnly?: boolean;
+    height?: string | number;
+    onChange?: (value: string, ctx: WysiwygChangeContext) => void;
+    onEditorInstance?: (
+      instance: any,
+      ctx: { editor: WysiwygEditorKind },
+    ) => void;
+    onPickAsset?: (
+      request: WysiwygPickRequest,
+    ) => Promise<WysiwygPickResult | null>;
+    onUploadImage?: (
+      request: WysiwygImageUploadRequest,
+    ) => Promise<WysiwygImageUploadResult>;
+    canonicalizeUrl?: (url: string) => string;
+    tinymce?: Record<string, any>;
+    ckeditor?: Record<string, any>;
+    easymde?: Record<string, any>;
+    suspenseFallback?: React.ReactNode;
+  }
+
+  export const WysiwygEditor: React.FC<WysiwygEditorProps>;
+  const _default: React.FC<WysiwygEditorProps>;
+  export default _default;
+
   export interface TinyMceEditorProps {
     data?: string;
     onChange?: (event: any, editor: { getData: () => string }) => void;

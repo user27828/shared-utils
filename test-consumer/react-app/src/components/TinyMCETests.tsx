@@ -1,5 +1,5 @@
-import React, { useState, useRef } from "react";
-import { TinyMceEditor } from "@user27828/shared-utils/client/wysiwyg";
+import React, { useState } from "react";
+import WysiwygEditor from "@user27828/shared-utils/client/wysiwyg";
 import { Box, Card, CardContent, Typography, Stack, Chip } from "@mui/material";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 
@@ -8,7 +8,6 @@ interface TinyMCETestsProps {
 }
 
 const TinyMCETests: React.FC<TinyMCETestsProps> = ({ darkMode }) => {
-  const editorRef = useRef<any>(null);
   const [editor, setEditor] = useState<any>(null);
   const [content, setContent] = useState<string>(
     "<h2>Welcome to TinyMCE Integration!</h2><p>This demonstrates TinyMCE with shared-utils integration.</p>",
@@ -618,51 +617,52 @@ const TinyMCETests: React.FC<TinyMCETestsProps> = ({ darkMode }) => {
             <Typography variant="h6" gutterBottom>
               TinyMCE Rich Text Editor
             </Typography>
-            <TinyMceEditor
-              ref={editorRef}
+            <WysiwygEditor
+              editor="tinymce"
               value={content}
-              onInit={(_: any, editor: any) => {
-                setEditor(editor);
+              height={400}
+              onEditorInstance={(instance) => {
+                setEditor(instance);
               }}
-              onEditorChange={handleEditorChange}
-              init={{
-                license_key: "gpl",
-                height: 400,
-                menubar: true,
-                toolbar:
-                  "undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist outdent indent | removeformat | help",
-                branding: false,
-                promotion: false,
-                // Use the proper dark mode configuration
-                skin: darkMode ? "oxide-dark" : "oxide",
-                content_css: darkMode ? "dark" : "default",
-                // skin_url: darkMode
-                //   ? "/tinymce/skins/ui/oxide-dark"
-                //   : "/tinymce/skins/ui/oxide",
-                content_style: `body { 
-                    font-family:Helvetica,Arial,sans-serif; 
-                    font-size:14px;
-                    ${darkMode ? "background-color: #2a2a2a; color: #ffffff;" : ""}
-                  }`,
-                plugins: [
-                  "advlist",
-                  "autolink",
-                  "lists",
-                  "link",
-                  "image",
-                  "charmap",
-                  "preview",
-                  "anchor",
-                  "searchreplace",
-                  "visualblocks",
-                  "code",
-                  "fullscreen",
-                  "insertdatetime",
-                  "media",
-                  "table",
-                  "help",
-                  "wordcount",
-                ],
+              onChange={(nextValue) => {
+                handleEditorChange(nextValue);
+              }}
+              tinymce={{
+                init: {
+                  license_key: "gpl",
+                  menubar: true,
+                  toolbar:
+                    "undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist outdent indent | removeformat | help",
+                  branding: false,
+                  promotion: false,
+                  // Use the proper dark mode configuration
+                  skin: darkMode ? "oxide-dark" : "oxide",
+                  content_css: darkMode ? "dark" : "default",
+                  content_style: `body { 
+                      font-family:Helvetica,Arial,sans-serif; 
+                      font-size:14px;
+                      ${darkMode ? "background-color: #2a2a2a; color: #ffffff;" : ""}
+                    }`,
+                  plugins: [
+                    "advlist",
+                    "autolink",
+                    "lists",
+                    "link",
+                    "image",
+                    "charmap",
+                    "preview",
+                    "anchor",
+                    "searchreplace",
+                    "visualblocks",
+                    "code",
+                    "fullscreen",
+                    "insertdatetime",
+                    "media",
+                    "table",
+                    "help",
+                    "wordcount",
+                  ],
+                },
               }}
             />
           </CardContent>

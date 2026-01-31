@@ -4,10 +4,9 @@ import { Card, CardContent, Typography, Button, Stack } from "@mui/material";
 // Example of using the new WYSIWYG import pattern
 const loadWysiwygComponents = async () => {
   try {
-    const { TinyMceEditor } = await import(
-      "@user27828/shared-utils/client/wysiwyg"
-    );
-    return { TinyMceEditor };
+    const { default: WysiwygEditor } =
+      await import("@user27828/shared-utils/client/wysiwyg");
+    return { WysiwygEditor };
   } catch (error) {
     console.warn("WYSIWYG components not available:", error);
     return null;
@@ -54,11 +53,14 @@ const WysiwygTestExample: React.FC = () => {
           {Components && (
             <div>
               <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                TinyMCE Editor Loaded Successfully!
+                WysiwygEditor Loaded Successfully!
               </Typography>
-              <Components.TinyMceEditor
-                data={content}
-                onChange={(value: string) => setContent(value)}
+              <Components.WysiwygEditor
+                editor="tinymce"
+                value={content}
+                onChange={(value: string) => {
+                  setContent(value);
+                }}
               />
             </div>
           )}

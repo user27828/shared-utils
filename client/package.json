@@ -32,6 +32,7 @@
     "@mui/material": ">=5.0.0",
     "@tinymce/tinymce-react": ">=5.0.0",
     "ckeditor5": ">=44.0.0",
+    "easymde": ">=2.0.0",
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0",
     "tinymce": ">=6.0.0"
@@ -49,6 +50,9 @@
     "ckeditor5": {
       "optional": true
     },
+    "easymde": {
+      "optional": true
+    },
     "tinymce": {
       "optional": true
     }
@@ -61,8 +65,8 @@
     "papaparse": "^5.5.3"
   },
   "devDependencies": {
-    "@babel/core": "^7.28.6",
-    "@babel/preset-env": "^7.28.6",
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.0",
     "@babel/preset-react": "^7.28.5",
     "@babel/preset-typescript": "^7.28.5",
     "@testing-library/dom": "^10.4.1",
@@ -72,7 +76,7 @@
     "@types/dompurify": "^3.2.0",
     "@types/jest": "^30.0.0",
     "@types/papaparse": "^5.5.2",
-    "@types/react": "^19.2.9",
+    "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
     "@vitest/coverage-v8": "^4.0.18",
     "@vitest/ui": "^4.0.18",

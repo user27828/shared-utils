@@ -9,6 +9,7 @@ interface TestIndexProps {
       | "options"
       | "client"
       | "tinymce"
+      | "easymde"
       | "mdxeditor"
       | "ckeditor"
       | "server",
@@ -244,6 +245,30 @@ const TestIndex: React.FC<TestIndexProps> = ({ onNavigate }) => {
       ],
     },
     {
+      name: "EasyMDE Integration Tests",
+      description: "Markdown editor integration via the unified WysiwygEditor",
+      tests: [
+        {
+          name: "Basic Editor Setup",
+          description: "Test EasyMDE initialization with dark/light themes",
+          status: "implemented" as const,
+          category: "easymde",
+        },
+        {
+          name: "Asset Insertion",
+          description: "Test Image/File/Media insertion hooks",
+          status: "implemented" as const,
+          category: "easymde",
+        },
+        {
+          name: "Image Upload",
+          description: "Test paste/drag image upload handler",
+          status: "implemented" as const,
+          category: "easymde",
+        },
+      ],
+    },
+    {
       name: "MDXEditor Integration Tests",
       description: "Markdown editor integration with shared-utils data",
       tests: [
@@ -306,7 +331,7 @@ const TestIndex: React.FC<TestIndexProps> = ({ onNavigate }) => {
         {
           name: "Custom File Picker",
           description:
-            "Test custom picker UI integration via onPickFile (image/file/media)",
+            "Test custom picker UI integration via onPickAsset (image/file/media)",
           status: "implemented" as const,
           category: "ckeditor",
         },
@@ -394,6 +419,8 @@ const TestIndex: React.FC<TestIndexProps> = ({ onNavigate }) => {
       onNavigate("client");
     } else if (category === "tinymce") {
       onNavigate("tinymce");
+    } else if (category === "easymde") {
+      onNavigate("easymde");
     } else if (category === "mdxeditor") {
       onNavigate("mdxeditor");
     } else if (category === "ckeditor") {
