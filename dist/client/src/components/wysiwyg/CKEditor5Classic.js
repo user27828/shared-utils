@@ -12,6 +12,7 @@ import { CKEditor } from "@ckeditor/ckeditor5-react";
 import { mergeWith } from "lodash-es";
 import { Autoformat, BlockQuote, Bold, ClassicEditor, Code, CodeBlock, Essentials, Fullscreen, Heading, HorizontalLine, Image, ImageCaption, ImageResize, ImageStyle, ImageToolbar, ImageUpload, Italic, Link, List, MediaEmbed, Paragraph, PasteFromMarkdownExperimental, Plugin, ButtonView, Table, TableToolbar, Underline, WordCount, } from "ckeditor5";
 import "ckeditor5/ckeditor5.css";
+import { pickLocalFile } from "./wysiwyg-common.js";
 const LAYOUT_STYLES = `
 .shared-utils-ckeditor-container {
   display: flex;
@@ -264,28 +265,6 @@ const guessKindFromUrl = (url) => {
     }
     return "file";
 };
-const pickLocalFile = async (accept) => {
-    return await new Promise((resolve) => {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.accept = accept;
-        const cleanup = () => {
-            input.value = "";
-            input.remove();
-        };
-        input.addEventListener("change", () => {
-            const file = input.files && input.files.length > 0 ? input.files[0] : null;
-            cleanup();
-            resolve(file);
-        }, { once: true });
-        input.addEventListener("cancel", () => {
-            cleanup();
-            resolve(null);
-        }, { once: true });
-        document.body.appendChild(input);
-        input.click();
-    });
-};
 const tryInsertImageUrl = (editor, url, alt) => {
     const candidates = [
         ["insertImage", { source: url, altText: alt }],
@@ -347,7 +326,7 @@ const createSharedUtilsFilePickerPlugin = (options) => {
                         return { url, kind: "media" };
                     }
                     const accept = filetype === "image" ? "image/*" : "*/*";
-                    const file = await pickLocalFile(accept);
+                    const file = await pickLocalFile({ accept });
                     if (!file) {
                         return null;
                     }

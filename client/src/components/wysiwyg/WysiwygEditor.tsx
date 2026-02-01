@@ -1,4 +1,4 @@
-import React, { Suspense, useMemo, useRef } from "react";
+import React, { Suspense, useEffect, useMemo, useRef } from "react";
 
 import type {
   TinyMceEditorProps,
@@ -170,6 +170,11 @@ const WysiwygEditor: React.FC<WysiwygEditorProps> = (props) => {
   } = props;
 
   const instanceRef = useRef<any>(null);
+
+  // Clear stale instance ref when editor type changes
+  useEffect(() => {
+    instanceRef.current = null;
+  }, [editor]);
 
   const normalizedHeight = useMemo(() => {
     return normalizeCssSize(height);

@@ -41,6 +41,10 @@ export interface EasyMDEEditorProps {
 
   /**
    * Additional EasyMDE options (merged last, but common props win).
+   *
+   * **Note**: This prop is only read at mount time. Changing `options` after
+   * the editor has initialized will NOT recreate the editor instance.
+   * This is intentional to avoid destroying user state (cursor position, undo history).
    */
   options?: Record<string, any>;
 }

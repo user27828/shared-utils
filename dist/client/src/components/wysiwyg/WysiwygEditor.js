@@ -1,5 +1,5 @@
 import { jsx as _jsx } from "react/jsx-runtime";
-import React, { Suspense, useMemo, useRef } from "react";
+import React, { Suspense, useEffect, useMemo, useRef } from "react";
 import { normalizeCssSize, } from "./wysiwyg-common.js";
 const CKEditor5ClassicLazy = React.lazy(() => import("./CKEditor5Classic.js"));
 const EasyMDEEditorLazy = React.lazy(() => import("./EasyMDEEditor.js"));
@@ -33,6 +33,10 @@ const normalizePickResultForCkeditor = (pick) => {
 const WysiwygEditor = (props) => {
     const { editor = "tinymce", value, readOnly, height, onChange, onEditorInstance, onPickAsset, onUploadImage, canonicalizeUrl, tinymce, ckeditor, easymde, suspenseFallback, } = props;
     const instanceRef = useRef(null);
+    // Clear stale instance ref when editor type changes
+    useEffect(() => {
+        instanceRef.current = null;
+    }, [editor]);
     const normalizedHeight = useMemo(() => {
         return normalizeCssSize(height);
     }, [height]);

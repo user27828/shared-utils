@@ -80,6 +80,27 @@ const MDXEditorComponent = forwardRef((props, ref) => {
     const { data, onChange, onEditorInstance, onUploadImage, canonicalizeUrl, darkMode = false, height = 400, imageAutocompleteSuggestions, showToolbar = true, className, placeholder, readOnly = false, additionalPlugins = [], } = props;
     const editorRef = useRef(null);
     const initialContentRef = useRef(data || "");
+    const createdObjectUrlsRef = useRef([]);
+    const onEditorInstanceRef = useRef(onEditorInstance);
+    // Keep volatile callback in ref
+    useEffect(() => {
+        onEditorInstanceRef.current = onEditorInstance;
+    }, [onEditorInstance]);
+    // Cleanup on unmount: revoke object URLs and notify parent
+    useEffect(() => {
+        return () => {
+            // Revoke any object URLs we created for local file preview insertion
+            for (const url of createdObjectUrlsRef.current) {
+                try {
+                    URL.revokeObjectURL(url);
+                }
+                catch {
+                    // Ignore
+                }
+            }
+            createdObjectUrlsRef.current = [];
+        };
+    }, []);
     // Inject dark theme styles when needed
     useDarkThemeStyles(darkMode);
     // Expose the editor ref through the forwarded ref
@@ -116,9 +137,11 @@ const MDXEditorComponent = forwardRef((props, ref) => {
      */
     const imageUploadHandler = async (file) => {
         if (!onUploadImage) {
-            // No upload handler provided - return a placeholder or throw
+            // No upload handler provided - create a tracked blob URL
             console.warn("MDXEditor: No onUploadImage handler provided for image upload");
-            return URL.createObjectURL(file);
+            const objectUrl = URL.createObjectURL(file);
+            createdObjectUrlsRef.current.push(objectUrl);
+            return objectUrl;
         }
         try {
             const result = await onUploadImage({
