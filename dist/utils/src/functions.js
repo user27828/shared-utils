@@ -309,6 +309,51 @@ export const isValidEmail = (email, strict = false) => !strict
     ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
     : /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email);
 /**
+ * Normalize a URL-like string for storage and display.
+ *
+ * This helper is intentionally conservative: it only adds a protocol when the
+ * input already looks like a hostname (e.g. `facebook.com/...` or `www.example.com`).
+ *
+ * Behavior:
+ * - Trims whitespace
+ * - Leaves `http://` / `https://` unchanged
+ * - Converts protocol-relative URLs (`//example.com`) to `https://example.com`
+ * - Adds `https://` when the input starts with `www.` or looks domain-like
+ * - Returns `""` for null/undefined/empty
+ *
+ * @example
+ * normalizeUrl("facebook.com/agentmdotcom"); // "https://facebook.com/agentmdotcom"
+ * normalizeUrl("www.example.com"); // "https://www.example.com"
+ * normalizeUrl("https://example.com"); // "https://example.com"
+ */
+export const normalizeUrl = (url) => {
+    if (!url) {
+        return "";
+    }
+    const trimmed = url.trim();
+    if (!trimmed) {
+        return "";
+    }
+    // Already has a protocol
+    if (/^https?:\/\//i.test(trimmed)) {
+        return trimmed;
+    }
+    // Protocol-relative URLs
+    if (trimmed.startsWith("//")) {
+        return `https:${trimmed}`;
+    }
+    // Has www. prefix but no protocol
+    if (/^www\./i.test(trimmed)) {
+        return `https://${trimmed}`;
+    }
+    // Appears to be a domain-like string
+    if (/^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}/.test(trimmed)) {
+        return `https://${trimmed}`;
+    }
+    // Return as-is for other cases (might be a username, etc.)
+    return trimmed;
+};
+/**
  * Format date in a human-readable format with configurable options
  * @param {string|Date} dateInput - Date string or Date object
  * @param {object} [options] - Formatting options

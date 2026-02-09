@@ -13,6 +13,7 @@ import {
   removeFileExtension,
   isValidFilename,
   isValidEmail,
+  normalizeUrl,
   formatDate,
 } from "./src/functions.js";
 import type { IsDevOptions, EnvironmentObject } from "./src/functions.js";
@@ -43,6 +44,7 @@ export {
   removeFileExtension,
   isValidFilename,
   isValidEmail,
+  normalizeUrl,
   formatDate,
   detectFormatFromText, // plain text format detection
 };

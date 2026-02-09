@@ -989,6 +989,22 @@ formatFileSize(2048); // "2 KiB"
 - `precision` (number): Number of decimal places. Default: 2.
 - `unitStyle` ('short'|'long'|'narrow'): Unit display style. Default: 'short'.
 
+### normalizeUrl
+
+Normalizes URL-like strings by adding a protocol when the input already looks like a hostname.
+
+This is useful when users paste values like `facebook.com/agentmdotcom` (no scheme) and you want to store/display a fully-qualified URL.
+
+```js
+import { normalizeUrl } from "@user27828/shared-utils/utils";
+
+normalizeUrl("facebook.com/agentmdotcom");
+// => "https://facebook.com/agentmdotcom"
+
+normalizeUrl("https://github.com/user27828");
+// => "https://github.com/user27828"
+```
+
 ### formatDate
 
 Formats a date string or Date object into a human-readable string, with support for locale and formatting options. Reads global options from optionsManager (category: `dates`).

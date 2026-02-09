@@ -146,6 +146,25 @@ export declare const isValidFilename: (filename: string, options?: {
  */
 export declare const isValidEmail: (email: string, strict?: boolean) => boolean;
 /**
+ * Normalize a URL-like string for storage and display.
+ *
+ * This helper is intentionally conservative: it only adds a protocol when the
+ * input already looks like a hostname (e.g. `facebook.com/...` or `www.example.com`).
+ *
+ * Behavior:
+ * - Trims whitespace
+ * - Leaves `http://` / `https://` unchanged
+ * - Converts protocol-relative URLs (`//example.com`) to `https://example.com`
+ * - Adds `https://` when the input starts with `www.` or looks domain-like
+ * - Returns `""` for null/undefined/empty
+ *
+ * @example
+ * normalizeUrl("facebook.com/agentmdotcom"); // "https://facebook.com/agentmdotcom"
+ * normalizeUrl("www.example.com"); // "https://www.example.com"
+ * normalizeUrl("https://example.com"); // "https://example.com"
+ */
+export declare const normalizeUrl: (url: string | null | undefined) => string;
+/**
  * Format date in a human-readable format with configurable options
  * @param {string|Date} dateInput - Date string or Date object
  * @param {object} [options] - Formatting options

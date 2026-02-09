@@ -4,7 +4,7 @@
 import { OptionsManager, optionsManager } from "./src/options-manager.js";
 import log, { Log, ORIGINAL_CONSOLE_METHODS } from "./src/log.js";
 import turnstile, { Turnstile } from "./src/turnstile.js";
-import { isDev, formatFileSize, sanitizeFilename, convertBytesToUnit, getFileExtension, removeFileExtension, isValidFilename, isValidEmail, formatDate, } from "./src/functions.js";
+import { isDev, formatFileSize, sanitizeFilename, convertBytesToUnit, getFileExtension, removeFileExtension, isValidFilename, isValidEmail, normalizeUrl, formatDate, } from "./src/functions.js";
 import { detectFormatFromText } from "./src/detectFormat/index.js";
 export { 
 // Logging utilities
@@ -16,5 +16,5 @@ OptionsManager, optionsManager,
 // Environment utilities
 isDev, 
 // File utilities
-formatFileSize, sanitizeFilename, convertBytesToUnit, getFileExtension, removeFileExtension, isValidFilename, isValidEmail, formatDate, detectFormatFromText, // plain text format detection
+formatFileSize, sanitizeFilename, convertBytesToUnit, getFileExtension, removeFileExtension, isValidFilename, isValidEmail, normalizeUrl, formatDate, detectFormatFromText, // plain text format detection
  };
