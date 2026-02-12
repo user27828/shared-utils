@@ -52,6 +52,24 @@
       "require": "./dist/server/index.js",
       "default": "./dist/server/index.js"
     },
+    "./cms": {
+      "types": "./dist/utils/src/cms/index.d.ts",
+      "import": "./dist/utils/src/cms/index.js",
+      "require": "./dist/utils/src/cms/index.js",
+      "default": "./dist/utils/src/cms/index.js"
+    },
+    "./cms/server": {
+      "types": "./dist/server/src/cms/index.d.ts",
+      "import": "./dist/server/src/cms/index.js",
+      "require": "./dist/server/src/cms/index.js",
+      "default": "./dist/server/src/cms/index.js"
+    },
+    "./cms/client": {
+      "types": "./dist/client/src/cms/index.d.ts",
+      "import": "./dist/client/src/cms/index.js",
+      "require": "./dist/client/src/cms/index.js",
+      "default": "./dist/client/src/cms/index.js"
+    },
     "./utils/*": "./dist/utils/*"
   },
   "scripts": {
@@ -102,7 +120,7 @@
     "dotenv": "^17.2.4",
     "dotenv-expand": "^12.0.3",
     "lodash-es": "^4.17.23",
-    "marked": "^17.0.1",
+    "marked": "^17.0.2",
     "nanoid": "^5.1.6",
     "papaparse": "^5.5.3",
     "tinymce": "^8.3.2"

@@ -1,0 +1,101 @@
+/**
+ * CMS API Interface — shared-utils
+ *
+ * Abstract interface for CMS operations. The default implementation
+ * (`CmsClient`) uses fetch(). Tests or custom transports can provide
+ * alternative implementations.
+ */
+import type {
+  CmsHeadRow,
+  CmsHistoryRow,
+  CmsListResponse,
+  CmsCreateRequest,
+  CmsUpdateRequest,
+  CmsPublicPayload,
+  CmsCollaboratorRow,
+} from "../../../utils/src/cms/types.js";
+
+export type CmsAdminListParams = {
+  q?: string;
+  status?: string;
+  post_type?: string;
+  locale?: string;
+  tag?: string;
+  limit?: number;
+  offset?: number;
+  orderBy?: string;
+  orderDirection?: string;
+  includeTrash?: boolean;
+};
+
+export interface CmsApi {
+  // ── Admin CRUD ──────────────────────────────────────────────────────
+
+  adminList(params?: CmsAdminListParams): Promise<CmsListResponse>;
+  adminGet(uid: string): Promise<CmsHeadRow>;
+  adminCreate(request: CmsCreateRequest): Promise<CmsHeadRow>;
+  adminUpdate(input: {
+    uid: string;
+    patch: CmsUpdateRequest;
+    ifMatch: string;
+  }): Promise<CmsHeadRow>;
+  adminPublish(input: {
+    uid: string;
+    ifMatch: string;
+    published_at?: string;
+  }): Promise<CmsHeadRow>;
+
+  // ── Admin trash/restore/delete ──────────────────────────────────────
+
+  adminTrash(input: { uid: string; ifMatch: string }): Promise<CmsHeadRow>;
+  adminRestore(input: { uid: string; ifMatch: string }): Promise<CmsHeadRow>;
+  adminDeletePermanently(uid: string): Promise<void>;
+  adminEmptyTrash(limit?: number): Promise<{ deletedCount: number }>;
+
+  // ── Admin history ───────────────────────────────────────────────────
+
+  adminListHistory(
+    uid: string,
+    opts?: { limit?: number; offset?: number },
+  ): Promise<{
+    items: CmsHistoryRow[];
+    totalCount: number;
+    limit: number;
+    offset: number;
+  }>;
+  adminRestoreHistory(input: {
+    uid: string;
+    historyId: number;
+    ifMatch: string;
+  }): Promise<CmsHeadRow>;
+  adminSoftDeleteHistory(input: {
+    uid: string;
+    historyId: number;
+  }): Promise<CmsHistoryRow>;
+  adminHardDeleteHistory(input: {
+    uid: string;
+    historyId: number;
+  }): Promise<void>;
+
+  // ── Admin lock ──────────────────────────────────────────────────────
+
+  adminLock(uid: string): Promise<CmsHeadRow>;
+  adminUnlock(uid: string): Promise<CmsHeadRow>;
+
+  // ── Admin collaborators ─────────────────────────────────────────────
+
+  adminListCollaborators(uid: string): Promise<CmsCollaboratorRow[]>;
+  adminReplaceCollaborators(
+    uid: string,
+    collaborators: Array<{ user_uid: string; role: string }>,
+  ): Promise<CmsCollaboratorRow[]>;
+
+  // ── Public ──────────────────────────────────────────────────────────
+
+  publicGet(params: {
+    postType: string;
+    locale: string;
+    slug: string;
+    unlockToken?: string;
+  }): Promise<CmsPublicPayload>;
+}

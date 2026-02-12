@@ -705,7 +705,13 @@ const CKEditor5Classic: React.FC<CKEditor5ClassicProps> = (props) => {
   useCkeditorDarkThemeStyles(darkMode);
 
   const editorRef = useRef<any>(null);
+  const isReadyRef = useRef<boolean>(false);
   const initialDataRef = useRef<string>(data || "");
+  // Stable value passed to <CKEditor data={}> — never changes after mount.
+  // This prevents the React wrapper's shouldComponentUpdate from calling
+  // editor.data.set() before document roots exist.  Our useEffect([data])
+  // handles all subsequent data synchronisation.
+  const [mountData] = useState(() => data || "");
   const createdObjectUrlsRef = useRef<string[]>([]);
   const fullscreenCleanupRef = useRef<(() => void) | null>(null);
   const fullscreenActiveRef = useRef<boolean>(false);
@@ -834,6 +840,8 @@ const CKEditor5Classic: React.FC<CKEditor5ClassicProps> = (props) => {
         fullscreenCleanupRef.current = null;
       }
 
+      isReadyRef.current = false;
+
       // Revoke any object URLs we created for local file preview insertion.
       for (const url of createdObjectUrlsRef.current) {
         try {
@@ -849,7 +857,7 @@ const CKEditor5Classic: React.FC<CKEditor5ClassicProps> = (props) => {
   // Update cached initial data when prop changes and editor is not focused.
   useEffect(() => {
     const editor = editorRef.current;
-    if (!editor) {
+    if (!editor || !isReadyRef.current) {
       initialDataRef.current = data || "";
       return;
     }
@@ -863,7 +871,15 @@ const CKEditor5Classic: React.FC<CKEditor5ClassicProps> = (props) => {
     const currentData = String(editor.getData?.() || "");
 
     if (currentData !== nextData) {
-      editor.setData(nextData);
+      try {
+        editor.setData(nextData);
+      } catch (err) {
+        // Guard against "datacontroller-set-non-existent-root" from
+        // setData being invoked before the editor document model is
+        // fully initialised (timing race with @ckeditor/ckeditor5-react).
+        initialDataRef.current = nextData;
+        return;
+      }
     }
 
     initialDataRef.current = nextData;
@@ -1007,11 +1023,12 @@ const CKEditor5Classic: React.FC<CKEditor5ClassicProps> = (props) => {
       <div className="shared-utils-ckeditor-editor">
         <CKEditor
           editor={ClassicEditor as any}
-          data={initialDataRef.current}
+          data={mountData}
           config={finalConfig as any}
           disabled={readOnly}
           onReady={(editor: any) => {
             editorRef.current = editor;
+            isReadyRef.current = true;
 
             // Keep fullscreen styling aligned with darkMode.
             // Fullscreen toggles the `ck-fullscreen` class on <html>/<body>, but the editor UI is rendered

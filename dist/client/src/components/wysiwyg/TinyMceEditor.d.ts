@@ -113,6 +113,11 @@ export interface TinyMceEditorProps {
      */
     contentCss?: string;
     /**
+     * When true, use the dark TinyMCE skin (oxide-dark) and dark content CSS.
+     * The component will re-mount when this value changes.
+     */
+    darkMode?: boolean;
+    /**
      * Additional props passed to the TinyMCE editor
      */
     [key: string]: any;

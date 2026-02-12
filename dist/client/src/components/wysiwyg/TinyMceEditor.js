@@ -60,7 +60,7 @@ import "tinymce/skins/ui/oxide-dark/content";
  * Rich text editor component based on TinyMCE's free version
  */
 const TinyMceEditor = (props) => {
-    const { data, onChange, onEditorInstance, onPickFile, onUploadImage, canonicalizeUrl, skinUrl, contentCss, ...otherProps } = props;
+    const { data, onChange, onEditorInstance, onPickFile, onUploadImage, canonicalizeUrl, skinUrl, contentCss, darkMode, init: initOverride, ...otherProps } = props;
     const editorRef = useRef(null);
     const initialValueRef = useRef(data || "");
     useEffect(() => {
@@ -76,8 +76,21 @@ const TinyMceEditor = (props) => {
             onChange(null, editorInstance);
         }
     };
+    // Select light or dark skin based on darkMode prop.
+    const resolvedSkinUrl = skinUrl ||
+        (darkMode ? "/tinymce/skins/ui/oxide-dark" : "/tinymce/skins/ui/oxide");
+    const resolvedContentCss = contentCss ||
+        (darkMode
+            ? "/tinymce/skins/content/dark/content.min.css"
+            : "/tinymce/skins/content/default/content.min.css");
     const defaultInit = {
         license_key: "gpl",
+        // Absolute skin paths — TinyMCE resolves relative to the page URL by
+        // default which breaks on deep routes like /content/cms/:uid.  Host apps
+        // using viteStaticCopy put skins at /tinymce/skins/; callers can still
+        // override via the `skinUrl` prop or `init.skin_url`.
+        skin_url: resolvedSkinUrl,
+        content_css: resolvedContentCss,
         height: 500,
         menubar: true,
         plugins: [
@@ -176,7 +189,7 @@ const TinyMceEditor = (props) => {
             }
         });
     return (_jsx(Editor
-    // No API key needed for self-hosted or community version
+    // Force re-mount when dark mode changes so TinyMCE reloads the skin.
     , { 
         // No API key needed for self-hosted or community version
         onInit: (evt, editor) => {
@@ -184,12 +197,18 @@ const TinyMceEditor = (props) => {
             if (onEditorInstance) {
                 onEditorInstance(editor);
             }
-        }, initialValue: initialValueRef.current, value: data || "", onEditorChange: handleEditorChange, init: merge({}, defaultInit, otherProps.init, {
-            ...(skinUrl ? { skin_url: skinUrl } : {}),
-            ...(contentCss ? { content_css: contentCss } : {}),
-            ...(filePickerCallback ? { file_picker_callback: filePickerCallback } : {}),
-            ...(imagesUploadHandler ? { images_upload_handler: imagesUploadHandler } : {}),
-        }), ...otherProps }));
+        }, initialValue: initialValueRef.current, value: data || "", onEditorChange: handleEditorChange, init: merge({}, defaultInit, initOverride, {
+            // skinUrl/contentCss props already resolved into defaultInit;
+            // only override here if caller passed explicit values.
+            ...(props.skinUrl ? { skin_url: props.skinUrl } : {}),
+            ...(props.contentCss ? { content_css: props.contentCss } : {}),
+            ...(filePickerCallback
+                ? { file_picker_callback: filePickerCallback }
+                : {}),
+            ...(imagesUploadHandler
+                ? { images_upload_handler: imagesUploadHandler }
+                : {}),
+        }), ...otherProps }, darkMode ? "dark" : "light"));
 };
 TinyMceEditor.displayName = "TinyMceEditor";
 export default TinyMceEditor;

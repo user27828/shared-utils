@@ -482,7 +482,13 @@ const CKEditor5Classic = (props) => {
     useCkeditorLayoutStyles();
     useCkeditorDarkThemeStyles(darkMode);
     const editorRef = useRef(null);
+    const isReadyRef = useRef(false);
     const initialDataRef = useRef(data || "");
+    // Stable value passed to <CKEditor data={}> — never changes after mount.
+    // This prevents the React wrapper's shouldComponentUpdate from calling
+    // editor.data.set() before document roots exist.  Our useEffect([data])
+    // handles all subsequent data synchronisation.
+    const [mountData] = useState(() => data || "");
     const createdObjectUrlsRef = useRef([]);
     const fullscreenCleanupRef = useRef(null);
     const fullscreenActiveRef = useRef(false);
@@ -587,6 +593,7 @@ const CKEditor5Classic = (props) => {
                 fullscreenCleanupRef.current();
                 fullscreenCleanupRef.current = null;
             }
+            isReadyRef.current = false;
             // Revoke any object URLs we created for local file preview insertion.
             for (const url of createdObjectUrlsRef.current) {
                 try {
@@ -602,7 +609,7 @@ const CKEditor5Classic = (props) => {
     // Update cached initial data when prop changes and editor is not focused.
     useEffect(() => {
         const editor = editorRef.current;
-        if (!editor) {
+        if (!editor || !isReadyRef.current) {
             initialDataRef.current = data || "";
             return;
         }
@@ -613,7 +620,16 @@ const CKEditor5Classic = (props) => {
         const nextData = data ?? "";
         const currentData = String(editor.getData?.() || "");
         if (currentData !== nextData) {
-            editor.setData(nextData);
+            try {
+                editor.setData(nextData);
+            }
+            catch (err) {
+                // Guard against "datacontroller-set-non-existent-root" from
+                // setData being invoked before the editor document model is
+                // fully initialised (timing race with @ckeditor/ckeditor5-react).
+                initialDataRef.current = nextData;
+                return;
+            }
         }
         initialDataRef.current = nextData;
     }, [data]);
@@ -736,8 +752,9 @@ const CKEditor5Classic = (props) => {
             borderColor: darkMode ? "rgba(255, 255, 255, 0.12)" : "#ccc",
             borderRadius: "4px",
             overflow: "hidden",
-        }, children: [_jsx("div", { className: "shared-utils-ckeditor-editor", children: _jsx(CKEditor, { editor: ClassicEditor, data: initialDataRef.current, config: finalConfig, disabled: readOnly, onReady: (editor) => {
+        }, children: [_jsx("div", { className: "shared-utils-ckeditor-editor", children: _jsx(CKEditor, { editor: ClassicEditor, data: mountData, config: finalConfig, disabled: readOnly, onReady: (editor) => {
                         editorRef.current = editor;
+                        isReadyRef.current = true;
                         // Keep fullscreen styling aligned with darkMode.
                         // Fullscreen toggles the `ck-fullscreen` class on <html>/<body>, but the editor UI is rendered
                         // outside our local container, so we add our own global dark marker while fullscreen is active.

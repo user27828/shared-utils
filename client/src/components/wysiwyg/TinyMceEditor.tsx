@@ -106,7 +106,9 @@ export interface TinyMceEditorProps {
    *
    * If provided, TinyMceEditor will wire this into TinyMCE's `file_picker_callback`.
    */
-  onPickFile?: (request: TinyMcePickRequest) => Promise<TinyMcePickResult | null>;
+  onPickFile?: (
+    request: TinyMcePickRequest,
+  ) => Promise<TinyMcePickResult | null>;
 
   /**
    * Optional hook to upload images (pasted/dragged/selected) and return a URL.
@@ -138,6 +140,12 @@ export interface TinyMceEditorProps {
   contentCss?: string;
 
   /**
+   * When true, use the dark TinyMCE skin (oxide-dark) and dark content CSS.
+   * The component will re-mount when this value changes.
+   */
+  darkMode?: boolean;
+
+  /**
    * Additional props passed to the TinyMCE editor
    */
   [key: string]: any;
@@ -156,6 +164,8 @@ const TinyMceEditor: React.FC<TinyMceEditorProps> = (props) => {
     canonicalizeUrl,
     skinUrl,
     contentCss,
+    darkMode,
+    init: initOverride,
     ...otherProps
   } = props;
   const editorRef = useRef<any>(null);
@@ -176,8 +186,24 @@ const TinyMceEditor: React.FC<TinyMceEditorProps> = (props) => {
     }
   };
 
+  // Select light or dark skin based on darkMode prop.
+  const resolvedSkinUrl =
+    skinUrl ||
+    (darkMode ? "/tinymce/skins/ui/oxide-dark" : "/tinymce/skins/ui/oxide");
+  const resolvedContentCss =
+    contentCss ||
+    (darkMode
+      ? "/tinymce/skins/content/dark/content.min.css"
+      : "/tinymce/skins/content/default/content.min.css");
+
   const defaultInit = {
     license_key: "gpl",
+    // Absolute skin paths — TinyMCE resolves relative to the page URL by
+    // default which breaks on deep routes like /content/cms/:uid.  Host apps
+    // using viteStaticCopy put skins at /tinymce/skins/; callers can still
+    // override via the `skinUrl` prop or `init.skin_url`.
+    skin_url: resolvedSkinUrl,
+    content_css: resolvedContentCss,
     height: 500,
     menubar: true,
     plugins: [
@@ -262,7 +288,8 @@ const TinyMceEditor: React.FC<TinyMceEditorProps> = (props) => {
           (typeof blobInfo?.filename === "function" && blobInfo.filename()) ||
           "image";
         const mimeType: string = blob?.type || "application/octet-stream";
-        const sizeBytes: number = typeof blob?.size === "number" ? blob.size : 0;
+        const sizeBytes: number =
+          typeof blob?.size === "number" ? blob.size : 0;
 
         if (typeof progress === "function") {
           progress(0);
@@ -290,6 +317,8 @@ const TinyMceEditor: React.FC<TinyMceEditorProps> = (props) => {
 
   return (
     <Editor
+      // Force re-mount when dark mode changes so TinyMCE reloads the skin.
+      key={darkMode ? "dark" : "light"}
       // No API key needed for self-hosted or community version
       onInit={(evt: any, editor: any) => {
         editorRef.current = editor;
@@ -300,11 +329,17 @@ const TinyMceEditor: React.FC<TinyMceEditorProps> = (props) => {
       initialValue={initialValueRef.current}
       value={data || ""}
       onEditorChange={handleEditorChange}
-      init={merge({}, defaultInit, otherProps.init, {
-        ...(skinUrl ? { skin_url: skinUrl } : {}),
-        ...(contentCss ? { content_css: contentCss } : {}),
-        ...(filePickerCallback ? { file_picker_callback: filePickerCallback } : {}),
-        ...(imagesUploadHandler ? { images_upload_handler: imagesUploadHandler } : {}),
+      init={merge({}, defaultInit, initOverride, {
+        // skinUrl/contentCss props already resolved into defaultInit;
+        // only override here if caller passed explicit values.
+        ...(props.skinUrl ? { skin_url: props.skinUrl } : {}),
+        ...(props.contentCss ? { content_css: props.contentCss } : {}),
+        ...(filePickerCallback
+          ? { file_picker_callback: filePickerCallback }
+          : {}),
+        ...(imagesUploadHandler
+          ? { images_upload_handler: imagesUploadHandler }
+          : {}),
       })}
       {...otherProps}
     />
