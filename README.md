@@ -70,6 +70,8 @@ import {
   CountrySelect,
   LanguageSelect,
   FileIcon,
+  CopyButton,
+  PasteButton,
 } from "@user27828/shared-utils/client";
 
 // ✅ WYSIWYG Editors (requires peer dependencies)
@@ -134,7 +136,49 @@ React components and client-side helpers:
 
 - **Form Components**: `CountrySelect`, `LanguageSelect`
 - **File Icons**: `FileIcon` - MUI icons for 70+ file types and MIME types
+- **Clipboard Buttons**: `CopyButton`, `PasteButton` - IconButtons with visual feedback
 - **Helper Functions**: Country/language utilities, CSV helpers
+
+#### Clipboard Buttons
+
+Drop-in MUI `IconButton` wrappers for copy and paste with built-in visual feedback (icon swap, green success color, tooltip change). Both support an optional built-in MUI Snackbar.
+
+```tsx
+import { CopyButton, PasteButton } from "@user27828/shared-utils/client";
+
+// Copy — minimal
+<CopyButton value={someText} />
+
+// Copy — with custom tooltips and snackbar
+<CopyButton
+  value={email}
+  tooltip="Copy email"
+  copiedTooltip="Email copied!"
+  snackbar
+  snackbarMessage="Email copied to clipboard"
+/>
+
+// Copy — with external callback (e.g. notistack)
+<CopyButton
+  value={id}
+  onCopy={() => enqueueSnackbar("Copied!", { variant: "success" })}
+/>
+
+// Paste — minimal
+<PasteButton onPaste={(text) => setValue(text)} />
+
+// Paste — with snackbar
+<PasteButton
+  onPaste={handlePaste}
+  tooltip="Paste job description"
+  snackbar
+  snackbarMessage="Content pasted!"
+/>
+```
+
+**CopyButton props**: `value`, `tooltip`, `copiedTooltip`, `successDuration`, `size`, `sx`, `iconFontSize`, `onCopy`, `onError`, `disabled`, `snackbar`, `snackbarMessage`, `snackbarDuration`, `color`
+
+**PasteButton props**: `onPaste`, `tooltip`, `pastedTooltip`, `successDuration`, `size`, `sx`, `iconFontSize`, `onError`, `disabled`, `snackbar`, `snackbarMessage`, `snackbarDuration`, `color`
 
 #### 📝 WYSIWYG Editor Components
 

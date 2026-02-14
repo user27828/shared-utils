@@ -10,7 +10,7 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
  * adapters for navigation, toasts, and media picker.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, } from "react";
-import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Chip, Container, Divider, FormControl, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Tab, Tabs, TextField, Tooltip, Typography, } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Chip, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControl, IconButton, InputLabel, MenuItem, Paper, Select, Stack, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography, } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
@@ -115,6 +115,7 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
     const [liveErrorMessage, setLiveErrorMessage] = useState("");
     const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
     const [loadedRevisionId, setLoadedRevisionId] = useState(null);
+    const [pendingContentType, setPendingContentType] = useState(null);
     /** Snapshot of live form state before loading a revision, so we
      *  can restore it when the user dismisses the preview. */
     const savedFormRef = useRef(null);
@@ -141,13 +142,23 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         !!postType &&
         !!locale &&
         !!slug &&
-        !!config?.getContentUrl, [isNew, status, postType, locale, slug, config?.getContentUrl]);
+        !!config?.getPreviewUrl, [isNew, status, postType, locale, slug, config?.getPreviewUrl]);
     const postTypeOpts = useMemo(() => config?.postTypeOptions ?? [
         { value: "page", label: "Page" },
         { value: "post", label: "Post" },
     ], [config?.postTypeOptions]);
     const hasVisualMode = contentType === "html" || contentType === "markdown";
     const effectiveContentType = hasVisualMode && editorMode === "text" ? "text" : contentType;
+    /** Whether the editor body contains user-authored content (beyond the default empty state). */
+    const hasEditorContent = useMemo(() => {
+        const trimmed = content.trim();
+        if (!trimmed) {
+            return false;
+        }
+        // Default empty states for each content type
+        const emptyPatterns = ["<p></p>", "<p>&nbsp;</p>", "<p>\n</p>", ""];
+        return !emptyPatterns.includes(trimmed);
+    }, [content]);
     /** Whether the form fields differ from the persisted row. */
     const isDirty = useMemo(() => {
         if (isNew) {
@@ -165,9 +176,13 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         if (lastCleanEpochRef.current === 0) {
             return;
         }
+        // Skip during loading — field changes come from the server, not the user
+        if (isLoading) {
+            return;
+        }
         setEditEpoch(Date.now());
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [title, slug, content, tags, optionsJson, password, locale, postType, contentType]);
+    }, [title, slug, content, tags, optionsJson, password, locale, postType, contentType, isLoading]);
     // Reset to visual mode when content type changes
     useEffect(() => {
         setEditorMode("visual");
@@ -773,16 +788,16 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
     };
     // ── Preview URL ───────────────────────────────────────────────────────
     const previewUrl = useMemo(() => {
-        if (!canPreview || !config?.getContentUrl) {
+        if (!canPreview || !config?.getPreviewUrl) {
             return null;
         }
-        return config.getContentUrl(slug);
+        return config.getPreviewUrl(slug, postType, locale);
     }, [canPreview, config, postType, locale, slug]);
     // ── Render ────────────────────────────────────────────────────────────
     return (_jsxs(Container, { maxWidth: "xl", sx: { pt: 0, pb: 3 }, children: [_jsx(Box, { "aria-live": "polite", "aria-atomic": "true", sx: { position: "absolute", left: -9999 }, children: liveMessage }), _jsx(Box, { "aria-live": "assertive", "aria-atomic": "true", sx: { position: "absolute", left: -9999 }, children: liveErrorMessage }), _jsxs(Box, { sx: { display: "flex", position: "relative", minHeight: "calc(100vh - 64px)" }, children: [!isNew && (_jsx(CmsHistoryDrawer, { open: historyDrawerOpen, onClose: () => setHistoryDrawerOpen(false), history: history, loadedRevisionId: loadedRevisionId, isDirty: isDirty, isSaving: isSaving, includeSoftDeleted: includeSoftDeletedHistory, onIncludeSoftDeletedChange: setIncludeSoftDeletedHistory, onLoadRevision: handleLoadRevision, onRestoreRevision: handleRestoreRevision, onSoftDeleteRevision: handleSoftDeleteRevision, onHardDeleteRevision: handleHardDeleteRevision, onDismissRevision: handleDismissRevision, currentVersionNumber: row?.version_number, currentUpdatedAt: row?.updated_at })), _jsxs(Box, { sx: { flex: 1, minWidth: 0, ml: 1 }, children: [loadedRevisionId && (_jsxs(Alert, { severity: "info", sx: { mb: 2 }, action: _jsxs(Stack, { direction: "row", spacing: 1, children: [_jsx(Button, { size: "small", color: "inherit", onClick: handleDismissRevision, children: "Dismiss" }), _jsx(Button, { size: "small", variant: "outlined", color: "inherit", onClick: () => handleRestoreRevision(loadedRevisionId), disabled: isSaving, children: "Restore this revision" })] }), children: ["Previewing revision ", history.find((h) => h.id === loadedRevisionId)?.revision ??
                                         loadedRevisionId, ". Changes have not been saved."] })), _jsxs(Stack, { direction: { xs: "column", lg: "row" }, spacing: 3, children: [_jsxs(Box, { sx: { flex: 1, minWidth: 0 }, children: [_jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { mb: 2 }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [_jsx(Tooltip, { title: "Back to list", children: _jsx(IconButton, { onClick: () => nav?.goToList?.(), children: _jsx(ArrowBackIcon, {}) }) }), _jsx(Typography, { variant: "h5", children: isNew ? "New CMS Item" : "Edit CMS Item" })] }), _jsxs(Stack, { direction: "row", spacing: 1, children: [!isNew && (_jsx(Tooltip, { title: historyDrawerOpen
                                                                     ? "Close history"
-                                                                    : "Open history", children: _jsx(IconButton, { onClick: () => setHistoryDrawerOpen((o) => !o), color: historyDrawerOpen ? "primary" : "default", size: "small", children: _jsx(HistoryIcon, {}) }) })), canPreview && previewUrl && (_jsx(Button, { size: "small", href: previewUrl, target: "_blank", startIcon: _jsx(OpenInNewIcon, {}), children: "Preview" })), _jsx(Button, { variant: "contained", onClick: handleSave, disabled: isSaving, children: isSaving ? "Saving..." : "Save" })] })] }), error && (_jsx(Alert, { ref: errorAlertRef, severity: "error", onClose: () => setError(null), sx: { mb: 2 }, tabIndex: -1, children: error })), _jsxs(Paper, { sx: { p: 2, mb: 2 }, children: [_jsx(TextField, { label: "Title", fullWidth: true, value: title, onChange: (e) => setTitle(e.target.value), onBlur: handleTitleBlur, sx: { mb: isSlugEditing ? 2 : "1px" } }), !isSlugEditing ? (_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, sx: {
+                                                                    : "Open history", children: _jsx(IconButton, { onClick: () => setHistoryDrawerOpen((o) => !o), color: historyDrawerOpen ? "primary" : "default", size: "small", children: _jsx(HistoryIcon, {}) }) })), canPreview && previewUrl && (_jsx(Button, { size: "small", href: previewUrl, target: "_blank", startIcon: _jsx(OpenInNewIcon, {}), children: "Preview" })), _jsx(Button, { variant: "contained", onClick: handleSave, disabled: isSaving || isLoading, children: isSaving ? "Saving..." : "Save" })] })] }), error && (_jsx(Alert, { ref: errorAlertRef, severity: "error", onClose: () => setError(null), sx: { mb: 2 }, tabIndex: -1, children: error })), _jsxs(Paper, { sx: { p: 2, mb: 2 }, children: [_jsx(TextField, { label: "Title", fullWidth: true, value: title, onChange: (e) => setTitle(e.target.value), onBlur: handleTitleBlur, sx: { mb: isSlugEditing ? 2 : "1px" } }), !isSlugEditing ? (_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, sx: {
                                                             border: 1,
                                                             borderColor: "divider",
                                                             borderRadius: 1,
@@ -804,20 +819,21 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                                                         } }))] }), _jsxs(Paper, { variant: "outlined", sx: { overflow: "hidden" }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "nowrap", gap: 1.5, sx: {
                                                             px: 2,
                                                             py: 1,
-                                                            borderBottom: 1,
                                                             borderColor: "divider",
                                                             bgcolor: "action.hover",
-                                                        }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", gap: 1.5, sx: { minWidth: 0, flexShrink: 0 }, children: [_jsxs(FormControl, { size: "small", sx: { minWidth: 110 }, children: [_jsx(InputLabel, { children: "Content" }), _jsxs(Select, { value: contentType, label: "Content", onChange: (e) => setContentType(e.target.value), children: [_jsx(MenuItem, { value: "html", children: "HTML" }), _jsx(MenuItem, { value: "markdown", children: "Markdown" }), _jsx(MenuItem, { value: "json", children: "JSON" }), _jsx(MenuItem, { value: "text", children: "Text" })] })] }), _jsxs(FormControl, { size: "small", sx: { minWidth: 110 }, children: [_jsx(InputLabel, { children: "Locale" }), _jsx(Select, { value: locale, label: "Locale", onChange: (e) => setLocale(e.target.value), children: localeOptions.map((opt) => (_jsx(MenuItem, { value: opt.value, children: opt.label }, opt.value))) })] }), _jsxs(FormControl, { size: "small", sx: { minWidth: 110 }, children: [_jsx(InputLabel, { children: "Post type" }), _jsx(Select, { value: postType, label: "Post type", onChange: (e) => setPostType(e.target.value), children: postTypeOpts.map((opt) => (_jsx(MenuItem, { value: opt.value, children: opt.label }, opt.value))) })] })] }), hasVisualMode && (_jsxs(Tabs, { value: editorMode, onChange: (_, v) => setEditorMode(v), sx: {
-                                                                    ml: "auto",
-                                                                    minHeight: 32,
-                                                                    "& .MuiTab-root": {
-                                                                        minHeight: 32,
-                                                                        py: 0.5,
-                                                                        px: 1.5,
-                                                                        fontSize: "0.8rem",
-                                                                        textTransform: "none",
-                                                                    },
-                                                                }, children: [_jsx(Tab, { label: "Visual", value: "visual" }), _jsx(Tab, { label: "Text", value: "text" })] }))] }), _jsx(CmsBodyEditor, { contentType: effectiveContentType, value: content, onChange: setContent, editor: config?.editorPreference, onPickAsset: config?.renderMediaPicker ? () => openMediaPicker() : undefined }, `body-${contentType}-${editorMode}`)] }), _jsxs(Paper, { sx: { p: 2, mt: 2 }, children: [_jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Tags" }), _jsx(Stack, { direction: "row", spacing: 1, flexWrap: "wrap", sx: { mb: tags.length > 0 ? 1 : 0 }, children: tags.map((tag, idx) => (_jsx(Chip, { label: tag, size: "small", onDelete: () => setTags((prev) => prev.filter((_, i) => i !== idx)), sx: { mb: 0.5 } }, `${tag}-${idx}`))) }), _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", children: [_jsx(TextField, { label: "Add tag", size: "small", value: tagInput, onChange: (e) => setTagInput(e.target.value), onKeyDown: (e) => {
+                                                        }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", gap: 1.5, sx: { minWidth: 0, flexShrink: 0 }, children: [_jsxs(FormControl, { size: "small", sx: { minWidth: 110 }, children: [_jsx(InputLabel, { children: "Content" }), _jsxs(Select, { value: contentType, label: "Content", onChange: (e) => {
+                                                                                    const next = e.target.value;
+                                                                                    if (hasEditorContent && next !== contentType) {
+                                                                                        setPendingContentType(next);
+                                                                                    }
+                                                                                    else {
+                                                                                        setContentType(next);
+                                                                                    }
+                                                                                }, children: [_jsx(MenuItem, { value: "html", children: "HTML" }), _jsx(MenuItem, { value: "markdown", children: "Markdown" }), _jsx(MenuItem, { value: "json", children: "JSON" }), _jsx(MenuItem, { value: "text", children: "Text" })] })] }), _jsxs(FormControl, { size: "small", sx: { minWidth: 110 }, children: [_jsx(InputLabel, { children: "Locale" }), _jsx(Select, { value: locale, label: "Locale", onChange: (e) => setLocale(e.target.value), children: localeOptions.map((opt) => (_jsx(MenuItem, { value: opt.value, children: opt.label }, opt.value))) })] }), _jsxs(FormControl, { size: "small", sx: { minWidth: 110 }, children: [_jsx(InputLabel, { children: "Post type" }), _jsx(Select, { value: postType, label: "Post type", onChange: (e) => setPostType(e.target.value), children: postTypeOpts.map((opt) => (_jsx(MenuItem, { value: opt.value, children: opt.label }, opt.value))) })] })] }), hasVisualMode && (_jsxs(ToggleButtonGroup, { value: editorMode, exclusive: true, onChange: (_, v) => {
+                                                                    if (v) {
+                                                                        setEditorMode(v);
+                                                                    }
+                                                                }, size: "small", sx: { ml: "auto" }, children: [_jsx(ToggleButton, { value: "visual", sx: { px: 1.5, py: 0.25, fontSize: "0.8rem", textTransform: "none" }, children: "Visual" }), _jsx(ToggleButton, { value: "text", sx: { px: 1.5, py: 0.25, fontSize: "0.8rem", textTransform: "none" }, children: "Text" })] }))] }), _jsx(CmsBodyEditor, { contentType: effectiveContentType, value: content, onChange: setContent, editor: config?.editorPreference, onPickAsset: config?.renderMediaPicker ? () => openMediaPicker() : undefined }, `body-${contentType}-${editorMode}`)] }), _jsxs(Paper, { sx: { p: 2, mt: 2 }, children: [_jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Tags" }), _jsx(Stack, { direction: "row", spacing: 1, flexWrap: "wrap", sx: { mb: tags.length > 0 ? 1 : 0 }, children: tags.map((tag, idx) => (_jsx(Chip, { label: tag, size: "small", onDelete: () => setTags((prev) => prev.filter((_, i) => i !== idx)), sx: { mb: 0.5 } }, `${tag}-${idx}`))) }), _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", children: [_jsx(TextField, { label: "Add tag", size: "small", value: tagInput, onChange: (e) => setTagInput(e.target.value), onKeyDown: (e) => {
                                                                     if (e.key === "Enter") {
                                                                         e.preventDefault();
                                                                         const val = tagInput.trim();
@@ -853,7 +869,12 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                 }, children: _jsx(Paper, { sx: { p: 3 }, children: _jsx(Typography, { children: "Loading..." }) }) })), _jsx(CmsConflictDialog, { open: conflictOpen, onCancel: () => setConflictOpen(false), onReload: () => {
                     setConflictOpen(false);
                     void load();
-                }, onOverwrite: handleConflictOverwrite }), pickerOpen &&
+                }, onOverwrite: handleConflictOverwrite }), _jsxs(Dialog, { open: !!pendingContentType, onClose: () => setPendingContentType(null), children: [_jsx(DialogTitle, { children: "Change content type?" }), _jsx(DialogContent, { children: _jsx(DialogContentText, { children: "The editor already has content. Choosing the wrong content type may affect how it is displayed or cause formatting issues." }) }), _jsxs(DialogActions, { children: [_jsx(Button, { onClick: () => setPendingContentType(null), color: "inherit", children: "Cancel" }), _jsx(Button, { variant: "contained", onClick: () => {
+                                    if (pendingContentType) {
+                                        setContentType(pendingContentType);
+                                    }
+                                    setPendingContentType(null);
+                                }, children: "Change" })] })] }), pickerOpen &&
                 config?.renderMediaPicker?.({
                     open: pickerOpen,
                     onSelect: handleMediaPickerSelect,

@@ -61,6 +61,12 @@ export interface CmsAdminUiConfig {
      */
     getContentUrl?: (fileUid: string, variant?: string) => string;
     /**
+     * Build a public preview URL for a CMS item given its slug, post type,
+     * and locale.  Used by the "Preview" button.  If not provided, the
+     * Preview button is hidden.
+     */
+    getPreviewUrl?: (slug: string, postType: string, locale: string) => string;
+    /**
      * Preferred WYSIWYG editor for HTML content.
      * Defaults to "ckeditor".
      */

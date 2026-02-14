@@ -25,6 +25,11 @@ import {
   Checkbox,
   Chip,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Divider,
   FormControl,
   FormControlLabel,
@@ -34,9 +39,9 @@ import {
   Paper,
   Select,
   Stack,
-  Tab,
-  Tabs,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Tooltip,
   Typography,
 } from "@mui/material";
@@ -215,6 +220,8 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   const [liveErrorMessage, setLiveErrorMessage] = useState("");
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
   const [loadedRevisionId, setLoadedRevisionId] = useState<number | null>(null);
+  const [pendingContentType, setPendingContentType] =
+    useState<CmsEditorContentType | null>(null);
 
   /** Snapshot of live form state before loading a revision, so we
    *  can restore it when the user dismisses the preview. */
@@ -265,8 +272,8 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
       !!postType &&
       !!locale &&
       !!slug &&
-      !!config?.getContentUrl,
-    [isNew, status, postType, locale, slug, config?.getContentUrl],
+      !!config?.getPreviewUrl,
+    [isNew, status, postType, locale, slug, config?.getPreviewUrl],
   );
 
   const postTypeOpts = useMemo(
@@ -281,6 +288,17 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   const hasVisualMode = contentType === "html" || contentType === "markdown";
   const effectiveContentType: CmsEditorContentType =
     hasVisualMode && editorMode === "text" ? "text" : contentType;
+
+  /** Whether the editor body contains user-authored content (beyond the default empty state). */
+  const hasEditorContent = useMemo(() => {
+    const trimmed = content.trim();
+    if (!trimmed) {
+      return false;
+    }
+    // Default empty states for each content type
+    const emptyPatterns = ["<p></p>", "<p>&nbsp;</p>", "<p>\n</p>", ""];
+    return !emptyPatterns.includes(trimmed);
+  }, [content]);
 
   /** Whether the form fields differ from the persisted row. */
   const isDirty = useMemo(() => {
@@ -300,9 +318,13 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     if (lastCleanEpochRef.current === 0) {
       return;
     }
+    // Skip during loading — field changes come from the server, not the user
+    if (isLoading) {
+      return;
+    }
     setEditEpoch(Date.now());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, slug, content, tags, optionsJson, password, locale, postType, contentType]);
+  }, [title, slug, content, tags, optionsJson, password, locale, postType, contentType, isLoading]);
 
   // Reset to visual mode when content type changes
   useEffect(() => {
@@ -970,10 +992,10 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
 
   // ── Preview URL ───────────────────────────────────────────────────────
   const previewUrl = useMemo(() => {
-    if (!canPreview || !config?.getContentUrl) {
+    if (!canPreview || !config?.getPreviewUrl) {
       return null;
     }
-    return config.getContentUrl(slug);
+    return config.getPreviewUrl(slug, postType, locale);
   }, [canPreview, config, postType, locale, slug]);
 
   // ── Render ────────────────────────────────────────────────────────────
@@ -1108,7 +1130,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
               <Button
                 variant="contained"
                 onClick={handleSave}
-                disabled={isSaving}
+                disabled={isSaving || isLoading}
               >
                 {isSaving ? "Saving..." : "Save"}
               </Button>
@@ -1232,7 +1254,6 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
               sx={{
                 px: 2,
                 py: 1,
-                borderBottom: 1,
                 borderColor: "divider",
                 bgcolor: "action.hover",
               }}
@@ -1248,9 +1269,14 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                   <Select
                     value={contentType}
                     label="Content"
-                    onChange={(e) =>
-                      setContentType(e.target.value as CmsEditorContentType)
-                    }
+                    onChange={(e) => {
+                      const next = e.target.value as CmsEditorContentType;
+                      if (hasEditorContent && next !== contentType) {
+                        setPendingContentType(next);
+                      } else {
+                        setContentType(next);
+                      }
+                    }}
                   >
                     <MenuItem value="html">HTML</MenuItem>
                     <MenuItem value="markdown">Markdown</MenuItem>
@@ -1291,24 +1317,30 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
               </Stack>
 
               {hasVisualMode && (
-                <Tabs
+                <ToggleButtonGroup
                   value={editorMode}
-                  onChange={(_, v) => setEditorMode(v)}
-                  sx={{
-                    ml: "auto",
-                    minHeight: 32,
-                    "& .MuiTab-root": {
-                      minHeight: 32,
-                      py: 0.5,
-                      px: 1.5,
-                      fontSize: "0.8rem",
-                      textTransform: "none",
-                    },
+                  exclusive
+                  onChange={(_, v) => {
+                    if (v) {
+                      setEditorMode(v);
+                    }
                   }}
+                  size="small"
+                  sx={{ ml: "auto" }}
                 >
-                  <Tab label="Visual" value="visual" />
-                  <Tab label="Text" value="text" />
-                </Tabs>
+                  <ToggleButton
+                    value="visual"
+                    sx={{ px: 1.5, py: 0.25, fontSize: "0.8rem", textTransform: "none" }}
+                  >
+                    Visual
+                  </ToggleButton>
+                  <ToggleButton
+                    value="text"
+                    sx={{ px: 1.5, py: 0.25, fontSize: "0.8rem", textTransform: "none" }}
+                  >
+                    Text
+                  </ToggleButton>
+                </ToggleButtonGroup>
               )}
             </Stack>
 
@@ -1719,6 +1751,36 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
         }}
         onOverwrite={handleConflictOverwrite}
       />
+
+      {/* Content type change confirmation */}
+      <Dialog
+        open={!!pendingContentType}
+        onClose={() => setPendingContentType(null)}
+      >
+        <DialogTitle>Change content type?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            The editor already has content. Choosing the wrong content type may
+            affect how it is displayed or cause formatting issues.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingContentType(null)} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              if (pendingContentType) {
+                setContentType(pendingContentType);
+              }
+              setPendingContentType(null);
+            }}
+          >
+            Change
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Media picker (delegated to host app) */}
       {pickerOpen &&
