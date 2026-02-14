@@ -51,7 +51,7 @@ const parseBoolQuery = (val) => {
 };
 // ─── Factory ──────────────────────────────────────────────────────────────
 export function createCmsAdminRouter(cfg) {
-    const { service, authz, onAfterWrite, bodyLimitBytes = 1_048_576 } = cfg;
+    const { service, authz, onAfterWrite, resolveUserEmails, bodyLimitBytes = 1_048_576 } = cfg;
     const router = Router();
     // ── Body size guard (non-safe methods) ────────────────────────────────
     router.use((req, res, next) => {
@@ -133,8 +133,8 @@ export function createCmsAdminRouter(cfg) {
         try {
             const actor = authz.getActorContext(req);
             const row = await service.create({
-                ...req.body,
-                ownerUserUid: actor.userUid,
+                request: req.body,
+                actorUserUid: actor.userUid,
             });
             await fireAfterWrite(row.uid, "create", actor.userUid, row, req);
             setEtagHeader(res, row);
@@ -153,9 +153,9 @@ export function createCmsAdminRouter(cfg) {
             const actor = authz.getActorContext(req);
             const row = await service.updateByUid({
                 uid: req.params.uid,
-                ...req.body,
-                ifMatch,
-                updatedBy: actor.userUid,
+                patch: req.body,
+                ifMatchHeader: ifMatch ?? null,
+                actorUserUid: actor.userUid,
             });
             await fireAfterWrite(req.params.uid, "update", actor.userUid, row, req);
             setEtagHeader(res, row);
@@ -174,8 +174,9 @@ export function createCmsAdminRouter(cfg) {
             const actor = authz.getActorContext(req);
             const row = await service.publishByUid({
                 uid: req.params.uid,
-                ifMatch,
-                ...req.body,
+                ifMatchHeader: ifMatch ?? null,
+                actorUserUid: actor.userUid,
+                ...(req.body?.publishedAt ? { publishedAt: req.body.publishedAt } : {}),
             });
             await fireAfterWrite(req.params.uid, "publish", actor.userUid, row, req);
             setEtagHeader(res, row);
@@ -317,6 +318,27 @@ export function createCmsAdminRouter(cfg) {
                 limit: parseIntOr(req.query.limit, 50),
                 offset: parseIntOr(req.query.offset, 0),
             });
+            // Enrich items with author emails if resolver is provided
+            if (resolveUserEmails && result.items?.length) {
+                try {
+                    const uuids = [...new Set(result.items
+                            .map((r) => r.created_by)
+                            .filter((u) => typeof u === "string" && u.length > 0))];
+                    if (uuids.length) {
+                        const emailMap = await resolveUserEmails(uuids);
+                        for (const item of result.items) {
+                            const email = emailMap.get(item.created_by);
+                            if (email) {
+                                item.created_by_email = email;
+                            }
+                        }
+                    }
+                }
+                catch (_emailErr) {
+                    // Non-fatal: history still returned without emails
+                    console.warn("[cms-admin] resolveUserEmails failed:", _emailErr);
+                }
+            }
             ok(res, result);
         }
         catch (err) {

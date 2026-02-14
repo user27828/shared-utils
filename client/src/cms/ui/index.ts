@@ -7,6 +7,10 @@ export type { CmsListPageProps } from "./CmsListPage.js";
 export { default as CmsEditPage } from "./CmsEditPage.js";
 export type { CmsEditPageProps } from "./CmsEditPage.js";
 
+export { default as CmsHistoryDrawer } from "./CmsHistoryDrawer.js";
+export { HISTORY_DRAWER_WIDTH } from "./CmsHistoryDrawer.js";
+export type { CmsHistoryDrawerProps } from "./CmsHistoryDrawer.js";
+
 export { default as CmsConflictDialog } from "./CmsConflictDialog.js";
 export type { CmsConflictDialogProps } from "./CmsConflictDialog.js";
 

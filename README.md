@@ -1,6 +1,6 @@
 # shared-utils
 
-Collection of common utilities for web applications. Features centralized configuration through **OptionsManager** and environment-aware utilities that work across client/server contexts.
+Collection of common utilities for web applications. Features centralized configuration through **OptionsManager**, environment-aware utilities that work across client/server contexts, and a portable **CMS** (Content Management System) with pluggable DB connectors.
 
 ## 📋 Table of Contents
 
@@ -15,6 +15,7 @@ Collection of common utilities for web applications. Features centralized config
     - [🎨 Client Components](#-client-components)
       - [📝 WYSIWYG Editor Components](#-wysiwyg-editor-components)
     - [🚀 Server](#-server)
+    - [📝 CMS (Content Management System)](#-cms-content-management-system)
   - [Configuration](#configuration)
     - [Centralized Configuration (Recommended)](#centralized-configuration-recommended)
     - [Framework Examples](#framework-examples)
@@ -85,6 +86,15 @@ import {
 
 // ✅ Server functionality
 import { verifyTurnstileTokenEnhanced } from "@user27828/shared-utils/server";
+
+// ✅ CMS — types, validation, sanitization, concurrency, password
+import { CmsHeadRow, CmsPublicPayload, CMS_POST_TYPES } from "@user27828/shared-utils/cms";
+
+// ✅ CMS — server core service, Express routers, connector interface
+import { CmsServiceCore, createCmsAdminRouter, createCmsPublicRouter } from "@user27828/shared-utils/cms/server";
+
+// ✅ CMS — client SDK, React hooks, admin UI pages
+import { CmsClient, useCmsAdmin, CmsEditPage, CmsListPage } from "@user27828/shared-utils/cms/client";
 ```
 
 ### Basic Setup
@@ -295,6 +305,34 @@ import { getClientIp } from "@user27828/shared-utils/server";
 
 const ip = getClientIp(req);
 ```
+
+### 📝 CMS (Content Management System)
+
+A portable, full-featured CMS with pluggable DB connectors. The CMS core is DB-agnostic; persistence is provided by connector packages (e.g. `@user27828/db-supabase`).
+
+**Import paths:**
+
+| Path | Contents |
+|---|---|
+| `@user27828/shared-utils/cms` | Shared types, Zod schemas, validation, sanitization, concurrency, password utils, error classes |
+| `@user27828/shared-utils/cms/server` | `CmsServiceCore`, `CmsConnector` interface, Express router factories, rate limiter, authz, cache-control, unlock tokens, conformance test harness |
+| `@user27828/shared-utils/cms/client` | `CmsClient` SDK, `useCmsAdmin`/`useCmsPublic` hooks, admin UI pages (`CmsListPage`, `CmsEditPage`, `CmsHistoryDrawer`, `CmsBodyEditor`, `CmsConflictDialog`) |
+
+**Key features:**
+
+- ETag/If-Match optimistic concurrency
+- HTML/Markdown sanitization (server-side)
+- Password protection with bcrypt + unlock tokens
+- Full revision history with restore
+- Configurable rate limiting (Redis + memory fallback)
+- Role-based authorization middleware factory
+- Drop-in admin UI with injectable media picker
+- Connector conformance test harness for new DB adapters
+
+**Documentation:**
+
+- [CMS Consumer Guide](doc/CMS_CONSUMER_GUIDE.md): SDK, admin UI, and server composition
+- [CMS Connector Guide](doc/CMS_CONNECTOR_GUIDE.md): How to write a new DB connector
 
 [🔝 Back to Top](#shared-utils)
 

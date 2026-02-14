@@ -43,6 +43,12 @@ export interface CmsAdminRouterConfig {
         row?: Record<string, any> | null;
         req: Request;
     }) => void | Promise<void>;
+    /**
+     * Optional resolver that maps user UUIDs to email addresses.
+     * Used to enrich history rows with author emails.
+     * Return a Map<uuid, email>; missing entries are silently skipped.
+     */
+    resolveUserEmails?: (uuids: string[]) => Promise<Map<string, string>>;
     /** Max allowed body size in bytes.  Default: 1_048_576 (1 MB). */
     bodyLimitBytes?: number;
 }

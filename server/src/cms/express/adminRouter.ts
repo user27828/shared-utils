@@ -55,6 +55,13 @@ export interface CmsAdminRouterConfig {
     req: Request;
   }) => void | Promise<void>;
 
+  /**
+   * Optional resolver that maps user UUIDs to email addresses.
+   * Used to enrich history rows with author emails.
+   * Return a Map<uuid, email>; missing entries are silently skipped.
+   */
+  resolveUserEmails?: (uuids: string[]) => Promise<Map<string, string>>;
+
   /** Max allowed body size in bytes.  Default: 1_048_576 (1 MB). */
   bodyLimitBytes?: number;
 }
@@ -100,7 +107,7 @@ const parseBoolQuery = (val: any): boolean | undefined => {
 // ─── Factory ──────────────────────────────────────────────────────────────
 
 export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
-  const { service, authz, onAfterWrite, bodyLimitBytes = 1_048_576 } = cfg;
+  const { service, authz, onAfterWrite, resolveUserEmails, bodyLimitBytes = 1_048_576 } = cfg;
   const router = Router();
 
   // ── Body size guard (non-safe methods) ────────────────────────────────
@@ -192,8 +199,8 @@ export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
     try {
       const actor = authz.getActorContext(req);
       const row = await service.create({
-        ...req.body,
-        ownerUserUid: actor.userUid,
+        request: req.body,
+        actorUserUid: actor.userUid,
       });
       await fireAfterWrite(row.uid, "create", actor.userUid, row, req);
       setEtagHeader(res, row);
@@ -212,9 +219,9 @@ export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
       const actor = authz.getActorContext(req);
       const row = await service.updateByUid({
         uid: req.params.uid,
-        ...req.body,
-        ifMatch,
-        updatedBy: actor.userUid,
+        patch: req.body,
+        ifMatchHeader: ifMatch ?? null,
+        actorUserUid: actor.userUid,
       });
       await fireAfterWrite(req.params.uid, "update", actor.userUid, row, req);
       setEtagHeader(res, row);
@@ -233,8 +240,9 @@ export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
       const actor = authz.getActorContext(req);
       const row = await service.publishByUid({
         uid: req.params.uid,
-        ifMatch,
-        ...req.body,
+        ifMatchHeader: ifMatch ?? null,
+        actorUserUid: actor.userUid,
+        ...(req.body?.publishedAt ? { publishedAt: req.body.publishedAt } : {}),
       });
       await fireAfterWrite(req.params.uid, "publish", actor.userUid, row, req);
       setEtagHeader(res, row);
@@ -387,6 +395,30 @@ export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
         limit: parseIntOr(req.query.limit, 50),
         offset: parseIntOr(req.query.offset, 0),
       });
+
+      // Enrich items with author emails if resolver is provided
+      if (resolveUserEmails && result.items?.length) {
+        try {
+          const uuids = [...new Set(
+            result.items
+              .map((r) => r.created_by)
+              .filter((u): u is string => typeof u === "string" && u.length > 0),
+          )];
+          if (uuids.length) {
+            const emailMap = await resolveUserEmails(uuids);
+            for (const item of result.items) {
+              const email = emailMap.get(item.created_by as string);
+              if (email) {
+                (item as any).created_by_email = email;
+              }
+            }
+          }
+        } catch (_emailErr) {
+          // Non-fatal: history still returned without emails
+          console.warn("[cms-admin] resolveUserEmails failed:", _emailErr);
+        }
+      }
+
       ok(res, result);
     } catch (err) {
       sendCmsError(res, err);

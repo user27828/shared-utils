@@ -2,8 +2,8 @@
  * CMS Edit Page — shared-utils
  *
  * Portable, two-column edit page with:
- *  - Left: metadata form + body editor + advanced options accordion
- *  - Right: status panel + media/SEO panel + history panel
+ *  - Left: history drawer + metadata form + body editor + advanced options
+ *  - Right: status panel + media/SEO panel
  *
  * Uses CmsApi interface (via CmsAdminUiConfig) and injectable
  * adapters for navigation, toasts, and media picker.
@@ -49,6 +49,9 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import LockIcon from "@mui/icons-material/Lock";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
+import HistoryIcon from "@mui/icons-material/History";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import EditIcon from "@mui/icons-material/Edit";
 
 import type {
   CmsHeadRow,
@@ -67,6 +70,9 @@ import CmsBodyEditor, {
   contentTypeToMime,
   mimeToContentType,
 } from "./CmsBodyEditor.js";
+import CmsHistoryDrawer, {
+  HISTORY_DRAWER_WIDTH,
+} from "./CmsHistoryDrawer.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -106,6 +112,30 @@ const getStatusChipColor = (
     default:
       return "default";
   }
+};
+
+const formatIsoDateTime = (iso: unknown): string | null => {
+  if (typeof iso !== "string") {
+    return null;
+  }
+
+  const trimmed = iso.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const date = new Date(trimmed);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────
@@ -166,7 +196,8 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   const [postType, setPostType] = useState(defaultPostType);
   const [contentType, setContentType] = useState<CmsEditorContentType>("html");
   const [content, setContent] = useState("<p></p>");
-  const [tagsCsv, setTagsCsv] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
   const [optionsJson, setOptionsJson] = useState("{}");
   const [password, setPassword] = useState("");
   const [includeSoftDeletedHistory, setIncludeSoftDeletedHistory] =
@@ -174,6 +205,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   const [editorMode, setEditorMode] = useState<"visual" | "text">("visual");
 
   // ── UI state ──────────────────────────────────────────────────────────
+  const [isSlugEditing, setIsSlugEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -181,18 +213,48 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [liveMessage, setLiveMessage] = useState("");
   const [liveErrorMessage, setLiveErrorMessage] = useState("");
+  const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
+  const [loadedRevisionId, setLoadedRevisionId] = useState<number | null>(null);
+
+  /** Snapshot of live form state before loading a revision, so we
+   *  can restore it when the user dismisses the preview. */
+  const savedFormRef = useRef<{
+    title: string;
+    slug: string;
+    locale: string;
+    postType: string;
+    contentType: CmsEditorContentType;
+    content: string;
+    tags: string[];
+    optionsJson: string;
+  } | null>(null);
 
   // ── Refs ──────────────────────────────────────────────────────────────
   const errorAlertRef = useRef<HTMLDivElement | null>(null);
   const conflictRef = useRef<ConflictCtx | null>(null);
+  const slugBeforeEditRef = useRef<string>("");
   const pickerResolveRef = useRef<
     ((file: { uid: string } | null) => void) | null
   >(null);
+
+  // ── Dirty-tracking epoch ──────────────────────────────────────────────
+  /** Epoch timestamp set after every load/save; any form change after this
+   *  bumps editEpoch, making isDirty true without fragile content diffs. */
+  const lastCleanEpochRef = useRef<number>(0);
+  const [editEpoch, setEditEpoch] = useState(0);
 
   // ── Derived ───────────────────────────────────────────────────────────
   const etag = (row as any)?.etag as string | undefined;
   const status = (row as any)?.status as string | undefined;
   const lockedBy = (row as any)?.locked_by as string | undefined;
+
+  const publishedAtIso = row?.published_at ?? row?.first_published_at ?? null;
+  const publishedAtText = useMemo(
+    () => formatIsoDateTime(publishedAtIso) ?? "—",
+    [publishedAtIso],
+  );
+
+  const revisionsCount = history.length;
 
   const optionsParse = useMemo(() => safeJsonParse(optionsJson), [optionsJson]);
 
@@ -220,6 +282,28 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   const effectiveContentType: CmsEditorContentType =
     hasVisualMode && editorMode === "text" ? "text" : contentType;
 
+  /** Whether the form fields differ from the persisted row. */
+  const isDirty = useMemo(() => {
+    if (isNew) {
+      return title !== "" || content !== "<p></p>";
+    }
+    // After a load/save the epochs are equal — no unsaved changes.
+    return editEpoch > lastCleanEpochRef.current;
+  }, [isNew, title, content, editEpoch]);
+
+  /** Bump editEpoch when any tracked form field changes after the last
+   *  clean epoch.  The guard prevents the effect from firing during the
+   *  same tick as load()/save() which also set these fields. */
+  useEffect(() => {
+    // Skip the very first render and programmatic sets from load/save
+    // by checking if we already have a baseline.
+    if (lastCleanEpochRef.current === 0) {
+      return;
+    }
+    setEditEpoch(Date.now());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, slug, content, tags, optionsJson, password, locale, postType, contentType]);
+
   // Reset to visual mode when content type changes
   useEffect(() => {
     setEditorMode("visual");
@@ -236,11 +320,109 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     setTimeout(() => setLiveErrorMessage(""), 6000);
   }, []);
 
+  // ── Slug helpers (view/edit row) ─────────────────────────────────────
+  const slugPath = useMemo(() => {
+    const trimmed = slug.trim();
+    if (!trimmed) {
+      return "";
+    }
+    const noLeadingSlashes = trimmed.replace(/^\/+/, "");
+    return `/${noLeadingSlashes}`;
+  }, [slug]);
+
+  const copyToClipboard = useCallback(
+    async (text: string): Promise<boolean> => {
+      const trimmed = text.trim();
+      if (!trimmed) {
+        return false;
+      }
+
+      // Prefer modern Clipboard API.
+      try {
+        if (
+          typeof navigator !== "undefined" &&
+          navigator.clipboard &&
+          typeof navigator.clipboard.writeText === "function"
+        ) {
+          await navigator.clipboard.writeText(trimmed);
+          return true;
+        }
+      } catch {
+        // Fall back below.
+      }
+
+      // Legacy fallback (best-effort). Avoids throwing in non-DOM contexts.
+      try {
+        if (typeof document === "undefined") {
+          return false;
+        }
+        const el = document.createElement("textarea");
+        el.value = trimmed;
+        el.setAttribute("readonly", "");
+        el.style.position = "fixed";
+        el.style.left = "-9999px";
+        el.style.top = "0";
+        document.body.appendChild(el);
+        el.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(el);
+        return ok;
+      } catch {
+        return false;
+      }
+    },
+    [],
+  );
+
+  const handleCopySlug = useCallback(async () => {
+    if (!slugPath) {
+      toast.info("No slug to copy");
+      return;
+    }
+
+    const ok = await copyToClipboard(slugPath);
+    if (ok) {
+      toast.success("Slug copied");
+      announce("Slug copied to clipboard");
+      return;
+    }
+
+    toast.error("Copy failed");
+    announceErr("Copy failed");
+  }, [announce, announceErr, copyToClipboard, slugPath, toast]);
+
+  const handleStartSlugEdit = useCallback(() => {
+    slugBeforeEditRef.current = slug;
+    setIsSlugEditing(true);
+  }, [slug]);
+
+  const handleSlugBlur = useCallback(() => {
+    setIsSlugEditing(false);
+  }, []);
+
+  const handleSlugKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        (e.currentTarget as HTMLInputElement).blur();
+        return;
+      }
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setSlug(slugBeforeEditRef.current);
+        setIsSlugEditing(false);
+      }
+    },
+    [],
+  );
+
   // ── Load ──────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
     if (isNew) {
       return;
     }
+    setIsSlugEditing(false);
     setIsLoading(true);
     setError(null);
 
@@ -257,8 +439,8 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
         ) as CmsEditorContentType,
       );
       setContent(item.content || "<p></p>");
-      setTagsCsv(
-        Array.isArray((item as any).tags) ? (item as any).tags.join(", ") : "",
+      setTags(
+        Array.isArray((item as any).tags) ? (item as any).tags : [],
       );
       setOptionsJson(
         (item as any).options
@@ -267,15 +449,24 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
       );
       setPassword("");
 
-      // Load history
+      // Mark form as clean after populating from server data
+      const epoch = Date.now();
+      lastCleanEpochRef.current = epoch;
+      setEditEpoch(epoch);
+
+      // Load history (larger batch for calendar navigation)
       try {
         const hist = await api.adminListHistory(propUid!, {
-          limit: 50,
+          limit: 500,
         });
         setHistory(hist.items ?? hist ?? []);
       } catch {
         /* non-critical */
       }
+
+      // Clear any loaded revision when reloading
+      setLoadedRevisionId(null);
+      savedFormRef.current = null;
     } catch (err: any) {
       setError(err?.message || "Failed to load CMS item");
     } finally {
@@ -310,10 +501,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
       post_type: postType,
       content_type: contentTypeToMime(contentType),
       content,
-      tags: tagsCsv
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean),
+      tags: [...tags],
       options: optionsParse.value ?? {},
     };
     if (password) {
@@ -327,7 +515,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     postType,
     contentType,
     content,
-    tagsCsv,
+    tags,
     optionsParse.value,
     password,
   ]);
@@ -609,6 +797,92 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     }
   };
 
+  // ── Load / dismiss revision (preview without server write) ────────────
+  const handleLoadRevision = useCallback(
+    (historyId: number) => {
+      const rev = history.find((h) => h.id === historyId);
+      if (!rev?.snapshot) {
+        toast.error("Revision snapshot not available");
+        return;
+      }
+
+      setIsSlugEditing(false);
+
+      // Save current form state before overwriting (only once per session)
+      if (!savedFormRef.current) {
+        savedFormRef.current = {
+          title,
+          slug,
+          locale,
+          postType,
+          contentType,
+          content,
+          tags,
+          optionsJson,
+        };
+      }
+
+      // Populate form from the snapshot
+      const snap = rev.snapshot as Record<string, any>;
+      setTitle(snap.title ?? "");
+      setSlug(snap.slug ?? "");
+      setLocale(snap.locale ?? locale);
+      setPostType(snap.post_type ?? postType);
+      setContentType(
+        mimeToContentType(
+          snap.content_type ?? "text/html",
+        ) as CmsEditorContentType,
+      );
+      setContent(snap.content ?? "<p></p>");
+      setTags(
+        Array.isArray(snap.tags) ? snap.tags : [],
+      );
+      setOptionsJson(
+        snap.options ? JSON.stringify(snap.options, null, 2) : "{}",
+      );
+
+      setLoadedRevisionId(historyId);
+      announce(`Loaded revision ${rev.revision ?? rev.id} for preview`);
+    },
+    [
+      history,
+      title,
+      slug,
+      locale,
+      postType,
+      contentType,
+      content,
+      tags,
+      optionsJson,
+      toast,
+      announce,
+    ],
+  );
+
+  const handleDismissRevision = useCallback(() => {
+    setIsSlugEditing(false);
+    if (!savedFormRef.current) {
+      // Nothing to restore — just clear the loaded ID
+      setLoadedRevisionId(null);
+      return;
+    }
+
+    // Restore the form to its pre-preview state
+    const s = savedFormRef.current;
+    setTitle(s.title);
+    setSlug(s.slug);
+    setLocale(s.locale);
+    setPostType(s.postType);
+    setContentType(s.contentType);
+    setContent(s.content);
+    setTags(s.tags);
+    setOptionsJson(s.optionsJson);
+
+    savedFormRef.current = null;
+    setLoadedRevisionId(null);
+    announce("Returned to current version");
+  }, [announce]);
+
   // ── Media picker (promise-based) ──────────────────────────────────────
   const openMediaPicker = (): Promise<{ uid: string } | null> => {
     return new Promise((resolve) => {
@@ -704,7 +978,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
 
   // ── Render ────────────────────────────────────────────────────────────
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
+    <Container maxWidth="xl" sx={{ pt: 0, pb: 3 }}>
       {/* ARIA live regions */}
       <Box
         aria-live="polite"
@@ -720,6 +994,65 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
       >
         {liveErrorMessage}
       </Box>
+
+      {/* ═══ FLEX WRAPPER: history drawer + main content ═══ */}
+      <Box sx={{ display: "flex", position: "relative", minHeight: "calc(100vh - 64px)" }}>
+        {/* History drawer (flex-based sidebar) */}
+        {!isNew && (
+          <CmsHistoryDrawer
+            open={historyDrawerOpen}
+            onClose={() => setHistoryDrawerOpen(false)}
+            history={history}
+            loadedRevisionId={loadedRevisionId}
+            isDirty={isDirty}
+            isSaving={isSaving}
+            includeSoftDeleted={includeSoftDeletedHistory}
+            onIncludeSoftDeletedChange={setIncludeSoftDeletedHistory}
+            onLoadRevision={handleLoadRevision}
+            onRestoreRevision={handleRestoreRevision}
+            onSoftDeleteRevision={handleSoftDeleteRevision}
+            onHardDeleteRevision={handleHardDeleteRevision}
+            onDismissRevision={handleDismissRevision}
+            currentVersionNumber={row?.version_number}
+            currentUpdatedAt={row?.updated_at}
+          />
+        )}
+
+        {/* Main content area */}
+        <Box sx={{ flex: 1, minWidth: 0, ml: 1 }}>
+
+      {/* Loaded revision banner */}
+      {loadedRevisionId && (
+        <Alert
+          severity="info"
+          sx={{ mb: 2 }}
+          action={
+            <Stack direction="row" spacing={1}>
+              <Button
+                size="small"
+                color="inherit"
+                onClick={handleDismissRevision}
+              >
+                Dismiss
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                color="inherit"
+                onClick={() => handleRestoreRevision(loadedRevisionId)}
+                disabled={isSaving}
+              >
+                Restore this revision
+              </Button>
+            </Stack>
+          }
+        >
+          Previewing revision {
+            history.find((h) => h.id === loadedRevisionId)?.revision ??
+            loadedRevisionId
+          }. Changes have not been saved.
+        </Alert>
+      )}
 
       <Stack direction={{ xs: "column", lg: "row" }} spacing={3}>
         {/* ═══ LEFT COLUMN ═══ */}
@@ -743,6 +1076,25 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
             </Stack>
 
             <Stack direction="row" spacing={1}>
+              {!isNew && (
+                <Tooltip
+                  title={
+                    historyDrawerOpen
+                      ? "Close history"
+                      : "Open history"
+                  }
+                >
+                  <IconButton
+                    onClick={() =>
+                      setHistoryDrawerOpen((o) => !o)
+                    }
+                    color={historyDrawerOpen ? "primary" : "default"}
+                    size="small"
+                  >
+                    <HistoryIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
               {canPreview && previewUrl && (
                 <Button
                   size="small"
@@ -784,31 +1136,88 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               onBlur={handleTitleBlur}
-              sx={{ mb: 2 }}
+              sx={{ mb: isSlugEditing ? 2 : "1px" }}
             />
 
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            {!isSlugEditing ? (
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={1}
+                sx={{
+                  border: 1,
+                  borderColor: "divider",
+                  borderRadius: 1,
+                  px: 1,
+                  py: 0.5,
+                  bgcolor: "background.default",
+                }}
+              >
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  Slug:
+                </Typography>
+
+                <Tooltip title={slugPath || "No slug"}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontFamily: "monospace",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      maxWidth: { xs: "55vw", md: 360 },
+                      px: 0.5,
+                      py: 0.25,
+                      borderRadius: 0.75,
+                      bgcolor: "action.hover",
+                    }}
+                  >
+                    {slugPath || "—"}
+                  </Typography>
+                </Tooltip>
+
+                <Box sx={{ flex: 1 }} />
+
+                <Tooltip title={slugPath ? "Copy slug" : "No slug to copy"}>
+                  <span>
+                    <IconButton
+                      size="small"
+                      onClick={handleCopySlug}
+                      disabled={!slugPath}
+                      aria-label="Copy slug"
+                    >
+                      <ContentCopyIcon fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+
+                <Tooltip title="Edit slug">
+                  <IconButton
+                    size="small"
+                    onClick={handleStartSlugEdit}
+                    aria-label="Edit slug"
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+            ) : (
               <TextField
                 label="Slug"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
-                sx={{ flex: 1 }}
+                size="small"
+                fullWidth
+                autoFocus
+                onBlur={handleSlugBlur}
+                onKeyDown={handleSlugKeyDown}
+                sx={{ maxWidth: { xs: "100%", md: 520 } }}
+                helperText="Used in the URL path. Leading '/' is optional."
+                inputProps={{
+                  style: { fontFamily: "monospace" },
+                }}
               />
-              <TextField
-                label="Tags (comma-separated)"
-                value={tagsCsv}
-                onChange={(e) => setTagsCsv(e.target.value)}
-                sx={{ flex: 1 }}
-              />
-              <TextField
-                label="Password (optional)"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={isNew ? "" : "(unchanged)"}
-                sx={{ flex: 1 }}
-              />
-            </Stack>
+            )}
           </Paper>
 
           {/* Editor panel with toolbar */}
@@ -886,6 +1295,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                   value={editorMode}
                   onChange={(_, v) => setEditorMode(v)}
                   sx={{
+                    ml: "auto",
                     minHeight: 32,
                     "& .MuiTab-root": {
                       minHeight: 32,
@@ -912,6 +1322,72 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
               onPickAsset={
                 config?.renderMediaPicker ? () => openMediaPicker() : undefined
               }
+            />
+          </Paper>
+
+          {/* Tags & Password */}
+          <Paper sx={{ p: 2, mt: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              Tags
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: tags.length > 0 ? 1 : 0 }}>
+              {tags.map((tag, idx) => (
+                <Chip
+                  key={`${tag}-${idx}`}
+                  label={tag}
+                  size="small"
+                  onDelete={() => setTags((prev) => prev.filter((_, i) => i !== idx))}
+                  sx={{ mb: 0.5 }}
+                />
+              ))}
+            </Stack>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <TextField
+                label="Add tag"
+                size="small"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    const val = tagInput.trim();
+                    if (val && !tags.includes(val)) {
+                      setTags((prev) => [...prev, val]);
+                    }
+                    setTagInput("");
+                  }
+                }}
+                sx={{ flex: 1 }}
+              />
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={() => {
+                  const val = tagInput.trim();
+                  if (val && !tags.includes(val)) {
+                    setTags((prev) => [...prev, val]);
+                  }
+                  setTagInput("");
+                }}
+                disabled={!tagInput.trim()}
+              >
+                <AddIcon />
+              </IconButton>
+            </Stack>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              Password Protection
+            </Typography>
+            <TextField
+              label="Password (optional)"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={isNew ? "" : "(unchanged)"}
+              fullWidth
+              size="small"
             />
           </Paper>
 
@@ -948,13 +1424,6 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
             </Typography>
 
             <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-              {status && (
-                <Chip
-                  label={status}
-                  size="small"
-                  color={getStatusChipColor(status)}
-                />
-              )}
               {etag && <Chip label={etag} size="small" variant="outlined" />}
               {lockedBy && (
                 <Chip
@@ -965,6 +1434,48 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                 />
               )}
             </Stack>
+
+            {!isNew && (
+              <Stack spacing={0.75} sx={{ mb: 1 }}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Chip
+                    label={status === "published" ? "Published" : status === "trash" ? "Trash" : "Draft"}
+                    size="small"
+                    color={
+                      status === "published"
+                        ? "success"
+                        : status === "trash"
+                          ? "error"
+                          : "default"
+                    }
+                    variant={status === "published" ? "filled" : "outlined"}
+                  />
+                  {status === "published" && (
+                    <Typography variant="caption" color="text.secondary" noWrap>
+                      {publishedAtText}
+                    </Typography>
+                  )}
+                </Stack>
+
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  spacing={1}
+                >
+                  <Typography variant="body2">Revisions: {revisionsCount}</Typography>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<HistoryIcon fontSize="small" />}
+                    onClick={() => setHistoryDrawerOpen(true)}
+                    disabled={historyDrawerOpen || revisionsCount === 0}
+                  >
+                    Browse
+                  </Button>
+                </Stack>
+              </Stack>
+            )}
 
             <Divider sx={{ my: 1 }} />
 
@@ -982,14 +1493,39 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
               )}
 
               {!isNew && status !== "trash" && (
-                <Button
-                  color="warning"
-                  fullWidth
-                  onClick={handleTrash}
-                  disabled={isSaving}
-                >
-                  Move to Trash
-                </Button>
+                <Stack direction="row" spacing={1}>
+                  <Button
+                    variant="outlined"
+                    color="warning"
+                    fullWidth
+                    onClick={handleTrash}
+                    disabled={isSaving}
+                  >
+                    Move to Trash
+                  </Button>
+                  {!lockedBy && (
+                    <Button
+                      variant="outlined"
+                      startIcon={<LockIcon />}
+                      fullWidth
+                      onClick={handleLock}
+                      disabled={isSaving}
+                    >
+                      Lock
+                    </Button>
+                  )}
+                  {lockedBy && (
+                    <Button
+                      variant="outlined"
+                      startIcon={<LockOpenIcon />}
+                      fullWidth
+                      onClick={handleUnlock}
+                      disabled={isSaving}
+                    >
+                      Unlock
+                    </Button>
+                  )}
+                </Stack>
               )}
 
               {!isNew && status === "trash" && (
@@ -1014,27 +1550,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                 </>
               )}
 
-              {!isNew && <Divider />}
-
-              {!isNew && !lockedBy && (
-                <Button
-                  size="small"
-                  startIcon={<LockIcon />}
-                  onClick={handleLock}
-                >
-                  Lock
-                </Button>
-              )}
-
-              {!isNew && lockedBy && (
-                <Button
-                  size="small"
-                  startIcon={<LockOpenIcon />}
-                  onClick={handleUnlock}
-                >
-                  Unlock
-                </Button>
-              )}
+              {!isNew && status === "trash" && <Divider />}
             </Stack>
           </Paper>
 
@@ -1063,7 +1579,12 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                 >
                   {featuredImageUid || "—"}
                 </Typography>
-                <Button size="small" onClick={chooseFeaturedImage}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<AddIcon fontSize="small" />}
+                  onClick={chooseFeaturedImage}
+                >
                   Choose
                 </Button>
                 {featuredImageUid && (
@@ -1099,7 +1620,12 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                 >
                   {ogImageUid || "—"}
                 </Typography>
-                <Button size="small" onClick={chooseOgImage}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<AddIcon fontSize="small" />}
+                  onClick={chooseOgImage}
+                >
                   Choose
                 </Button>
                 {ogImageUid && (
@@ -1158,111 +1684,11 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
               </Button>
             </Paper>
           )}
-
-          {/* History panel */}
-          {!isNew && (
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                History
-              </Typography>
-
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    size="small"
-                    checked={includeSoftDeletedHistory}
-                    onChange={(_, v) => setIncludeSoftDeletedHistory(v)}
-                  />
-                }
-                label={
-                  <Typography variant="caption">
-                    Show deleted revisions
-                  </Typography>
-                }
-                sx={{ mb: 1 }}
-              />
-
-              {history.length === 0 && (
-                <Typography variant="caption" color="text.secondary">
-                  No revision history
-                </Typography>
-              )}
-
-              {history.map((h) => (
-                <Stack
-                  key={h.id}
-                  direction="row"
-                  alignItems="center"
-                  sx={{
-                    py: 0.5,
-                    borderBottom: 1,
-                    borderColor: "divider",
-                  }}
-                >
-                  <Stack
-                    direction="row"
-                    spacing={0.5}
-                    sx={{ flex: 1, minWidth: 0 }}
-                  >
-                    <Chip
-                      label={`Rev ${h.version ?? h.id}`}
-                      size="small"
-                      variant="outlined"
-                    />
-                    {(h as any).is_deleted && (
-                      <Chip
-                        label="deleted"
-                        size="small"
-                        color="error"
-                        variant="outlined"
-                      />
-                    )}
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ alignSelf: "center" }}
-                    >
-                      {h.created_at
-                        ? new Date(h.created_at).toLocaleString()
-                        : "—"}
-                    </Typography>
-                  </Stack>
-
-                  <Tooltip title="Restore this revision">
-                    <IconButton
-                      size="small"
-                      onClick={() => handleRestoreRevision(h.id!)}
-                    >
-                      <RestoreIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-
-                  {!(h as any).is_deleted ? (
-                    <Tooltip title="Soft-delete revision">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleSoftDeleteRevision(h.id!)}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  ) : (
-                    <Tooltip title="Permanently delete revision">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleHardDeleteRevision(h.id!)}
-                      >
-                        <DeleteForeverIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                </Stack>
-              ))}
-            </Paper>
-          )}
         </Box>
       </Stack>
+
+      </Box>{/* /Main content area */}
+      </Box>{/* /FLEX WRAPPER */}
 
       {/* Loading overlay */}
       {isLoading && (

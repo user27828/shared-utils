@@ -1797,7 +1797,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.14.8, @babel/runtime@npm:^7.28.6":
+"@babel/runtime@npm:^7.14.8, @babel/runtime@npm:^7.28.4, @babel/runtime@npm:^7.28.6":
   version: 7.28.6
   resolution: "@babel/runtime@npm:7.28.6"
   checksum: 10/fbcd439cb74d4a681958eb064c509829e3f46d8a4bfaaf441baa81bb6733d1e680bccc676c813883d7741bcaada1d0d04b15aa320ef280b5734e2192b50decf9
@@ -5950,7 +5950,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/utils@npm:^7.3.8":
+"@mui/utils@npm:^7.3.5, @mui/utils@npm:^7.3.8":
   version: 7.3.8
   resolution: "@mui/utils@npm:7.3.8"
   dependencies:
@@ -5967,6 +5967,68 @@ __metadata:
     "@types/react":
       optional: true
   checksum: 10/265ceb8385432dd81b873dce73897a7321f5d7a0898b86bc6a3d3f77a9f2b70f712aeaeb3565ae4c02a78e8f92485370efa565c5f3db6b014ca8282e067b8d1a
+  languageName: node
+  linkType: hard
+
+"@mui/x-date-pickers@npm:^8.27.0":
+  version: 8.27.0
+  resolution: "@mui/x-date-pickers@npm:8.27.0"
+  dependencies:
+    "@babel/runtime": "npm:^7.28.4"
+    "@mui/utils": "npm:^7.3.5"
+    "@mui/x-internals": "npm:8.26.0"
+    "@types/react-transition-group": "npm:^4.4.12"
+    clsx: "npm:^2.1.1"
+    prop-types: "npm:^15.8.1"
+    react-transition-group: "npm:^4.4.5"
+  peerDependencies:
+    "@emotion/react": ^11.9.0
+    "@emotion/styled": ^11.8.1
+    "@mui/material": ^5.15.14 || ^6.0.0 || ^7.0.0
+    "@mui/system": ^5.15.14 || ^6.0.0 || ^7.0.0
+    date-fns: ^2.25.0 || ^3.2.0 || ^4.0.0
+    date-fns-jalali: ^2.13.0-0 || ^3.2.0-0 || ^4.0.0-0
+    dayjs: ^1.10.7
+    luxon: ^3.0.2
+    moment: ^2.29.4
+    moment-hijri: ^2.1.2 || ^3.0.0
+    moment-jalaali: ^0.7.4 || ^0.8.0 || ^0.9.0 || ^0.10.0
+    react: ^17.0.0 || ^18.0.0 || ^19.0.0
+    react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
+  peerDependenciesMeta:
+    "@emotion/react":
+      optional: true
+    "@emotion/styled":
+      optional: true
+    date-fns:
+      optional: true
+    date-fns-jalali:
+      optional: true
+    dayjs:
+      optional: true
+    luxon:
+      optional: true
+    moment:
+      optional: true
+    moment-hijri:
+      optional: true
+    moment-jalaali:
+      optional: true
+  checksum: 10/5ef4a9a2ee081146cf9df025bd09c58e39ee38bcf2af52b24ea65d86a1a9363f9b9759ebd08a55527f60b698eb8609c2d44c46b05d3644f6f2892ad04407db8b
+  languageName: node
+  linkType: hard
+
+"@mui/x-internals@npm:8.26.0":
+  version: 8.26.0
+  resolution: "@mui/x-internals@npm:8.26.0"
+  dependencies:
+    "@babel/runtime": "npm:^7.28.4"
+    "@mui/utils": "npm:^7.3.5"
+    reselect: "npm:^5.1.1"
+    use-sync-external-store: "npm:^1.6.0"
+  peerDependencies:
+    react: ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10/b2b7e0eec4195d103094d8d9c084ba1e9234d3db870cc81c47fbe9aab7e402efe406d7529a8aad1bf2352da82ef093735792b24ff58f737e75f2b5579ff91676
   languageName: node
   linkType: hard
 
@@ -6917,6 +6979,7 @@ __metadata:
     "@babel/preset-env": "npm:^7.29.0"
     "@babel/preset-react": "npm:^7.28.5"
     "@babel/preset-typescript": "npm:^7.28.5"
+    "@mui/x-date-pickers": "npm:^8.27.0"
     "@shared-utils/utils": "workspace:*"
     "@testing-library/dom": "npm:^10.4.1"
     "@testing-library/jest-dom": "npm:^6.9.1"
@@ -6945,7 +7008,9 @@ __metadata:
     "@ckeditor/ckeditor5-react": ">=9.0.0"
     "@mdxeditor/editor": ">=3.0.0"
     "@mui/icons-material": ">=5.0.0"
+    "@mui/lab": ">=5.0.0"
     "@mui/material": ">=5.0.0"
+    "@mui/x-date-pickers": ">=5.0.0"
     "@tinymce/tinymce-react": ">=5.0.0"
     ckeditor5: ">=44.0.0"
     easymde: ">=2.0.0"
@@ -6956,6 +7021,10 @@ __metadata:
     "@ckeditor/ckeditor5-react":
       optional: true
     "@mdxeditor/editor":
+      optional: true
+    "@mui/lab":
+      optional: true
+    "@mui/x-date-pickers":
       optional: true
     "@tinymce/tinymce-react":
       optional: true
@@ -14401,6 +14470,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"reselect@npm:^5.1.1":
+  version: 5.1.1
+  resolution: "reselect@npm:5.1.1"
+  checksum: 10/1fdae11a39ed9c8d85a24df19517c8372ee24fefea9cce3fae9eaad8e9cefbba5a3d4940c6fe31296b6addf76e035588c55798f7e6e147e1b7c0855f119e7fa5
+  languageName: node
+  linkType: hard
+
 "resolve-cwd@npm:^3.0.0":
   version: 3.0.0
   resolution: "resolve-cwd@npm:3.0.0"
@@ -15893,6 +15969,15 @@ __metadata:
     "@types/react":
       optional: true
   checksum: 10/2fec05eb851cdfc4a4657b1dfb434e686f346c3265ffc9db8a974bb58f8128bd4a708a3cc00e8f51655fccf81822ed4419ebed42f41610589e3aab0cf2492edb
+  languageName: node
+  linkType: hard
+
+"use-sync-external-store@npm:^1.6.0":
+  version: 1.6.0
+  resolution: "use-sync-external-store@npm:1.6.0"
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10/b40ad2847ba220695bff2d4ba4f4d60391c0fb4fb012faa7a4c18eb38b69181936f5edc55a522c4d20a788d1a879b73c3810952c9d0fd128d01cb3f22042c09e
   languageName: node
   linkType: hard
 

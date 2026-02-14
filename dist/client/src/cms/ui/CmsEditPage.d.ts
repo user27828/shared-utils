@@ -2,8 +2,8 @@
  * CMS Edit Page — shared-utils
  *
  * Portable, two-column edit page with:
- *  - Left: metadata form + body editor + advanced options accordion
- *  - Right: status panel + media/SEO panel + history panel
+ *  - Left: history drawer + metadata form + body editor + advanced options
+ *  - Right: status panel + media/SEO panel
  *
  * Uses CmsApi interface (via CmsAdminUiConfig) and injectable
  * adapters for navigation, toasts, and media picker.
