@@ -14,7 +14,12 @@ import type {
   CmsPublicPayload,
   CmsCollaboratorRow,
 } from "../../../utils/src/cms/types.js";
-import type { CmsApi, CmsAdminListParams } from "./CmsApi.js";
+import type {
+  CmsApi,
+  CmsAdminListParams,
+  CmsPublicGetResult,
+  CmsPublicUnlockResult,
+} from "./CmsApi.js";
 
 // ─── Error class ──────────────────────────────────────────────────────────
 
@@ -50,10 +55,7 @@ type ApiEnvelope<T> = {
   code?: string;
 };
 
-const withParams = (
-  base: string,
-  params: Record<string, unknown>,
-): string => {
+const withParams = (base: string, params: Record<string, unknown>): string => {
   const url = new URL(base, "http://placeholder");
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null && v !== "") {
@@ -78,10 +80,7 @@ export class CmsClient implements CmsApi {
 
   // ─── Internal fetch helpers ─────────────────────────────────────────
 
-  private async request<T>(
-    url: string,
-    opts?: RequestInit,
-  ): Promise<T> {
+  private async request<T>(url: string, opts?: RequestInit): Promise<T> {
     const resp = await this.fetchFn(url, opts);
     const text = await resp.text();
 
@@ -103,10 +102,7 @@ export class CmsClient implements CmsApi {
     return json as T;
   }
 
-  private async adminRequest<T>(
-    path: string,
-    opts?: RequestInit,
-  ): Promise<T> {
+  private async adminRequest<T>(path: string, opts?: RequestInit): Promise<T> {
     const envelope = await this.request<ApiEnvelope<T>>(
       `${this.adminBaseUrl}${path}`,
       {
@@ -145,14 +141,11 @@ export class CmsClient implements CmsApi {
     patch: CmsUpdateRequest;
     ifMatch: string;
   }): Promise<CmsHeadRow> {
-    return this.adminRequest<CmsHeadRow>(
-      `/${encodeURIComponent(input.uid)}`,
-      {
-        method: "PUT",
-        body: JSON.stringify(input.patch),
-        headers: { "If-Match": input.ifMatch },
-      },
-    );
+    return this.adminRequest<CmsHeadRow>(`/${encodeURIComponent(input.uid)}`, {
+      method: "PUT",
+      body: JSON.stringify(input.patch),
+      headers: { "If-Match": input.ifMatch },
+    });
   }
 
   async adminPublish(input: {
@@ -201,22 +194,16 @@ export class CmsClient implements CmsApi {
   }
 
   async adminDeletePermanently(uid: string): Promise<void> {
-    await this.adminRequest<void>(
-      `/${encodeURIComponent(uid)}`,
-      { method: "DELETE" },
-    );
+    await this.adminRequest<void>(`/${encodeURIComponent(uid)}`, {
+      method: "DELETE",
+    });
   }
 
-  async adminEmptyTrash(
-    limit?: number,
-  ): Promise<{ deletedCount: number }> {
-    return this.adminRequest<{ deletedCount: number }>(
-      "/trash/empty",
-      {
-        method: "POST",
-        body: JSON.stringify({ limit }),
-      },
-    );
+  async adminEmptyTrash(limit?: number): Promise<{ deletedCount: number }> {
+    return this.adminRequest<{ deletedCount: number }>("/trash/empty", {
+      method: "POST",
+      body: JSON.stringify({ limit }),
+    });
   }
 
   // ─── Admin history ──────────────────────────────────────────────────
@@ -230,10 +217,7 @@ export class CmsClient implements CmsApi {
     limit: number;
     offset: number;
   }> {
-    const path = withParams(
-      `/${encodeURIComponent(uid)}/history`,
-      opts ?? {},
-    );
+    const path = withParams(`/${encodeURIComponent(uid)}/history`, opts ?? {});
     return this.adminRequest(path);
   }
 
@@ -274,24 +258,20 @@ export class CmsClient implements CmsApi {
   // ─── Admin lock ─────────────────────────────────────────────────────
 
   async adminLock(uid: string): Promise<CmsHeadRow> {
-    return this.adminRequest<CmsHeadRow>(
-      `/${encodeURIComponent(uid)}/lock`,
-      { method: "POST" },
-    );
+    return this.adminRequest<CmsHeadRow>(`/${encodeURIComponent(uid)}/lock`, {
+      method: "POST",
+    });
   }
 
   async adminUnlock(uid: string): Promise<CmsHeadRow> {
-    return this.adminRequest<CmsHeadRow>(
-      `/${encodeURIComponent(uid)}/lock`,
-      { method: "DELETE" },
-    );
+    return this.adminRequest<CmsHeadRow>(`/${encodeURIComponent(uid)}/lock`, {
+      method: "DELETE",
+    });
   }
 
   // ─── Admin collaborators ────────────────────────────────────────────
 
-  async adminListCollaborators(
-    uid: string,
-  ): Promise<CmsCollaboratorRow[]> {
+  async adminListCollaborators(uid: string): Promise<CmsCollaboratorRow[]> {
     return this.adminRequest<CmsCollaboratorRow[]>(
       `/${encodeURIComponent(uid)}/collaborators`,
     );
@@ -317,12 +297,19 @@ export class CmsClient implements CmsApi {
     locale: string;
     slug: string;
     unlockToken?: string;
-  }): Promise<CmsPublicPayload> {
+    ifNoneMatch?: string;
+  }): Promise<CmsPublicGetResult> {
     const url = `${this.publicBaseUrl}/${encodeURIComponent(params.postType)}/${encodeURIComponent(params.locale)}/${encodeURIComponent(params.slug)}`;
 
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+    };
     if (params.unlockToken) {
       headers["Authorization"] = `Bearer ${params.unlockToken}`;
+    }
+    const inm = String(params.ifNoneMatch || "").trim();
+    if (inm) {
+      headers["If-None-Match"] = inm;
     }
 
     const resp = await this.fetchFn(url, {
@@ -330,22 +317,132 @@ export class CmsClient implements CmsApi {
       headers,
     });
 
+    const etag = resp.headers.get("ETag");
+
+    if (resp.status === 304) {
+      return { kind: "not_modified", etag };
+    }
+
     const text = await resp.text();
     let json: any;
     try {
       json = text ? JSON.parse(text) : null;
     } catch {
-      throw new CmsClientError(text || resp.statusText, resp.status);
+      return {
+        kind: "error",
+        message: text || resp.statusText || "Invalid response",
+        statusCode: resp.status,
+      };
+    }
+
+    if (resp.status === 404) {
+      return { kind: "not_found", message: json?.message || "Not found" };
+    }
+
+    if (resp.status === 401 && json?.requiresPassword) {
+      return {
+        kind: "password_required",
+        message: json?.message || "Password required",
+        etag,
+      };
     }
 
     if (!resp.ok) {
-      throw new CmsClientError(
-        json?.message || resp.statusText,
-        resp.status,
-        json?.code,
-      );
+      return {
+        kind: "error",
+        message: json?.message || resp.statusText || "Request failed",
+        statusCode: resp.status,
+      };
     }
 
-    return (json?.data ?? json) as CmsPublicPayload;
+    const payload = json?.data as CmsPublicPayload | undefined;
+    if (!json?.success || !payload) {
+      return {
+        kind: "error",
+        message: json?.message || "Invalid response",
+        statusCode: resp.status,
+      };
+    }
+
+    return { kind: "ok", data: payload, etag };
+  }
+
+  async publicUnlock(params: {
+    postType: string;
+    locale: string;
+    slug: string;
+    password: string;
+  }): Promise<CmsPublicUnlockResult> {
+    const password = String(params.password || "");
+    if (!password.trim()) {
+      return {
+        kind: "error",
+        message: "Password is required",
+        statusCode: 400,
+      };
+    }
+
+    const url = `${this.publicBaseUrl}/${encodeURIComponent(params.postType)}/${encodeURIComponent(params.locale)}/${encodeURIComponent(params.slug)}/unlock`;
+
+    const resp = await this.fetchFn(url, {
+      method: "POST",
+      credentials: "omit",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ password }),
+    });
+
+    const text = await resp.text();
+    let json: any;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch {
+      return {
+        kind: "error",
+        message: text || resp.statusText || "Unlock failed",
+        statusCode: resp.status,
+      };
+    }
+
+    if (resp.status === 404) {
+      return { kind: "not_found", message: json?.message || "Not found" };
+    }
+
+    if (resp.status === 409) {
+      return {
+        kind: "not_protected",
+        message: json?.message || "Not password protected",
+      };
+    }
+
+    if (resp.status === 403) {
+      return {
+        kind: "invalid_password",
+        message: json?.message || "Invalid password",
+      };
+    }
+
+    if (!resp.ok) {
+      return {
+        kind: "error",
+        message: json?.message || resp.statusText || "Unlock failed",
+        statusCode: resp.status,
+      };
+    }
+
+    const token = String(json?.data?.token || "").trim();
+    const expiresAt = String(json?.data?.expiresAt || "").trim();
+
+    if (!json?.success || !token || !expiresAt) {
+      return {
+        kind: "error",
+        message: json?.message || "Invalid unlock response",
+        statusCode: resp.status,
+      };
+    }
+
+    return { kind: "ok", token, expiresAt };
   }
 }

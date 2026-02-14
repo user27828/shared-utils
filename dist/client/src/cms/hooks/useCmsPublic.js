@@ -2,6 +2,8 @@
  * CMS Public Hook — shared-utils
  *
  * React hook for fetching public CMS content.
+ * Handles ETag/304 caching, password-protected content, and
+ * discriminated-union results from CmsApi.publicGet().
  */
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { CmsClient } from "../CmsClient.js";
@@ -12,6 +14,8 @@ export const useCmsPublic = (params) => {
     const [data, setData] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [requiresPassword, setRequiresPassword] = useState(false);
+    const [etag, setEtag] = useState(null);
     const [version, setVersion] = useState(0);
     const abortRef = useRef(null);
     const reload = useCallback(() => {
@@ -25,7 +29,10 @@ export const useCmsPublic = (params) => {
         unlockToken: params.unlockToken,
     }), [params.postType, params.locale, params.slug, params.unlockToken]);
     useEffect(() => {
-        if (!enabled || !memoParams.postType || !memoParams.locale || !memoParams.slug) {
+        if (!enabled ||
+            !memoParams.postType ||
+            !memoParams.locale ||
+            !memoParams.slug) {
             return;
         }
         if (abortRef.current) {
@@ -36,12 +43,34 @@ export const useCmsPublic = (params) => {
         setIsLoading(true);
         setError(null);
         api
-            .publicGet(memoParams)
+            .publicGet({ ...memoParams, ifNoneMatch: etag ?? undefined })
             .then((result) => {
             if (controller.signal.aborted) {
                 return;
             }
-            setData(result);
+            switch (result.kind) {
+                case "ok":
+                    setData(result.data);
+                    setEtag(result.etag);
+                    setRequiresPassword(false);
+                    break;
+                case "not_modified":
+                    // Data already cached — nothing to update.
+                    break;
+                case "password_required":
+                    setRequiresPassword(true);
+                    break;
+                case "not_found":
+                    setData(null);
+                    setRequiresPassword(false);
+                    setError(new Error(result.message));
+                    break;
+                case "error":
+                    setData(null);
+                    setRequiresPassword(false);
+                    setError(new Error(result.message));
+                    break;
+            }
         })
             .catch((err) => {
             if (controller.signal.aborted) {
@@ -64,7 +93,8 @@ export const useCmsPublic = (params) => {
         memoParams.locale,
         memoParams.slug,
         memoParams.unlockToken,
+        etag,
         api,
     ]);
-    return { data, isLoading, error, reload };
+    return { data, isLoading, error, requiresPassword, etag, reload };
 };

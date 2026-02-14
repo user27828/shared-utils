@@ -5,8 +5,8 @@
  * Covers the full admin + public surface including trash/restore,
  * history, lock/unlock, and collaborators.
  */
-import type { CmsHeadRow, CmsHistoryRow, CmsListResponse, CmsCreateRequest, CmsUpdateRequest, CmsPublicPayload, CmsCollaboratorRow } from "../../../utils/src/cms/types.js";
-import type { CmsApi, CmsAdminListParams } from "./CmsApi.js";
+import type { CmsHeadRow, CmsHistoryRow, CmsListResponse, CmsCreateRequest, CmsUpdateRequest, CmsCollaboratorRow } from "../../../utils/src/cms/types.js";
+import type { CmsApi, CmsAdminListParams, CmsPublicGetResult, CmsPublicUnlockResult } from "./CmsApi.js";
 export declare class CmsClientError extends Error {
     readonly statusCode?: number;
     readonly code?: string;
@@ -86,6 +86,13 @@ export declare class CmsClient implements CmsApi {
         locale: string;
         slug: string;
         unlockToken?: string;
-    }): Promise<CmsPublicPayload>;
+        ifNoneMatch?: string;
+    }): Promise<CmsPublicGetResult>;
+    publicUnlock(params: {
+        postType: string;
+        locale: string;
+        slug: string;
+        password: string;
+    }): Promise<CmsPublicUnlockResult>;
 }
 //# sourceMappingURL=CmsClient.d.ts.map

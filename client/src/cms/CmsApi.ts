@@ -97,5 +97,29 @@ export interface CmsApi {
     locale: string;
     slug: string;
     unlockToken?: string;
-  }): Promise<CmsPublicPayload>;
+    ifNoneMatch?: string;
+  }): Promise<CmsPublicGetResult>;
+
+  publicUnlock(params: {
+    postType: string;
+    locale: string;
+    slug: string;
+    password: string;
+  }): Promise<CmsPublicUnlockResult>;
 }
+
+// ── Public result types ───────────────────────────────────────────────────
+
+export type CmsPublicGetResult =
+  | { kind: "ok"; data: CmsPublicPayload; etag: string | null }
+  | { kind: "not_modified"; etag: string | null }
+  | { kind: "password_required"; message: string; etag: string | null }
+  | { kind: "not_found"; message: string }
+  | { kind: "error"; message: string; statusCode: number | null };
+
+export type CmsPublicUnlockResult =
+  | { kind: "ok"; token: string; expiresAt: string }
+  | { kind: "not_found"; message: string }
+  | { kind: "not_protected"; message: string }
+  | { kind: "invalid_password"; message: string }
+  | { kind: "error"; message: string; statusCode: number | null };

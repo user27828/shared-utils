@@ -13,6 +13,10 @@ export type { CmsConflictDialogProps } from "./CmsConflictDialog.js";
 export { default as CmsBodyEditor } from "./CmsBodyEditor.js";
 export type { CmsBodyEditorProps, CmsEditorContentType, CmsEditorContentType as CmsContentType, } from "./CmsBodyEditor.js";
 export { contentTypeToMime, mimeToContentType } from "./CmsBodyEditor.js";
+export { default as CmsBodyRenderer, renderCmsBody, } from "./CmsBodyRenderer.js";
+export type { CmsBodyRendererProps } from "./CmsBodyRenderer.js";
+export { default as CmsPasswordGate } from "./CmsPasswordGate.js";
+export type { CmsPasswordGateProps } from "./CmsPasswordGate.js";
 export type { CmsAdminUiConfig, CmsEditorPreference, CmsMediaPickerProps, CmsToastAdapter, CmsNavigationAdapter, } from "./CmsAdminUiConfig.js";
 export { defaultToast } from "./CmsAdminUiConfig.js";
 //# sourceMappingURL=index.d.ts.map

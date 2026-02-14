@@ -95,7 +95,9 @@ export class CmsClient {
         });
     }
     async adminDeletePermanently(uid) {
-        await this.adminRequest(`/${encodeURIComponent(uid)}`, { method: "DELETE" });
+        await this.adminRequest(`/${encodeURIComponent(uid)}`, {
+            method: "DELETE",
+        });
     }
     async adminEmptyTrash(limit) {
         return this.adminRequest("/trash/empty", {
@@ -122,10 +124,14 @@ export class CmsClient {
     }
     // ─── Admin lock ─────────────────────────────────────────────────────
     async adminLock(uid) {
-        return this.adminRequest(`/${encodeURIComponent(uid)}/lock`, { method: "POST" });
+        return this.adminRequest(`/${encodeURIComponent(uid)}/lock`, {
+            method: "POST",
+        });
     }
     async adminUnlock(uid) {
-        return this.adminRequest(`/${encodeURIComponent(uid)}/lock`, { method: "DELETE" });
+        return this.adminRequest(`/${encodeURIComponent(uid)}/lock`, {
+            method: "DELETE",
+        });
     }
     // ─── Admin collaborators ────────────────────────────────────────────
     async adminListCollaborators(uid) {
@@ -140,13 +146,81 @@ export class CmsClient {
     // ─── Public ─────────────────────────────────────────────────────────
     async publicGet(params) {
         const url = `${this.publicBaseUrl}/${encodeURIComponent(params.postType)}/${encodeURIComponent(params.locale)}/${encodeURIComponent(params.slug)}`;
-        const headers = {};
+        const headers = {
+            Accept: "application/json",
+        };
         if (params.unlockToken) {
             headers["Authorization"] = `Bearer ${params.unlockToken}`;
+        }
+        const inm = String(params.ifNoneMatch || "").trim();
+        if (inm) {
+            headers["If-None-Match"] = inm;
         }
         const resp = await this.fetchFn(url, {
             credentials: "omit", // CDN-friendly
             headers,
+        });
+        const etag = resp.headers.get("ETag");
+        if (resp.status === 304) {
+            return { kind: "not_modified", etag };
+        }
+        const text = await resp.text();
+        let json;
+        try {
+            json = text ? JSON.parse(text) : null;
+        }
+        catch {
+            return {
+                kind: "error",
+                message: text || resp.statusText || "Invalid response",
+                statusCode: resp.status,
+            };
+        }
+        if (resp.status === 404) {
+            return { kind: "not_found", message: json?.message || "Not found" };
+        }
+        if (resp.status === 401 && json?.requiresPassword) {
+            return {
+                kind: "password_required",
+                message: json?.message || "Password required",
+                etag,
+            };
+        }
+        if (!resp.ok) {
+            return {
+                kind: "error",
+                message: json?.message || resp.statusText || "Request failed",
+                statusCode: resp.status,
+            };
+        }
+        const payload = json?.data;
+        if (!json?.success || !payload) {
+            return {
+                kind: "error",
+                message: json?.message || "Invalid response",
+                statusCode: resp.status,
+            };
+        }
+        return { kind: "ok", data: payload, etag };
+    }
+    async publicUnlock(params) {
+        const password = String(params.password || "");
+        if (!password.trim()) {
+            return {
+                kind: "error",
+                message: "Password is required",
+                statusCode: 400,
+            };
+        }
+        const url = `${this.publicBaseUrl}/${encodeURIComponent(params.postType)}/${encodeURIComponent(params.locale)}/${encodeURIComponent(params.slug)}/unlock`;
+        const resp = await this.fetchFn(url, {
+            method: "POST",
+            credentials: "omit",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+            },
+            body: JSON.stringify({ password }),
         });
         const text = await resp.text();
         let json;
@@ -154,11 +228,43 @@ export class CmsClient {
             json = text ? JSON.parse(text) : null;
         }
         catch {
-            throw new CmsClientError(text || resp.statusText, resp.status);
+            return {
+                kind: "error",
+                message: text || resp.statusText || "Unlock failed",
+                statusCode: resp.status,
+            };
+        }
+        if (resp.status === 404) {
+            return { kind: "not_found", message: json?.message || "Not found" };
+        }
+        if (resp.status === 409) {
+            return {
+                kind: "not_protected",
+                message: json?.message || "Not password protected",
+            };
+        }
+        if (resp.status === 403) {
+            return {
+                kind: "invalid_password",
+                message: json?.message || "Invalid password",
+            };
         }
         if (!resp.ok) {
-            throw new CmsClientError(json?.message || resp.statusText, resp.status, json?.code);
+            return {
+                kind: "error",
+                message: json?.message || resp.statusText || "Unlock failed",
+                statusCode: resp.status,
+            };
         }
-        return (json?.data ?? json);
+        const token = String(json?.data?.token || "").trim();
+        const expiresAt = String(json?.data?.expiresAt || "").trim();
+        if (!json?.success || !token || !expiresAt) {
+            return {
+                kind: "error",
+                message: json?.message || "Invalid unlock response",
+                statusCode: resp.status,
+            };
+        }
+        return { kind: "ok", token, expiresAt };
     }
 }

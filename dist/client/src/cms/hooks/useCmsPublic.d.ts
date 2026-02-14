@@ -14,6 +14,11 @@ export interface UseCmsPublicResult {
     data: CmsPublicPayload | null;
     isLoading: boolean;
     error: Error | null;
+    /** True when the server indicates the content is password-protected. */
+    requiresPassword: boolean;
+    /** Current ETag for conditional requests. */
+    etag: string | null;
+    /** Force a refetch. */
     reload: () => void;
 }
 export declare const useCmsPublic: (params: UseCmsPublicOptions) => UseCmsPublicResult;

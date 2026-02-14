@@ -10,7 +10,12 @@
 // ── API layer ─────────────────────────────────────────────────────────────
 export { CmsClient, CmsClientError } from "./CmsClient.js";
 export type { CmsClientConfig } from "./CmsClient.js";
-export type { CmsApi } from "./CmsApi.js";
+export type {
+  CmsApi,
+  CmsAdminListParams,
+  CmsPublicGetResult,
+  CmsPublicUnlockResult,
+} from "./CmsApi.js";
 
 // ── Hooks ─────────────────────────────────────────────────────────────────
 export {
@@ -30,6 +35,9 @@ export {
   CmsEditPage,
   CmsConflictDialog,
   CmsBodyEditor,
+  CmsBodyRenderer,
+  renderCmsBody,
+  CmsPasswordGate,
   contentTypeToMime,
   mimeToContentType,
   defaultToast,
@@ -41,6 +49,8 @@ export type {
   CmsConflictDialogProps,
   CmsBodyEditorProps,
   CmsContentType,
+  CmsBodyRendererProps,
+  CmsPasswordGateProps,
   CmsAdminUiConfig,
   CmsEditorPreference,
   CmsMediaPickerProps,

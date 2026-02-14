@@ -8,4 +8,6 @@ export { HISTORY_DRAWER_WIDTH } from "./CmsHistoryDrawer.js";
 export { default as CmsConflictDialog } from "./CmsConflictDialog.js";
 export { default as CmsBodyEditor } from "./CmsBodyEditor.js";
 export { contentTypeToMime, mimeToContentType } from "./CmsBodyEditor.js";
+export { default as CmsBodyRenderer, renderCmsBody, } from "./CmsBodyRenderer.js";
+export { default as CmsPasswordGate } from "./CmsPasswordGate.js";
 export { defaultToast } from "./CmsAdminUiConfig.js";
