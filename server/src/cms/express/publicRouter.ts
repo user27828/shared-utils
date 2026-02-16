@@ -18,9 +18,16 @@
 import { Router } from "express";
 import type { Request, Response, NextFunction } from "express";
 
-import { isCmsError, cmsErrorToResponse } from "../../../../utils/src/cms/errors.js";
+import {
+  isCmsError,
+  cmsErrorToResponse,
+} from "../../../../utils/src/cms/errors.js";
 import { verifyCmsPassword } from "../../../../utils/src/cms/password.js";
-import { normalizeLocale, canonicalizeSlug } from "../../../../utils/src/cms/validation.js";
+import {
+  normalizeLocale,
+  canonicalizeSlug,
+} from "../../../../utils/src/cms/validation.js";
+import { getSingleParam } from "../../express/params.js";
 import {
   getCmsPublicCacheHeaders,
   applyCmsPublicCacheHeaders,
@@ -38,13 +45,16 @@ export interface CmsPublicRouterConfig {
    * Required only if password-protected content is used.
    */
   unlockToken?: {
-    sign: (claims: {
-      uid: string;
-      postType: string;
-      locale: string;
-      slug: string;
-      passwordVersion?: number;
-    }, ttlSeconds?: number) => string;
+    sign: (
+      claims: {
+        uid: string;
+        postType: string;
+        locale: string;
+        slug: string;
+        passwordVersion?: number;
+      },
+      ttlSeconds?: number,
+    ) => string;
     verify: (token: string) => {
       uid: string;
       postType: string;
@@ -66,7 +76,9 @@ const sendCmsError = (res: Response, err: unknown) => {
     res.status(err.statusCode).json(body);
     return;
   }
-  const statusCode = Number((err as any)?.statusCode || (err as any)?.status || 500);
+  const statusCode = Number(
+    (err as any)?.statusCode || (err as any)?.status || 500,
+  );
   const message = String((err as any)?.message || "Internal server error");
   res.status(statusCode).json({ success: false, message });
 };
@@ -84,9 +96,17 @@ export function createCmsPublicRouter(cfg: CmsPublicRouterConfig): Router {
     "/:postType/:locale/:slug",
     async (req: Request, res: Response) => {
       try {
-        const postType = req.params.postType;
-        const locale = normalizeLocale(req.params.locale);
-        const slug = canonicalizeSlug(req.params.slug);
+        const postType = getSingleParam(req.params.postType);
+        const localeRaw = getSingleParam(req.params.locale);
+        const slugRaw = getSingleParam(req.params.slug);
+        if (!postType || !localeRaw || !slugRaw) {
+          res
+            .status(400)
+            .json({ success: false, message: "Invalid route params" });
+          return;
+        }
+        const locale = normalizeLocale(localeRaw);
+        const slug = canonicalizeSlug(slugRaw);
 
         // Step 1: Get public head (lightweight check for existence + protection)
         let head: any = null;
@@ -117,7 +137,7 @@ export function createCmsPublicRouter(cfg: CmsPublicRouterConfig): Router {
         // Step 3: If protected, verify unlock token
         if (isProtected) {
           const token =
-            (req.headers["authorization"]?.replace(/^Bearer\s+/i, "")) ||
+            req.headers["authorization"]?.replace(/^Bearer\s+/i, "") ||
             (req.headers["x-cms-unlock-token"] as string);
 
           if (!token || !unlockToken) {
@@ -197,19 +217,31 @@ export function createCmsPublicRouter(cfg: CmsPublicRouterConfig): Router {
         // Body-size guard
         const cl = parseInt(req.headers["content-length"] || "0", 10);
         if (cl > 4096) {
-          res.status(413).json({ success: false, message: "Payload too large" });
+          res
+            .status(413)
+            .json({ success: false, message: "Payload too large" });
           return;
         }
 
         const password = req.body?.password;
         if (!password || typeof password !== "string" || !password.trim()) {
-          res.status(400).json({ success: false, message: "Password is required" });
+          res
+            .status(400)
+            .json({ success: false, message: "Password is required" });
           return;
         }
 
-        const postType = req.params.postType;
-        const locale = normalizeLocale(req.params.locale);
-        const slug = canonicalizeSlug(req.params.slug);
+        const postType = getSingleParam(req.params.postType);
+        const localeRaw = getSingleParam(req.params.locale);
+        const slugRaw = getSingleParam(req.params.slug);
+        if (!postType || !localeRaw || !slugRaw) {
+          res
+            .status(400)
+            .json({ success: false, message: "Invalid route params" });
+          return;
+        }
+        const locale = normalizeLocale(localeRaw);
+        const slug = canonicalizeSlug(slugRaw);
 
         // Look up the published head row
         let head: any = null;
@@ -225,7 +257,9 @@ export function createCmsPublicRouter(cfg: CmsPublicRouterConfig): Router {
         }
 
         if (!head.password_hash) {
-          res.status(409).json({ success: false, message: "Not password protected" });
+          res
+            .status(409)
+            .json({ success: false, message: "Not password protected" });
           return;
         }
 
@@ -271,9 +305,11 @@ export function createCmsPublicRouter(cfg: CmsPublicRouterConfig): Router {
   );
 
   // ── Router-level error handler ────────────────────────────────────────
-  router.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-    sendCmsError(res, err);
-  });
+  router.use(
+    (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+      sendCmsError(res, err);
+    },
+  );
 
   return router;
 }

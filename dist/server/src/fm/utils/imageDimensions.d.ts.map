@@ -1,0 +1,1 @@
+{"version":3,"file":"imageDimensions.d.ts","sourceRoot":"","sources":["../../../../../server/src/fm/utils/imageDimensions.ts"],"names":[],"mappings":"AAAA;;;;;;;;;;;GAWG;AA8KH;;;;;;;;GAQG;AACH,eAAO,MAAM,gCAAgC,GAAI,OAAO;IACtD,WAAW,EAAE,MAAM,CAAC;IACpB,QAAQ,EAAE,MAAM,CAAC;CAClB,KAAG;IAAE,KAAK,EAAE,MAAM,CAAC;IAAC,MAAM,EAAE,MAAM,CAAA;CAAE,GAAG,IAevC,CAAC"}

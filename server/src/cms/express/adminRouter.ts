@@ -18,11 +18,15 @@
 import { Router } from "express";
 import type { Request, Response, NextFunction } from "express";
 
-import { isCmsError, cmsErrorToResponse } from "../../../../utils/src/cms/errors.js";
+import {
+  isCmsError,
+  cmsErrorToResponse,
+} from "../../../../utils/src/cms/errors.js";
 import {
   assertIfMatchSatisfied,
   computeCmsEtag,
 } from "../../../../utils/src/cms/concurrency.js";
+import { getSingleParam } from "../../express/params.js";
 import type { CmsServiceCore } from "../CmsServiceCore.js";
 import type { CmsActorContext } from "../authz.js";
 
@@ -84,7 +88,9 @@ const sendCmsError = (res: Response, err: unknown) => {
     res.status(err.statusCode).json(body);
     return;
   }
-  const statusCode = Number((err as any)?.statusCode || (err as any)?.status || 500);
+  const statusCode = Number(
+    (err as any)?.statusCode || (err as any)?.status || 500,
+  );
   const message = String((err as any)?.message || "Internal server error");
   res.status(statusCode).json({ success: false, message });
 };
@@ -107,7 +113,13 @@ const parseBoolQuery = (val: any): boolean | undefined => {
 // ─── Factory ──────────────────────────────────────────────────────────────
 
 export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
-  const { service, authz, onAfterWrite, resolveUserEmails, bodyLimitBytes = 1_048_576 } = cfg;
+  const {
+    service,
+    authz,
+    onAfterWrite,
+    resolveUserEmails,
+    bodyLimitBytes = 1_048_576,
+  } = cfg;
   const router = Router();
 
   // ── Body size guard (non-safe methods) ────────────────────────────────
@@ -118,14 +130,18 @@ export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
 
     const cl = parseInt(req.headers["content-length"] || "0", 10);
     if (cl > bodyLimitBytes) {
-      res.status(413).json({ success: false, message: "Request body too large" });
+      res
+        .status(413)
+        .json({ success: false, message: "Request body too large" });
       return;
     }
 
     try {
       const len = Buffer.byteLength(JSON.stringify(req.body ?? ""), "utf8");
       if (len > bodyLimitBytes) {
-        res.status(413).json({ success: false, message: "Request body too large" });
+        res
+          .status(413)
+          .json({ success: false, message: "Request body too large" });
         return;
       }
     } catch {
@@ -182,15 +198,24 @@ export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
   // ═══════════════════════════════════════════════════════════════════════
   //  GET BY UID   GET /:uid
   // ═══════════════════════════════════════════════════════════════════════
-  router.get("/:uid", authz.requireAuthor, async (req: Request, res: Response) => {
-    try {
-      const row = await service.getByUid(req.params.uid);
-      setEtagHeader(res, row);
-      ok(res, row);
-    } catch (err) {
-      sendCmsError(res, err);
-    }
-  });
+  router.get(
+    "/:uid",
+    authz.requireAuthor,
+    async (req: Request, res: Response) => {
+      try {
+        const uid = getSingleParam(req.params.uid);
+        if (!uid) {
+          res.status(400).json({ success: false, message: "Missing uid" });
+          return;
+        }
+        const row = await service.getByUid(uid);
+        setEtagHeader(res, row);
+        ok(res, row);
+      } catch (err) {
+        sendCmsError(res, err);
+      }
+    },
+  );
 
   // ═══════════════════════════════════════════════════════════════════════
   //  CREATE   POST /
@@ -213,144 +238,216 @@ export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
   // ═══════════════════════════════════════════════════════════════════════
   //  UPDATE   PUT /:uid
   // ═══════════════════════════════════════════════════════════════════════
-  router.put("/:uid", authz.requireAuthor, async (req: Request, res: Response) => {
-    try {
-      const ifMatch = req.headers["if-match"] as string | undefined;
-      const actor = authz.getActorContext(req);
-      const row = await service.updateByUid({
-        uid: req.params.uid,
-        patch: req.body,
-        ifMatchHeader: ifMatch ?? null,
-        actorUserUid: actor.userUid,
-      });
-      await fireAfterWrite(req.params.uid, "update", actor.userUid, row, req);
-      setEtagHeader(res, row);
-      ok(res, row);
-    } catch (err) {
-      sendCmsError(res, err);
-    }
-  });
+  router.put(
+    "/:uid",
+    authz.requireAuthor,
+    async (req: Request, res: Response) => {
+      try {
+        const uid = getSingleParam(req.params.uid);
+        if (!uid) {
+          res.status(400).json({ success: false, message: "Missing uid" });
+          return;
+        }
+        const ifMatch = req.headers["if-match"] as string | undefined;
+        const actor = authz.getActorContext(req);
+        const row = await service.updateByUid({
+          uid,
+          patch: req.body,
+          ifMatchHeader: ifMatch ?? null,
+          actorUserUid: actor.userUid,
+        });
+        await fireAfterWrite(uid, "update", actor.userUid, row, req);
+        setEtagHeader(res, row);
+        ok(res, row);
+      } catch (err) {
+        sendCmsError(res, err);
+      }
+    },
+  );
 
   // ═══════════════════════════════════════════════════════════════════════
   //  PUBLISH   POST /:uid/publish
   // ═══════════════════════════════════════════════════════════════════════
-  router.post("/:uid/publish", authz.requirePublisher, async (req: Request, res: Response) => {
-    try {
-      const ifMatch = req.headers["if-match"] as string | undefined;
-      const actor = authz.getActorContext(req);
-      const row = await service.publishByUid({
-        uid: req.params.uid,
-        ifMatchHeader: ifMatch ?? null,
-        actorUserUid: actor.userUid,
-        ...(req.body?.publishedAt ? { publishedAt: req.body.publishedAt } : {}),
-      });
-      await fireAfterWrite(req.params.uid, "publish", actor.userUid, row, req);
-      setEtagHeader(res, row);
-      ok(res, row);
-    } catch (err) {
-      sendCmsError(res, err);
-    }
-  });
+  router.post(
+    "/:uid/publish",
+    authz.requirePublisher,
+    async (req: Request, res: Response) => {
+      try {
+        const uid = getSingleParam(req.params.uid);
+        if (!uid) {
+          res.status(400).json({ success: false, message: "Missing uid" });
+          return;
+        }
+        const ifMatch = req.headers["if-match"] as string | undefined;
+        const actor = authz.getActorContext(req);
+        const row = await service.publishByUid({
+          uid,
+          ifMatchHeader: ifMatch ?? null,
+          actorUserUid: actor.userUid,
+          ...(req.body?.publishedAt
+            ? { publishedAt: req.body.publishedAt }
+            : {}),
+        });
+        await fireAfterWrite(uid, "publish", actor.userUid, row, req);
+        setEtagHeader(res, row);
+        ok(res, row);
+      } catch (err) {
+        sendCmsError(res, err);
+      }
+    },
+  );
 
   // ═══════════════════════════════════════════════════════════════════════
   //  TRASH   POST /:uid/trash
   // ═══════════════════════════════════════════════════════════════════════
-  router.post("/:uid/trash", authz.requireAuthor, async (req: Request, res: Response) => {
-    try {
-      const ifMatch = req.headers["if-match"] as string | undefined;
-      const actor = authz.getActorContext(req);
-      const row = await service.trashByUid({
-        uid: req.params.uid,
-        ifMatchHeader: ifMatch || "*",
-        actorUserUid: actor.userUid,
-      });
-      await fireAfterWrite(req.params.uid, "trash", actor.userUid, row, req);
-      ok(res, row);
-    } catch (err) {
-      sendCmsError(res, err);
-    }
-  });
+  router.post(
+    "/:uid/trash",
+    authz.requireAuthor,
+    async (req: Request, res: Response) => {
+      try {
+        const uid = getSingleParam(req.params.uid);
+        if (!uid) {
+          res.status(400).json({ success: false, message: "Missing uid" });
+          return;
+        }
+        const ifMatch = req.headers["if-match"] as string | undefined;
+        const actor = authz.getActorContext(req);
+        const row = await service.trashByUid({
+          uid,
+          ifMatchHeader: ifMatch || "*",
+          actorUserUid: actor.userUid,
+        });
+        await fireAfterWrite(uid, "trash", actor.userUid, row, req);
+        ok(res, row);
+      } catch (err) {
+        sendCmsError(res, err);
+      }
+    },
+  );
 
   // ═══════════════════════════════════════════════════════════════════════
   //  RESTORE  POST /:uid/restore
   // ═══════════════════════════════════════════════════════════════════════
-  router.post("/:uid/restore", authz.requireAuthor, async (req: Request, res: Response) => {
-    try {
-      const ifMatch = req.headers["if-match"] as string | undefined;
-      const actor = authz.getActorContext(req);
-      const row = await service.restoreByUid({
-        uid: req.params.uid,
-        ifMatchHeader: ifMatch || "*",
-        actorUserUid: actor.userUid,
-      });
-      await fireAfterWrite(req.params.uid, "restore", actor.userUid, row, req);
-      ok(res, row);
-    } catch (err) {
-      sendCmsError(res, err);
-    }
-  });
+  router.post(
+    "/:uid/restore",
+    authz.requireAuthor,
+    async (req: Request, res: Response) => {
+      try {
+        const uid = getSingleParam(req.params.uid);
+        if (!uid) {
+          res.status(400).json({ success: false, message: "Missing uid" });
+          return;
+        }
+        const ifMatch = req.headers["if-match"] as string | undefined;
+        const actor = authz.getActorContext(req);
+        const row = await service.restoreByUid({
+          uid,
+          ifMatchHeader: ifMatch || "*",
+          actorUserUid: actor.userUid,
+        });
+        await fireAfterWrite(uid, "restore", actor.userUid, row, req);
+        ok(res, row);
+      } catch (err) {
+        sendCmsError(res, err);
+      }
+    },
+  );
 
   // ═══════════════════════════════════════════════════════════════════════
   //  DELETE   DELETE /:uid
   // ═══════════════════════════════════════════════════════════════════════
-  router.delete("/:uid", authz.requireAuthor, async (req: Request, res: Response) => {
-    try {
-      const actor = authz.getActorContext(req);
-      await service.deleteByUid({
-        uid: req.params.uid,
-        actorUserUid: actor.userUid,
-      });
-      await fireAfterWrite(req.params.uid, "delete", actor.userUid, null, req);
-      ok(res, null);
-    } catch (err) {
-      sendCmsError(res, err);
-    }
-  });
+  router.delete(
+    "/:uid",
+    authz.requireAuthor,
+    async (req: Request, res: Response) => {
+      try {
+        const uid = getSingleParam(req.params.uid);
+        if (!uid) {
+          res.status(400).json({ success: false, message: "Missing uid" });
+          return;
+        }
+        const actor = authz.getActorContext(req);
+        await service.deleteByUid({
+          uid,
+          actorUserUid: actor.userUid,
+        });
+        await fireAfterWrite(uid, "delete", actor.userUid, null, req);
+        ok(res, null);
+      } catch (err) {
+        sendCmsError(res, err);
+      }
+    },
+  );
 
   // ═══════════════════════════════════════════════════════════════════════
   //  EMPTY TRASH   POST /trash/empty
   // ═══════════════════════════════════════════════════════════════════════
-  router.post("/trash/empty", authz.requireAuthor, async (req: Request, res: Response) => {
-    try {
-      const limit = Math.min(parseIntOr(req.body?.limit ?? req.query.limit, 50), 200);
-      const result = await service.emptyTrash({ limit });
-      ok(res, result);
-    } catch (err) {
-      sendCmsError(res, err);
-    }
-  });
+  router.post(
+    "/trash/empty",
+    authz.requireAuthor,
+    async (req: Request, res: Response) => {
+      try {
+        const limit = Math.min(
+          parseIntOr(req.body?.limit ?? req.query.limit, 50),
+          200,
+        );
+        const result = await service.emptyTrash({ limit });
+        ok(res, result);
+      } catch (err) {
+        sendCmsError(res, err);
+      }
+    },
+  );
 
   // ═══════════════════════════════════════════════════════════════════════
   //  LOCK   POST /:uid/lock
   // ═══════════════════════════════════════════════════════════════════════
-  router.post("/:uid/lock", authz.requireAuthor, async (req: Request, res: Response) => {
-    try {
-      const actor = authz.getActorContext(req);
-      const row = await service.lockByUid({
-        uid: req.params.uid,
-        actorUserUid: actor.userUid,
-      });
-      ok(res, row);
-    } catch (err) {
-      sendCmsError(res, err);
-    }
-  });
+  router.post(
+    "/:uid/lock",
+    authz.requireAuthor,
+    async (req: Request, res: Response) => {
+      try {
+        const uid = getSingleParam(req.params.uid);
+        if (!uid) {
+          res.status(400).json({ success: false, message: "Missing uid" });
+          return;
+        }
+        const actor = authz.getActorContext(req);
+        const row = await service.lockByUid({
+          uid,
+          actorUserUid: actor.userUid,
+        });
+        ok(res, row);
+      } catch (err) {
+        sendCmsError(res, err);
+      }
+    },
+  );
 
   // ═══════════════════════════════════════════════════════════════════════
   //  UNLOCK   DELETE /:uid/lock
   // ═══════════════════════════════════════════════════════════════════════
-  router.delete("/:uid/lock", authz.requireAuthor, async (req: Request, res: Response) => {
-    try {
-      const actor = authz.getActorContext(req);
-      const row = await service.unlockByUid({
-        uid: req.params.uid,
-        actorUserUid: actor.userUid,
-      });
-      ok(res, row);
-    } catch (err) {
-      sendCmsError(res, err);
-    }
-  });
+  router.delete(
+    "/:uid/lock",
+    authz.requireAuthor,
+    async (req: Request, res: Response) => {
+      try {
+        const uid = getSingleParam(req.params.uid);
+        if (!uid) {
+          res.status(400).json({ success: false, message: "Missing uid" });
+          return;
+        }
+        const actor = authz.getActorContext(req);
+        const row = await service.unlockByUid({
+          uid,
+          actorUserUid: actor.userUid,
+        });
+        ok(res, row);
+      } catch (err) {
+        sendCmsError(res, err);
+      }
+    },
+  );
 
   // ═══════════════════════════════════════════════════════════════════════
   //  COLLABORATORS   GET / PUT /:uid/collaborators
@@ -360,7 +457,12 @@ export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
     authz.requireAuthor,
     async (req: Request, res: Response) => {
       try {
-        const result = await service.listCollaborators(req.params.uid);
+        const uid = getSingleParam(req.params.uid);
+        if (!uid) {
+          res.status(400).json({ success: false, message: "Missing uid" });
+          return;
+        }
+        const result = await service.listCollaborators(uid);
         ok(res, result);
       } catch (err) {
         sendCmsError(res, err);
@@ -373,8 +475,13 @@ export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
     authz.requireAuthor,
     async (req: Request, res: Response) => {
       try {
+        const uid = getSingleParam(req.params.uid);
+        if (!uid) {
+          res.status(400).json({ success: false, message: "Missing uid" });
+          return;
+        }
         const result = await service.replaceCollaborators(
-          req.params.uid,
+          uid,
           req.body?.collaborators ?? [],
         );
         ok(res, result);
@@ -387,43 +494,56 @@ export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
   // ═══════════════════════════════════════════════════════════════════════
   //  HISTORY   GET /:uid/history
   // ═══════════════════════════════════════════════════════════════════════
-  router.get("/:uid/history", authz.requireAuthor, async (req: Request, res: Response) => {
-    try {
-      const result = await service.listHistory({
-        cmsUid: req.params.uid,
-        includeSoftDeleted: parseBoolQuery(req.query.includeSoftDeleted),
-        limit: parseIntOr(req.query.limit, 50),
-        offset: parseIntOr(req.query.offset, 0),
-      });
+  router.get(
+    "/:uid/history",
+    authz.requireAuthor,
+    async (req: Request, res: Response) => {
+      try {
+        const uid = getSingleParam(req.params.uid);
+        if (!uid) {
+          res.status(400).json({ success: false, message: "Missing uid" });
+          return;
+        }
+        const result = await service.listHistory({
+          cmsUid: uid,
+          includeSoftDeleted: parseBoolQuery(req.query.includeSoftDeleted),
+          limit: parseIntOr(req.query.limit, 50),
+          offset: parseIntOr(req.query.offset, 0),
+        });
 
-      // Enrich items with author emails if resolver is provided
-      if (resolveUserEmails && result.items?.length) {
-        try {
-          const uuids = [...new Set(
-            result.items
-              .map((r) => r.created_by)
-              .filter((u): u is string => typeof u === "string" && u.length > 0),
-          )];
-          if (uuids.length) {
-            const emailMap = await resolveUserEmails(uuids);
-            for (const item of result.items) {
-              const email = emailMap.get(item.created_by as string);
-              if (email) {
-                (item as any).created_by_email = email;
+        // Enrich items with author emails if resolver is provided
+        if (resolveUserEmails && result.items?.length) {
+          try {
+            const uuids = [
+              ...new Set(
+                result.items
+                  .map((r) => r.created_by)
+                  .filter(
+                    (u): u is string => typeof u === "string" && u.length > 0,
+                  ),
+              ),
+            ];
+            if (uuids.length) {
+              const emailMap = await resolveUserEmails(uuids);
+              for (const item of result.items) {
+                const email = emailMap.get(item.created_by as string);
+                if (email) {
+                  (item as any).created_by_email = email;
+                }
               }
             }
+          } catch (_emailErr) {
+            // Non-fatal: history still returned without emails
+            console.warn("[cms-admin] resolveUserEmails failed:", _emailErr);
           }
-        } catch (_emailErr) {
-          // Non-fatal: history still returned without emails
-          console.warn("[cms-admin] resolveUserEmails failed:", _emailErr);
         }
-      }
 
-      ok(res, result);
-    } catch (err) {
-      sendCmsError(res, err);
-    }
-  });
+        ok(res, result);
+      } catch (err) {
+        sendCmsError(res, err);
+      }
+    },
+  );
 
   // ═══════════════════════════════════════════════════════════════════════
   //  RESTORE REVISION   POST /:uid/history/:historyId/restore
@@ -433,15 +553,26 @@ export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
     authz.requireAuthor,
     async (req: Request, res: Response) => {
       try {
+        const uid = getSingleParam(req.params.uid);
+        const historyIdRaw = getSingleParam(req.params.historyId);
+        const historyId = historyIdRaw
+          ? parseInt(historyIdRaw, 10)
+          : Number.NaN;
+        if (!uid || !Number.isFinite(historyId)) {
+          res
+            .status(400)
+            .json({ success: false, message: "Invalid uid or historyId" });
+          return;
+        }
         const ifMatch = req.headers["if-match"] as string | undefined;
         const actor = authz.getActorContext(req);
         const row = await service.restoreHistoryRevision({
-          cmsUid: req.params.uid,
-          historyId: parseInt(req.params.historyId, 10),
+          cmsUid: uid,
+          historyId,
           ifMatchHeader: ifMatch,
           actorUserUid: actor.userUid,
         });
-        await fireAfterWrite(req.params.uid, "history_restore", actor.userUid, row, req);
+        await fireAfterWrite(uid, "history_restore", actor.userUid, row, req);
         setEtagHeader(res, row);
         ok(res, row);
       } catch (err) {
@@ -459,8 +590,18 @@ export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
     async (req: Request, res: Response) => {
       try {
         const actor = authz.getActorContext(req);
+        const historyIdRaw = getSingleParam(req.params.historyId);
+        const historyId = historyIdRaw
+          ? parseInt(historyIdRaw, 10)
+          : Number.NaN;
+        if (!Number.isFinite(historyId)) {
+          res
+            .status(400)
+            .json({ success: false, message: "Invalid historyId" });
+          return;
+        }
         const row = await service.softDeleteHistoryRevision({
-          historyId: parseInt(req.params.historyId, 10),
+          historyId,
           actorUserUid: actor.userUid,
         });
         ok(res, row);
@@ -478,9 +619,17 @@ export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
     authz.requireAuthor,
     async (req: Request, res: Response) => {
       try {
-        await service.hardDeleteHistoryRevision(
-          parseInt(req.params.historyId, 10),
-        );
+        const historyIdRaw = getSingleParam(req.params.historyId);
+        const historyId = historyIdRaw
+          ? parseInt(historyIdRaw, 10)
+          : Number.NaN;
+        if (!Number.isFinite(historyId)) {
+          res
+            .status(400)
+            .json({ success: false, message: "Invalid historyId" });
+          return;
+        }
+        await service.hardDeleteHistoryRevision(historyId);
         ok(res, null);
       } catch (err) {
         sendCmsError(res, err);
@@ -489,9 +638,11 @@ export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
   );
 
   // ── Router-level error handler ────────────────────────────────────────
-  router.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-    sendCmsError(res, err);
-  });
+  router.use(
+    (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+      sendCmsError(res, err);
+    },
+  );
 
   return router;
 }

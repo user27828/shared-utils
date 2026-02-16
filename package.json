@@ -3,7 +3,10 @@
   "description": "Collection of common utilities I use for various projects",
   "version": "0.69.7",
   "type": "module",
-  "packageManager": "yarn@4.10.2",
+  "packageManager": "yarn@4.12.0",
+  "engines": {
+    "node": ">=18"
+  },
   "workspaces": [
     "client",
     "utils",
@@ -70,7 +73,68 @@
       "require": "./dist/client/src/cms/index.js",
       "default": "./dist/client/src/cms/index.js"
     },
+    "./fm": {
+      "types": "./dist/utils/src/fm/index.d.ts",
+      "import": "./dist/utils/src/fm/index.js",
+      "require": "./dist/utils/src/fm/index.js",
+      "default": "./dist/utils/src/fm/index.js"
+    },
+    "./fm/server": {
+      "types": "./dist/server/src/fm/index.d.ts",
+      "import": "./dist/server/src/fm/index.js",
+      "require": "./dist/server/src/fm/index.js",
+      "default": "./dist/server/src/fm/index.js"
+    },
+    "./fm/client": {
+      "types": "./dist/client/src/fm/index.d.ts",
+      "import": "./dist/client/src/fm/index.js",
+      "require": "./dist/client/src/fm/index.js",
+      "default": "./dist/client/src/fm/index.js"
+    },
+    "./fm/server/s3": {
+      "types": "./dist/server/src/fm/storage/FmStorageS3.d.ts",
+      "import": "./dist/server/src/fm/storage/FmStorageS3.js",
+      "require": "./dist/server/src/fm/storage/FmStorageS3.js",
+      "default": "./dist/server/src/fm/storage/FmStorageS3.js"
+    },
     "./utils/*": "./dist/utils/*"
+  },
+  "typesVersions": {
+    "*": {
+      "client": [
+        "dist/client/index.d.ts"
+      ],
+      "client/wysiwyg": [
+        "dist/client/wysiwyg.d.ts"
+      ],
+      "utils": [
+        "dist/utils/index.d.ts"
+      ],
+      "server": [
+        "dist/server/index.d.ts"
+      ],
+      "cms": [
+        "dist/utils/src/cms/index.d.ts"
+      ],
+      "cms/server": [
+        "dist/server/src/cms/index.d.ts"
+      ],
+      "cms/client": [
+        "dist/client/src/cms/index.d.ts"
+      ],
+      "fm": [
+        "dist/utils/src/fm/index.d.ts"
+      ],
+      "fm/server": [
+        "dist/server/src/fm/index.d.ts"
+      ],
+      "fm/client": [
+        "dist/client/src/fm/index.d.ts"
+      ],
+      "fm/server/s3": [
+        "dist/server/src/fm/storage/FmStorageS3.d.ts"
+      ]
+    }
   },
   "scripts": {
     "client": "yarn workspace @shared-utils/client",
@@ -100,14 +164,16 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@types/jest": "^30.0.0",
     "@types/nanoid": "^3.0.0",
+    "@types/supertest": "^6.0.3",
     "@vitest/coverage-v8": "^4.0.18",
     "@vitest/ui": "^4.0.18",
     "jest": "^30.2.0",
     "jest-environment-node": "^30.2.0",
-    "jsdom": "^28.0.0",
+    "jsdom": "^28.1.0",
     "prettier": "^3.8.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "supertest": "^7.2.2",
     "ts-jest": "^29.4.6",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
@@ -117,7 +183,7 @@
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
     "dompurify": "^3.3.1",
-    "dotenv": "^17.2.4",
+    "dotenv": "^17.3.1",
     "dotenv-expand": "^12.0.3",
     "lodash-es": "^4.17.23",
     "marked": "^17.0.2",
@@ -126,8 +192,24 @@
     "tinymce": "^8.3.2"
   },
   "peerDependencies": {
+    "@aws-sdk/client-s3": ">=3.0.0",
+    "@aws-sdk/s3-request-presigner": ">=3.0.0",
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"
+  },
+  "peerDependenciesMeta": {
+    "@aws-sdk/client-s3": {
+      "optional": true
+    },
+    "@aws-sdk/s3-request-presigner": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   },
   "files": [
     "dist/**/*",

@@ -1,6 +1,6 @@
 # shared-utils
 
-Collection of common utilities for web applications. Features centralized configuration through **OptionsManager**, environment-aware utilities that work across client/server contexts, and a portable **CMS** (Content Management System) with pluggable DB connectors.
+Collection of common utilities for web applications. Features centralized configuration through **OptionsManager**, environment-aware utilities that work across client/server contexts, a portable **CMS** (Content Management System) with pluggable DB connectors, and a portable **FM** (File Manager) with pluggable DB connectors and storage adapters.
 
 ## 📋 Table of Contents
 
@@ -13,9 +13,11 @@ Collection of common utilities for web applications. Features centralized config
   - [Available Modules](#available-modules)
     - [📋 Utils](#-utils)
     - [🎨 Client Components](#-client-components)
+      - [Clipboard Buttons](#clipboard-buttons)
       - [📝 WYSIWYG Editor Components](#-wysiwyg-editor-components)
     - [🚀 Server](#-server)
     - [📝 CMS (Content Management System)](#-cms-content-management-system)
+    - [📁 FM (File Manager)](#-fm-file-manager)
   - [Configuration](#configuration)
     - [Centralized Configuration (Recommended)](#centralized-configuration-recommended)
     - [Framework Examples](#framework-examples)
@@ -90,13 +92,45 @@ import {
 import { verifyTurnstileTokenEnhanced } from "@user27828/shared-utils/server";
 
 // ✅ CMS — types, validation, sanitization, concurrency, password
-import { CmsHeadRow, CmsPublicPayload, CMS_POST_TYPES } from "@user27828/shared-utils/cms";
+import {
+  CmsHeadRow,
+  CmsPublicPayload,
+  CMS_POST_TYPES,
+} from "@user27828/shared-utils/cms";
 
 // ✅ CMS — server core service, Express routers, connector interface
-import { CmsServiceCore, createCmsAdminRouter, createCmsPublicRouter } from "@user27828/shared-utils/cms/server";
+import {
+  CmsServiceCore,
+  createCmsAdminRouter,
+  createCmsPublicRouter,
+} from "@user27828/shared-utils/cms/server";
 
 // ✅ CMS — client SDK, React hooks, admin UI pages
-import { CmsClient, useCmsAdmin, CmsEditPage, CmsListPage } from "@user27828/shared-utils/cms/client";
+import {
+  CmsClient,
+  useCmsAdmin,
+  CmsEditPage,
+  CmsListPage,
+} from "@user27828/shared-utils/cms/client";
+
+// ✅ FM — types, error classes
+import { FmFileRow, FmContext } from "@user27828/shared-utils/fm";
+
+// ✅ FM — server core service, Express routers, storage adapters
+import {
+  FmServiceCore,
+  createFmRouter,
+  createFmContentRouter,
+  createFmPublicRouter,
+} from "@user27828/shared-utils/fm/server";
+
+// ✅ FM — client SDK, React hooks, media library UI
+import {
+  FmClient,
+  useFmListFiles,
+  FmMediaLibrary,
+  FmFilePicker,
+} from "@user27828/shared-utils/fm/client";
 ```
 
 ### Basic Setup
@@ -356,10 +390,10 @@ A portable, full-featured CMS with pluggable DB connectors. The CMS core is DB-a
 
 **Import paths:**
 
-| Path | Contents |
-|---|---|
-| `@user27828/shared-utils/cms` | Shared types, Zod schemas, validation, sanitization, concurrency, password utils, error classes |
-| `@user27828/shared-utils/cms/server` | `CmsServiceCore`, `CmsConnector` interface, Express router factories, rate limiter, authz, cache-control, unlock tokens, conformance test harness |
+| Path                                 | Contents                                                                                                                                                     |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `@user27828/shared-utils/cms`        | Shared types, Zod schemas, validation, sanitization, concurrency, password utils, error classes                                                              |
+| `@user27828/shared-utils/cms/server` | `CmsServiceCore`, `CmsConnector` interface, Express router factories, rate limiter, authz, cache-control, unlock tokens, conformance test harness            |
 | `@user27828/shared-utils/cms/client` | `CmsClient` SDK, `useCmsAdmin`/`useCmsPublic` hooks, admin UI pages (`CmsListPage`, `CmsEditPage`, `CmsHistoryDrawer`, `CmsBodyEditor`, `CmsConflictDialog`) |
 
 **Key features:**
@@ -377,6 +411,34 @@ A portable, full-featured CMS with pluggable DB connectors. The CMS core is DB-a
 
 - [CMS Consumer Guide](doc/CMS_CONSUMER_GUIDE.md): SDK, admin UI, and server composition
 - [CMS Connector Guide](doc/CMS_CONNECTOR_GUIDE.md): How to write a new DB connector
+
+### 📁 FM (File Manager)
+
+A portable file manager with pluggable DB connectors and storage adapters (local disk, S3). The FM core is DB-agnostic and storage-agnostic; persistence and object storage are provided by connector and adapter packages.
+
+**Import paths:**
+
+| Path                                   | Contents                                                                                                                                       |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@user27828/shared-utils/fm`           | Shared types, Zod schemas, error classes                                                                                                       |
+| `@user27828/shared-utils/fm/server`    | `FmServiceCore`, `FmConnector` interface, Express router factories (admin, content, public), authz, storage adapters, conformance test harness |
+| `@user27828/shared-utils/fm/server/s3` | `FmStorageS3` adapter (requires optional `@aws-sdk` peer deps)                                                                                 |
+| `@user27828/shared-utils/fm/client`    | `FmClient` SDK, `useFmListFiles` hook, `FmMediaLibrary`/`FmFilePicker` UI components, image variant utilities                                  |
+
+**Key features:**
+
+- Two-phase upload: presigned URL (direct to S3) or proxy upload through Express
+- Variant management: thumb, preview, web variants with client-side generation
+- Four router factories: admin CRUD, content delivery (short URLs), public media, with pluggable authz
+- Owner-or-admin access control model
+- Content URL decoupling: separate content delivery from admin CRUD (`contentBaseUrl`)
+- Local + S3 storage adapters with async factory
+- Connector conformance test harness for new DB adapters
+
+**Documentation:**
+
+- [FM Consumer Guide](doc/FM_CONSUMER_GUIDE.md): SDK, admin UI, and server composition
+- [FM Connector Guide](doc/FM_CONNECTOR_GUIDE.md): How to write a new DB connector
 
 [🔝 Back to Top](#shared-utils)
 
@@ -558,6 +620,8 @@ wrangler secret put TURNSTILE_SECRET_KEY
 - **[WYSIWYG Setup Guide](./doc/WYSIWYG_SETUP.md)** - Unified editor API, picker/upload hooks, and per-editor configuration
 - **[TinyMCE Setup Guide](./doc/TINYMCE_SETUP.md)** - Notes for bundlers (especially Vite)
 - **[CKEditor 5 Setup Guide](./doc/CKEDITOR_SETUP.md)** - Peer deps, upload/picker hooks, extensibility
+- **[FM Consumer Guide](./doc/FM_CONSUMER_GUIDE.md)** - File Manager SDK, admin UI, and server composition
+- **[FM Connector Guide](./doc/FM_CONNECTOR_GUIDE.md)** - How to write a new FM DB connector
 - **[Example Integration](./examples/CONSUMING_PROJECT_EXAMPLE.md)** - Step-by-step integration example
 
 [🔝 Back to Top](#shared-utils)
