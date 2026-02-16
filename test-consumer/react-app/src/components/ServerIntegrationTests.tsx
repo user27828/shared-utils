@@ -31,6 +31,18 @@ export const ServerIntegrationTests: React.FC = () => {
       status: "pending",
     },
     {
+      name: "CMS Connector Conformance",
+      description:
+        "Validate CMS connector conformance suite results from the server test consumer",
+      status: "pending",
+    },
+    {
+      name: "FM Connector Conformance",
+      description:
+        "Validate File Manager connector conformance suite results from the server test consumer",
+      status: "pending",
+    },
+    {
       name: "Server Test Results Validation",
       description: "Validate and process server test results",
       status: "pending",
@@ -248,6 +260,83 @@ export const ServerIntegrationTests: React.FC = () => {
     }
   };
 
+  const fetchServerResults = async () => {
+    if (!serverTestsAvailable) {
+      throw new Error(
+        "Server test consumer is not running. Start it with: cd test-consumer/server && node index.js",
+      );
+    }
+
+    const response = await fetch("http://localhost:8030/test");
+    if (!response.ok) {
+      throw new Error(
+        `Server test endpoint returned status: ${response.status}`,
+      );
+    }
+
+    return response.json();
+  };
+
+  const runConformanceSuiteCheck = async (suiteName: "cms" | "fm") => {
+    const testName =
+      suiteName === "cms"
+        ? "CMS Connector Conformance"
+        : "FM Connector Conformance";
+    const startTime = Date.now();
+
+    updateTestStatus(testName, "running", "Fetching conformance results...");
+
+    try {
+      const serverResults = await fetchServerResults();
+
+      if (!serverResults || !serverResults.tests) {
+        throw new Error("Invalid server results structure");
+      }
+
+      const summaryKey =
+        suiteName === "cms"
+          ? "cms-conformance-summary"
+          : "fm-conformance-summary";
+      const suiteSummary = serverResults.tests[summaryKey];
+
+      if (!suiteSummary) {
+        throw new Error(
+          `Missing ${summaryKey} in server results. (Ensure server was rebuilt and the server test consumer is running.)`,
+        );
+      }
+
+      const duration = Date.now() - startTime;
+      const status = suiteSummary.status;
+      const details = suiteSummary.details ?? {};
+
+      if (status === "passed") {
+        const passed =
+          typeof details.passed === "number" ? details.passed : undefined;
+        const total =
+          typeof details.total === "number" ? details.total : undefined;
+        const msg =
+          passed !== undefined && total !== undefined
+            ? `✅ ${suiteName.toUpperCase()} conformance passed (${passed}/${total})`
+            : `✅ ${suiteName.toUpperCase()} conformance passed`;
+
+        updateTestStatus(testName, "pass", msg, duration);
+        return;
+      }
+
+      const failed =
+        typeof details.failed === "number" ? details.failed : undefined;
+      const msg =
+        failed !== undefined
+          ? `${suiteName.toUpperCase()} conformance failed (${failed} failed)`
+          : `${suiteName.toUpperCase()} conformance failed`;
+
+      updateTestStatus(testName, "fail", msg, duration);
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", (error as Error).message, duration);
+    }
+  };
+
   const runServerResultsValidation = async (serverResults: any) => {
     const testName = "Server Test Results Validation";
     const startTime = Date.now();
@@ -364,6 +453,12 @@ export const ServerIntegrationTests: React.FC = () => {
       case "Server-side Functionality Tests":
         await runServerFunctionalityTests();
         break;
+      case "CMS Connector Conformance":
+        await runConformanceSuiteCheck("cms");
+        break;
+      case "FM Connector Conformance":
+        await runConformanceSuiteCheck("fm");
+        break;
       case "Server Test Results Validation":
         // This test needs server results, so run the full sequence
         const results = await runServerFunctionalityTests();
@@ -395,6 +490,12 @@ export const ServerIntegrationTests: React.FC = () => {
       await delay(500);
 
       const serverResults = await runServerFunctionalityTests();
+      await delay(500);
+
+      await runConformanceSuiteCheck("cms");
+      await delay(500);
+
+      await runConformanceSuiteCheck("fm");
       await delay(500);
 
       const validatedResults = await runServerResultsValidation(serverResults);

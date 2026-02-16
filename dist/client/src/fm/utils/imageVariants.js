@@ -86,7 +86,7 @@ export const generateImageVariants = async (input) => {
     // ── Worker path ──────────────────────────────────────────────────────
     if (useWorker && canUseWorker() && supportsOffscreenCanvas()) {
         try {
-            const worker = new Worker(new URL("../workers/imageVariantWorker.ts", import.meta.url), { type: "module" });
+            const worker = new Worker(new URL("../workers/imageVariantWorker.js", import.meta.url), { type: "module" });
             const result = await new Promise((resolve, reject) => {
                 const timeout = window.setTimeout(() => {
                     reject(new Error("Image worker timed out"));

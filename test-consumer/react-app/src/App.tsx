@@ -12,6 +12,8 @@ import MDXEditorTests from "./components/MDXEditorTests";
 import CKEditorTests from "./components/CKEditorTests";
 import EasyMDETests from "./components/EasyMDETests";
 import ServerIntegrationTests from "./components/ServerIntegrationTests";
+import CmsTests from "./components/CmsTests";
+import FmTests from "./components/FmTests";
 
 // Create light theme
 const lightTheme = createTheme({
@@ -84,6 +86,8 @@ const App: React.FC = () => {
     | "easymde"
     | "mdxeditor"
     | "ckeditor"
+    | "cms"
+    | "fm"
     | "server"
   >("index");
 
@@ -101,6 +105,8 @@ const App: React.FC = () => {
       | "easymde"
       | "mdxeditor"
       | "ckeditor"
+      | "cms"
+      | "fm"
       | "server",
   ) => {
     setCurrentView(view);
@@ -267,6 +273,34 @@ const App: React.FC = () => {
               CKEditor Tests
             </button>
             <button
+              onClick={() => handleNavigate("cms")}
+              style={{
+                backgroundColor:
+                  currentView === "cms"
+                    ? "#646cff"
+                    : isDarkMode
+                      ? "#1a1a1a"
+                      : "#e0e0e0",
+                color: isDarkMode ? "#ffffff" : "#000000",
+              }}
+            >
+              CMS Tests
+            </button>
+            <button
+              onClick={() => handleNavigate("fm")}
+              style={{
+                backgroundColor:
+                  currentView === "fm"
+                    ? "#646cff"
+                    : isDarkMode
+                      ? "#1a1a1a"
+                      : "#e0e0e0",
+                color: isDarkMode ? "#ffffff" : "#000000",
+              }}
+            >
+              FM Tests
+            </button>
+            <button
               onClick={() => handleNavigate("server")}
               style={{
                 backgroundColor:
@@ -297,6 +331,8 @@ const App: React.FC = () => {
           {currentView === "ckeditor" && (
             <CKEditorTests darkMode={isDarkMode} />
           )}
+          {currentView === "cms" && <CmsTests darkMode={isDarkMode} />}
+          {currentView === "fm" && <FmTests />}
           {currentView === "server" && <ServerIntegrationTests />}
         </main>
       </div>

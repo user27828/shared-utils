@@ -12,6 +12,8 @@ interface TestIndexProps {
       | "easymde"
       | "mdxeditor"
       | "ckeditor"
+      | "cms"
+      | "fm"
       | "server",
   ) => void;
 }
@@ -338,6 +340,42 @@ const TestIndex: React.FC<TestIndexProps> = ({ onNavigate }) => {
       ],
     },
     {
+      name: "CMS Client Tests",
+      description: "Client-side CMS UI components and editor integration",
+      tests: [
+        {
+          name: "Body Editor",
+          description: "Test CmsBodyEditor for HTML/Markdown/JSON/Text",
+          status: "implemented" as const,
+          category: "cms",
+        },
+        {
+          name: "Body Renderer",
+          description: "Test CmsBodyRenderer preview rendering",
+          status: "implemented" as const,
+          category: "cms",
+        },
+      ],
+    },
+    {
+      name: "FM Client Tests",
+      description: "Client-side File Manager UI components",
+      tests: [
+        {
+          name: "Media Library",
+          description: "Test FmMediaLibrary rendering and selection",
+          status: "implemented" as const,
+          category: "fm",
+        },
+        {
+          name: "File Picker",
+          description: "Test FmFilePicker dialog integration",
+          status: "implemented" as const,
+          category: "fm",
+        },
+      ],
+    },
+    {
       name: "Future Components Tests",
       description: "Additional React components for future implementation",
       tests: [
@@ -394,6 +432,20 @@ const TestIndex: React.FC<TestIndexProps> = ({ onNavigate }) => {
           status: "implemented" as const,
           category: "server",
         },
+        {
+          name: "CMS Connector Conformance",
+          description:
+            "Run CMS connector conformance suite via the server test consumer",
+          status: "implemented" as const,
+          category: "server",
+        },
+        {
+          name: "FM Connector Conformance",
+          description:
+            "Run File Manager connector conformance suite via the server test consumer",
+          status: "implemented" as const,
+          category: "server",
+        },
       ],
     },
   ];
@@ -425,6 +477,10 @@ const TestIndex: React.FC<TestIndexProps> = ({ onNavigate }) => {
       onNavigate("mdxeditor");
     } else if (category === "ckeditor") {
       onNavigate("ckeditor");
+    } else if (category === "cms") {
+      onNavigate("cms");
+    } else if (category === "fm") {
+      onNavigate("fm");
     } else if (category === "components") {
       // Future components - show notification
       alert(

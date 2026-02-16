@@ -18,6 +18,10 @@ let testResults = {
   },
 };
 
+import { createMiniTestRunner } from "./mini-test-runner.js";
+import { InMemoryCmsConnector } from "./connectors/InMemoryCmsConnector.js";
+import { InMemoryFmConnector } from "./connectors/InMemoryFmConnector.js";
+
 function addTest(name, status, details = null, error = null) {
   testResults.tests[name] = {
     status, // 'passed', 'failed', 'skipped'
@@ -32,15 +36,16 @@ function addTest(name, status, details = null, error = null) {
 export async function runServerTests() {
   console.log("🧪 Running Server Integration Tests...");
 
+  const testFileUrl = import.meta.url;
+  const testFilePath = new URL(testFileUrl).pathname;
+  const rootDir = testFilePath.split("/test-consumer")[0];
+
   try {
     // Test 1: Package Import
     console.log("Testing package import...");
     let serverModule;
     try {
       // Use relative path from test file to root dist directory
-      const testFileUrl = import.meta.url;
-      const testFilePath = new URL(testFileUrl).pathname;
-      const rootDir = testFilePath.split("/test-consumer")[0];
       const serverPath = `${rootDir}/dist/server/index.js`;
 
       serverModule = await import(serverPath);
@@ -57,6 +62,126 @@ export async function runServerTests() {
       addTest("package-import", "failed", null, error);
       testResults.packageInfo = { hasServerModule: false };
       return testResults;
+    }
+
+    // Test 13: CMS Connector Conformance (in-memory)
+    console.log("Running CMS connector conformance (in-memory)...");
+    try {
+      const cmsPath = `${rootDir}/dist/server/src/cms/index.js`;
+      const cmsModule = await import(cmsPath);
+      const { runCmsConnectorConformanceTests } = cmsModule;
+
+      if (typeof runCmsConnectorConformanceTests !== "function") {
+        addTest("cms-conformance", "failed", {
+          message: "runCmsConnectorConformanceTests export not found",
+          importPath: cmsPath,
+          availableExports: Object.keys(cmsModule),
+        });
+      } else {
+        const runner = createMiniTestRunner();
+
+        runCmsConnectorConformanceTests({
+          name: "InMemory",
+          factory: async () => {
+            const connector = new InMemoryCmsConnector();
+            return { connector };
+          },
+          cleanup: async (connector) => {
+            if (connector && typeof connector.reset === "function") {
+              connector.reset();
+            }
+          },
+          describe: runner.describe,
+          it: runner.it,
+          expect: runner.expect,
+          beforeAll: runner.beforeAll,
+          afterAll: runner.afterAll,
+        });
+
+        const { results, summary } = await runner.run();
+
+        for (const r of results) {
+          addTest(
+            `cms:${r.name}`,
+            r.status,
+            {
+              durationMs: r.durationMs,
+            },
+            r.error ?? null,
+          );
+        }
+
+        addTest(
+          "cms-conformance-summary",
+          summary.failed === 0 ? "passed" : "failed",
+          {
+            message: "CMS conformance suite completed",
+            ...summary,
+          },
+        );
+      }
+    } catch (error) {
+      addTest("cms-conformance", "failed", null, error);
+    }
+
+    // Test 14: FM Connector Conformance (in-memory)
+    console.log("Running FM connector conformance (in-memory)...");
+    try {
+      const fmPath = `${rootDir}/dist/server/src/fm/index.js`;
+      const fmModule = await import(fmPath);
+      const { runFmConnectorConformanceTests } = fmModule;
+
+      if (typeof runFmConnectorConformanceTests !== "function") {
+        addTest("fm-conformance", "failed", {
+          message: "runFmConnectorConformanceTests export not found",
+          importPath: fmPath,
+          availableExports: Object.keys(fmModule),
+        });
+      } else {
+        const runner = createMiniTestRunner();
+
+        runFmConnectorConformanceTests({
+          name: "InMemory",
+          factory: async () => {
+            const connector = new InMemoryFmConnector();
+            return { connector };
+          },
+          cleanup: async (connector) => {
+            if (connector && typeof connector.reset === "function") {
+              connector.reset();
+            }
+          },
+          describe: runner.describe,
+          it: runner.it,
+          expect: runner.expect,
+          beforeAll: runner.beforeAll,
+          afterAll: runner.afterAll,
+        });
+
+        const { results, summary } = await runner.run();
+
+        for (const r of results) {
+          addTest(
+            `fm:${r.name}`,
+            r.status,
+            {
+              durationMs: r.durationMs,
+            },
+            r.error ?? null,
+          );
+        }
+
+        addTest(
+          "fm-conformance-summary",
+          summary.failed === 0 ? "passed" : "failed",
+          {
+            message: "FM conformance suite completed",
+            ...summary,
+          },
+        );
+      }
+    } catch (error) {
+      addTest("fm-conformance", "failed", null, error);
     }
 
     // Test 2: Server Options Configuration

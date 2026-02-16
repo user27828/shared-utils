@@ -60,6 +60,8 @@ yarn dev  # Auto-restarts on file changes
 - ✅ **Middleware**: Tests `createTurnstileMiddleware` function
 - ✅ **Worker Factory**: Tests `createTurnstileWorker` function
 - ✅ **Integration**: Mock verification calls with graceful error handling
+- ✅ **CMS Connector Conformance**: Runs `runCmsConnectorConformanceTests()` against an in-memory connector
+- ✅ **FM Connector Conformance**: Runs `runFmConnectorConformanceTests()` against an in-memory connector
 
 ## Integration with React App
 

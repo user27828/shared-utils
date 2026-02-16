@@ -136,7 +136,7 @@ export const generateImageVariants = async (input: {
   if (useWorker && canUseWorker() && supportsOffscreenCanvas()) {
     try {
       const worker = new Worker(
-        new URL("../workers/imageVariantWorker.ts", import.meta.url),
+        new URL("../workers/imageVariantWorker.js", import.meta.url),
         { type: "module" },
       );
 

@@ -26,7 +26,13 @@
     /* Path mapping */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@user27828/shared-utils/cms/client": [
+        "../../dist/client/src/cms/index.d.ts"
+      ],
+      "@user27828/shared-utils/fm/client": [
+        "../../dist/client/src/fm/index.d.ts"
+      ]
     }
   },
   "include": ["src"],
