@@ -464,6 +464,17 @@ export class CmsServiceCore {
         }
         return this.renderPublicPayload(row);
     }
+    /**
+     * Render a safe payload for previewing a CMS item by UID.
+     * Intended for authenticated preview flows (e.g., draft previews).
+     */
+    async getPreviewPayloadByUid(uid) {
+        const row = await this.connector.getByUid(uid);
+        if (!row) {
+            return null;
+        }
+        return this.renderPublicPayload(row);
+    }
     // ─── Public head (lightweight) ────────────────────────────────────────
     async getPublicHead(params) {
         if (hasPublicHead(this.connector)) {
@@ -537,7 +548,7 @@ export class CmsServiceCore {
             const snapshot = this.buildHistorySnapshot(row);
             await this.connector.insertHistory({
                 cms_uid: row.uid,
-                revision: (row.version_number ?? 0),
+                revision: row.version_number ?? 0,
                 snapshot,
                 created_by: row.userUid || null,
             });

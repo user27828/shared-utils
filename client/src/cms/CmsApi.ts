@@ -98,6 +98,8 @@ export interface CmsApi {
     slug: string;
     unlockToken?: string;
     ifNoneMatch?: string;
+    /** If true, request an authenticated draft preview (requires server support). */
+    preview?: boolean;
   }): Promise<CmsPublicGetResult>;
 
   publicUnlock(params: {

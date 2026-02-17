@@ -139,7 +139,7 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
     const revisionsCount = history.length;
     const optionsParse = useMemo(() => safeJsonParse(optionsJson), [optionsJson]);
     const canPreview = useMemo(() => !isNew &&
-        status === "published" &&
+        status !== "trash" &&
         !!postType &&
         !!locale &&
         !!slug &&
@@ -857,8 +857,18 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         if (!canPreview || !config?.getPreviewUrl) {
             return null;
         }
-        return config.getPreviewUrl(slug, postType, locale);
-    }, [canPreview, config, postType, locale, slug]);
+        const raw = config.getPreviewUrl(slug, postType, locale);
+        if (!raw) {
+            return null;
+        }
+        if (status === "published") {
+            return raw;
+        }
+        const [beforeHash, hash] = String(raw).split("#", 2);
+        const sep = beforeHash.includes("?") ? "&" : "?";
+        const next = `${beforeHash}${sep}preview=1`;
+        return hash ? `${next}#${hash}` : next;
+    }, [canPreview, config, postType, locale, slug, status]);
     // ── Render ────────────────────────────────────────────────────────────
     return (_jsxs(Container, { maxWidth: "xl", sx: { pt: 0, pb: 3 }, children: [_jsx(Box, { "aria-live": "polite", "aria-atomic": "true", sx: { position: "absolute", left: -9999 }, children: liveMessage }), _jsx(Box, { "aria-live": "assertive", "aria-atomic": "true", sx: { position: "absolute", left: -9999 }, children: liveErrorMessage }), _jsxs(Box, { sx: {
                     display: "flex",

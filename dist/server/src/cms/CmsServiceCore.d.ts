@@ -106,6 +106,11 @@ export declare class CmsServiceCore {
         locale: string;
         slug: string;
     }): Promise<CmsPublicPayload | null>;
+    /**
+     * Render a safe payload for previewing a CMS item by UID.
+     * Intended for authenticated preview flows (e.g., draft previews).
+     */
+    getPreviewPayloadByUid(uid: string): Promise<CmsPublicPayload | null>;
     getPublicHead(params: {
         postType: string;
         locale: string;

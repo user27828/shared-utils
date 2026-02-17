@@ -5,6 +5,8 @@ export interface UseCmsPublicOptions {
     locale: string;
     slug: string;
     unlockToken?: string;
+    /** If true, request an authenticated draft preview (requires server support). */
+    preview?: boolean;
     /** Provide a custom CmsApi instance. Defaults to a new CmsClient(). */
     api?: CmsApi;
     /** Set to false to disable auto-fetching. Default: true. */

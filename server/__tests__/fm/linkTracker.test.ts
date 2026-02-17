@@ -83,6 +83,27 @@ describe("extractFmFileUids", () => {
     expect(extractFmFileUids(html)).toEqual([uid]);
   });
 
+  it("extracts UID from Markdown image syntax: ![alt](/path/<uid>)", () => {
+    const uid = "MdImageTestUID_1234567";
+    const md = `Some text\n\n![photo caption](/fm/${uid})\n\nMore text`;
+    expect(extractFmFileUids(md)).toEqual([uid]);
+  });
+
+  it("extracts UID from Markdown link syntax: [text](/path/<uid>)", () => {
+    const uid = "MdLinkTestUID_12345678";
+    const md = `Download [the file](/media/${uid}?dl=1) here.`;
+    expect(extractFmFileUids(md)).toEqual([uid]);
+  });
+
+  it("extracts UIDs from mixed HTML and Markdown content", () => {
+    const uid1 = "HtmlUidTestUID_123456A";
+    const uid2 = "MarkdownUidTest_12345B";
+    const mixed = `<img src="/fm/${uid1}?v=thumb">\n\n![alt](/fm/${uid2})`;
+    const result = extractFmFileUids(mixed);
+    expect(result).toHaveLength(2);
+    expect(new Set(result)).toEqual(new Set([uid1, uid2]));
+  });
+
   it("does not match short strings (< 10 chars)", () => {
     const html = `<img src="/api/fm/files/short/content">`;
     expect(extractFmFileUids(html)).toEqual([]);

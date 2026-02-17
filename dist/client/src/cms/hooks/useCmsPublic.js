@@ -11,6 +11,22 @@ const defaultClient = new CmsClient();
 export const useCmsPublic = (params) => {
     const api = params.api ?? defaultClient;
     const enabled = params.enabled !== false;
+    // NOTE: do not memoize with [] — in SSR environments `window` is undefined
+    // during the initial render, and we'd incorrectly freeze `preview=false`.
+    const previewFromUrl = (() => {
+        if (typeof window === "undefined") {
+            return false;
+        }
+        try {
+            const sp = new URLSearchParams(window.location.search);
+            const v = String(sp.get("preview") ?? "").toLowerCase();
+            return v === "1" || v === "true" || v === "yes";
+        }
+        catch {
+            return false;
+        }
+    })();
+    const preview = params.preview !== undefined ? Boolean(params.preview) : previewFromUrl;
     const [data, setData] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -18,6 +34,7 @@ export const useCmsPublic = (params) => {
     const [etag, setEtag] = useState(null);
     const [version, setVersion] = useState(0);
     const abortRef = useRef(null);
+    const etagRef = useRef(null);
     const reload = useCallback(() => {
         setVersion((v) => v + 1);
     }, []);
@@ -27,7 +44,13 @@ export const useCmsPublic = (params) => {
         locale: params.locale,
         slug: params.slug,
         unlockToken: params.unlockToken,
-    }), [params.postType, params.locale, params.slug, params.unlockToken]);
+        preview,
+    }), [params.postType, params.locale, params.slug, params.unlockToken, preview]);
+    // Reset cached etag when the page identity changes
+    useEffect(() => {
+        etagRef.current = null;
+        setEtag(null);
+    }, [memoParams.postType, memoParams.locale, memoParams.slug]);
     useEffect(() => {
         if (!enabled ||
             !memoParams.postType ||
@@ -42,8 +65,10 @@ export const useCmsPublic = (params) => {
         abortRef.current = controller;
         setIsLoading(true);
         setError(null);
+        // Read etag from ref (not state) to avoid re-triggering the effect
+        const currentEtag = etagRef.current;
         api
-            .publicGet({ ...memoParams, ifNoneMatch: etag ?? undefined })
+            .publicGet({ ...memoParams, ifNoneMatch: currentEtag ?? undefined })
             .then((result) => {
             if (controller.signal.aborted) {
                 return;
@@ -51,6 +76,7 @@ export const useCmsPublic = (params) => {
             switch (result.kind) {
                 case "ok":
                     setData(result.data);
+                    etagRef.current = result.etag ?? null;
                     setEtag(result.etag);
                     setRequiresPassword(false);
                     break;
@@ -93,7 +119,6 @@ export const useCmsPublic = (params) => {
         memoParams.locale,
         memoParams.slug,
         memoParams.unlockToken,
-        etag,
         api,
     ]);
     return { data, isLoading, error, requiresPassword, etag, reload };

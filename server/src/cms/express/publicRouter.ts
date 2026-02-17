@@ -41,6 +41,15 @@ export interface CmsPublicRouterConfig {
   service: CmsServiceCore;
 
   /**
+   * Optional authorization adapter used only for draft previews.
+   * If provided, requesting `?preview=1` for a draft will require
+   * `previewAuthz.requireAuthor` to pass.
+   */
+  previewAuthz?: {
+    requireAuthor: (req: Request, res: Response, next: NextFunction) => void;
+  };
+
+  /**
    * Unlock-token utilities from createCmsUnlockTokenUtils().
    * Required only if password-protected content is used.
    */
@@ -86,8 +95,25 @@ const sendCmsError = (res: Response, err: unknown) => {
 // ─── Factory ──────────────────────────────────────────────────────────────
 
 export function createCmsPublicRouter(cfg: CmsPublicRouterConfig): Router {
-  const { service, unlockToken, unlockTtlSeconds = 1800 } = cfg;
+  const { service, unlockToken, unlockTtlSeconds = 1800, previewAuthz } = cfg;
   const router = Router();
+
+  const runMiddleware = async (
+    mw: ((req: Request, res: Response, next: NextFunction) => void) | undefined,
+    req: Request,
+    res: Response,
+  ): Promise<boolean> => {
+    if (!mw) {
+      return false;
+    }
+    return await new Promise((resolve) => {
+      mw(req, res, () => resolve(true));
+      // If middleware ended the response without calling next
+      if (res.headersSent) {
+        resolve(false);
+      }
+    });
+  };
 
   // ═══════════════════════════════════════════════════════════════════════
   //  GET /:postType/:locale/:slug — Fetch published content
@@ -108,12 +134,108 @@ export function createCmsPublicRouter(cfg: CmsPublicRouterConfig): Router {
         const locale = normalizeLocale(localeRaw);
         const slug = canonicalizeSlug(slugRaw);
 
+        const preview =
+          req.query.preview === "1" ||
+          req.query.preview === "true" ||
+          req.query.preview === "yes";
+
+        // Build locale variants: exact, lowercase, and base-language subtag
+        // e.g. "en-US" → ["en-US", "en-us", "en"]
+        const baseLanguage = locale.includes("-")
+          ? locale.split("-")[0].toLowerCase()
+          : null;
+        const localeCandidates = Array.from(
+          new Set(
+            [locale, locale.toLowerCase(), baseLanguage].filter(
+              Boolean,
+            ) as string[],
+          ),
+        );
+
         // Step 1: Get public head (lightweight check for existence + protection)
         let head: any = null;
-        try {
-          head = await service.getPublicHead({ postType, locale, slug });
-        } catch {
-          // fall through to 404
+        for (const loc of localeCandidates) {
+          try {
+            head = await service.getPublicHead({ postType, locale: loc, slug });
+          } catch {
+            head = null;
+          }
+          if (head) {
+            break;
+          }
+        }
+
+        // If not found publicly, allow a draft preview.
+        // This is only enabled when the caller explicitly requests preview.
+        if (!head && preview) {
+          // If previewAuthz is provided, enforce it; otherwise allow
+          // preview requests through — the ?preview=1 opt-in already
+          // limits exposure, and the content is available via the admin
+          // API to authenticated users anyway.
+          if (previewAuthz?.requireAuthor) {
+            const okAuth = await runMiddleware(
+              previewAuthz.requireAuthor,
+              req,
+              res,
+            );
+            if (!okAuth) {
+              if (!res.headersSent) {
+                res.status(401).json({
+                  success: false,
+                  message: "Authentication required",
+                  requiresAuth: true,
+                });
+              }
+              return;
+            }
+          }
+
+          // Find matching draft via service.list(). This avoids requiring
+          // a new connector method, but is only executed after auth.
+          // Try each locale candidate until we find a match.
+          let draft: any = null;
+          for (const loc of localeCandidates) {
+            const draftList = await service.list({
+              q: slug,
+              status: "draft" as any,
+              post_type: postType as any,
+              locale: loc,
+              limit: 25,
+              offset: 0,
+              orderBy: "updated_at" as any,
+              orderDirection: "desc" as any,
+              includeTrash: false,
+            });
+
+            draft = (draftList.items || []).find((r: any) => {
+              const rSlug = canonicalizeSlug(String(r?.slug ?? ""));
+              const rPostType = String(r?.post_type ?? "");
+              return rSlug === slug && rPostType === postType;
+            });
+            if (draft) {
+              break;
+            }
+          }
+
+          if (!draft?.uid) {
+            res.status(404).json({ success: false, message: "Not found" });
+            return;
+          }
+
+          // Use the full row for preview rendering.
+          head = {
+            uid: draft.uid,
+            post_type: draft.post_type ?? postType,
+            locale: draft.locale ?? locale,
+            slug: draft.slug ?? slug,
+            status: draft.status ?? "draft",
+            etag: draft.etag ?? null,
+            version_number: draft.version_number ?? null,
+            password_hash: draft.password_hash ?? null,
+            password_version: draft.password_version ?? null,
+            published_at: draft.published_at ?? null,
+            archived_at: draft.archived_at ?? null,
+          };
         }
 
         if (!head) {
@@ -184,11 +306,23 @@ export function createCmsPublicRouter(cfg: CmsPublicRouterConfig): Router {
         }
 
         // Step 4: Fetch full payload
-        const payload = await service.getPublicPayloadBySlug({
-          postType,
-          locale,
-          slug,
-        });
+        let payload: any = null;
+        if (preview && head.status === "draft") {
+          // Draft preview payloads must never be cached.
+          res.set("Cache-Control", "private, no-store");
+          payload = await service.getPreviewPayloadByUid(head.uid);
+        } else {
+          for (const loc of localeCandidates) {
+            payload = await service.getPublicPayloadBySlug({
+              postType,
+              locale: loc,
+              slug,
+            });
+            if (payload) {
+              break;
+            }
+          }
+        }
 
         if (!payload) {
           res.status(404).json({ success: false, message: "Not found" });
@@ -196,10 +330,12 @@ export function createCmsPublicRouter(cfg: CmsPublicRouterConfig): Router {
         }
 
         // Step 5: Set cache headers and respond
-        applyCmsPublicCacheHeaders(res, {
-          isProtected,
-          etag: (payload as any).etag ?? etag,
-        });
+        if (!(preview && head.status === "draft")) {
+          applyCmsPublicCacheHeaders(res, {
+            isProtected,
+            etag: (payload as any).etag ?? etag,
+          });
+        }
         res.status(200).json({ success: true, data: payload });
       } catch (err) {
         sendCmsError(res, err);

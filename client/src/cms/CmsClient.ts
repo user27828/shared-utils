@@ -298,8 +298,11 @@ export class CmsClient implements CmsApi {
     slug: string;
     unlockToken?: string;
     ifNoneMatch?: string;
+    preview?: boolean;
   }): Promise<CmsPublicGetResult> {
-    const url = `${this.publicBaseUrl}/${encodeURIComponent(params.postType)}/${encodeURIComponent(params.locale)}/${encodeURIComponent(params.slug)}`;
+    const preview = Boolean(params.preview);
+    const urlBase = `${this.publicBaseUrl}/${encodeURIComponent(params.postType)}/${encodeURIComponent(params.locale)}/${encodeURIComponent(params.slug)}`;
+    const url = preview ? withParams(urlBase, { preview: 1 }) : urlBase;
 
     const headers: Record<string, string> = {
       Accept: "application/json",
@@ -313,7 +316,7 @@ export class CmsClient implements CmsApi {
     }
 
     const resp = await this.fetchFn(url, {
-      credentials: "omit", // CDN-friendly
+      credentials: preview ? "include" : "omit", // preview requires auth cookies
       headers,
     });
 

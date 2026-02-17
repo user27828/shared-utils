@@ -87,6 +87,7 @@ export declare class CmsClient implements CmsApi {
         slug: string;
         unlockToken?: string;
         ifNoneMatch?: string;
+        preview?: boolean;
     }): Promise<CmsPublicGetResult>;
     publicUnlock(params: {
         postType: string;

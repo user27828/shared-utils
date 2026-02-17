@@ -15,6 +15,8 @@ export interface UseCmsPublicOptions {
   locale: string;
   slug: string;
   unlockToken?: string;
+  /** If true, request an authenticated draft preview (requires server support). */
+  preview?: boolean;
   /** Provide a custom CmsApi instance. Defaults to a new CmsClient(). */
   api?: CmsApi;
   /** Set to false to disable auto-fetching. Default: true. */
@@ -41,6 +43,24 @@ export const useCmsPublic = (
   const api = params.api ?? defaultClient;
   const enabled = params.enabled !== false;
 
+  // NOTE: do not memoize with [] — in SSR environments `window` is undefined
+  // during the initial render, and we'd incorrectly freeze `preview=false`.
+  const previewFromUrl = (() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      const v = String(sp.get("preview") ?? "").toLowerCase();
+      return v === "1" || v === "true" || v === "yes";
+    } catch {
+      return false;
+    }
+  })();
+
+  const preview =
+    params.preview !== undefined ? Boolean(params.preview) : previewFromUrl;
+
   const [data, setData] = useState<CmsPublicPayload | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -49,6 +69,7 @@ export const useCmsPublic = (
   const [version, setVersion] = useState(0);
 
   const abortRef = useRef<AbortController | null>(null);
+  const etagRef = useRef<string | null>(null);
 
   const reload = useCallback(() => {
     setVersion((v) => v + 1);
@@ -61,9 +82,16 @@ export const useCmsPublic = (
       locale: params.locale,
       slug: params.slug,
       unlockToken: params.unlockToken,
+      preview,
     }),
-    [params.postType, params.locale, params.slug, params.unlockToken],
+    [params.postType, params.locale, params.slug, params.unlockToken, preview],
   );
+
+  // Reset cached etag when the page identity changes
+  useEffect(() => {
+    etagRef.current = null;
+    setEtag(null);
+  }, [memoParams.postType, memoParams.locale, memoParams.slug]);
 
   useEffect(() => {
     if (
@@ -84,8 +112,11 @@ export const useCmsPublic = (
     setIsLoading(true);
     setError(null);
 
+    // Read etag from ref (not state) to avoid re-triggering the effect
+    const currentEtag = etagRef.current;
+
     api
-      .publicGet({ ...memoParams, ifNoneMatch: etag ?? undefined })
+      .publicGet({ ...memoParams, ifNoneMatch: currentEtag ?? undefined })
       .then((result) => {
         if (controller.signal.aborted) {
           return;
@@ -94,6 +125,7 @@ export const useCmsPublic = (
         switch (result.kind) {
           case "ok":
             setData(result.data);
+            etagRef.current = result.etag ?? null;
             setEtag(result.etag);
             setRequiresPassword(false);
             break;
@@ -137,7 +169,6 @@ export const useCmsPublic = (
     memoParams.locale,
     memoParams.slug,
     memoParams.unlockToken,
-    etag,
     api,
   ]);
 

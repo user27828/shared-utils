@@ -56,6 +56,7 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import CheckOutlinedIcon from "@mui/icons-material/CheckOutlined";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import type { SelectChangeEvent } from "@mui/material/Select";
 import CopyButton from "../../components/CopyButton.js";
 
@@ -1274,13 +1275,17 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
           <ToggleButton value="icons">Icons</ToggleButton>
         </ToggleButtonGroup>
 
-        <Button
-          variant="outlined"
-          onClick={() => void reload()}
-          disabled={isLoading}
-        >
-          Refresh
-        </Button>
+        <Tooltip title="Refresh">
+          <span>
+            <IconButton
+              aria-label="Refresh"
+              onClick={() => void reload()}
+              disabled={isLoading}
+            >
+              <RefreshIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
 
         {enableUpload && (
           <Button variant="contained" onClick={() => setIsUploadOpen(true)}>
@@ -1629,44 +1634,46 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                       </Typography>
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Stack
-                        direction="row"
-                        spacing={0.5}
-                        alignItems="center"
-                        flexWrap="wrap"
-                      >
+                      <Stack direction="column" spacing={0.5}>
                         {props.onSelect && (
                           <Button
                             size="small"
                             variant="contained"
                             onClick={() => props.onSelect?.(f)}
+                            sx={{ minWidth: 0, px: 1, alignSelf: "flex-start" }}
                           >
                             Select
                           </Button>
                         )}
-                        <CopyButton
-                          value={api.getContentUrl({ fileUid: f.uid })}
-                          tooltip="Copy URL"
-                          size="small"
-                          iconFontSize="small"
-                        />
-                        <Tooltip title="Details">
-                          <IconButton
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          alignItems="center"
+                        >
+                          <CopyButton
+                            value={api.getContentUrl({ fileUid: f.uid })}
+                            tooltip="Copy URL"
                             size="small"
-                            onClick={() => openDetail(f.uid)}
-                          >
-                            <InfoOutlinedIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Delete">
-                          <IconButton
-                            size="small"
-                            sx={{ color: "error.main", ml: 0.5 }}
-                            onClick={() => void handleDeleteInline(f)}
-                          >
-                            <DeleteOutlineIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
+                            iconFontSize="small"
+                          />
+                          <Tooltip title="Details">
+                            <IconButton
+                              size="small"
+                              onClick={() => openDetail(f.uid)}
+                            >
+                              <InfoOutlinedIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Delete">
+                            <IconButton
+                              size="small"
+                              sx={{ color: "error.main" }}
+                              onClick={() => void handleDeleteInline(f)}
+                            >
+                              <DeleteOutlineIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
                       </Stack>
                     </TableCell>
                   </TableRow>

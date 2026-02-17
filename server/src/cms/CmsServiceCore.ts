@@ -237,7 +237,9 @@ export class CmsServiceCore {
 
     const updated = await this.connector.updateByUid(input.uid, dbPatch);
     if (!updated) {
-      throw new CmsNotFoundError(`CMS item not found after update: ${input.uid}`);
+      throw new CmsNotFoundError(
+        `CMS item not found after update: ${input.uid}`,
+      );
     }
 
     await this.fireAfterWrite({
@@ -579,7 +581,9 @@ export class CmsServiceCore {
 
     const historyRow = await this.connector.getHistoryById(input.historyId);
     if (!historyRow || historyRow.cms_uid !== input.cmsUid) {
-      throw new CmsNotFoundError(`History revision not found: ${input.historyId}`);
+      throw new CmsNotFoundError(
+        `History revision not found: ${input.historyId}`,
+      );
     }
 
     const snapshot = historyRow.snapshot as Record<string, unknown> | null;
@@ -631,7 +635,9 @@ export class CmsServiceCore {
   }): Promise<CmsHistoryRow> {
     const row = await this.connector.getHistoryById(input.historyId);
     if (!row) {
-      throw new CmsNotFoundError(`History revision not found: ${input.historyId}`);
+      throw new CmsNotFoundError(
+        `History revision not found: ${input.historyId}`,
+      );
     }
 
     const updated = await this.connector.updateHistoryById(input.historyId, {
@@ -640,7 +646,9 @@ export class CmsServiceCore {
     });
 
     if (!updated) {
-      throw new CmsNotFoundError(`History revision not found: ${input.historyId}`);
+      throw new CmsNotFoundError(
+        `History revision not found: ${input.historyId}`,
+      );
     }
 
     return updated;
@@ -691,6 +699,18 @@ export class CmsServiceCore {
     return this.renderPublicPayload(row);
   }
 
+  /**
+   * Render a safe payload for previewing a CMS item by UID.
+   * Intended for authenticated preview flows (e.g., draft previews).
+   */
+  async getPreviewPayloadByUid(uid: string): Promise<CmsPublicPayload | null> {
+    const row = await this.connector.getByUid(uid);
+    if (!row) {
+      return null;
+    }
+    return this.renderPublicPayload(row);
+  }
+
   // ─── Public head (lightweight) ────────────────────────────────────────
 
   async getPublicHead(params: {
@@ -731,7 +751,9 @@ export class CmsServiceCore {
    * Render a CMS head row into a safe public payload.
    * Sanitizes HTML, renders markdown, parses JSON.
    */
-  private async renderPublicPayload(row: CmsHeadRow): Promise<CmsPublicPayload> {
+  private async renderPublicPayload(
+    row: CmsHeadRow,
+  ): Promise<CmsPublicPayload> {
     const payload: CmsPublicPayload = {
       uid: row.uid,
       post_type: row.post_type!,
@@ -778,7 +800,7 @@ export class CmsServiceCore {
       const snapshot = this.buildHistorySnapshot(row);
       await this.connector.insertHistory({
         cms_uid: row.uid,
-        revision: (row.version_number ?? 0),
+        revision: row.version_number ?? 0,
         snapshot,
         created_by: row.userUid || null,
       });

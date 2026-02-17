@@ -47,7 +47,8 @@ const NANOID_PATTERN = "[A-Za-z0-9_-]{10,30}";
  * Patterns that reference an FM file UID in a URL path.
  *
  * 1. Admin router:  `/files/<uid>/content`
- * 2. Standalone content / media router:  `/<base>/<uid>` (end of path)
+ * 2. HTML `src`/`href` attribute:  `src="/<base>/<uid>"` (end of path)
+ * 3. Markdown image / link:  `![alt](/path/<uid>)` or `[text](/path/<uid>)`
  *
  * The patterns are intentionally broad enough to match any mount point
  * (e.g. `/api/fm/files/…`, `/fm/…`, `/media/…`) while requiring the
@@ -56,12 +57,13 @@ const NANOID_PATTERN = "[A-Za-z0-9_-]{10,30}";
 const FM_UID_REGEXES: RegExp[] = [
   // Admin router: /files/<uid>/content
   new RegExp(`/files/(${NANOID_PATTERN})/content(?:[?#]|$|")`, "g"),
-  // Standalone content / media router: /<anything>/<uid> at end of URL
-  // Matches src="…/<uid>" or src="…/<uid>?v=thumb"
+  // HTML: src="…/<uid>" or href="…/<uid>?v=thumb"
   new RegExp(
     `(?:src|href)=["'](?:[^"']*/)?(${NANOID_PATTERN})(?:\\?[^"']*)?["']`,
     "gi",
   ),
+  // Markdown: ![alt](/path/<uid>) or [text](/path/<uid>?query)
+  new RegExp(`\\]\\((?:[^)]*/)?(${NANOID_PATTERN})(?:\\?[^)]*)?\\)`, "gi"),
 ];
 
 /**

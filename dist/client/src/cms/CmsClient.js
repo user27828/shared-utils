@@ -145,7 +145,9 @@ export class CmsClient {
     }
     // ─── Public ─────────────────────────────────────────────────────────
     async publicGet(params) {
-        const url = `${this.publicBaseUrl}/${encodeURIComponent(params.postType)}/${encodeURIComponent(params.locale)}/${encodeURIComponent(params.slug)}`;
+        const preview = Boolean(params.preview);
+        const urlBase = `${this.publicBaseUrl}/${encodeURIComponent(params.postType)}/${encodeURIComponent(params.locale)}/${encodeURIComponent(params.slug)}`;
+        const url = preview ? withParams(urlBase, { preview: 1 }) : urlBase;
         const headers = {
             Accept: "application/json",
         };
@@ -157,7 +159,7 @@ export class CmsClient {
             headers["If-None-Match"] = inm;
         }
         const resp = await this.fetchFn(url, {
-            credentials: "omit", // CDN-friendly
+            credentials: preview ? "include" : "omit", // preview requires auth cookies
             headers,
         });
         const etag = resp.headers.get("ETag");

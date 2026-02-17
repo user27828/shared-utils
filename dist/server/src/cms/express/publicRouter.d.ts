@@ -16,10 +16,19 @@
  *   );
  */
 import { Router } from "express";
+import type { Request, Response, NextFunction } from "express";
 import type { CmsServiceCore } from "../CmsServiceCore.js";
 export interface CmsPublicRouterConfig {
     /** CmsServiceCore instance. */
     service: CmsServiceCore;
+    /**
+     * Optional authorization adapter used only for draft previews.
+     * If provided, requesting `?preview=1` for a draft will require
+     * `previewAuthz.requireAuthor` to pass.
+     */
+    previewAuthz?: {
+        requireAuthor: (req: Request, res: Response, next: NextFunction) => void;
+    };
     /**
      * Unlock-token utilities from createCmsUnlockTokenUtils().
      * Required only if password-protected content is used.
