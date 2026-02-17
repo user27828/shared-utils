@@ -98,4 +98,23 @@ export interface FmConnectorWithBatchVariantDelete extends FmConnector {
 }
 /** Type guard: check if a connector supports batch variant deletes. */
 export declare function hasBatchVariantDelete(connector: FmConnector): connector is FmConnectorWithBatchVariantDelete;
+/**
+ * Optional: Entity-centric link queries.  Enables features like
+ * "list all FM files referenced by a CMS post" or "remove all links
+ * for a deleted entity" without knowing the file UIDs up-front.
+ */
+export interface FmConnectorWithEntityLinks extends FmConnector {
+    /**
+     * List all file-link rows for a given entity (e.g., all FM files
+     * referenced by CMS post `uid`).
+     */
+    listLinksForEntity(linkedEntityType: string, linkedEntityUid: string): Promise<FmFileLinkRow[]>;
+    /**
+     * Delete all file-link rows for a given entity.
+     * Used when a CMS post is permanently deleted.
+     */
+    deleteLinksForEntity(linkedEntityType: string, linkedEntityUid: string): Promise<void>;
+}
+/** Type guard: check if a connector supports entity-centric link queries. */
+export declare function hasEntityLinks(connector: FmConnector): connector is FmConnectorWithEntityLinks;
 //# sourceMappingURL=FmConnector.d.ts.map

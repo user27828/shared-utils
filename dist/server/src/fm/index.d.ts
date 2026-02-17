@@ -14,8 +14,8 @@
  * NOTE: FmStorageS3 is NOT exported here (requires optional @aws-sdk deps).
  * Import it directly from "@user27828/shared-utils/fm/server/s3".
  */
-export type { FmConnector, FmConnectorWithTransaction, FmConnectorWithBatchVariantDelete, } from "./FmConnector.js";
-export { hasTransaction, hasBatchVariantDelete } from "./FmConnector.js";
+export type { FmConnector, FmConnectorWithTransaction, FmConnectorWithBatchVariantDelete, FmConnectorWithEntityLinks, } from "./FmConnector.js";
+export { hasTransaction, hasBatchVariantDelete, hasEntityLinks, } from "./FmConnector.js";
 export { parseFmServerConfig, assertValidFmServerConfig, resolveFmLocalUploadRootAbsPath, getFmUploadPathPresetsFromConfig, FM_SERVER_CONFIG_KEYS, } from "./config.js";
 export type { FmServerConfig, FmUploadPathPreset, FmServerConfigKey, } from "./config.js";
 export { sanitizeFmFolderPath, buildFmObjectKey, encodeFmStorageKey, decodeFmStorageKey, tryDecodeFmStorageKey, buildFmObjectMetadataForInit, buildFmObjectMetadataForExistingFile, resolveClientUrl, buildCanonicalMediaUrl, } from "./utils/index.js";
@@ -39,4 +39,6 @@ export { createFmContentRouter } from "./express/contentRouter.js";
 export type { CreateFmContentRouterConfig } from "./express/contentRouter.js";
 export { runFmConnectorConformanceTests } from "./test/fmConformance.js";
 export type { FmConformanceConfig } from "./test/fmConformance.js";
+export { extractFmFileUids, reconcileFmLinks, createCmsFmLinkTracker, } from "./linkTracker.js";
+export type { FmLinkReconcileResult, CmsFmLinkTrackerConfig, CmsFmLinkTracker, } from "./linkTracker.js";
 //# sourceMappingURL=index.d.ts.map

@@ -14,7 +14,7 @@
  * NOTE: FmStorageS3 is NOT exported here (requires optional @aws-sdk deps).
  * Import it directly from "@user27828/shared-utils/fm/server/s3".
  */
-export { hasTransaction, hasBatchVariantDelete } from "./FmConnector.js";
+export { hasTransaction, hasBatchVariantDelete, hasEntityLinks, } from "./FmConnector.js";
 // ── Configuration ─────────────────────────────────────────────────────────
 export { parseFmServerConfig, assertValidFmServerConfig, resolveFmLocalUploadRootAbsPath, getFmUploadPathPresetsFromConfig, FM_SERVER_CONFIG_KEYS, } from "./config.js";
 // ── Utilities ─────────────────────────────────────────────────────────────
@@ -35,4 +35,6 @@ export { createFmPublicRouter } from "./express/publicRouter.js";
 export { createFmContentRouter } from "./express/contentRouter.js";
 // ── Conformance Test Harness ──────────────────────────────────────────────
 export { runFmConnectorConformanceTests } from "./test/fmConformance.js";
+// ── CMS ↔ FM Link Tracker ────────────────────────────────────────────────
+export { extractFmFileUids, reconcileFmLinks, createCmsFmLinkTracker, } from "./linkTracker.js";
 //# sourceMappingURL=index.js.map

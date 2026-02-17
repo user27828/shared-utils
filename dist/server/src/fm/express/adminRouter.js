@@ -24,7 +24,7 @@
 import { Router } from "express";
 import express from "express";
 import { isFmError, sendFmError, FmAuthorizationError, } from "../../../../utils/src/fm/errors.js";
-import { FmFilePatchRequestSchema, FmMoveRequestSchema, FmLinkCreateRequestSchema, FmLinkDeleteRequestSchema, } from "../../../../utils/src/fm/types.js";
+import { FmFilePatchRequestSchema, FmFileRenameRequestSchema, FmMoveRequestSchema, FmLinkCreateRequestSchema, FmLinkDeleteRequestSchema, } from "../../../../utils/src/fm/types.js";
 import { getSingleParam } from "../../express/params.js";
 // ─── Helpers ──────────────────────────────────────────────────────────────
 const ok = (res, data, status = 200) => {
@@ -352,6 +352,49 @@ export function createFmRouter(config) {
                 return;
             }
             const updated = await service.patchFile({ fileUid, patch });
+            ok(res, updated);
+        }
+        catch (err) {
+            sendFmError(res, err);
+        }
+    });
+    // ═══════════════════════════════════════════════════════════════════════
+    //  RENAME (original filename)
+    // ═══════════════════════════════════════════════════════════════════════
+    // POST /files/:fileUid/rename
+    router.post("/files/:fileUid/rename", jsonParser, async (req, res) => {
+        try {
+            const ctx = authz.getActorContext(req);
+            const fileUid = getSingleParam(req.params.fileUid);
+            if (!fileUid) {
+                res.status(400).json({ success: false, message: "Missing fileUid" });
+                return;
+            }
+            const parsed = FmFileRenameRequestSchema.safeParse(req.body || {});
+            if (!parsed.success) {
+                res.status(400).json({
+                    success: false,
+                    message: "Invalid rename body",
+                    details: parsed.error.flatten().fieldErrors,
+                });
+                return;
+            }
+            const existing = await service.getFileByUid(fileUid);
+            if (!existing) {
+                res.status(404).json({ success: false, message: "Not found" });
+                return;
+            }
+            assertOwnerOrAdmin(existing, ctx);
+            const body = parsed.data;
+            const originalFilename = String(body.originalFilename ??
+                body.original_filename ??
+                "").trim();
+            const updated = await service.renameFile({
+                fileUid,
+                originalFilename,
+                userUid: ctx.userUid,
+            });
+            await fireAfterWrite({ action: "patch", fileUid, userUid: ctx.userUid }, req);
             ok(res, updated);
         }
         catch (err) {

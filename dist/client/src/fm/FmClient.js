@@ -31,6 +31,7 @@ const withParams = (base, params) => {
 export class FmClient {
     constructor(config) {
         this.adminBaseUrl = (config?.adminBaseUrl ?? "/api/fm").replace(/\/+$/, "");
+        this.hasExplicitContentBase = !!config?.contentBaseUrl;
         this.contentBaseUrl = (config?.contentBaseUrl ?? this.adminBaseUrl).replace(/\/+$/, "");
         this.publicBaseUrl = (config?.publicBaseUrl ?? "/media").replace(/\/+$/, "");
         this.fetchFn = config?.fetchFn ?? fetch.bind(globalThis);
@@ -203,6 +204,14 @@ export class FmClient {
             body: JSON.stringify(input.patch),
         });
     }
+    async renameFile(input) {
+        return this.adminRequest(`/files/${encodeURIComponent(input.fileUid)}/rename`, {
+            method: "POST",
+            body: JSON.stringify({
+                originalFilename: input.originalFilename,
+            }),
+        });
+    }
     // ─── File lifecycle ─────────────────────────────────────────────────
     async archiveFile(fileUid) {
         return this.adminRequest(`/files/${encodeURIComponent(fileUid)}/archive`, { method: "POST" });
@@ -267,9 +276,17 @@ export class FmClient {
     }
     // ─── Synchronous URL builders ───────────────────────────────────────
     getContentUrl(input) {
-        return withParams(`${this.contentBaseUrl}/${encodeURIComponent(input.fileUid)}`, {
-            dl: input.download ? 1 : undefined,
-            v: input.variantKind,
+        if (this.hasExplicitContentBase) {
+            // Standalone content router pattern: <contentBaseUrl>/<uid>
+            return withParams(`${this.contentBaseUrl}/${encodeURIComponent(input.fileUid)}`, {
+                dl: input.download ? 1 : undefined,
+                v: input.variantKind,
+            });
+        }
+        // Admin router content streaming: <adminBaseUrl>/files/<uid>/content
+        return withParams(`${this.adminBaseUrl}/files/${encodeURIComponent(input.fileUid)}/content`, {
+            download: input.download ? 1 : undefined,
+            variantKind: input.variantKind,
         });
     }
     getProxyUploadUrl(fileUid) {

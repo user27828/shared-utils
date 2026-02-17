@@ -17,6 +17,6 @@ export { default as CmsBodyRenderer, renderCmsBody, } from "./CmsBodyRenderer.js
 export type { CmsBodyRendererProps } from "./CmsBodyRenderer.js";
 export { default as CmsPasswordGate } from "./CmsPasswordGate.js";
 export type { CmsPasswordGateProps } from "./CmsPasswordGate.js";
-export type { CmsAdminUiConfig, CmsEditorPreference, CmsMediaPickerProps, CmsToastAdapter, CmsNavigationAdapter, } from "./CmsAdminUiConfig.js";
+export type { CmsAdminUiConfig, CmsEditorPreference, CmsImageUploadContext, CmsImageUploadHandler, CmsImageUploadSource, CmsMediaPickerProps, CmsToastAdapter, CmsNavigationAdapter, } from "./CmsAdminUiConfig.js";
 export { defaultToast } from "./CmsAdminUiConfig.js";
 //# sourceMappingURL=index.d.ts.map

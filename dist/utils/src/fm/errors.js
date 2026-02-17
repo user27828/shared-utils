@@ -118,6 +118,7 @@ export function sendFmError(res, err) {
         });
     }
     else {
+        console.error("[FM] Unhandled error in sendFmError:", err);
         res.status(500).json({
             success: false,
             message: "Internal server error",

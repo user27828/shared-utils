@@ -9,12 +9,13 @@
  */
 import { z } from "zod";
 /** All recognised upload/file purpose values. */
-export declare const FM_PURPOSES: readonly ["resume", "job", "cms_asset", "avatar", "generic"];
+export declare const FM_PURPOSES: readonly ["resume", "job", "cms_asset", "cms_b64", "avatar", "generic"];
 /** Zod enum schema for {@link FM_PURPOSES}. */
 export declare const FmPurposeSchema: z.ZodEnum<{
     resume: "resume";
     job: "job";
     cms_asset: "cms_asset";
+    cms_b64: "cms_b64";
     avatar: "avatar";
     generic: "generic";
 }>;
@@ -59,6 +60,7 @@ export declare const FmFileRowSchema: z.ZodObject<{
         resume: "resume";
         job: "job";
         cms_asset: "cms_asset";
+        cms_b64: "cms_b64";
         avatar: "avatar";
         generic: "generic";
     }>>>;
@@ -115,6 +117,7 @@ export declare const FmUploadInitRequestSchema: z.ZodObject<{
         resume: "resume";
         job: "job";
         cms_asset: "cms_asset";
+        cms_b64: "cms_b64";
         avatar: "avatar";
         generic: "generic";
     }>>;
@@ -195,6 +198,7 @@ export declare const FmUploadFinalizeResponseSchema: z.ZodObject<{
             resume: "resume";
             job: "job";
             cms_asset: "cms_asset";
+            cms_b64: "cms_b64";
             avatar: "avatar";
             generic: "generic";
         }>>>;
@@ -228,6 +232,7 @@ export declare const FmVariantUploadInitRequestSchema: z.ZodObject<{
         resume: "resume";
         job: "job";
         cms_asset: "cms_asset";
+        cms_b64: "cms_b64";
         avatar: "avatar";
         generic: "generic";
     }>>;
@@ -296,6 +301,12 @@ export declare const FmVariantUploadFinalizeResponseSchema: z.ZodObject<{
     }, z.core.$loose>;
 }, z.core.$strict>;
 export type FmVariantUploadFinalizeResponse = z.infer<typeof FmVariantUploadFinalizeResponseSchema>;
+/** POST /files/:fileUid/rename — rename original filename (metadata). */
+export declare const FmFileRenameRequestSchema: z.ZodObject<{
+    original_filename: z.ZodOptional<z.ZodString>;
+    originalFilename: z.ZodOptional<z.ZodString>;
+}, z.core.$strict>;
+export type FmFileRenameRequest = z.infer<typeof FmFileRenameRequestSchema>;
 /** PATCH /files/:fileUid — user-updateable metadata fields only. */
 export declare const FmFilePatchRequestSchema: z.ZodObject<{
     title: z.ZodOptional<z.ZodString>;
@@ -357,6 +368,7 @@ export interface FmFileInsert {
  * Patch input for fm_files. Only user/service-updateable fields.
  */
 export interface FmFilePatch {
+    original_filename?: string;
     title?: string;
     alt_text?: string;
     tags?: string[];
@@ -482,7 +494,7 @@ export type FmUploadProgressCallback = (progress: {
  * Used for app-specific side effects (e.g., audit logging, cache invalidation).
  */
 export interface FmWriteEvent {
-    action: "upload" | "delete" | "move" | "archive" | "restore" | "variant-upload";
+    action: "upload" | "patch" | "delete" | "move" | "archive" | "restore" | "variant-upload";
     fileUid: string;
     userUid: string;
     metadata?: Record<string, unknown>;

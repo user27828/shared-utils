@@ -9,7 +9,7 @@
  * Media picker integration is injectable via callbacks.
  */
 import React from "react";
-import type { CmsEditorPreference } from "./CmsAdminUiConfig.js";
+import type { CmsEditorPreference, CmsImageUploadHandler } from "./CmsAdminUiConfig.js";
 export type CmsEditorContentType = "html" | "markdown" | "json" | "text";
 export declare const contentTypeToMime: (shorthand: CmsEditorContentType) => "text/html" | "text/markdown" | "application/json" | "text/plain";
 export declare const mimeToContentType: (mime: string | undefined) => CmsEditorContentType;
@@ -28,7 +28,7 @@ export interface CmsBodyEditorProps {
         url?: string;
     } | null>;
     /** Callback to upload an image directly. */
-    onUploadImage?: (file: File) => Promise<string | null>;
+    onUploadImage?: CmsImageUploadHandler;
 }
 declare const CmsBodyEditor: React.FC<CmsBodyEditorProps>;
 export default CmsBodyEditor;

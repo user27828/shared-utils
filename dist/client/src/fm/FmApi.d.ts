@@ -93,6 +93,11 @@ export interface FmApi {
             is_public?: boolean;
         };
     }): Promise<FmFileRow>;
+    /** Rename a file by updating `original_filename`. */
+    renameFile(input: {
+        fileUid: string;
+        originalFilename: string;
+    }): Promise<FmFileRow>;
     /** Soft-archive a file (sets archived_at). */
     archiveFile(fileUid: string): Promise<FmFileRow>;
     /** Restore an archived file. */

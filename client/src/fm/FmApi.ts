@@ -117,6 +117,12 @@ export interface FmApi {
     };
   }): Promise<FmFileRow>;
 
+  /** Rename a file by updating `original_filename`. */
+  renameFile(input: {
+    fileUid: string;
+    originalFilename: string;
+  }): Promise<FmFileRow>;
+
   // ── File lifecycle ────────────────────────────────────────────────────
 
   /** Soft-archive a file (sets archived_at). */

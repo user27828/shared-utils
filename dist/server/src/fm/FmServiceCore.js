@@ -33,22 +33,27 @@ import path from "path";
 import { nanoid } from "nanoid";
 import { FmUploadInitRequestSchema, FmUploadFinalizeRequestSchema, FmVariantUploadInitRequestSchema, FmVariantUploadFinalizeRequestSchema, } from "../../../utils/src/fm/types.js";
 import { FmNotFoundError, FmValidationError, FmStorageError, FmAuthorizationError, FmPolicyError, } from "../../../utils/src/fm/errors.js";
+import { hasEntityLinks } from "./FmConnector.js";
 import { getFmUploadPathPresetsFromConfig, resolveFmLocalUploadRootAbsPath, } from "./config.js";
 import { encodeFmStorageKey, decodeFmStorageKey } from "./utils/storageKey.js";
 import { buildFmObjectKey, sanitizeFmFolderPath } from "./utils/objectKey.js";
-import { validateFmUploadInputs } from "./policy/allowlists.js";
+import { validateFmUploadInputs, FM_PURPOSE_POLICIES, extractExtensionLower, } from "./policy/allowlists.js";
 import { buildCanonicalMediaUrl } from "./utils/url.js";
 import { buildFmObjectMetadataForInit, buildFmObjectMetadataForExistingFile, } from "./utils/objectMetadata.js";
 import { sniffMimeFromHeader } from "./utils/mimeSniff.js";
 import { extractImageDimensionsFromHeader } from "./utils/imageDimensions.js";
 // ── Configuration ────────────────────────────────────────────────────────
 const DEFAULT_BUCKET_CMS = "cms";
+const DEFAULT_BUCKET_CMS_B64 = "cms-b64";
 const DEFAULT_BUCKET_USER_UPLOADS = "user-uploads";
 const DEFAULT_SIGNED_URL_TTL_SECS = 300;
 // ── Internal helpers ─────────────────────────────────────────────────────
 const resolveBucketForPurpose = (config, purpose) => {
     if (purpose === "resume" || purpose === "job") {
         return config.bucketUserUploads || DEFAULT_BUCKET_USER_UPLOADS;
+    }
+    if (purpose === "cms_b64") {
+        return DEFAULT_BUCKET_CMS_B64;
     }
     return config.bucketCms || DEFAULT_BUCKET_CMS;
 };
@@ -286,7 +291,10 @@ export class FmServiceCore {
             storage_location: storageLocation,
             storage_key: storageKey,
             is_public: isPublic,
-            purpose: purpose,
+            // Only include `purpose` when the client explicitly provided one.
+            // The fm_files.purpose column may not exist on older DB schemas,
+            // so omitting it avoids PostgREST "column not found" errors.
+            ...(parsed.purpose ? { purpose } : {}),
             sha256: "",
         });
         if (!created?.uid) {
@@ -1132,6 +1140,28 @@ export class FmServiceCore {
     async listLinksForFile(fileUid, params) {
         return await this.connector.listLinksForFile(fileUid, params);
     }
+    /**
+     * List all file-link rows for a given entity (reverse lookup).
+     * Requires the connector to implement {@link FmConnectorWithEntityLinks}.
+     * Returns an empty array if the connector does not support entity queries.
+     */
+    async listLinksForEntity(linkedEntityType, linkedEntityUid) {
+        if (!hasEntityLinks(this.connector)) {
+            return [];
+        }
+        return await this.connector.listLinksForEntity(linkedEntityType, linkedEntityUid);
+    }
+    /**
+     * Delete all file-link rows for a given entity.
+     * Requires the connector to implement {@link FmConnectorWithEntityLinks}.
+     * No-op if the connector does not support entity queries.
+     */
+    async deleteLinksForEntity(linkedEntityType, linkedEntityUid) {
+        if (!hasEntityLinks(this.connector)) {
+            return;
+        }
+        await this.connector.deleteLinksForEntity(linkedEntityType, linkedEntityUid);
+    }
     // ── Metadata Patching ──────────────────────────────────────────────
     /**
      * Patch file metadata (title, alt_text, tags, is_public).
@@ -1171,6 +1201,64 @@ export class FmServiceCore {
         }
         safePatch.updated_at = new Date().toISOString();
         const updated = await this.connector.updateFileByUid(input.fileUid, safePatch);
+        return (updated || existing);
+    }
+    // ── Rename (original filename) ─────────────────────────────────────
+    /**
+     * Rename a file by updating `original_filename`.
+     *
+     * Notes:
+     * - This does NOT rename the underlying storage object key (objects are keyed by UID).
+     * - Download names and UI labels use `original_filename`.
+     * - Extension changes are validated against the purpose allowlist.
+     */
+    async renameFile(input) {
+        const existing = await this.connector.getFileByUid(input.fileUid);
+        if (!existing) {
+            throw new FmNotFoundError("File", input.fileUid);
+        }
+        const next = String(input.originalFilename || "").trim();
+        if (!next) {
+            throw new FmValidationError("Filename is required");
+        }
+        if (next.length > 1024) {
+            throw new FmValidationError("Filename is too long");
+        }
+        if (/[\u0000-\u001F\u007F]/.test(next)) {
+            throw new FmValidationError("Filename contains control characters");
+        }
+        if (next.includes("/") || next.includes("\\")) {
+            throw new FmValidationError("Filename must not contain path separators");
+        }
+        if (next.includes("..")) {
+            throw new FmValidationError("Filename must not contain path traversal sequences");
+        }
+        // Enforce purpose extension allowlist (server-side).
+        const purpose = (existing.purpose || "generic");
+        const policy = FM_PURPOSE_POLICIES[purpose];
+        if (!policy) {
+            throw new FmPolicyError("Unsupported purpose");
+        }
+        const ext = extractExtensionLower(next);
+        if (!ext ||
+            !Array.isArray(policy.allowedExtensions) ||
+            !policy.allowedExtensions.includes(ext)) {
+            throw new FmPolicyError("File extension not allowed");
+        }
+        // No-op
+        if (next === existing.original_filename) {
+            return existing;
+        }
+        const updated = await this.connector.updateFileByUid(input.fileUid, {
+            original_filename: next,
+            updated_at: new Date().toISOString(),
+        });
+        await this.emitWrite({
+            action: "patch",
+            fileUid: input.fileUid,
+            userUid: input.userUid || existing.owner_user_uid || "",
+            metadata: { renamed: true },
+        });
         return (updated || existing);
     }
     // ── List Variants ──────────────────────────────────────────────────

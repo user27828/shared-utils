@@ -101,11 +101,13 @@ const withParams = (base: string, params: Record<string, unknown>): string => {
 export class FmClient implements FmApi {
   private adminBaseUrl: string;
   private contentBaseUrl: string;
+  private hasExplicitContentBase: boolean;
   private publicBaseUrl: string;
   private fetchFn: typeof fetch;
 
   constructor(config?: FmClientConfig) {
     this.adminBaseUrl = (config?.adminBaseUrl ?? "/api/fm").replace(/\/+$/, "");
+    this.hasExplicitContentBase = !!config?.contentBaseUrl;
     this.contentBaseUrl = (config?.contentBaseUrl ?? this.adminBaseUrl).replace(
       /\/+$/,
       "",
@@ -389,6 +391,21 @@ export class FmClient implements FmApi {
     );
   }
 
+  async renameFile(input: {
+    fileUid: string;
+    originalFilename: string;
+  }): Promise<FmFileRow> {
+    return this.adminRequest<FmFileRow>(
+      `/files/${encodeURIComponent(input.fileUid)}/rename`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          originalFilename: input.originalFilename,
+        }),
+      },
+    );
+  }
+
   // ─── File lifecycle ─────────────────────────────────────────────────
 
   async archiveFile(fileUid: string): Promise<FmFileRow> {
@@ -523,11 +540,22 @@ export class FmClient implements FmApi {
     download?: boolean;
     variantKind?: string;
   }): string {
+    if (this.hasExplicitContentBase) {
+      // Standalone content router pattern: <contentBaseUrl>/<uid>
+      return withParams(
+        `${this.contentBaseUrl}/${encodeURIComponent(input.fileUid)}`,
+        {
+          dl: input.download ? 1 : undefined,
+          v: input.variantKind,
+        },
+      );
+    }
+    // Admin router content streaming: <adminBaseUrl>/files/<uid>/content
     return withParams(
-      `${this.contentBaseUrl}/${encodeURIComponent(input.fileUid)}`,
+      `${this.adminBaseUrl}/files/${encodeURIComponent(input.fileUid)}/content`,
       {
-        dl: input.download ? 1 : undefined,
-        v: input.variantKind,
+        download: input.download ? 1 : undefined,
+        variantKind: input.variantKind,
       },
     );
   }

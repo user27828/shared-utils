@@ -111,6 +111,19 @@ export const FM_PURPOSE_POLICIES: Record<FmPurpose, FmPurposePolicy> = {
     allowedMimePrefixes: ["image/"],
     maxBytes: 10 * 1024 * 1024, // 10 MB
   },
+  cms_b64: {
+    allowedExtensions: ["jpg", "jpeg", "png", "gif", "webp", "avif"],
+    allowedMimeTypes: [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+      "image/avif",
+      "application/octet-stream",
+    ],
+    allowedMimePrefixes: ["image/"],
+    maxBytes: DEFAULT_MAX_BYTES,
+  },
   generic: {
     allowedExtensions: [
       "jpg",
@@ -161,7 +174,7 @@ export type FmUploadValidationResult = z.infer<
  * @param filename - The filename or path to extract the extension from.
  * @returns The lowercase extension without the leading dot, or empty string.
  */
-const extractExtensionLower = (filename: string): string => {
+export const extractExtensionLower = (filename: string): string => {
   const base = filename.split("/").pop() || filename;
   const dot = base.lastIndexOf(".");
   if (dot === -1 || dot === base.length - 1) {

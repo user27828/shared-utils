@@ -10,7 +10,13 @@
  *
  * @module @user27828/shared-utils/fm/client
  */
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Alert,
   Box,
@@ -31,6 +37,7 @@ import {
   MenuItem,
   Paper,
   Select,
+  Snackbar,
   Stack,
   Table,
   TableBody,
@@ -47,14 +54,22 @@ import {
 } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import CheckOutlinedIcon from "@mui/icons-material/CheckOutlined";
 import type { SelectChangeEvent } from "@mui/material/Select";
 import CopyButton from "../../components/CopyButton.js";
 
-import type { FmFileRow, FmFilesOrderBy } from "../../../../utils/src/fm/types.js";
+import type {
+  FmFileRow,
+  FmFilesOrderBy,
+} from "../../../../utils/src/fm/types.js";
 import type { FmApi } from "../FmApi.js";
 import { useFmApi } from "../FmClientProvider.js";
 import { useFmListFiles } from "../hooks/useFmListFiles.js";
-import { DEFAULT_VARIANT_WIDTHS, generateImageVariants } from "../utils/imageVariants.js";
+import {
+  DEFAULT_VARIANT_WIDTHS,
+  generateImageVariants,
+} from "../utils/imageVariants.js";
 
 /** Props for the {@link FmMediaLibrary} component. */
 export interface FmMediaLibraryProps {
@@ -124,7 +139,10 @@ const scalePct = (pct0to100: number, start: number, end: number): number => {
   return clampPct(start + Math.round((pct / 100) * span));
 };
 
-const formatUploadStatus = (u: { status: UploadStatus; error?: string }): string => {
+const formatUploadStatus = (u: {
+  status: UploadStatus;
+  error?: string;
+}): string => {
   switch (u.status) {
     case "queued":
       return "Queued";
@@ -167,6 +185,16 @@ const safeTrim = (v: unknown): string => {
     return "";
   }
   return String(v).trim();
+};
+
+const getExtLower = (filename: string): string => {
+  const s = String(filename || "").trim();
+  const base = s.split("/").pop() || s;
+  const dot = base.lastIndexOf(".");
+  if (dot <= 0 || dot === base.length - 1) {
+    return "";
+  }
+  return base.slice(dot + 1).toLowerCase();
 };
 
 const parseTagsCsv = (csv: string): string[] => {
@@ -260,7 +288,10 @@ const uploadWithXhr = async (input: {
         return;
       }
       if (input.onProgress) {
-        const pct = Math.max(0, Math.min(100, Math.round((evt.loaded / evt.total) * 100)));
+        const pct = Math.max(
+          0,
+          Math.min(100, Math.round((evt.loaded / evt.total) * 100)),
+        );
         input.onProgress(pct);
       }
     };
@@ -297,20 +328,27 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
   const limit = props.pageSize || 25;
 
   const enableUpload = props.enableUpload !== false;
-  const enableBulkActions = props.enableBulkActions !== false && !props.onSelect;
+  const enableBulkActions =
+    props.enableBulkActions !== false && !props.onSelect;
 
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [previewMode, setPreviewMode] = useState<PreviewMode>("thumbnails");
   const [publicFilter, setPublicFilter] = useState<PublicFilter>("all");
-  const [includeArchived, setIncludeArchived] = useState(Boolean(props.includeArchived));
+  const [includeArchived, setIncludeArchived] = useState(
+    Boolean(props.includeArchived),
+  );
   const [sortBy, setSortBy] = useState<FmFilesOrderBy>("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  const [selectedUids, setSelectedUids] = useState<Set<string>>(() => new Set());
+  const [selectedUids, setSelectedUids] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [activeUid, setActiveUid] = useState<string | null>(null);
   const [activeFile, setActiveFile] = useState<FmFileRow | null>(null);
   const [activeUrl, setActiveUrl] = useState<string | null>(null);
-  const [activeUrlKind, setActiveUrlKind] = useState<"public" | "signed" | "canonical" | null>(null);
+  const [activeUrlKind, setActiveUrlKind] = useState<
+    "public" | "signed" | "canonical" | null
+  >(null);
   const [activeError, setActiveError] = useState<string | null>(null);
   const [activeLoading, setActiveLoading] = useState<boolean>(false);
 
@@ -321,7 +359,21 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
 
   const [tagsText, setTagsText] = useState<string>("");
 
-  const [linksData, setLinksData] = useState<null | { items: any[]; totalCount: number }>(null);
+  const [renamingUid, setRenamingUid] = useState<string | null>(null);
+  const [renameText, setRenameText] = useState<string>("");
+  const [detailIsRenaming, setDetailIsRenaming] = useState<boolean>(false);
+  const [detailRenameText, setDetailRenameText] = useState<string>("");
+  const [renameSubmittingUid, setRenameSubmittingUid] = useState<string | null>(
+    null,
+  );
+  const [renameSuccessMessage, setRenameSuccessMessage] = useState<
+    string | null
+  >(null);
+
+  const [linksData, setLinksData] = useState<null | {
+    items: any[];
+    totalCount: number;
+  }>(null);
   const [linksError, setLinksError] = useState<string | null>(null);
   const [linksLoading, setLinksLoading] = useState<boolean>(false);
 
@@ -359,7 +411,11 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
     offset,
     includeArchived,
     isPublic:
-      publicFilter === "all" ? undefined : publicFilter === "public" ? true : false,
+      publicFilter === "all"
+        ? undefined
+        : publicFilter === "public"
+          ? true
+          : false,
     orderBy: sortBy,
     orderDirection: sortOrder,
     api,
@@ -369,7 +425,9 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
 
   const handleDeleteInline = async (f: FmFileRow) => {
     const label = getFileLabel(f);
-    const ok = window.confirm(`Delete this file?\n\n${label}\n${f.uid}\n\nThis action cannot be undone.`);
+    const ok = window.confirm(
+      `Delete this file?\n\n${label}\n${f.uid}\n\nThis action cannot be undone.`,
+    );
     if (!ok) {
       return;
     }
@@ -399,7 +457,36 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
     setActiveError(null);
     setLinksData(null);
     setLinksError(null);
+    setDetailIsRenaming(false);
+    setDetailRenameText("");
   };
+
+  const cancelInlineRename = useCallback(() => {
+    setRenamingUid(null);
+    setRenameText("");
+  }, []);
+
+  const cancelDetailRename = useCallback(() => {
+    setDetailIsRenaming(false);
+    setDetailRenameText("");
+  }, []);
+
+  const requestRenameConfirmIfNeeded = useCallback(
+    async (params: { previous: string; next: string }): Promise<boolean> => {
+      const prevExt = getExtLower(params.previous);
+      const nextExt = getExtLower(params.next);
+      if (!prevExt || !nextExt || prevExt === nextExt) {
+        return true;
+      }
+      if (typeof window === "undefined") {
+        return true;
+      }
+      return window.confirm(
+        `You changed the filename extension from .${prevExt} to .${nextExt}.\n\nChanging extensions can be misleading and may cause the file to open incorrectly.\n\nContinue?`,
+      );
+    },
+    [],
+  );
 
   const loadDetail = useCallback(async () => {
     if (!activeUid) {
@@ -416,6 +503,9 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
       const f = await api.getFile(activeUid);
       setActiveFile(f);
 
+      // Keep detail rename draft in sync with the currently loaded file.
+      setDetailRenameText(String(f.original_filename || "").trim());
+
       setActiveUrl(
         api.getContentUrl({
           fileUid: activeUid,
@@ -430,6 +520,90 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
     }
   }, [activeUid, api]);
 
+  const submitRename = useCallback(
+    async (params: {
+      fileUid: string;
+      previousName: string;
+      nextName: string;
+      source: "list" | "detail";
+    }) => {
+      if (renameSubmittingUid) {
+        return;
+      }
+
+      const next = String(params.nextName || "").trim();
+      if (!next) {
+        if (params.source === "detail") {
+          setActiveError("Filename is required");
+        } else {
+          window.alert("Filename is required");
+        }
+        return;
+      }
+
+      const ok = await requestRenameConfirmIfNeeded({
+        previous: params.previousName,
+        next,
+      });
+      if (!ok) {
+        return;
+      }
+
+      try {
+        setRenameSubmittingUid(params.fileUid);
+
+        const updated = await api.renameFile({
+          fileUid: params.fileUid,
+          originalFilename: next,
+        });
+
+        if (params.source === "detail") {
+          setActiveFile((prev) => {
+            if (!prev) {
+              return prev;
+            }
+            return { ...prev, ...updated };
+          });
+          setDetailIsRenaming(false);
+          setDetailRenameText("");
+          await reload();
+          await loadDetail();
+        } else {
+          cancelInlineRename();
+          await reload();
+          if (activeUid && activeUid === params.fileUid) {
+            await loadDetail();
+          }
+        }
+
+        setRenameSuccessMessage(`Renamed to \"${next}\"`);
+      } catch (e: any) {
+        if (params.source === "detail") {
+          setActiveError(e?.message || "Rename failed");
+        } else {
+          window.alert(`Rename failed: ${e?.message || e}`);
+        }
+      } finally {
+        setRenameSubmittingUid((current) => {
+          if (current === params.fileUid) {
+            return null;
+          }
+
+          return current;
+        });
+      }
+    },
+    [
+      api,
+      reload,
+      loadDetail,
+      activeUid,
+      renameSubmittingUid,
+      requestRenameConfirmIfNeeded,
+      cancelInlineRename,
+    ],
+  );
+
   useEffect(() => {
     void loadDetail();
   }, [loadDetail]);
@@ -442,6 +616,14 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
     setTagsText(formatTagsCsv(activeFile.tags));
   }, [activeFile?.uid]);
 
+  useEffect(() => {
+    if (!activeUid) {
+      return;
+    }
+    // Changing active file cancels any in-progress rename.
+    setDetailIsRenaming(false);
+  }, [activeUid]);
+
   const loadLinks = useCallback(async () => {
     if (!activeUid) {
       return;
@@ -450,7 +632,11 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
     setLinksLoading(true);
     setLinksError(null);
     try {
-      const data = await api.listLinks({ fileUid: activeUid, limit: 100, offset: 0 });
+      const data = await api.listLinks({
+        fileUid: activeUid,
+        limit: 100,
+        offset: 0,
+      });
       setLinksData({ items: data.items, totalCount: data.totalCount });
     } catch (e: any) {
       setLinksError(e?.message || "Failed to load links");
@@ -496,7 +682,10 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
     if (!uids.length) {
       return;
     }
-    const ok = typeof window !== "undefined" ? window.confirm(`Archive ${uids.length} file(s)?`) : true;
+    const ok =
+      typeof window !== "undefined"
+        ? window.confirm(`Archive ${uids.length} file(s)?`)
+        : true;
     if (!ok) {
       return;
     }
@@ -513,7 +702,10 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
     if (!uids.length) {
       return;
     }
-    const ok = typeof window !== "undefined" ? window.confirm(`Restore ${uids.length} file(s)?`) : true;
+    const ok =
+      typeof window !== "undefined"
+        ? window.confirm(`Restore ${uids.length} file(s)?`)
+        : true;
     if (!ok) {
       return;
     }
@@ -530,11 +722,12 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
     if (!uids.length) {
       return;
     }
-    const ok = typeof window !== "undefined"
-      ? window.confirm(
-          `Hard-delete ${uids.length} file(s)?\n\nIf a file is linked, the server may archive it instead unless force-delete is allowed.`,
-        )
-      : true;
+    const ok =
+      typeof window !== "undefined"
+        ? window.confirm(
+            `Hard-delete ${uids.length} file(s)?\n\nIf a file is linked, the server may archive it instead unless force-delete is allowed.`,
+          )
+        : true;
     if (!ok) {
       return;
     }
@@ -552,13 +745,17 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
       return;
     }
 
-    const toBucketRaw = typeof window !== "undefined" ? window.prompt("Move to bucket (optional):", "") : "";
+    const toBucketRaw =
+      typeof window !== "undefined"
+        ? window.prompt("Move to bucket (optional):", "")
+        : "";
     if (toBucketRaw === null) {
       return;
     }
-    const toFolderRaw = typeof window !== "undefined"
-      ? window.prompt("Move to folder path / prefix (optional):", "")
-      : "";
+    const toFolderRaw =
+      typeof window !== "undefined"
+        ? window.prompt("Move to folder path / prefix (optional):", "")
+        : "";
     if (toFolderRaw === null) {
       return;
     }
@@ -566,11 +763,12 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
     const toBucket = safeTrim(toBucketRaw) || undefined;
     const toFolderPath = safeTrim(toFolderRaw) || undefined;
 
-    const ok = typeof window !== "undefined"
-      ? window.confirm(
-          `Move ${uids.length} file(s)?\n\nBucket: ${toBucket || "(unchanged)"}\nFolder: ${toFolderPath || "(unchanged)"}`,
-        )
-      : true;
+    const ok =
+      typeof window !== "undefined"
+        ? window.confirm(
+            `Move ${uids.length} file(s)?\n\nBucket: ${toBucket || "(unchanged)"}\nFolder: ${toFolderPath || "(unchanged)"}`,
+          )
+        : true;
     if (!ok) {
       return;
     }
@@ -588,16 +786,18 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
       return;
     }
 
-    const addRaw = typeof window !== "undefined"
-      ? window.prompt("Tags to add (comma-separated):", "")
-      : "";
+    const addRaw =
+      typeof window !== "undefined"
+        ? window.prompt("Tags to add (comma-separated):", "")
+        : "";
     if (addRaw === null) {
       return;
     }
 
-    const removeRaw = typeof window !== "undefined"
-      ? window.prompt("Tags to remove (comma-separated):", "")
-      : "";
+    const removeRaw =
+      typeof window !== "undefined"
+        ? window.prompt("Tags to remove (comma-separated):", "")
+        : "";
     if (removeRaw === null) {
       return;
     }
@@ -609,11 +809,12 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
       return;
     }
 
-    const ok = typeof window !== "undefined"
-      ? window.confirm(
-          `Update tags on ${uids.length} file(s)?\n\nAdd: ${addTags.join(", ") || "(none)"}\nRemove: ${removeTags.join(", ") || "(none)"}`,
-        )
-      : true;
+    const ok =
+      typeof window !== "undefined"
+        ? window.confirm(
+            `Update tags on ${uids.length} file(s)?\n\nAdd: ${addTags.join(", ") || "(none)"}\nRemove: ${removeTags.join(", ") || "(none)"}`,
+          )
+        : true;
     if (!ok) {
       return;
     }
@@ -626,7 +827,9 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
 
       const next = new Set<string>();
       for (const t of existing) {
-        const normalized = String(t || "").trim().toLowerCase();
+        const normalized = String(t || "")
+          .trim()
+          .toLowerCase();
         if (!normalized) {
           continue;
         }
@@ -642,26 +845,35 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
       }
 
       // eslint-disable-next-line no-await-in-loop
-      await api.patchFile({ fileUid: uid, patch: { tags: Array.from(next).slice(0, 20) } });
+      await api.patchFile({
+        fileUid: uid,
+        patch: { tags: Array.from(next).slice(0, 20) },
+      });
     }
 
     await reload();
     setSelectedUids(new Set());
   };
 
-  const ensureThumbUrl = useCallback(async (f: FmFileRow) => {
-    if (!isImageMime(f.mime_type)) {
-      return;
-    }
+  const ensureThumbUrl = useCallback(
+    async (f: FmFileRow) => {
+      if (!isImageMime(f.mime_type)) {
+        return;
+      }
 
-    const cache = thumbUrlCacheRef.current;
-    if (cache.has(f.uid)) {
-      return;
-    }
+      const cache = thumbUrlCacheRef.current;
+      if (cache.has(f.uid)) {
+        return;
+      }
 
-    cache.set(f.uid, api.getContentUrl({ fileUid: f.uid, variantKind: "thumb" }));
-    setThumbTick((x) => x + 1);
-  }, [api]);
+      cache.set(
+        f.uid,
+        api.getContentUrl({ fileUid: f.uid, variantKind: "thumb" }),
+      );
+      setThumbTick((x) => x + 1);
+    },
+    [api],
+  );
 
   useEffect(() => {
     if (previewMode !== "thumbnails") {
@@ -787,13 +999,23 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
 
         const startPct =
           PROGRESS.variantsUpload.start +
-          Math.round((i / n) * (PROGRESS.variantsUpload.end - PROGRESS.variantsUpload.start));
+          Math.round(
+            (i / n) *
+              (PROGRESS.variantsUpload.end - PROGRESS.variantsUpload.start),
+          );
         const endPct =
           PROGRESS.variantsUpload.start +
-          Math.round(((i + 1) / n) * (PROGRESS.variantsUpload.end - PROGRESS.variantsUpload.start));
+          Math.round(
+            ((i + 1) / n) *
+              (PROGRESS.variantsUpload.end - PROGRESS.variantsUpload.start),
+          );
         input.setProgress(startPct);
 
-        if (init.mode === "direct" && init.presignedPut && !input.wantsProxied) {
+        if (
+          init.mode === "direct" &&
+          init.presignedPut &&
+          !input.wantsProxied
+        ) {
           await uploadWithXhr({
             method: "PUT",
             url: init.presignedPut.url,
@@ -805,7 +1027,10 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
             withCredentials: false,
           });
 
-          await api.variantUploadFinalize({ variantUid: init.variantUid, object: init.object });
+          await api.variantUploadFinalize({
+            variantUid: init.variantUid,
+            object: init.object,
+          });
           input.setProgress(endPct);
           continue;
         }
@@ -840,7 +1065,11 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
 
       setProgress(PROGRESS.init.end);
 
-      setItem({ fileUid: init.fileUid, status: "uploading", progressPct: PROGRESS.upload.start });
+      setItem({
+        fileUid: init.fileUid,
+        status: "uploading",
+        progressPct: PROGRESS.upload.start,
+      });
 
       const wantsProxied = item.modePreference === "proxied";
       if (init.mode === "direct" && init.presignedPut && !wantsProxied) {
@@ -849,7 +1078,10 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
           url: init.presignedPut.url,
           headers: init.presignedPut.headers,
           body: item.file,
-          onProgress: (pct) => setProgress(scalePct(pct, PROGRESS.upload.start, PROGRESS.upload.end)),
+          onProgress: (pct) =>
+            setProgress(
+              scalePct(pct, PROGRESS.upload.start, PROGRESS.upload.end),
+            ),
           withCredentials: false,
         });
 
@@ -857,7 +1089,10 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
 
         setItem({ status: "finalizing" });
         setProgress(PROGRESS.finalize.start);
-        const finalized = await api.uploadFinalize({ fileUid: init.fileUid, object: init.object });
+        const finalized = await api.uploadFinalize({
+          fileUid: init.fileUid,
+          object: init.object,
+        });
         setProgress(PROGRESS.finalize.end);
 
         try {
@@ -868,7 +1103,9 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
             setProgress: (pct) => setProgress(pct),
           });
         } catch (e: any) {
-          setItem({ error: `Uploaded, but variants failed: ${e?.message || "unknown error"}` });
+          setItem({
+            error: `Uploaded, but variants failed: ${e?.message || "unknown error"}`,
+          });
         }
 
         setItem({ status: "done" });
@@ -886,9 +1123,14 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
       await uploadWithXhr({
         method: "POST",
         url: proxyUrl,
-        headers: item.file.type ? { "Content-Type": item.file.type } : undefined,
+        headers: item.file.type
+          ? { "Content-Type": item.file.type }
+          : undefined,
         body: item.file,
-        onProgress: (pct) => setProgress(scalePct(pct, PROGRESS.upload.start, PROGRESS.upload.end)),
+        onProgress: (pct) =>
+          setProgress(
+            scalePct(pct, PROGRESS.upload.start, PROGRESS.upload.end),
+          ),
         withCredentials: true,
       });
 
@@ -905,7 +1147,9 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
           setProgress: (pct) => setProgress(pct),
         });
       } catch (e: any) {
-        setItem({ error: `Uploaded, but variants failed: ${e?.message || "unknown error"}` });
+        setItem({
+          error: `Uploaded, but variants failed: ${e?.message || "unknown error"}`,
+        });
       }
 
       setItem({ status: "done" });
@@ -929,7 +1173,13 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
   return (
     <Box>
       {/* Toolbar */}
-      <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center" useFlexGap>
+      <Stack
+        direction="row"
+        spacing={1}
+        flexWrap="wrap"
+        alignItems="center"
+        useFlexGap
+      >
         <TextField
           size="small"
           placeholder="Search files…"
@@ -944,7 +1194,9 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
             labelId="fm-visibility-label"
             value={publicFilter}
             label="Visibility"
-            onChange={(e: SelectChangeEvent) => setPublicFilter(e.target.value as PublicFilter)}
+            onChange={(e: SelectChangeEvent) =>
+              setPublicFilter(e.target.value as PublicFilter)
+            }
           >
             <MenuItem value="all">All</MenuItem>
             <MenuItem value="public">Public</MenuItem>
@@ -969,7 +1221,9 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
             labelId="fm-sortby-label"
             value={sortBy}
             label="Sort by"
-            onChange={(e: SelectChangeEvent) => setSortBy(e.target.value as FmFilesOrderBy)}
+            onChange={(e: SelectChangeEvent) =>
+              setSortBy(e.target.value as FmFilesOrderBy)
+            }
           >
             <MenuItem value="created_at">Created</MenuItem>
             <MenuItem value="original_filename">Filename</MenuItem>
@@ -983,7 +1237,9 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
             labelId="fm-sortorder-label"
             value={sortOrder}
             label="Order"
-            onChange={(e: SelectChangeEvent) => setSortOrder(e.target.value as "asc" | "desc")}
+            onChange={(e: SelectChangeEvent) =>
+              setSortOrder(e.target.value as "asc" | "desc")
+            }
           >
             <MenuItem value="desc">Desc</MenuItem>
             <MenuItem value="asc">Asc</MenuItem>
@@ -1018,7 +1274,11 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
           <ToggleButton value="icons">Icons</ToggleButton>
         </ToggleButtonGroup>
 
-        <Button variant="outlined" onClick={() => void reload()} disabled={isLoading}>
+        <Button
+          variant="outlined"
+          onClick={() => void reload()}
+          disabled={isLoading}
+        >
           Refresh
         </Button>
 
@@ -1031,24 +1291,56 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
 
       {/* Bulk actions bar */}
       {enableBulkActions && selectedUids.size > 0 && (
-        <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center" useFlexGap sx={{ mt: 1.5 }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          flexWrap="wrap"
+          alignItems="center"
+          useFlexGap
+          sx={{ mt: 1.5 }}
+        >
           <Chip label={`${selectedUids.size} selected`} size="small" />
-          <Button size="small" variant="outlined" onClick={() => void bulkArchive()}>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => void bulkArchive()}
+          >
             Archive
           </Button>
-          <Button size="small" variant="outlined" onClick={() => void bulkRestore()}>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => void bulkRestore()}
+          >
             Restore
           </Button>
-          <Button size="small" variant="outlined" onClick={() => void bulkMove()}>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => void bulkMove()}
+          >
             Move
           </Button>
-          <Button size="small" variant="outlined" onClick={() => void bulkTags()}>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => void bulkTags()}
+          >
             Tags
           </Button>
-          <Button size="small" variant="outlined" color="error" onClick={() => void bulkDelete()}>
+          <Button
+            size="small"
+            variant="outlined"
+            color="error"
+            onClick={() => void bulkDelete()}
+          >
             Delete
           </Button>
-          <Button size="small" variant="text" onClick={() => setSelectedUids(new Set())}>
+          <Button
+            size="small"
+            variant="text"
+            onClick={() => setSelectedUids(new Set())}
+          >
             Clear
           </Button>
         </Stack>
@@ -1077,8 +1369,13 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                   <TableCell padding="checkbox">
                     <Checkbox
                       size="small"
-                      checked={items.length > 0 && selectedUids.size === items.length}
-                      indeterminate={selectedUids.size > 0 && selectedUids.size < items.length}
+                      checked={
+                        items.length > 0 && selectedUids.size === items.length
+                      }
+                      indeterminate={
+                        selectedUids.size > 0 &&
+                        selectedUids.size < items.length
+                      }
                       onChange={(e) => setAllSelected(e.target.checked)}
                     />
                   </TableCell>
@@ -1088,15 +1385,24 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                 <TableCell align="right" sx={{ width: 110 }}>
                   Size
                 </TableCell>
-                <TableCell sx={{ width: props.onSelect ? 180 : 220 }}>Actions</TableCell>
+                <TableCell sx={{ width: props.onSelect ? 180 : 220 }}>
+                  Actions
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {items.map((f) => {
-                const isExternallySelected = Boolean(selectedUid && f.uid === selectedUid);
+                const isExternallySelected = Boolean(
+                  selectedUid && f.uid === selectedUid,
+                );
                 const isMultiSelected = selectedUids.has(f.uid);
                 const thumbUrl = thumbUrlCacheRef.current.get(f.uid) || null;
-                const showThumb = previewMode === "thumbnails" && isImageMime(f.mime_type) && Boolean(thumbUrl);
+                const showThumb =
+                  previewMode === "thumbnails" &&
+                  isImageMime(f.mime_type) &&
+                  Boolean(thumbUrl);
+                const isRenaming = renamingUid === f.uid;
+                const isRenameSubmitting = renameSubmittingUid === f.uid;
 
                 return (
                   <TableRow
@@ -1107,12 +1413,19 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                     onClick={() => openDetail(f.uid)}
                   >
                     {enableBulkActions && (
-                      <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
-                        <Checkbox
-                          size="small"
-                          checked={isMultiSelected}
-                          onChange={() => toggleSelected(f.uid)}
-                        />
+                      <TableCell
+                        padding="checkbox"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {isRenameSubmitting ? (
+                          <CircularProgress size={16} thickness={5} />
+                        ) : (
+                          <Checkbox
+                            size="small"
+                            checked={isMultiSelected}
+                            onChange={() => toggleSelected(f.uid)}
+                          />
+                        )}
                       </TableCell>
                     )}
                     <TableCell>
@@ -1137,24 +1450,161 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                               component="img"
                               src={thumbUrl || ""}
                               alt=""
-                              sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                              sx={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                              }}
                             />
                           ) : (
-                            <Typography variant="caption" fontWeight={700} color="text.secondary">
+                            <Typography
+                              variant="caption"
+                              fontWeight={700}
+                              color="text.secondary"
+                            >
                               {guessIconLabel(f)}
                             </Typography>
                           )}
                         </Box>
                         <Box sx={{ minWidth: 0 }}>
-                          <Typography fontWeight={700} noWrap title={getFileLabel(f)}>
-                            {getFileLabel(f)}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" noWrap sx={{ display: "block" }}>
+                          <Stack
+                            direction="row"
+                            spacing={0.5}
+                            alignItems="center"
+                            sx={{ minWidth: 0 }}
+                          >
+                            {!isRenaming && (
+                              <>
+                                <Typography
+                                  fontWeight={700}
+                                  noWrap
+                                  title={getFileLabel(f)}
+                                  sx={{ minWidth: 0 }}
+                                >
+                                  {getFileLabel(f)}
+                                </Typography>
+                                {isRenameSubmitting ? (
+                                  <Tooltip title="Renaming...">
+                                    <CircularProgress size={16} thickness={5} />
+                                  </Tooltip>
+                                ) : (
+                                  <Tooltip title="Rename">
+                                    <IconButton
+                                      size="small"
+                                      disabled={Boolean(renameSubmittingUid)}
+                                      onClick={(e) => {
+                                        stop(e);
+                                        setRenamingUid(f.uid);
+                                        setRenameText(getFileLabel(f));
+                                      }}
+                                    >
+                                      <EditOutlinedIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                )}
+                              </>
+                            )}
+                            {isRenaming && (
+                              <>
+                                <TextField
+                                  size="small"
+                                  multiline
+                                  maxRows={3}
+                                  value={renameText}
+                                  disabled={isRenameSubmitting}
+                                  autoFocus
+                                  onClick={(e) => stop(e)}
+                                  onChange={(e) =>
+                                    setRenameText(e.target.value)
+                                  }
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Escape") {
+                                      if (isRenameSubmitting) {
+                                        return;
+                                      }
+                                      stop(e);
+                                      cancelInlineRename();
+                                      return;
+                                    }
+                                    if (e.key === "Enter") {
+                                      if (isRenameSubmitting) {
+                                        return;
+                                      }
+                                      stop(e);
+                                      void submitRename({
+                                        fileUid: f.uid,
+                                        previousName: String(
+                                          f.original_filename || "",
+                                        ).trim(),
+                                        nextName: renameText,
+                                        source: "list",
+                                      });
+                                    }
+                                  }}
+                                  sx={{
+                                    "& .MuiInputBase-root": {
+                                      fontSize: 14,
+                                    },
+                                    minWidth: 200,
+                                  }}
+                                />
+                                <Tooltip title="Save">
+                                  <IconButton
+                                    size="small"
+                                    disabled={isRenameSubmitting}
+                                    onClick={(e) => {
+                                      stop(e);
+                                      void submitRename({
+                                        fileUid: f.uid,
+                                        previousName: String(
+                                          f.original_filename || "",
+                                        ).trim(),
+                                        nextName: renameText,
+                                        source: "list",
+                                      });
+                                    }}
+                                  >
+                                    {isRenameSubmitting ? (
+                                      <CircularProgress
+                                        size={16}
+                                        thickness={5}
+                                      />
+                                    ) : (
+                                      <CheckOutlinedIcon fontSize="small" />
+                                    )}
+                                  </IconButton>
+                                </Tooltip>
+                              </>
+                            )}
+                          </Stack>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            noWrap
+                            sx={{ display: "block" }}
+                          >
                             {f.uid}
                           </Typography>
-                          <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ mt: 0.5 }}>
-                            {f.is_public && <Chip label="Public" size="small" variant="outlined" />}
-                            {f.archived_at && <Chip label="Archived" size="small" variant="outlined" />}
+                          <Stack
+                            direction="row"
+                            spacing={0.5}
+                            flexWrap="wrap"
+                            sx={{ mt: 0.5 }}
+                          >
+                            {f.is_public && (
+                              <Chip
+                                label="Public"
+                                size="small"
+                                variant="outlined"
+                              />
+                            )}
+                            {f.archived_at && (
+                              <Chip
+                                label="Archived"
+                                size="small"
+                                variant="outlined"
+                              />
+                            )}
                           </Stack>
                         </Box>
                       </Stack>
@@ -1164,18 +1614,33 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                         variant="body2"
                         noWrap
                         title={f.mime_type}
-                        sx={{ display: "block", overflow: "hidden", textOverflow: "ellipsis" }}
+                        sx={{
+                          display: "block",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
                       >
                         {f.mime_type}
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
-                      <Typography variant="body2">{formatBytes(f.byte_size)}</Typography>
+                      <Typography variant="body2">
+                        {formatBytes(f.byte_size)}
+                      </Typography>
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
+                      <Stack
+                        direction="row"
+                        spacing={0.5}
+                        alignItems="center"
+                        flexWrap="wrap"
+                      >
                         {props.onSelect && (
-                          <Button size="small" variant="contained" onClick={() => props.onSelect?.(f)}>
+                          <Button
+                            size="small"
+                            variant="contained"
+                            onClick={() => props.onSelect?.(f)}
+                          >
                             Select
                           </Button>
                         )}
@@ -1186,7 +1651,10 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                           iconFontSize="small"
                         />
                         <Tooltip title="Details">
-                          <IconButton size="small" onClick={() => openDetail(f.uid)}>
+                          <IconButton
+                            size="small"
+                            onClick={() => openDetail(f.uid)}
+                          >
                             <InfoOutlinedIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -1207,7 +1675,10 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
               {!isLoading && items.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={enableBulkActions ? 5 : 4}>
-                    <Typography color="text.secondary" sx={{ py: 2, textAlign: "center" }}>
+                    <Typography
+                      color="text.secondary"
+                      sx={{ py: 2, textAlign: "center" }}
+                    >
                       No files found.
                     </Typography>
                   </TableCell>
@@ -1231,7 +1702,10 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
           {items.map((f) => {
             const isMultiSelected = selectedUids.has(f.uid);
             const thumbUrl = thumbUrlCacheRef.current.get(f.uid) || null;
-            const showThumb = previewMode === "thumbnails" && isImageMime(f.mime_type) && Boolean(thumbUrl);
+            const showThumb =
+              previewMode === "thumbnails" &&
+              isImageMime(f.mime_type) &&
+              Boolean(thumbUrl);
 
             return (
               <Paper
@@ -1243,7 +1717,9 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                   display: "flex",
                   flexDirection: "column",
                   gap: 1,
-                  outline: isMultiSelected ? `2px solid ${theme.palette.primary.main}` : "none",
+                  outline: isMultiSelected
+                    ? `2px solid ${theme.palette.primary.main}`
+                    : "none",
                   "&:hover": { bgcolor: "action.hover" },
                 }}
                 onClick={() => openDetail(f.uid)}
@@ -1274,7 +1750,11 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                       component="img"
                       src={thumbUrl || ""}
                       alt=""
-                      sx={{ width: "100%", height: "100%", objectFit: "contain" }}
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "contain",
+                      }}
                     />
                   ) : (
                     <Box textAlign="center">
@@ -1282,7 +1762,11 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                         {guessIconLabel(f)}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {isImageMime(f.mime_type) ? "Image" : isVideoMime(f.mime_type) ? "Video" : "File"}
+                        {isImageMime(f.mime_type)
+                          ? "Image"
+                          : isVideoMime(f.mime_type)
+                            ? "Video"
+                            : "File"}
                       </Typography>
                     </Box>
                   )}
@@ -1292,9 +1776,17 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                   {getFileLabel(f)}
                 </Typography>
                 <Stack direction="row" spacing={0.5} flexWrap="wrap">
-                  {f.is_public && <Chip label="Public" size="small" variant="outlined" />}
-                  {f.archived_at && <Chip label="Archived" size="small" variant="outlined" />}
-                  <Chip label={formatBytes(f.byte_size)} size="small" variant="outlined" />
+                  {f.is_public && (
+                    <Chip label="Public" size="small" variant="outlined" />
+                  )}
+                  {f.archived_at && (
+                    <Chip label="Archived" size="small" variant="outlined" />
+                  )}
+                  <Chip
+                    label={formatBytes(f.byte_size)}
+                    size="small"
+                    variant="outlined"
+                  />
                 </Stack>
               </Paper>
             );
@@ -1340,9 +1832,105 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
         PaperProps={{ sx: { width: "min(520px, 100vw)", p: 2, zIndex: 1400 } }}
       >
         <Stack direction="row" alignItems="center" spacing={1}>
-          <Typography fontWeight={800} noWrap title={activeFile ? getFileLabel(activeFile) : activeUid || ""} sx={{ flex: 1, minWidth: 0 }}>
-            {activeFile ? getFileLabel(activeFile) : activeUid}
-          </Typography>
+          {!detailIsRenaming && (
+            <>
+              <Typography
+                fontWeight={800}
+                noWrap
+                title={activeFile ? getFileLabel(activeFile) : activeUid || ""}
+                sx={{ flex: 1, minWidth: 0 }}
+              >
+                {activeFile ? getFileLabel(activeFile) : activeUid}
+              </Typography>
+              {activeFile &&
+                (renameSubmittingUid === activeFile.uid ? (
+                  <Tooltip title="Renaming...">
+                    <CircularProgress size={16} thickness={5} />
+                  </Tooltip>
+                ) : (
+                  <Tooltip title="Rename">
+                    <IconButton
+                      size="small"
+                      disabled={Boolean(renameSubmittingUid)}
+                      onClick={(e) => {
+                        stop(e);
+                        setActiveError(null);
+                        setDetailIsRenaming(true);
+                        setDetailRenameText(getFileLabel(activeFile));
+                      }}
+                    >
+                      <EditOutlinedIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                ))}
+            </>
+          )}
+          {detailIsRenaming && activeFile && (
+            <Stack
+              direction="row"
+              spacing={0.5}
+              alignItems="center"
+              sx={{ flex: 1, minWidth: 0 }}
+            >
+              <TextField
+                size="small"
+                value={detailRenameText}
+                disabled={renameSubmittingUid === activeFile.uid}
+                autoFocus
+                fullWidth
+                onClick={(e) => stop(e)}
+                onChange={(e) => setDetailRenameText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    if (renameSubmittingUid === activeFile.uid) {
+                      return;
+                    }
+                    stop(e);
+                    setDetailIsRenaming(false);
+                    setDetailRenameText(getFileLabel(activeFile));
+                    return;
+                  }
+                  if (e.key === "Enter") {
+                    if (renameSubmittingUid === activeFile.uid) {
+                      return;
+                    }
+                    stop(e);
+                    void submitRename({
+                      fileUid: activeFile.uid,
+                      previousName: String(
+                        activeFile.original_filename || "",
+                      ).trim(),
+                      nextName: detailRenameText,
+                      source: "detail",
+                    });
+                  }
+                }}
+              />
+              <Tooltip title="Save">
+                <IconButton
+                  size="small"
+                  disabled={renameSubmittingUid === activeFile.uid}
+                  onClick={(e) => {
+                    stop(e);
+                    void submitRename({
+                      fileUid: activeFile.uid,
+                      previousName: String(
+                        activeFile.original_filename || "",
+                      ).trim(),
+                      nextName: detailRenameText,
+                      source: "detail",
+                    });
+                  }}
+                >
+                  {renameSubmittingUid === activeFile.uid ? (
+                    <CircularProgress size={16} thickness={5} />
+                  ) : (
+                    <CheckOutlinedIcon fontSize="small" />
+                  )}
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          )}
           <Button variant="outlined" onClick={closeDetail}>
             Close
           </Button>
@@ -1362,9 +1950,13 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
               <Typography variant="caption" color="text.secondary">
                 UID
               </Typography>
-              <Stack direction="row" spacing={1} alignItems="center">
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ mt: 0.25 }}
+              >
                 <Typography
-                  component="code"
                   variant="body2"
                   sx={{ wordBreak: "break-all", fontFamily: "monospace" }}
                 >
@@ -1412,9 +2004,12 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                     Your browser cannot play this video.
                   </Box>
                 )}
-                {(!activeUrl || (!isImageMime(activeFile.mime_type) && !isSupportedVideoMime(activeFile.mime_type))) && (
+                {(!activeUrl ||
+                  (!isImageMime(activeFile.mime_type) &&
+                    !isSupportedVideoMime(activeFile.mime_type))) && (
                   <Typography color="text.secondary" variant="body2">
-                    No inline preview available for {activeFile.mime_type || "this file"}.
+                    No inline preview available for{" "}
+                    {activeFile.mime_type || "this file"}.
                   </Typography>
                 )}
               </Paper>
@@ -1430,13 +2025,18 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                   size="small"
                   variant="outlined"
                   component="a"
-                  href={api.getContentUrl({ fileUid: activeFile.uid, download: true })}
+                  href={api.getContentUrl({
+                    fileUid: activeFile.uid,
+                    download: true,
+                  })}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   Download
                 </Button>
-                {activeUrlKind && <Chip label={`URL: ${activeUrlKind}`} size="small" />}
+                {activeUrlKind && (
+                  <Chip label={`URL: ${activeUrlKind}`} size="small" />
+                )}
               </Stack>
             </Box>
 
@@ -1448,13 +2048,23 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                   size="small"
                   label="Title"
                   value={safeTrim((activeFile as any).title)}
-                  onChange={(e) => setActiveFile({ ...activeFile, title: e.target.value } as any)}
+                  onChange={(e) =>
+                    setActiveFile({
+                      ...activeFile,
+                      title: e.target.value,
+                    } as any)
+                  }
                 />
                 <TextField
                   size="small"
                   label="Alt text (images)"
                   value={safeTrim((activeFile as any).alt_text)}
-                  onChange={(e) => setActiveFile({ ...activeFile, alt_text: e.target.value } as any)}
+                  onChange={(e) =>
+                    setActiveFile({
+                      ...activeFile,
+                      alt_text: e.target.value,
+                    } as any)
+                  }
                 />
                 <TextField
                   size="small"
@@ -1466,17 +2076,28 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={activeIsLocalStorage ? true : Boolean((activeFile as any).is_public)}
+                      checked={
+                        activeIsLocalStorage
+                          ? true
+                          : Boolean((activeFile as any).is_public)
+                      }
                       disabled={activeIsLocalStorage}
                       onChange={(e) =>
-                        setActiveFile({ ...activeFile, is_public: e.target.checked } as any)
+                        setActiveFile({
+                          ...activeFile,
+                          is_public: e.target.checked,
+                        } as any)
                       }
                     />
                   }
                   label="Public"
                 />
                 {activeIsLocalStorage && (
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: -1 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mt: -1 }}
+                  >
                     Local files are always public.
                   </Typography>
                 )}
@@ -1500,8 +2121,9 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                           });
                           setActiveFile({ ...activeFile, ...updated });
                           await reload();
+                          await loadDetail();
                         } catch (e: any) {
-                          setActiveError(e?.message || "Update failed");
+                          setActiveError(e?.message || "Save failed");
                         }
                       })()
                     }
@@ -1552,15 +2174,19 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                   color="error"
                   onClick={() =>
                     void (async () => {
-                      const ok = typeof window !== "undefined"
-                        ? window.confirm(
-                            "Delete this file?\n\nIf it is linked, the server may archive it unless force-delete is allowed.",
-                          )
-                        : true;
+                      const ok =
+                        typeof window !== "undefined"
+                          ? window.confirm(
+                              "Delete this file?\n\nIf it is linked, the server may archive it unless force-delete is allowed.",
+                            )
+                          : true;
                       if (!ok) {
                         return;
                       }
-                      await api.deleteFile({ fileUid: activeFile.uid, force: true });
+                      await api.deleteFile({
+                        fileUid: activeFile.uid,
+                        force: true,
+                      });
                       await reload();
                       closeDetail();
                     })()
@@ -1577,7 +2203,11 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
               <MoveForm
                 fileUid={activeFile.uid}
                 onMove={async (toBucket, toFolderPath) => {
-                  await api.moveFile({ fileUid: activeFile.uid, toBucket, toFolderPath });
+                  await api.moveFile({
+                    fileUid: activeFile.uid,
+                    toBucket,
+                    toFolderPath,
+                  });
                   await reload();
                   await loadDetail();
                 }}
@@ -1588,7 +2218,11 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
             <Box>
               <Stack direction="row" alignItems="center" spacing={1}>
                 <Typography fontWeight={800}>Where used</Typography>
-                <Button size="small" sx={{ ml: "auto" }} onClick={() => void loadLinks()}>
+                <Button
+                  size="small"
+                  sx={{ ml: "auto" }}
+                  onClick={() => void loadLinks()}
+                >
                   Refresh
                 </Button>
               </Stack>
@@ -1601,7 +2235,11 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
               )}
 
               <CreateLinkForm
-                onCreate={async (linkedEntityType, linkedEntityUid, linkedField) => {
+                onCreate={async (
+                  linkedEntityType,
+                  linkedEntityUid,
+                  linkedField,
+                ) => {
                   await api.createLink({
                     fileUid: activeFile.uid,
                     linkedEntityType,
@@ -1612,7 +2250,11 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                 }}
               />
 
-              <TableContainer component={Paper} variant="outlined" sx={{ mt: 1.5 }}>
+              <TableContainer
+                component={Paper}
+                variant="outlined"
+                sx={{ mt: 1.5 }}
+              >
                 <Table size="small">
                   <TableHead>
                     <TableRow>
@@ -1627,7 +2269,10 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                       <TableRow key={String(l.id)}>
                         <TableCell>{l.linked_entity_type}</TableCell>
                         <TableCell>
-                          <Typography variant="body2" sx={{ fontFamily: "monospace" }}>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontFamily: "monospace" }}
+                          >
                             {l.linked_entity_uid}
                           </Typography>
                         </TableCell>
@@ -1640,7 +2285,9 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                               void (async () => {
                                 await api.deleteLink({
                                   fileUid: activeFile.uid,
-                                  linkedEntityType: String(l.linked_entity_type),
+                                  linkedEntityType: String(
+                                    l.linked_entity_type,
+                                  ),
                                   linkedEntityUid: String(l.linked_entity_uid),
                                   linkedField: String(l.linked_field || "body"),
                                 });
@@ -1671,7 +2318,12 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
       </Drawer>
 
       {/* Upload Dialog */}
-      <Dialog open={isUploadOpen} onClose={() => setIsUploadOpen(false)} fullWidth maxWidth="md">
+      <Dialog
+        open={isUploadOpen}
+        onClose={() => setIsUploadOpen(false)}
+        fullWidth
+        maxWidth="md"
+      >
         <DialogTitle>Upload</DialogTitle>
         <DialogContent dividers>
           <Paper
@@ -1756,7 +2408,8 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                     <TableCell>
                       <Typography fontWeight={700}>{u.file.name}</Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {formatBytes(u.file.size)} · {u.file.type || "application/octet-stream"}
+                        {formatBytes(u.file.size)} ·{" "}
+                        {u.file.type || "application/octet-stream"}
                       </Typography>
                       {u.error && (
                         <Alert
@@ -1775,7 +2428,12 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                             setUploadItems((prev) =>
                               prev.map((x) =>
                                 x.id === u.id
-                                  ? { ...x, visibility: e.target.value as "public" | "private" }
+                                  ? {
+                                      ...x,
+                                      visibility: e.target.value as
+                                        | "public"
+                                        | "private",
+                                    }
                                   : x,
                               ),
                             )
@@ -1794,7 +2452,12 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                             setUploadItems((prev) =>
                               prev.map((x) =>
                                 x.id === u.id
-                                  ? { ...x, modePreference: e.target.value as "auto" | "proxied" }
+                                  ? {
+                                      ...x,
+                                      modePreference: e.target.value as
+                                        | "auto"
+                                        | "proxied",
+                                    }
                                   : x,
                               ),
                             )
@@ -1806,12 +2469,23 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                       </FormControl>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2">{formatUploadStatus(u)}</Typography>
+                      <Typography variant="body2">
+                        {formatUploadStatus(u)}
+                      </Typography>
                       {u.progressPct !== null && (
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            mt: 0.5,
+                          }}
+                        >
                           {(() => {
-                            const hasWarningOrError = u.status === "error" || Boolean(u.error);
-                            const isCompleteClean = u.status === "done" && !hasWarningOrError;
+                            const hasWarningOrError =
+                              u.status === "error" || Boolean(u.error);
+                            const isCompleteClean =
+                              u.status === "done" && !hasWarningOrError;
 
                             return (
                               <LinearProgress
@@ -1829,7 +2503,9 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                               />
                             );
                           })()}
-                          <Typography variant="caption">{u.progressPct}%</Typography>
+                          <Typography variant="caption">
+                            {u.progressPct}%
+                          </Typography>
                         </Box>
                       )}
                     </TableCell>
@@ -1842,7 +2518,8 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                             u.status === "processing_variants" ||
                             u.status === "uploading_variants" ||
                             u.status === "init";
-                          const hasWarningOrError = u.status === "error" || Boolean(u.error);
+                          const hasWarningOrError =
+                            u.status === "error" || Boolean(u.error);
                           const label =
                             u.status === "error"
                               ? "Retry"
@@ -1857,7 +2534,10 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                               size="small"
                               variant="outlined"
                               onClick={() => void runUpload(u.id)}
-                              disabled={inFlight || (u.status === "done" && !hasWarningOrError)}
+                              disabled={
+                                inFlight ||
+                                (u.status === "done" && !hasWarningOrError)
+                              }
                             >
                               {label}
                             </Button>
@@ -1869,7 +2549,9 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                               size="small"
                               sx={{ color: "error.main" }}
                               onClick={() =>
-                                setUploadItems((prev) => prev.filter((x) => x.id !== u.id))
+                                setUploadItems((prev) =>
+                                  prev.filter((x) => x.id !== u.id),
+                                )
                               }
                               disabled={
                                 u.status === "uploading" ||
@@ -1904,6 +2586,23 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
           <Button onClick={() => setIsUploadOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={Boolean(renameSuccessMessage)}
+        autoHideDuration={2500}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        sx={{ zIndex: (muiTheme) => muiTheme.zIndex.snackbar + 2 }}
+        onClose={() => setRenameSuccessMessage(null)}
+      >
+        <Alert
+          onClose={() => setRenameSuccessMessage(null)}
+          severity="success"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {renameSuccessMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
@@ -1912,7 +2611,10 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
 
 const MoveForm: React.FC<{
   fileUid: string;
-  onMove: (toBucket: string | undefined, toFolderPath: string | undefined) => Promise<void>;
+  onMove: (
+    toBucket: string | undefined,
+    toFolderPath: string | undefined,
+  ) => Promise<void>;
 }> = ({ onMove }) => {
   const [toBucket, setToBucket] = useState("");
   const [toFolderPath, setToFolderPath] = useState("");
@@ -1948,7 +2650,10 @@ const MoveForm: React.FC<{
               setIsBusy(true);
               setError(null);
               try {
-                await onMove(safeTrim(toBucket) || undefined, safeTrim(toFolderPath) || undefined);
+                await onMove(
+                  safeTrim(toBucket) || undefined,
+                  safeTrim(toFolderPath) || undefined,
+                );
               } catch (e: any) {
                 setError(e?.message || "Move failed");
               } finally {
@@ -1965,7 +2670,11 @@ const MoveForm: React.FC<{
 };
 
 const CreateLinkForm: React.FC<{
-  onCreate: (linkedEntityType: string, linkedEntityUid: string, linkedField?: string) => Promise<void>;
+  onCreate: (
+    linkedEntityType: string,
+    linkedEntityUid: string,
+    linkedField?: string,
+  ) => Promise<void>;
 }> = ({ onCreate }) => {
   const [linkedEntityType, setLinkedEntityType] = useState("cms");
   const [linkedEntityUid, setLinkedEntityUid] = useState("");

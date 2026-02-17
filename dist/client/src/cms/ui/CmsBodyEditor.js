@@ -11,6 +11,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  */
 import React, { useMemo, useRef, useState, Suspense } from "react";
 import { Box, LinearProgress, Typography, useColorScheme } from "@mui/material";
+import { hasEmbeddedBase64Image, normalizeEmbeddedHtmlImages, } from "./normalizeEmbeddedHtmlImages.js";
 export const contentTypeToMime = (shorthand) => {
     switch (shorthand) {
         case "html":
@@ -42,6 +43,45 @@ export const mimeToContentType = (mime) => {
 // ─── Component ────────────────────────────────────────────────────────────
 const CmsBodyEditor = ({ contentType, value, onChange, height = 500, label, editor = "ckeditor", onPickAsset, onUploadImage, }) => {
     const [editorLoading, setEditorLoading] = useState(true);
+    const latestHtmlRef = useRef(value);
+    const htmlNormalizationRunRef = useRef(0);
+    React.useEffect(() => {
+        latestHtmlRef.current = value;
+    }, [value]);
+    const handleHtmlEditorChange = React.useCallback((nextValue) => {
+        latestHtmlRef.current = nextValue;
+        onChange(nextValue);
+        if (!onUploadImage) {
+            return;
+        }
+        if (!hasEmbeddedBase64Image(nextValue)) {
+            return;
+        }
+        const runId = htmlNormalizationRunRef.current + 1;
+        htmlNormalizationRunRef.current = runId;
+        void normalizeEmbeddedHtmlImages({
+            html: nextValue,
+            uploadImage: async (file, context) => {
+                return await onUploadImage(file, context);
+            },
+        })
+            .then((normalizedValue) => {
+            if (htmlNormalizationRunRef.current !== runId) {
+                return;
+            }
+            if (latestHtmlRef.current !== nextValue) {
+                return;
+            }
+            if (normalizedValue === nextValue) {
+                return;
+            }
+            latestHtmlRef.current = normalizedValue;
+            onChange(normalizedValue);
+        })
+            .catch((err) => {
+            console.error("CmsBodyEditor base64 image normalization failed", err);
+        });
+    }, [onChange, onUploadImage]);
     const containerSx = useMemo(() => ({
         minHeight: height,
         border: "1px solid",
@@ -50,7 +90,7 @@ const CmsBodyEditor = ({ contentType, value, onChange, height = 500, label, edit
         overflow: "hidden",
     }), [height]);
     if (contentType === "html") {
-        return (_jsxs(Box, { children: [label && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: { mb: 0.5 }, children: label })), _jsxs(Box, { sx: containerSx, children: [_jsx(Suspense, { fallback: _jsx(LinearProgress, {}), children: _jsx(HtmlEditor, { value: value, onChange: onChange, height: height, editor: editor, onPickAsset: onPickAsset, onUploadImage: onUploadImage, onReady: () => setEditorLoading(false) }) }), editorLoading && _jsx(LinearProgress, {})] })] }));
+        return (_jsxs(Box, { children: [label && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: { mb: 0.5 }, children: label })), _jsxs(Box, { sx: containerSx, children: [_jsx(Suspense, { fallback: _jsx(LinearProgress, {}), children: _jsx(HtmlEditor, { value: value, onChange: handleHtmlEditorChange, height: height, editor: editor, onPickAsset: onPickAsset, onUploadImage: onUploadImage, onReady: () => setEditorLoading(false) }) }), editorLoading && _jsx(LinearProgress, {})] })] }));
     }
     if (contentType === "markdown") {
         return (_jsxs(Box, { children: [label && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: { mb: 0.5 }, children: label })), _jsx(Box, { sx: containerSx, children: _jsx(Suspense, { fallback: _jsx(LinearProgress, {}), children: _jsx(MarkdownEditor, { value: value, onChange: onChange, onPickAsset: onPickAsset, onUploadImage: onUploadImage }) }) })] }));
@@ -63,6 +103,7 @@ const CmsBodyEditor = ({ contentType, value, onChange, height = 500, label, edit
                     fontSize: "0.875rem",
                     p: 2,
                     resize: "vertical",
+                    overflow: "auto",
                     background: "transparent",
                     color: "text.primary",
                 } })] }));
@@ -106,6 +147,7 @@ const HtmlEditor = ({ value, onChange, height, editor, onPickAsset, onUploadImag
                 fontSize: "0.875rem",
                 p: 2,
                 resize: "none",
+                overflow: "auto",
                 border: "none",
                 background: "transparent",
                 color: "text.primary",
@@ -147,7 +189,9 @@ const HtmlEditor = ({ value, onChange, height, editor, onPickAsset, onUploadImag
                     : undefined,
                 images_upload_handler: onUploadImage
                     ? async (blobInfo) => {
-                        const url = await onUploadImage(blobInfo.blob());
+                        const url = await onUploadImage(blobInfo.blob(), {
+                            source: "editor-upload",
+                        });
                         if (!url) {
                             throw new Error("Upload failed");
                         }
@@ -171,11 +215,16 @@ const HtmlEditor = ({ value, onChange, height, editor, onPickAsset, onUploadImag
             }
             : undefined, onUploadImage: onUploadImage
             ? async (request) => {
-                const blob = request?.blob || request;
-                const file = blob instanceof File
-                    ? blob
-                    : new File([blob], "image", { type: blob.type });
-                const url = await onUploadImage(file);
+                const file = request?.file instanceof File
+                    ? request.file
+                    : request instanceof File
+                        ? request
+                        : new File([request?.file || request], request?.filename || "image", {
+                            type: request?.mimeType || "application/octet-stream",
+                        });
+                const url = await onUploadImage(file, {
+                    source: "editor-upload",
+                });
                 if (!url) {
                     throw new Error("Upload failed");
                 }

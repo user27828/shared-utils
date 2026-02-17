@@ -34,6 +34,16 @@ export declare const FmUploadValidationResultSchema: z.ZodObject<{
 }, z.core.$strict>;
 export type FmUploadValidationResult = z.infer<typeof FmUploadValidationResultSchema>;
 /**
+ * Extract the lowercase file extension from a filename or path.
+ *
+ * Handles paths with directory separators by isolating the basename first.
+ * Returns an empty string if no extension is found.
+ *
+ * @param filename - The filename or path to extract the extension from.
+ * @returns The lowercase extension without the leading dot, or empty string.
+ */
+export declare const extractExtensionLower: (filename: string) => string;
+/**
  * Validate file upload inputs against the purpose-specific policy.
  *
  * Checks file size, extension, and MIME type against the policy defined

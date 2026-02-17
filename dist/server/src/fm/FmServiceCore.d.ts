@@ -303,6 +303,18 @@ export declare class FmServiceCore {
      */
     listLinksForFile(fileUid: string, params?: FmFileLinkListFilters): Promise<FmFileLinkListResult>;
     /**
+     * List all file-link rows for a given entity (reverse lookup).
+     * Requires the connector to implement {@link FmConnectorWithEntityLinks}.
+     * Returns an empty array if the connector does not support entity queries.
+     */
+    listLinksForEntity(linkedEntityType: string, linkedEntityUid: string): Promise<FmFileLinkRow[]>;
+    /**
+     * Delete all file-link rows for a given entity.
+     * Requires the connector to implement {@link FmConnectorWithEntityLinks}.
+     * No-op if the connector does not support entity queries.
+     */
+    deleteLinksForEntity(linkedEntityType: string, linkedEntityUid: string): Promise<void>;
+    /**
      * Patch file metadata (title, alt_text, tags, is_public).
      *
      * Business rules:
@@ -318,6 +330,19 @@ export declare class FmServiceCore {
             tags?: string[];
             is_public?: boolean;
         };
+    }): Promise<FmFileRow>;
+    /**
+     * Rename a file by updating `original_filename`.
+     *
+     * Notes:
+     * - This does NOT rename the underlying storage object key (objects are keyed by UID).
+     * - Download names and UI labels use `original_filename`.
+     * - Extension changes are validated against the purpose allowlist.
+     */
+    renameFile(input: {
+        fileUid: string;
+        originalFilename: string;
+        userUid?: string;
     }): Promise<FmFileRow>;
     /**
      * List all variants for a file.

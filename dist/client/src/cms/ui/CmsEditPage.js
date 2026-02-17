@@ -28,6 +28,7 @@ import { defaultToast } from "./CmsAdminUiConfig.js";
 import CmsConflictDialog from "./CmsConflictDialog.js";
 import CmsBodyEditor, { contentTypeToMime, mimeToContentType, } from "./CmsBodyEditor.js";
 import CmsHistoryDrawer from "./CmsHistoryDrawer.js";
+import { useFmApi } from "../../fm/FmClientProvider.js";
 // ─── Helpers ──────────────────────────────────────────────────────────────
 const safeJsonParse = (input) => {
     const trimmed = input.trim();
@@ -182,7 +183,18 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         }
         setEditEpoch(Date.now());
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [title, slug, content, tags, optionsJson, password, locale, postType, contentType, isLoading]);
+    }, [
+        title,
+        slug,
+        content,
+        tags,
+        optionsJson,
+        password,
+        locale,
+        postType,
+        contentType,
+        isLoading,
+    ]);
     // Reset to visual mode when content type changes
     useEffect(() => {
         setEditorMode("visual");
@@ -712,6 +724,60 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         setLoadedRevisionId(null);
         announce("Returned to current version");
     }, [announce]);
+    // ── Effective image upload handler ────────────────────────────────────
+    const contextFmApi = useFmApi();
+    const effectiveOnUploadImage = useCallback(async (file, context) => {
+        // Prefer explicit callback
+        if (config?.onUploadImage) {
+            return config.onUploadImage(file, context);
+        }
+        // Auto-upload via FM API (explicit config override → context → default)
+        const fmApi = config?.fmApi || contextFmApi;
+        // ── Build a meaningful filename for browser-pasted images ────────
+        // Browsers generate generic names like "image.png" / "image.jpeg" for
+        // clipboard pastes.  Replace with a CMS-contextual name so files are
+        // identifiable in the media library.
+        const isGenericPasteName = /^image\.[a-z]+$/i.test(file.name);
+        let uploadFile = file;
+        if (isGenericPasteName) {
+            // Normalize extension: prefer .jpg over .jpeg for consistency
+            const rawExt = file.name.replace(/^.*\./, "").toLowerCase();
+            const ext = rawExt === "jpeg" ? "jpg" : rawExt;
+            const rnd = Math.random().toString(36).slice(2, 8);
+            let prefix;
+            if (slug) {
+                // Use slug (truncated) as a human-readable prefix
+                prefix = slug.slice(0, 40);
+            }
+            else if (propUid) {
+                prefix = propUid;
+            }
+            else {
+                prefix = "img-paste";
+            }
+            const newName = `${prefix}-${rnd}.${ext}`;
+            uploadFile = new File([file], newName, { type: file.type });
+        }
+        // Pasted images → purpose "cms_b64" → stored in "cms-b64" bucket
+        // (separate from picker-uploaded "cms" bucket).
+        // Regular uploads use default purpose → "cms" bucket.
+        const init = await fmApi.uploadInit({
+            request: {
+                originalFilename: uploadFile.name,
+                mimeType: uploadFile.type || "application/octet-stream",
+                sizeBytes: uploadFile.size,
+                ...(isGenericPasteName ? { purpose: "cms_b64" } : {}),
+            },
+        });
+        await fmApi.uploadProxied({
+            fileUid: init.fileUid,
+            body: uploadFile,
+            contentType: uploadFile.type || "application/octet-stream",
+        });
+        return fmApi.getContentUrl({ fileUid: init.fileUid });
+    }, [config?.onUploadImage, config?.fmApi, contextFmApi, slug, propUid]);
+    // Upload is always available: explicit callback, explicit fmApi, or context/default FM client
+    const hasUploadHandler = true;
     // ── Media picker (promise-based) ──────────────────────────────────────
     const openMediaPicker = () => {
         return new Promise((resolve) => {
@@ -794,10 +860,12 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         return config.getPreviewUrl(slug, postType, locale);
     }, [canPreview, config, postType, locale, slug]);
     // ── Render ────────────────────────────────────────────────────────────
-    return (_jsxs(Container, { maxWidth: "xl", sx: { pt: 0, pb: 3 }, children: [_jsx(Box, { "aria-live": "polite", "aria-atomic": "true", sx: { position: "absolute", left: -9999 }, children: liveMessage }), _jsx(Box, { "aria-live": "assertive", "aria-atomic": "true", sx: { position: "absolute", left: -9999 }, children: liveErrorMessage }), _jsxs(Box, { sx: { display: "flex", position: "relative", minHeight: "calc(100vh - 64px)" }, children: [!isNew && (_jsx(CmsHistoryDrawer, { open: historyDrawerOpen, onClose: () => setHistoryDrawerOpen(false), history: history, loadedRevisionId: loadedRevisionId, isDirty: isDirty, isSaving: isSaving, includeSoftDeleted: includeSoftDeletedHistory, onIncludeSoftDeletedChange: setIncludeSoftDeletedHistory, onLoadRevision: handleLoadRevision, onRestoreRevision: handleRestoreRevision, onSoftDeleteRevision: handleSoftDeleteRevision, onHardDeleteRevision: handleHardDeleteRevision, onDismissRevision: handleDismissRevision, currentVersionNumber: row?.version_number, currentUpdatedAt: row?.updated_at })), _jsxs(Box, { sx: { flex: 1, minWidth: 0, ml: 1 }, children: [loadedRevisionId && (_jsxs(Alert, { severity: "info", sx: { mb: 2 }, action: _jsxs(Stack, { direction: "row", spacing: 1, children: [_jsx(Button, { size: "small", color: "inherit", onClick: handleDismissRevision, children: "Dismiss" }), _jsx(Button, { size: "small", variant: "outlined", color: "inherit", onClick: () => handleRestoreRevision(loadedRevisionId), disabled: isSaving, children: "Restore this revision" })] }), children: ["Previewing revision ", history.find((h) => h.id === loadedRevisionId)?.revision ??
-                                        loadedRevisionId, ". Changes have not been saved."] })), _jsxs(Stack, { direction: { xs: "column", lg: "row" }, spacing: 3, children: [_jsxs(Box, { sx: { flex: 1, minWidth: 0 }, children: [_jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { mb: 2 }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [_jsx(Tooltip, { title: "Back to list", children: _jsx(IconButton, { onClick: () => nav?.goToList?.(), children: _jsx(ArrowBackIcon, {}) }) }), _jsx(Typography, { variant: "h5", children: isNew ? "New CMS Item" : "Edit CMS Item" })] }), _jsxs(Stack, { direction: "row", spacing: 1, children: [!isNew && (_jsx(Tooltip, { title: historyDrawerOpen
-                                                                    ? "Close history"
-                                                                    : "Open history", children: _jsx(IconButton, { onClick: () => setHistoryDrawerOpen((o) => !o), color: historyDrawerOpen ? "primary" : "default", size: "small", children: _jsx(HistoryIcon, {}) }) })), canPreview && previewUrl && (_jsx(Button, { size: "small", href: previewUrl, target: "_blank", startIcon: _jsx(OpenInNewIcon, {}), children: "Preview" })), _jsx(Button, { variant: "contained", onClick: handleSave, disabled: isSaving || isLoading, children: isSaving ? "Saving..." : "Save" })] })] }), error && (_jsx(Alert, { ref: errorAlertRef, severity: "error", onClose: () => setError(null), sx: { mb: 2 }, tabIndex: -1, children: error })), _jsxs(Paper, { sx: { p: 2, mb: 2 }, children: [_jsx(TextField, { label: "Title", fullWidth: true, value: title, onChange: (e) => setTitle(e.target.value), onBlur: handleTitleBlur, sx: { mb: isSlugEditing ? 2 : "1px" } }), !isSlugEditing ? (_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, sx: {
+    return (_jsxs(Container, { maxWidth: "xl", sx: { pt: 0, pb: 3 }, children: [_jsx(Box, { "aria-live": "polite", "aria-atomic": "true", sx: { position: "absolute", left: -9999 }, children: liveMessage }), _jsx(Box, { "aria-live": "assertive", "aria-atomic": "true", sx: { position: "absolute", left: -9999 }, children: liveErrorMessage }), _jsxs(Box, { sx: {
+                    display: "flex",
+                    position: "relative",
+                    minHeight: "calc(100vh - 64px)",
+                }, children: [!isNew && (_jsx(CmsHistoryDrawer, { open: historyDrawerOpen, onClose: () => setHistoryDrawerOpen(false), history: history, loadedRevisionId: loadedRevisionId, isDirty: isDirty, isSaving: isSaving, includeSoftDeleted: includeSoftDeletedHistory, onIncludeSoftDeletedChange: setIncludeSoftDeletedHistory, onLoadRevision: handleLoadRevision, onRestoreRevision: handleRestoreRevision, onSoftDeleteRevision: handleSoftDeleteRevision, onHardDeleteRevision: handleHardDeleteRevision, onDismissRevision: handleDismissRevision, currentVersionNumber: row?.version_number, currentUpdatedAt: row?.updated_at })), _jsxs(Box, { sx: { flex: 1, minWidth: 0, ml: 1 }, children: [loadedRevisionId && (_jsxs(Alert, { severity: "info", sx: { mb: 2 }, action: _jsxs(Stack, { direction: "row", spacing: 1, children: [_jsx(Button, { size: "small", color: "inherit", onClick: handleDismissRevision, children: "Dismiss" }), _jsx(Button, { size: "small", variant: "outlined", color: "inherit", onClick: () => handleRestoreRevision(loadedRevisionId), disabled: isSaving, children: "Restore this revision" })] }), children: ["Previewing revision", " ", history.find((h) => h.id === loadedRevisionId)?.revision ??
+                                        loadedRevisionId, ". Changes have not been saved."] })), _jsxs(Stack, { direction: { xs: "column", lg: "row" }, spacing: 3, children: [_jsxs(Box, { sx: { flex: 1, minWidth: 0 }, children: [_jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { mb: 2 }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [_jsx(Tooltip, { title: "Back to list", children: _jsx(IconButton, { onClick: () => nav?.goToList?.(), children: _jsx(ArrowBackIcon, {}) }) }), _jsx(Typography, { variant: "h5", children: isNew ? "New CMS Item" : "Edit CMS Item" })] }), _jsxs(Stack, { direction: "row", spacing: 1, children: [!isNew && (_jsx(Tooltip, { title: historyDrawerOpen ? "Close history" : "Open history", children: _jsx(IconButton, { onClick: () => setHistoryDrawerOpen((o) => !o), color: historyDrawerOpen ? "primary" : "default", size: "small", children: _jsx(HistoryIcon, {}) }) })), canPreview && previewUrl && (_jsx(Button, { size: "small", href: previewUrl, target: "_blank", startIcon: _jsx(OpenInNewIcon, {}), children: "Preview" })), _jsx(Button, { variant: "contained", onClick: handleSave, disabled: isSaving || isLoading, children: isSaving ? "Saving..." : "Save" })] })] }), error && (_jsx(Alert, { ref: errorAlertRef, severity: "error", onClose: () => setError(null), sx: { mb: 2 }, tabIndex: -1, children: error })), _jsxs(Paper, { sx: { p: 2, mb: 2 }, children: [_jsx(TextField, { label: "Title", fullWidth: true, value: title, onChange: (e) => setTitle(e.target.value), onBlur: handleTitleBlur, sx: { mb: isSlugEditing ? 2 : "1px" } }), !isSlugEditing ? (_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, sx: {
                                                             border: 1,
                                                             borderColor: "divider",
                                                             borderRadius: 1,
@@ -833,7 +901,19 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                                                                     if (v) {
                                                                         setEditorMode(v);
                                                                     }
-                                                                }, size: "small", sx: { ml: "auto" }, children: [_jsx(ToggleButton, { value: "visual", sx: { px: 1.5, py: 0.25, fontSize: "0.8rem", textTransform: "none" }, children: "Visual" }), _jsx(ToggleButton, { value: "text", sx: { px: 1.5, py: 0.25, fontSize: "0.8rem", textTransform: "none" }, children: "Text" })] }))] }), _jsx(CmsBodyEditor, { contentType: effectiveContentType, value: content, onChange: setContent, editor: config?.editorPreference, onPickAsset: config?.renderMediaPicker ? () => openMediaPicker() : undefined }, `body-${contentType}-${editorMode}`)] }), _jsxs(Paper, { sx: { p: 2, mt: 2 }, children: [_jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Tags" }), _jsx(Stack, { direction: "row", spacing: 1, flexWrap: "wrap", sx: { mb: tags.length > 0 ? 1 : 0 }, children: tags.map((tag, idx) => (_jsx(Chip, { label: tag, size: "small", onDelete: () => setTags((prev) => prev.filter((_, i) => i !== idx)), sx: { mb: 0.5 } }, `${tag}-${idx}`))) }), _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", children: [_jsx(TextField, { label: "Add tag", size: "small", value: tagInput, onChange: (e) => setTagInput(e.target.value), onKeyDown: (e) => {
+                                                                }, size: "small", sx: { ml: "auto" }, children: [_jsx(ToggleButton, { value: "visual", sx: {
+                                                                            px: 1.5,
+                                                                            py: 0.25,
+                                                                            fontSize: "0.8rem",
+                                                                            textTransform: "none",
+                                                                        }, children: "Visual" }), _jsx(ToggleButton, { value: "text", sx: {
+                                                                            px: 1.5,
+                                                                            py: 0.25,
+                                                                            fontSize: "0.8rem",
+                                                                            textTransform: "none",
+                                                                        }, children: "Text" })] }))] }), _jsx(CmsBodyEditor, { contentType: effectiveContentType, value: content, onChange: setContent, editor: config?.editorPreference, onUploadImage: hasUploadHandler ? effectiveOnUploadImage : undefined, onPickAsset: config?.renderMediaPicker
+                                                            ? () => openMediaPicker()
+                                                            : undefined }, `body-${contentType}-${editorMode}`)] }), _jsxs(Paper, { sx: { p: 2, mt: 2 }, children: [_jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Tags" }), _jsx(Stack, { direction: "row", spacing: 1, flexWrap: "wrap", sx: { mb: tags.length > 0 ? 1 : 0 }, children: tags.map((tag, idx) => (_jsx(Chip, { label: tag, size: "small", onDelete: () => setTags((prev) => prev.filter((_, i) => i !== idx)), sx: { mb: 0.5 } }, `${tag}-${idx}`))) }), _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", children: [_jsx(TextField, { label: "Add tag", size: "small", value: tagInput, onChange: (e) => setTagInput(e.target.value), onKeyDown: (e) => {
                                                                     if (e.key === "Enter") {
                                                                         e.preventDefault();
                                                                         const val = tagInput.trim();
@@ -848,7 +928,11 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                                                                         setTags((prev) => [...prev, val]);
                                                                     }
                                                                     setTagInput("");
-                                                                }, disabled: !tagInput.trim(), children: _jsx(AddIcon, {}) })] }), _jsx(Divider, { sx: { my: 2 } }), _jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Password Protection" }), _jsx(TextField, { label: "Password (optional)", type: "password", value: password, onChange: (e) => setPassword(e.target.value), placeholder: isNew ? "" : "(unchanged)", fullWidth: true, size: "small" })] }), _jsxs(Accordion, { sx: { mt: 2 }, children: [_jsxs(AccordionSummary, { expandIcon: _jsx(ExpandMoreIcon, {}), children: [_jsx(Typography, { children: "Advanced Options (JSON)" }), optionsParse.error && (_jsx(Chip, { label: "Invalid JSON", size: "small", color: "error", sx: { ml: 1 } }))] }), _jsx(AccordionDetails, { children: _jsx(CmsBodyEditor, { contentType: "json", value: optionsJson, onChange: setOptionsJson, height: 260 }) })] })] }), _jsxs(Box, { sx: { width: { xs: "100%", lg: 420 }, flexShrink: 0 }, children: [_jsxs(Paper, { sx: { p: 2, mb: 2 }, children: [_jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Status" }), _jsxs(Stack, { direction: "row", spacing: 1, sx: { mb: 1 }, children: [etag && _jsx(Chip, { label: etag, size: "small", variant: "outlined" }), lockedBy && (_jsx(Chip, { label: `Locked by ${lockedBy}`, size: "small", icon: _jsx(LockIcon, { fontSize: "small" }), color: "warning" }))] }), !isNew && (_jsxs(Stack, { spacing: 0.75, sx: { mb: 1 }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [_jsx(Chip, { label: status === "published" ? "Published" : status === "trash" ? "Trash" : "Draft", size: "small", color: status === "published"
+                                                                }, disabled: !tagInput.trim(), children: _jsx(AddIcon, {}) })] }), _jsx(Divider, { sx: { my: 2 } }), _jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Password Protection" }), _jsx(TextField, { label: "Password (optional)", type: "password", value: password, onChange: (e) => setPassword(e.target.value), placeholder: isNew ? "" : "(unchanged)", fullWidth: true, size: "small" })] }), _jsxs(Accordion, { sx: { mt: 2 }, children: [_jsxs(AccordionSummary, { expandIcon: _jsx(ExpandMoreIcon, {}), children: [_jsx(Typography, { children: "Advanced Options (JSON)" }), optionsParse.error && (_jsx(Chip, { label: "Invalid JSON", size: "small", color: "error", sx: { ml: 1 } }))] }), _jsx(AccordionDetails, { children: _jsx(CmsBodyEditor, { contentType: "json", value: optionsJson, onChange: setOptionsJson, height: 260 }) })] })] }), _jsxs(Box, { sx: { width: { xs: "100%", lg: 420 }, flexShrink: 0 }, children: [_jsxs(Paper, { sx: { p: 2, mb: 2 }, children: [_jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Status" }), _jsxs(Stack, { direction: "row", spacing: 1, sx: { mb: 1 }, children: [etag && (_jsx(Chip, { label: etag, size: "small", variant: "outlined" })), lockedBy && (_jsx(Chip, { label: `Locked by ${lockedBy}`, size: "small", icon: _jsx(LockIcon, { fontSize: "small" }), color: "warning" }))] }), !isNew && (_jsxs(Stack, { spacing: 0.75, sx: { mb: 1 }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [_jsx(Chip, { label: status === "published"
+                                                                            ? "Published"
+                                                                            : status === "trash"
+                                                                                ? "Trash"
+                                                                                : "Draft", size: "small", color: status === "published"
                                                                             ? "success"
                                                                             : status === "trash"
                                                                                 ? "error"

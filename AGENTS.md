@@ -1,30 +1,81 @@
 # Copilot Instructions for `shared-utils`
 
+## Engineering Standards
+
+Every change — no matter how small — must follow first-principles logic and be production-grade.
+
+- Before implementing, build a concrete plan. Back-trace (does each step follow from preconditions?) and forward-trace (do downstream consumers behave correctly?) to verify logical consistency.
+- Eliminate implementation gaps, memory leaks, race conditions, and bugs before proposing a solution. Maximise code re-use: search for existing utilities before writing new ones.
+- Optimise for robustness, security, and conciseness.
+- If anything is unclear, ask — do not guess.
+
 ## Big Picture Architecture
 
-- **Monorepo Structure**: TypeScript-compiled utilities distributed from `dist/` directory. Source in `utils/src/`, `client/src/`, `server/src/` with individual `package.json` configs and TypeScript project references.
+- **Monorepo Structure**: TypeScript-compiled utilities distributed from `dist/`. Source in `utils/src/`, `client/src/`, `server/src/` with individual `package.json` configs and TypeScript project references.
 - **ES Module Native**: Everything uses `.js` extensions in imports (TypeScript ES module pattern). Critical: imports must end with `.js` even for `.ts` files (e.g., `"./options-manager.js"`).
 - **Centralized Configuration**: `OptionsManager` is the architectural centerpiece. Each utility registers with the global `optionsManager` singleton, enabling cross-utility configuration via `setGlobalOptions()`.
-- **Environment Auto-Detection**: Use the consolidated `isDev()` function for development environment detection. Log and Turnstile utilities auto-detect client vs server context. Never hardcode environment checks - use `isDev()` or the provided detection patterns from existing utilities.
+- **Environment Auto-Detection**: Use the consolidated `isDev()` function for development environment detection. Log and Turnstile utilities auto-detect client vs server context. Never hardcode environment checks — use `isDev()` or the provided detection patterns from existing utilities.
 
 ## Critical TypeScript Patterns
 
 - **ES Module Imports**: Always use `.js` extensions: `import { OptionsManager } from "./options-manager.js"`
-- **TypeScript Build**: Compiles to `../dist/{utils|client|server}/` with `--outDir` flag. Each workspace builds independently.
-- **Jest ES Modules**: Uses `NODE_OPTIONS="--experimental-vm-modules"` and `preset: "ts-jest/presets/default-esm"` with complex `moduleNameMapper` configs.
-- **Lodash-ES**: Uses ES module version (`lodash-es`) with specific Jest transform patterns. Import: `import { mergeWith, cloneDeep } from "lodash-es"`
+- **TypeScript Build**: Compiles to `../dist/{utils|client|server}/` with `--outDir` flag (utils, server) or `--build` (client, project references). Each workspace clears `tsconfig.tsbuildinfo` before compilation.
+- **Lodash-ES**: Uses ES module version (`lodash-es`). Import: `import { mergeWith, cloneDeep } from "lodash-es"`
+- **Zod**: Used for schema validation in `utils/src/fm/types.ts`, `utils/src/cms/types.ts`, and `server/src/fm/policy/allowlists.ts`. Import: `import { z } from "zod"`. All request/response shapes and enums are defined as Zod schemas; derive TypeScript types with `z.infer<>`.
+- **nanoid**: Used for UID generation in service cores (`FmServiceCore`, `CmsServiceCore`) and `utils/src/functions.ts`. Import: `import { nanoid } from "nanoid"`
+
+## FM & CMS Subsystem Architecture
+
+The File Manager (FM) and Content Management System (CMS) are the two major feature domains. They share an identical layered architecture:
+
+```
+utils/src/{fm,cms}/     — Shared types (Zod schemas), errors, validation
+server/src/{fm,cms}/    — Service cores, connectors (DB interface), Express routers, policy
+client/src/{fm,cms}/    — API client classes, React providers/hooks/components
+```
+
+### Key patterns
+
+- **Connector pattern**: DB-agnostic interfaces (`FmConnector`, `CmsConnector`). Connectors handle all persistence; service cores own business logic. Consuming projects implement the connector for their database (e.g., Supabase).
+- **Service cores**: `FmServiceCore` and `CmsServiceCore` orchestrate uploads, lifecycle, URL resolution, MIME validation, link management, etc. They accept an injected connector and storage adapter — no global singletons.
+- **Express router factories**: `createFmRouter()`, `createCmsAdminRouter()`, `createCmsPublicRouter()`, `createFmContentRouter()`. Each returns an Express `Router` wired to the service core.
+- **Client layering**: `FmApi`/`CmsApi` (interface) → `FmClient`/`CmsClient` (HTTP implementation) → `FmClientProvider` (React context) → hooks (`useFmListFiles`, `useCmsAdmin`, `useCmsPublic`) → components (`FmMediaLibrary`, `CmsEditPage`, etc.)
+- **Typed error hierarchies**: `FmError` / `CmsError` base classes with specific subclasses (`FmNotFoundError`, `FmValidationError`, `FmPolicyError`, `CmsConflictError`, `CmsLockedError`, etc.). Use `sendFmError()` / `sendCmsError()` in Express handlers — never throw raw `Error`.
+- **Link tracker**: `createCmsFmLinkTracker()` automatically maintains `fm_file_links` rows when CMS content is written — wires into `CmsServiceCore.onAfterWrite`.
+
+### FM storage adapters
+
+- `FmStorageLocal` — local filesystem
+- `FmStorageS3` — S3-compatible (exported as `./fm/server/s3`)
+
+### Package export paths
+
+```
+@user27828/shared-utils          → utils (log, optionsManager, turnstile, etc.)
+@user27828/shared-utils/utils    → same as above
+@user27828/shared-utils/client   → client (components, data, helpers)
+@user27828/shared-utils/client/wysiwyg → WYSIWYG editors (CKEditor5, TinyMCE, EasyMDE, MDXEditor)
+@user27828/shared-utils/server   → server (env loader, middleware, turnstile worker)
+@user27828/shared-utils/cms      → CMS shared types/errors/validation
+@user27828/shared-utils/cms/server → CMS service core, connectors, Express routers
+@user27828/shared-utils/cms/client → CMS client API, hooks, UI components
+@user27828/shared-utils/fm       → FM shared types/errors/validation
+@user27828/shared-utils/fm/server → FM service core, connectors, Express routers
+@user27828/shared-utils/fm/client → FM client API, hooks, components
+@user27828/shared-utils/fm/server/s3 → FM S3 storage adapter
+```
 
 ## Developer Workflows
 
-- **Build System**: `yarn build` runs workspace builds sequentially: `utils build && client build && server build`. Each workspace clears `tsconfig.tsbuildinfo` before compilation.
+- **Build System**: `yarn build` runs workspace builds sequentially: `utils build && client build && server build`.
 - **Test Integration**: Root `yarn test` runs all workspace tests. Use `yarn test:all` in `test-consumer/` for end-to-end integration across React, Node, and vanilla JS consumers.
 - **Data Updates**: `./bin/update-source-data.sh` downloads official data from Library of Congress and DataHub.io with backup creation.
-- **Package Management**: Yarn-only monorepo. Scripts detect yarn vs npm and fail gracefully. Never use `npm` or `pnpm` commands.
+- **Package Management**: Yarn-only monorepo (`yarn@4`). Never use `npm` or `pnpm` commands.
 - **Development Servers**: `test-consumer/` provides isolated test environments. Use `yarn kill:all` to terminate all background processes.
 
-Note: when running `yarn test:consumer`, the command starts Vite (React dev server) which does not exit on its own; automated runs should execute with a timeout or use a forced stop (for example, run the process in the foreground and terminate after X seconds, or run `vite --force`/`yarn test:consumer -- --timeout <ms>` in CI). This prevents Copilot or automation from hanging waiting for the process to terminate.
+Note: `yarn test:consumer` starts Vite (React dev server) which does not exit on its own; automated runs should execute with a timeout or use a forced stop. This prevents automation from hanging.
 
-## OptionsManager Architecture (Critical)
+## OptionsManager Architecture
 
 - **Registration Pattern**: Each utility creates an `OptionsManager` instance and registers with global `optionsManager`: `optionsManager.registerManager("log", this.optionsManager)`
 - **Cross-Utility Config**: Use `optionsManager.setGlobalOptions({ log: {...}, turnstile: {...} })` for unified configuration
@@ -41,18 +92,11 @@ Note: when running `yarn test:consumer`, the command starts Vite (React dev serv
 
 ## Project-Specific Conventions
 
-- **File Extensions**: Source files are `.ts`, imports reference `.js`, compiled output is `.js` with `.d.ts` types
+- **File Extensions**: Source files are `.ts`/`.tsx`, imports reference `.js`, compiled output is `.js` with `.d.ts` types
 - **Logging**: `log` utility with caller information (`showCaller: true`), production filtering, and localStorage overrides for debugging
 - **Turnstile Integration**: Client-side widget rendering + server-side token verification. Supports Cloudflare Worker deployment via `wrangler.toml`
-- **React Components**: Function components only. Client exports include MUI-based file icons and country/language selectors
+- **React Components**: Function components only — no class components. Client exports include MUI-based components (CMS pages, FM media library, WYSIWYG editors, file icons, country/language selectors).
 - **Data Sources**: ISO standards from official sources (Library of Congress, DataHub.io) with automated download and backup scripts
-
-## Integration Points
-
-- **Package Exports**: Root exports utils, client, server, with specific paths like `/client/wysiwyg` for optional dependencies
-- **Test Consumer Architecture**: `test-consumer/` provides isolated test environments for React (`vite`), Node.js, vanilla JS, and server integration. These are NOT distributed - development/testing only
-- **TypeScript References**: Root `tsconfig.json` uses project references to coordinate workspace builds while maintaining isolation
-- **Jest Configuration**: Complex `moduleNameMapper` patterns handle ES modules, `lodash-es` transforms, and workspace imports with `transformIgnorePatterns`
 
 ## AI Coding Guidance
 
@@ -64,44 +108,23 @@ Note: when running `yarn test:consumer`, the command starts Vite (React dev serv
 - Prefer `optionsManager.setGlobalOptions()` over individual `utility.setOptions()` calls
 - Use `isDev()` for environment detection, never hardcode `typeof window` checks or `process.env.NODE_ENV` comparisons
 - Use `lodash-es` imports: `import { mergeWith, cloneDeep } from "lodash-es"`
+- Use `nanoid` for ID generation, never `Math.random()` or `uuid`
+- Use Zod schemas for request/response validation; derive types with `z.infer<typeof Schema>`
+- Use typed error subclasses (`FmNotFoundError`, `CmsValidationError`, etc.) — never throw raw `Error` in FM/CMS code
 
 **When working with tests:**
 
-- Use Vitest for new tests (prefer `vitest` over `jest`). Vitest provides fast ESM-native testing and better compatibility with Vite-based consumers.
-- Run with `NODE_OPTIONS="--experimental-vm-modules"` for ES module support when required
-- For existing Jest-based suites keep compatibility, but prefer writing new tests in Vitest format and update existing docs/tests when migrating
-- Test both client and server contexts using provided detection mechanisms
+- **Client tests**: Vitest (`vitest run`). Config: `client/vitest.config.ts`. Setup: `client/vitest.setup.ts`.
+- **Server tests**: Jest with ES module support (`NODE_OPTIONS="--experimental-vm-modules" jest`). Config: `server/jest.config.mjs`.
+- **Utils tests**: Jest with ES module support (`NODE_OPTIONS="--experimental-vm-modules" jest`). Config: `utils/jest.config.mjs`.
+- For new client tests, use Vitest. For new server/utils tests, use Jest with `@jest/globals` imports.
+- Test both client and server contexts using provided detection mechanisms.
 
 **When updating dependencies or configs:**
 
-- Maintain yarn-only workflow patterns - detect and warn about npm/pnpm usage
-- Preserve ES module configurations in Jest/TypeScript/package.json files
+- Maintain yarn-only workflow patterns — detect and warn about npm/pnpm usage
+- Preserve ES module configurations in test/TypeScript/package.json files
 - Follow monorepo patterns: individual workspace builds, centralized root scripts
-
-## Patterns & Examples
-
-- **Importing Utilities**:
-  ```js
-  import {
-    log,
-    turnstile,
-    optionsManager,
-  } from "@user27828/shared-utils/utils";
-  ```
-- **Running All Tests**:
-  ```bash
-  cd test-consumer && yarn test:all
-  ```
-- **Updating Data**:
-  ```bash
-  yarn update:data
-  ```
-
-## Key Files & Directories
-
-- `utils/README.md`, `client/`, `server/`, `test-consumer/`, `data/source/`, `bin/`
-- `test-consumer/package.json` for integration scripts
-- `utils/options-manager.js` for config patterns
 
 ## Utility Function Patterns
 
@@ -113,12 +136,62 @@ Note: when running `yarn test:consumer`, the command starts Vite (React dev serv
 
 - selectDefaultAction: Always ensure this prop triggers the onClick/onSelect action for the default selection, even if the value is already selected.
 - Use the global log (window.log) for debug output in client code. Do not import log directly in consumer code; rely on the global.
-- Never use single-line conditional execution (e.g., if (x) doY();). Always use curly braces for conditionals, except for single-line function definitions and returns.
+
+## Patterns & Examples
+
+```ts
+// Importing utilities
+import { log, turnstile, optionsManager } from "@user27828/shared-utils/utils";
+
+// Importing CMS server
+import {
+  CmsServiceCore,
+  createCmsAdminRouter,
+} from "@user27828/shared-utils/cms/server";
+
+// Importing FM client
+import {
+  FmClient,
+  FmClientProvider,
+  useFmApi,
+} from "@user27828/shared-utils/fm/client";
+
+// Importing FM types
+import type { FmFileRow, FmPurpose } from "@user27828/shared-utils/fm";
+```
+
+```bash
+# Build
+yarn build
+
+# Test all workspaces
+yarn test
+
+# Integration tests
+cd test-consumer && yarn test:all
+
+# Update data
+yarn update:data
+```
+
+## Key Files & Directories
+
+- `utils/src/options-manager.ts` — OptionsManager implementation
+- `utils/src/fm/types.ts`, `utils/src/cms/types.ts` — Zod schemas and core types
+- `utils/src/fm/errors.ts`, `utils/src/cms/errors.ts` — Typed error hierarchies
+- `server/src/fm/FmServiceCore.ts`, `server/src/cms/CmsServiceCore.ts` — Service cores
+- `server/src/fm/FmConnector.ts`, `server/src/cms/connector.ts` — DB connector interfaces
+- `server/src/fm/linkTracker.ts` — CMS ↔ FM link tracking
+- `client/src/fm/FmClient.ts`, `client/src/cms/CmsClient.ts` — HTTP API clients
+- `client/src/fm/FmClientProvider.tsx` — React context provider
+- `client/src/cms/ui/` — CMS admin UI pages (CmsEditPage, CmsListPage, etc.)
+- `client/src/fm/components/` — FM UI components (FmMediaLibrary, FmFilePicker)
+- `test-consumer/` — Isolated test environments (React, Node, vanilla JS, server)
+- `data/source/` — Raw country/language data from official sources
 
 ---
 
 **Verification Notes:**
 
-- All conventions above are verified in code/scripts, not just assumed from documentation.
+- All conventions above are verified against source code, not assumed from documentation.
 - If you find any use of npm or pnpm, or class components, report and refactor to match these conventions.
-- If any section is unclear or missing, please specify which workflows, patterns, or architectural details need further documentation.

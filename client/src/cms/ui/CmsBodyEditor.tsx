@@ -10,7 +10,14 @@
  */
 import React, { useMemo, useRef, useState, lazy, Suspense } from "react";
 import { Box, LinearProgress, Typography, useColorScheme } from "@mui/material";
-import type { CmsEditorPreference } from "./CmsAdminUiConfig.js";
+import type {
+  CmsEditorPreference,
+  CmsImageUploadHandler,
+} from "./CmsAdminUiConfig.js";
+import {
+  hasEmbeddedBase64Image,
+  normalizeEmbeddedHtmlImages,
+} from "./normalizeEmbeddedHtmlImages.js";
 
 // ─── Content type helpers ─────────────────────────────────────────────────
 
@@ -67,7 +74,7 @@ export interface CmsBodyEditorProps {
     url?: string;
   } | null>;
   /** Callback to upload an image directly. */
-  onUploadImage?: (file: File) => Promise<string | null>;
+  onUploadImage?: CmsImageUploadHandler;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────
@@ -83,6 +90,57 @@ const CmsBodyEditor: React.FC<CmsBodyEditorProps> = ({
   onUploadImage,
 }) => {
   const [editorLoading, setEditorLoading] = useState(true);
+  const latestHtmlRef = useRef(value);
+  const htmlNormalizationRunRef = useRef(0);
+
+  React.useEffect(() => {
+    latestHtmlRef.current = value;
+  }, [value]);
+
+  const handleHtmlEditorChange = React.useCallback(
+    (nextValue: string) => {
+      latestHtmlRef.current = nextValue;
+      onChange(nextValue);
+
+      if (!onUploadImage) {
+        return;
+      }
+
+      if (!hasEmbeddedBase64Image(nextValue)) {
+        return;
+      }
+
+      const runId = htmlNormalizationRunRef.current + 1;
+      htmlNormalizationRunRef.current = runId;
+
+      void normalizeEmbeddedHtmlImages({
+        html: nextValue,
+        uploadImage: async (file, context) => {
+          return await onUploadImage(file, context);
+        },
+      })
+        .then((normalizedValue) => {
+          if (htmlNormalizationRunRef.current !== runId) {
+            return;
+          }
+
+          if (latestHtmlRef.current !== nextValue) {
+            return;
+          }
+
+          if (normalizedValue === nextValue) {
+            return;
+          }
+
+          latestHtmlRef.current = normalizedValue;
+          onChange(normalizedValue);
+        })
+        .catch((err) => {
+          console.error("CmsBodyEditor base64 image normalization failed", err);
+        });
+    },
+    [onChange, onUploadImage],
+  );
 
   const containerSx = useMemo(
     () => ({
@@ -107,7 +165,7 @@ const CmsBodyEditor: React.FC<CmsBodyEditorProps> = ({
           <Suspense fallback={<LinearProgress />}>
             <HtmlEditor
               value={value}
-              onChange={onChange}
+              onChange={handleHtmlEditorChange}
               height={height}
               editor={editor}
               onPickAsset={onPickAsset}
@@ -164,6 +222,7 @@ const CmsBodyEditor: React.FC<CmsBodyEditorProps> = ({
           fontSize: "0.875rem",
           p: 2,
           resize: "vertical",
+          overflow: "auto",
           background: "transparent",
           color: "text.primary",
         }}
@@ -238,6 +297,7 @@ const HtmlEditor: React.FC<{
           fontSize: "0.875rem",
           p: 2,
           resize: "none",
+          overflow: "auto",
           border: "none",
           background: "transparent",
           color: "text.primary",
@@ -288,7 +348,9 @@ const HtmlEditor: React.FC<{
             : undefined,
           images_upload_handler: onUploadImage
             ? async (blobInfo: any) => {
-                const url = await onUploadImage(blobInfo.blob());
+                const url = await onUploadImage(blobInfo.blob(), {
+                  source: "editor-upload",
+                });
                 if (!url) {
                   throw new Error("Upload failed");
                 }
@@ -328,12 +390,21 @@ const HtmlEditor: React.FC<{
       onUploadImage={
         onUploadImage
           ? async (request: any) => {
-              const blob: Blob = request?.blob || request;
-              const file =
-                blob instanceof File
-                  ? blob
-                  : new File([blob], "image", { type: blob.type });
-              const url = await onUploadImage(file);
+              const file: File =
+                request?.file instanceof File
+                  ? request.file
+                  : request instanceof File
+                    ? request
+                    : new File(
+                        [request?.file || request],
+                        request?.filename || "image",
+                        {
+                          type: request?.mimeType || "application/octet-stream",
+                        },
+                      );
+              const url = await onUploadImage(file, {
+                source: "editor-upload",
+              });
               if (!url) {
                 throw new Error("Upload failed");
               }

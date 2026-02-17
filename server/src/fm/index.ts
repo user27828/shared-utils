@@ -20,9 +20,14 @@ export type {
   FmConnector,
   FmConnectorWithTransaction,
   FmConnectorWithBatchVariantDelete,
+  FmConnectorWithEntityLinks,
 } from "./FmConnector.js";
 
-export { hasTransaction, hasBatchVariantDelete } from "./FmConnector.js";
+export {
+  hasTransaction,
+  hasBatchVariantDelete,
+  hasEntityLinks,
+} from "./FmConnector.js";
 
 // ── Configuration ─────────────────────────────────────────────────────────
 export {
@@ -108,3 +113,16 @@ export type { CreateFmContentRouterConfig } from "./express/contentRouter.js";
 // ── Conformance Test Harness ──────────────────────────────────────────────
 export { runFmConnectorConformanceTests } from "./test/fmConformance.js";
 export type { FmConformanceConfig } from "./test/fmConformance.js";
+
+// ── CMS ↔ FM Link Tracker ────────────────────────────────────────────────
+export {
+  extractFmFileUids,
+  reconcileFmLinks,
+  createCmsFmLinkTracker,
+} from "./linkTracker.js";
+
+export type {
+  FmLinkReconcileResult,
+  CmsFmLinkTrackerConfig,
+  CmsFmLinkTracker,
+} from "./linkTracker.js";

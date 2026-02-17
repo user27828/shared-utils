@@ -1,4 +1,4 @@
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 /**
  * FmMediaLibrary — Full-featured media library UI component.
  *
@@ -11,14 +11,16 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  *
  * @module @user27828/shared-utils/fm/client
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Drawer, FormControl, FormControlLabel, IconButton, InputLabel, LinearProgress, MenuItem, Paper, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography, useTheme, } from "@mui/material";
+import { useCallback, useEffect, useMemo, useRef, useState, } from "react";
+import { Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Drawer, FormControl, FormControlLabel, IconButton, InputLabel, LinearProgress, MenuItem, Paper, Select, Snackbar, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography, useTheme, } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import CheckOutlinedIcon from "@mui/icons-material/CheckOutlined";
 import CopyButton from "../../components/CopyButton.js";
 import { useFmApi } from "../FmClientProvider.js";
 import { useFmListFiles } from "../hooks/useFmListFiles.js";
-import { DEFAULT_VARIANT_WIDTHS, generateImageVariants } from "../utils/imageVariants.js";
+import { DEFAULT_VARIANT_WIDTHS, generateImageVariants, } from "../utils/imageVariants.js";
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const formatBytes = (n) => {
     const v = Number(n);
@@ -85,6 +87,15 @@ const safeTrim = (v) => {
         return "";
     }
     return String(v).trim();
+};
+const getExtLower = (filename) => {
+    const s = String(filename || "").trim();
+    const base = s.split("/").pop() || s;
+    const dot = base.lastIndexOf(".");
+    if (dot <= 0 || dot === base.length - 1) {
+        return "";
+    }
+    return base.slice(dot + 1).toLowerCase();
 };
 const parseTagsCsv = (csv) => {
     const MAX_TAGS = 20;
@@ -211,6 +222,12 @@ export const FmMediaLibrary = (props) => {
         .trim()
         .toLowerCase() === "local";
     const [tagsText, setTagsText] = useState("");
+    const [renamingUid, setRenamingUid] = useState(null);
+    const [renameText, setRenameText] = useState("");
+    const [detailIsRenaming, setDetailIsRenaming] = useState(false);
+    const [detailRenameText, setDetailRenameText] = useState("");
+    const [renameSubmittingUid, setRenameSubmittingUid] = useState(null);
+    const [renameSuccessMessage, setRenameSuccessMessage] = useState(null);
     const [linksData, setLinksData] = useState(null);
     const [linksError, setLinksError] = useState(null);
     const [linksLoading, setLinksLoading] = useState(false);
@@ -232,7 +249,11 @@ export const FmMediaLibrary = (props) => {
         limit,
         offset,
         includeArchived,
-        isPublic: publicFilter === "all" ? undefined : publicFilter === "public" ? true : false,
+        isPublic: publicFilter === "all"
+            ? undefined
+            : publicFilter === "public"
+                ? true
+                : false,
         orderBy: sortBy,
         orderDirection: sortOrder,
         api,
@@ -268,7 +289,28 @@ export const FmMediaLibrary = (props) => {
         setActiveError(null);
         setLinksData(null);
         setLinksError(null);
+        setDetailIsRenaming(false);
+        setDetailRenameText("");
     };
+    const cancelInlineRename = useCallback(() => {
+        setRenamingUid(null);
+        setRenameText("");
+    }, []);
+    const cancelDetailRename = useCallback(() => {
+        setDetailIsRenaming(false);
+        setDetailRenameText("");
+    }, []);
+    const requestRenameConfirmIfNeeded = useCallback(async (params) => {
+        const prevExt = getExtLower(params.previous);
+        const nextExt = getExtLower(params.next);
+        if (!prevExt || !nextExt || prevExt === nextExt) {
+            return true;
+        }
+        if (typeof window === "undefined") {
+            return true;
+        }
+        return window.confirm(`You changed the filename extension from .${prevExt} to .${nextExt}.\n\nChanging extensions can be misleading and may cause the file to open incorrectly.\n\nContinue?`);
+    }, []);
     const loadDetail = useCallback(async () => {
         if (!activeUid) {
             return;
@@ -281,6 +323,8 @@ export const FmMediaLibrary = (props) => {
         try {
             const f = await api.getFile(activeUid);
             setActiveFile(f);
+            // Keep detail rename draft in sync with the currently loaded file.
+            setDetailRenameText(String(f.original_filename || "").trim());
             setActiveUrl(api.getContentUrl({
                 fileUid: activeUid,
                 variantKind: isImageMime(f.mime_type) ? "web" : undefined,
@@ -294,6 +338,79 @@ export const FmMediaLibrary = (props) => {
             setActiveLoading(false);
         }
     }, [activeUid, api]);
+    const submitRename = useCallback(async (params) => {
+        if (renameSubmittingUid) {
+            return;
+        }
+        const next = String(params.nextName || "").trim();
+        if (!next) {
+            if (params.source === "detail") {
+                setActiveError("Filename is required");
+            }
+            else {
+                window.alert("Filename is required");
+            }
+            return;
+        }
+        const ok = await requestRenameConfirmIfNeeded({
+            previous: params.previousName,
+            next,
+        });
+        if (!ok) {
+            return;
+        }
+        try {
+            setRenameSubmittingUid(params.fileUid);
+            const updated = await api.renameFile({
+                fileUid: params.fileUid,
+                originalFilename: next,
+            });
+            if (params.source === "detail") {
+                setActiveFile((prev) => {
+                    if (!prev) {
+                        return prev;
+                    }
+                    return { ...prev, ...updated };
+                });
+                setDetailIsRenaming(false);
+                setDetailRenameText("");
+                await reload();
+                await loadDetail();
+            }
+            else {
+                cancelInlineRename();
+                await reload();
+                if (activeUid && activeUid === params.fileUid) {
+                    await loadDetail();
+                }
+            }
+            setRenameSuccessMessage(`Renamed to \"${next}\"`);
+        }
+        catch (e) {
+            if (params.source === "detail") {
+                setActiveError(e?.message || "Rename failed");
+            }
+            else {
+                window.alert(`Rename failed: ${e?.message || e}`);
+            }
+        }
+        finally {
+            setRenameSubmittingUid((current) => {
+                if (current === params.fileUid) {
+                    return null;
+                }
+                return current;
+            });
+        }
+    }, [
+        api,
+        reload,
+        loadDetail,
+        activeUid,
+        renameSubmittingUid,
+        requestRenameConfirmIfNeeded,
+        cancelInlineRename,
+    ]);
     useEffect(() => {
         void loadDetail();
     }, [loadDetail]);
@@ -304,6 +421,13 @@ export const FmMediaLibrary = (props) => {
         }
         setTagsText(formatTagsCsv(activeFile.tags));
     }, [activeFile?.uid]);
+    useEffect(() => {
+        if (!activeUid) {
+            return;
+        }
+        // Changing active file cancels any in-progress rename.
+        setDetailIsRenaming(false);
+    }, [activeUid]);
     const loadLinks = useCallback(async () => {
         if (!activeUid) {
             return;
@@ -311,7 +435,11 @@ export const FmMediaLibrary = (props) => {
         setLinksLoading(true);
         setLinksError(null);
         try {
-            const data = await api.listLinks({ fileUid: activeUid, limit: 100, offset: 0 });
+            const data = await api.listLinks({
+                fileUid: activeUid,
+                limit: 100,
+                offset: 0,
+            });
             setLinksData({ items: data.items, totalCount: data.totalCount });
         }
         catch (e) {
@@ -356,7 +484,9 @@ export const FmMediaLibrary = (props) => {
         if (!uids.length) {
             return;
         }
-        const ok = typeof window !== "undefined" ? window.confirm(`Archive ${uids.length} file(s)?`) : true;
+        const ok = typeof window !== "undefined"
+            ? window.confirm(`Archive ${uids.length} file(s)?`)
+            : true;
         if (!ok) {
             return;
         }
@@ -371,7 +501,9 @@ export const FmMediaLibrary = (props) => {
         if (!uids.length) {
             return;
         }
-        const ok = typeof window !== "undefined" ? window.confirm(`Restore ${uids.length} file(s)?`) : true;
+        const ok = typeof window !== "undefined"
+            ? window.confirm(`Restore ${uids.length} file(s)?`)
+            : true;
         if (!ok) {
             return;
         }
@@ -403,7 +535,9 @@ export const FmMediaLibrary = (props) => {
         if (!uids.length) {
             return;
         }
-        const toBucketRaw = typeof window !== "undefined" ? window.prompt("Move to bucket (optional):", "") : "";
+        const toBucketRaw = typeof window !== "undefined"
+            ? window.prompt("Move to bucket (optional):", "")
+            : "";
         if (toBucketRaw === null) {
             return;
         }
@@ -462,7 +596,9 @@ export const FmMediaLibrary = (props) => {
             const existing = Array.isArray(file.tags) ? file.tags : [];
             const next = new Set();
             for (const t of existing) {
-                const normalized = String(t || "").trim().toLowerCase();
+                const normalized = String(t || "")
+                    .trim()
+                    .toLowerCase();
                 if (!normalized) {
                     continue;
                 }
@@ -477,7 +613,10 @@ export const FmMediaLibrary = (props) => {
                 }
             }
             // eslint-disable-next-line no-await-in-loop
-            await api.patchFile({ fileUid: uid, patch: { tags: Array.from(next).slice(0, 20) } });
+            await api.patchFile({
+                fileUid: uid,
+                patch: { tags: Array.from(next).slice(0, 20) },
+            });
         }
         await reload();
         setSelectedUids(new Set());
@@ -591,11 +730,15 @@ export const FmMediaLibrary = (props) => {
                     },
                 });
                 const startPct = PROGRESS.variantsUpload.start +
-                    Math.round((i / n) * (PROGRESS.variantsUpload.end - PROGRESS.variantsUpload.start));
+                    Math.round((i / n) *
+                        (PROGRESS.variantsUpload.end - PROGRESS.variantsUpload.start));
                 const endPct = PROGRESS.variantsUpload.start +
-                    Math.round(((i + 1) / n) * (PROGRESS.variantsUpload.end - PROGRESS.variantsUpload.start));
+                    Math.round(((i + 1) / n) *
+                        (PROGRESS.variantsUpload.end - PROGRESS.variantsUpload.start));
                 input.setProgress(startPct);
-                if (init.mode === "direct" && init.presignedPut && !input.wantsProxied) {
+                if (init.mode === "direct" &&
+                    init.presignedPut &&
+                    !input.wantsProxied) {
                     await uploadWithXhr({
                         method: "PUT",
                         url: init.presignedPut.url,
@@ -606,7 +749,10 @@ export const FmMediaLibrary = (props) => {
                         },
                         withCredentials: false,
                     });
-                    await api.variantUploadFinalize({ variantUid: init.variantUid, object: init.object });
+                    await api.variantUploadFinalize({
+                        variantUid: init.variantUid,
+                        object: init.object,
+                    });
                     input.setProgress(endPct);
                     continue;
                 }
@@ -636,7 +782,11 @@ export const FmMediaLibrary = (props) => {
                 },
             });
             setProgress(PROGRESS.init.end);
-            setItem({ fileUid: init.fileUid, status: "uploading", progressPct: PROGRESS.upload.start });
+            setItem({
+                fileUid: init.fileUid,
+                status: "uploading",
+                progressPct: PROGRESS.upload.start,
+            });
             const wantsProxied = item.modePreference === "proxied";
             if (init.mode === "direct" && init.presignedPut && !wantsProxied) {
                 await uploadWithXhr({
@@ -650,7 +800,10 @@ export const FmMediaLibrary = (props) => {
                 setProgress(PROGRESS.upload.end);
                 setItem({ status: "finalizing" });
                 setProgress(PROGRESS.finalize.start);
-                const finalized = await api.uploadFinalize({ fileUid: init.fileUid, object: init.object });
+                const finalized = await api.uploadFinalize({
+                    fileUid: init.fileUid,
+                    object: init.object,
+                });
                 setProgress(PROGRESS.finalize.end);
                 try {
                     await uploadImageVariants({
@@ -661,7 +814,9 @@ export const FmMediaLibrary = (props) => {
                     });
                 }
                 catch (e) {
-                    setItem({ error: `Uploaded, but variants failed: ${e?.message || "unknown error"}` });
+                    setItem({
+                        error: `Uploaded, but variants failed: ${e?.message || "unknown error"}`,
+                    });
                 }
                 setItem({ status: "done" });
                 setProgress(100);
@@ -676,7 +831,9 @@ export const FmMediaLibrary = (props) => {
             await uploadWithXhr({
                 method: "POST",
                 url: proxyUrl,
-                headers: item.file.type ? { "Content-Type": item.file.type } : undefined,
+                headers: item.file.type
+                    ? { "Content-Type": item.file.type }
+                    : undefined,
                 body: item.file,
                 onProgress: (pct) => setProgress(scalePct(pct, PROGRESS.upload.start, PROGRESS.upload.end)),
                 withCredentials: true,
@@ -694,7 +851,9 @@ export const FmMediaLibrary = (props) => {
                 });
             }
             catch (e) {
-                setItem({ error: `Uploaded, but variants failed: ${e?.message || "unknown error"}` });
+                setItem({
+                    error: `Uploaded, but variants failed: ${e?.message || "unknown error"}`,
+                });
             }
             setItem({ status: "done" });
             setProgress(100);
@@ -721,12 +880,17 @@ export const FmMediaLibrary = (props) => {
                             if (v) {
                                 setPreviewMode(v);
                             }
-                        }, children: [_jsx(ToggleButton, { value: "thumbnails", children: "Thumbs" }), _jsx(ToggleButton, { value: "icons", children: "Icons" })] }), _jsx(Button, { variant: "outlined", onClick: () => void reload(), disabled: isLoading, children: "Refresh" }), enableUpload && (_jsx(Button, { variant: "contained", onClick: () => setIsUploadOpen(true), children: "Upload" }))] }), enableBulkActions && selectedUids.size > 0 && (_jsxs(Stack, { direction: "row", spacing: 1, flexWrap: "wrap", alignItems: "center", useFlexGap: true, sx: { mt: 1.5 }, children: [_jsx(Chip, { label: `${selectedUids.size} selected`, size: "small" }), _jsx(Button, { size: "small", variant: "outlined", onClick: () => void bulkArchive(), children: "Archive" }), _jsx(Button, { size: "small", variant: "outlined", onClick: () => void bulkRestore(), children: "Restore" }), _jsx(Button, { size: "small", variant: "outlined", onClick: () => void bulkMove(), children: "Move" }), _jsx(Button, { size: "small", variant: "outlined", onClick: () => void bulkTags(), children: "Tags" }), _jsx(Button, { size: "small", variant: "outlined", color: "error", onClick: () => void bulkDelete(), children: "Delete" }), _jsx(Button, { size: "small", variant: "text", onClick: () => setSelectedUids(new Set()), children: "Clear" })] })), error && (_jsx(Alert, { severity: "error", sx: { mt: 1.5 }, children: error })), isLoading && items.length === 0 && !error && (_jsx(Box, { sx: { display: "flex", justifyContent: "center", py: 6 }, children: _jsx(CircularProgress, {}) })), viewMode === "list" && (_jsx(TableContainer, { component: Paper, variant: "outlined", sx: { mt: 1.5 }, children: _jsxs(Table, { size: "small", sx: { tableLayout: "fixed" }, children: [_jsx(TableHead, { children: _jsxs(TableRow, { children: [enableBulkActions && (_jsx(TableCell, { padding: "checkbox", children: _jsx(Checkbox, { size: "small", checked: items.length > 0 && selectedUids.size === items.length, indeterminate: selectedUids.size > 0 && selectedUids.size < items.length, onChange: (e) => setAllSelected(e.target.checked) }) })), _jsx(TableCell, { sx: { width: "55%" }, children: "File" }), _jsx(TableCell, { sx: { width: "25%" }, children: "Type" }), _jsx(TableCell, { align: "right", sx: { width: 110 }, children: "Size" }), _jsx(TableCell, { sx: { width: props.onSelect ? 180 : 220 }, children: "Actions" })] }) }), _jsxs(TableBody, { children: [items.map((f) => {
+                        }, children: [_jsx(ToggleButton, { value: "thumbnails", children: "Thumbs" }), _jsx(ToggleButton, { value: "icons", children: "Icons" })] }), _jsx(Button, { variant: "outlined", onClick: () => void reload(), disabled: isLoading, children: "Refresh" }), enableUpload && (_jsx(Button, { variant: "contained", onClick: () => setIsUploadOpen(true), children: "Upload" }))] }), enableBulkActions && selectedUids.size > 0 && (_jsxs(Stack, { direction: "row", spacing: 1, flexWrap: "wrap", alignItems: "center", useFlexGap: true, sx: { mt: 1.5 }, children: [_jsx(Chip, { label: `${selectedUids.size} selected`, size: "small" }), _jsx(Button, { size: "small", variant: "outlined", onClick: () => void bulkArchive(), children: "Archive" }), _jsx(Button, { size: "small", variant: "outlined", onClick: () => void bulkRestore(), children: "Restore" }), _jsx(Button, { size: "small", variant: "outlined", onClick: () => void bulkMove(), children: "Move" }), _jsx(Button, { size: "small", variant: "outlined", onClick: () => void bulkTags(), children: "Tags" }), _jsx(Button, { size: "small", variant: "outlined", color: "error", onClick: () => void bulkDelete(), children: "Delete" }), _jsx(Button, { size: "small", variant: "text", onClick: () => setSelectedUids(new Set()), children: "Clear" })] })), error && (_jsx(Alert, { severity: "error", sx: { mt: 1.5 }, children: error })), isLoading && items.length === 0 && !error && (_jsx(Box, { sx: { display: "flex", justifyContent: "center", py: 6 }, children: _jsx(CircularProgress, {}) })), viewMode === "list" && (_jsx(TableContainer, { component: Paper, variant: "outlined", sx: { mt: 1.5 }, children: _jsxs(Table, { size: "small", sx: { tableLayout: "fixed" }, children: [_jsx(TableHead, { children: _jsxs(TableRow, { children: [enableBulkActions && (_jsx(TableCell, { padding: "checkbox", children: _jsx(Checkbox, { size: "small", checked: items.length > 0 && selectedUids.size === items.length, indeterminate: selectedUids.size > 0 &&
+                                                selectedUids.size < items.length, onChange: (e) => setAllSelected(e.target.checked) }) })), _jsx(TableCell, { sx: { width: "55%" }, children: "File" }), _jsx(TableCell, { sx: { width: "25%" }, children: "Type" }), _jsx(TableCell, { align: "right", sx: { width: 110 }, children: "Size" }), _jsx(TableCell, { sx: { width: props.onSelect ? 180 : 220 }, children: "Actions" })] }) }), _jsxs(TableBody, { children: [items.map((f) => {
                                     const isExternallySelected = Boolean(selectedUid && f.uid === selectedUid);
                                     const isMultiSelected = selectedUids.has(f.uid);
                                     const thumbUrl = thumbUrlCacheRef.current.get(f.uid) || null;
-                                    const showThumb = previewMode === "thumbnails" && isImageMime(f.mime_type) && Boolean(thumbUrl);
-                                    return (_jsxs(TableRow, { hover: true, selected: isExternallySelected || isMultiSelected, sx: { cursor: "pointer" }, onClick: () => openDetail(f.uid), children: [enableBulkActions && (_jsx(TableCell, { padding: "checkbox", onClick: (e) => e.stopPropagation(), children: _jsx(Checkbox, { size: "small", checked: isMultiSelected, onChange: () => toggleSelected(f.uid) }) })), _jsx(TableCell, { children: _jsxs(Stack, { direction: "row", spacing: 1.5, alignItems: "center", children: [_jsx(Box, { sx: {
+                                    const showThumb = previewMode === "thumbnails" &&
+                                        isImageMime(f.mime_type) &&
+                                        Boolean(thumbUrl);
+                                    const isRenaming = renamingUid === f.uid;
+                                    const isRenameSubmitting = renameSubmittingUid === f.uid;
+                                    return (_jsxs(TableRow, { hover: true, selected: isExternallySelected || isMultiSelected, sx: { cursor: "pointer" }, onClick: () => openDetail(f.uid), children: [enableBulkActions && (_jsx(TableCell, { padding: "checkbox", onClick: (e) => e.stopPropagation(), children: isRenameSubmitting ? (_jsx(CircularProgress, { size: 16, thickness: 5 })) : (_jsx(Checkbox, { size: "small", checked: isMultiSelected, onChange: () => toggleSelected(f.uid) })) })), _jsx(TableCell, { children: _jsxs(Stack, { direction: "row", spacing: 1.5, alignItems: "center", children: [_jsx(Box, { sx: {
                                                                 width: 44,
                                                                 height: 44,
                                                                 borderRadius: 2,
@@ -738,7 +902,53 @@ export const FmMediaLibrary = (props) => {
                                                                 justifyContent: "center",
                                                                 overflow: "hidden",
                                                                 flexShrink: 0,
-                                                            }, children: showThumb ? (_jsx(Box, { component: "img", src: thumbUrl || "", alt: "", sx: { width: "100%", height: "100%", objectFit: "cover" } })) : (_jsx(Typography, { variant: "caption", fontWeight: 700, color: "text.secondary", children: guessIconLabel(f) })) }), _jsxs(Box, { sx: { minWidth: 0 }, children: [_jsx(Typography, { fontWeight: 700, noWrap: true, title: getFileLabel(f), children: getFileLabel(f) }), _jsx(Typography, { variant: "caption", color: "text.secondary", noWrap: true, sx: { display: "block" }, children: f.uid }), _jsxs(Stack, { direction: "row", spacing: 0.5, flexWrap: "wrap", sx: { mt: 0.5 }, children: [f.is_public && _jsx(Chip, { label: "Public", size: "small", variant: "outlined" }), f.archived_at && _jsx(Chip, { label: "Archived", size: "small", variant: "outlined" })] })] })] }) }), _jsx(TableCell, { children: _jsx(Typography, { variant: "body2", noWrap: true, title: f.mime_type, sx: { display: "block", overflow: "hidden", textOverflow: "ellipsis" }, children: f.mime_type }) }), _jsx(TableCell, { align: "right", children: _jsx(Typography, { variant: "body2", children: formatBytes(f.byte_size) }) }), _jsx(TableCell, { onClick: (e) => e.stopPropagation(), children: _jsxs(Stack, { direction: "row", spacing: 0.5, alignItems: "center", flexWrap: "wrap", children: [props.onSelect && (_jsx(Button, { size: "small", variant: "contained", onClick: () => props.onSelect?.(f), children: "Select" })), _jsx(CopyButton, { value: api.getContentUrl({ fileUid: f.uid }), tooltip: "Copy URL", size: "small", iconFontSize: "small" }), _jsx(Tooltip, { title: "Details", children: _jsx(IconButton, { size: "small", onClick: () => openDetail(f.uid), children: _jsx(InfoOutlinedIcon, { fontSize: "small" }) }) }), _jsx(Tooltip, { title: "Delete", children: _jsx(IconButton, { size: "small", sx: { color: "error.main", ml: 0.5 }, onClick: () => void handleDeleteInline(f), children: _jsx(DeleteOutlineIcon, { fontSize: "small" }) }) })] }) })] }, f.uid));
+                                                            }, children: showThumb ? (_jsx(Box, { component: "img", src: thumbUrl || "", alt: "", sx: {
+                                                                    width: "100%",
+                                                                    height: "100%",
+                                                                    objectFit: "cover",
+                                                                } })) : (_jsx(Typography, { variant: "caption", fontWeight: 700, color: "text.secondary", children: guessIconLabel(f) })) }), _jsxs(Box, { sx: { minWidth: 0 }, children: [_jsxs(Stack, { direction: "row", spacing: 0.5, alignItems: "center", sx: { minWidth: 0 }, children: [!isRenaming && (_jsxs(_Fragment, { children: [_jsx(Typography, { fontWeight: 700, noWrap: true, title: getFileLabel(f), sx: { minWidth: 0 }, children: getFileLabel(f) }), isRenameSubmitting ? (_jsx(Tooltip, { title: "Renaming...", children: _jsx(CircularProgress, { size: 16, thickness: 5 }) })) : (_jsx(Tooltip, { title: "Rename", children: _jsx(IconButton, { size: "small", disabled: Boolean(renameSubmittingUid), onClick: (e) => {
+                                                                                            stop(e);
+                                                                                            setRenamingUid(f.uid);
+                                                                                            setRenameText(getFileLabel(f));
+                                                                                        }, children: _jsx(EditOutlinedIcon, { fontSize: "small" }) }) }))] })), isRenaming && (_jsxs(_Fragment, { children: [_jsx(TextField, { size: "small", multiline: true, maxRows: 3, value: renameText, disabled: isRenameSubmitting, autoFocus: true, onClick: (e) => stop(e), onChange: (e) => setRenameText(e.target.value), onKeyDown: (e) => {
+                                                                                        if (e.key === "Escape") {
+                                                                                            if (isRenameSubmitting) {
+                                                                                                return;
+                                                                                            }
+                                                                                            stop(e);
+                                                                                            cancelInlineRename();
+                                                                                            return;
+                                                                                        }
+                                                                                        if (e.key === "Enter") {
+                                                                                            if (isRenameSubmitting) {
+                                                                                                return;
+                                                                                            }
+                                                                                            stop(e);
+                                                                                            void submitRename({
+                                                                                                fileUid: f.uid,
+                                                                                                previousName: String(f.original_filename || "").trim(),
+                                                                                                nextName: renameText,
+                                                                                                source: "list",
+                                                                                            });
+                                                                                        }
+                                                                                    }, sx: {
+                                                                                        "& .MuiInputBase-root": {
+                                                                                            fontSize: 14,
+                                                                                        },
+                                                                                        minWidth: 200,
+                                                                                    } }), _jsx(Tooltip, { title: "Save", children: _jsx(IconButton, { size: "small", disabled: isRenameSubmitting, onClick: (e) => {
+                                                                                            stop(e);
+                                                                                            void submitRename({
+                                                                                                fileUid: f.uid,
+                                                                                                previousName: String(f.original_filename || "").trim(),
+                                                                                                nextName: renameText,
+                                                                                                source: "list",
+                                                                                            });
+                                                                                        }, children: isRenameSubmitting ? (_jsx(CircularProgress, { size: 16, thickness: 5 })) : (_jsx(CheckOutlinedIcon, { fontSize: "small" })) }) })] }))] }), _jsx(Typography, { variant: "caption", color: "text.secondary", noWrap: true, sx: { display: "block" }, children: f.uid }), _jsxs(Stack, { direction: "row", spacing: 0.5, flexWrap: "wrap", sx: { mt: 0.5 }, children: [f.is_public && (_jsx(Chip, { label: "Public", size: "small", variant: "outlined" })), f.archived_at && (_jsx(Chip, { label: "Archived", size: "small", variant: "outlined" }))] })] })] }) }), _jsx(TableCell, { children: _jsx(Typography, { variant: "body2", noWrap: true, title: f.mime_type, sx: {
+                                                        display: "block",
+                                                        overflow: "hidden",
+                                                        textOverflow: "ellipsis",
+                                                    }, children: f.mime_type }) }), _jsx(TableCell, { align: "right", children: _jsx(Typography, { variant: "body2", children: formatBytes(f.byte_size) }) }), _jsx(TableCell, { onClick: (e) => e.stopPropagation(), children: _jsxs(Stack, { direction: "row", spacing: 0.5, alignItems: "center", flexWrap: "wrap", children: [props.onSelect && (_jsx(Button, { size: "small", variant: "contained", onClick: () => props.onSelect?.(f), children: "Select" })), _jsx(CopyButton, { value: api.getContentUrl({ fileUid: f.uid }), tooltip: "Copy URL", size: "small", iconFontSize: "small" }), _jsx(Tooltip, { title: "Details", children: _jsx(IconButton, { size: "small", onClick: () => openDetail(f.uid), children: _jsx(InfoOutlinedIcon, { fontSize: "small" }) }) }), _jsx(Tooltip, { title: "Delete", children: _jsx(IconButton, { size: "small", sx: { color: "error.main", ml: 0.5 }, onClick: () => void handleDeleteInline(f), children: _jsx(DeleteOutlineIcon, { fontSize: "small" }) }) })] }) })] }, f.uid));
                                 }), !isLoading && items.length === 0 && (_jsx(TableRow, { children: _jsx(TableCell, { colSpan: enableBulkActions ? 5 : 4, children: _jsx(Typography, { color: "text.secondary", sx: { py: 2, textAlign: "center" }, children: "No files found." }) }) }))] })] }) })), viewMode === "grid" && (_jsxs(Box, { sx: {
                     display: "grid",
                     gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
@@ -747,14 +957,18 @@ export const FmMediaLibrary = (props) => {
                 }, children: [items.map((f) => {
                         const isMultiSelected = selectedUids.has(f.uid);
                         const thumbUrl = thumbUrlCacheRef.current.get(f.uid) || null;
-                        const showThumb = previewMode === "thumbnails" && isImageMime(f.mime_type) && Boolean(thumbUrl);
+                        const showThumb = previewMode === "thumbnails" &&
+                            isImageMime(f.mime_type) &&
+                            Boolean(thumbUrl);
                         return (_jsxs(Paper, { variant: "outlined", sx: {
                                 p: 1.25,
                                 cursor: "pointer",
                                 display: "flex",
                                 flexDirection: "column",
                                 gap: 1,
-                                outline: isMultiSelected ? `2px solid ${theme.palette.primary.main}` : "none",
+                                outline: isMultiSelected
+                                    ? `2px solid ${theme.palette.primary.main}`
+                                    : "none",
                                 "&:hover": { bgcolor: "action.hover" },
                             }, onClick: () => openDetail(f.uid), tabIndex: 0, onKeyDown: (e) => {
                                 if (e.key === "Enter" || e.key === " ") {
@@ -772,13 +986,73 @@ export const FmMediaLibrary = (props) => {
                                         alignItems: "center",
                                         justifyContent: "center",
                                         overflow: "hidden",
-                                    }, children: showThumb ? (_jsx(Box, { component: "img", src: thumbUrl || "", alt: "", sx: { width: "100%", height: "100%", objectFit: "contain" } })) : (_jsxs(Box, { textAlign: "center", children: [_jsx(Typography, { fontWeight: 800, color: "text.secondary", children: guessIconLabel(f) }), _jsx(Typography, { variant: "caption", color: "text.secondary", children: isImageMime(f.mime_type) ? "Image" : isVideoMime(f.mime_type) ? "Video" : "File" })] })) }), _jsx(Typography, { fontWeight: 700, noWrap: true, title: getFileLabel(f), children: getFileLabel(f) }), _jsxs(Stack, { direction: "row", spacing: 0.5, flexWrap: "wrap", children: [f.is_public && _jsx(Chip, { label: "Public", size: "small", variant: "outlined" }), f.archived_at && _jsx(Chip, { label: "Archived", size: "small", variant: "outlined" }), _jsx(Chip, { label: formatBytes(f.byte_size), size: "small", variant: "outlined" })] })] }, f.uid));
-                    }), !isLoading && items.length === 0 && (_jsx(Typography, { color: "text.secondary", sx: { py: 2 }, children: "No files found." }))] })), _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", sx: { mt: 1.5 }, children: [_jsx(Button, { size: "small", variant: "outlined", onClick: () => setOffset(Math.max(0, offset - limit)), disabled: isLoading || offset <= 0, children: "Prev" }), _jsx(Button, { size: "small", variant: "outlined", onClick: () => setOffset(offset + limit), disabled: isLoading || offset + limit >= totalCount, children: "Next" }), _jsxs(Typography, { variant: "body2", color: "text.secondary", sx: { ml: "auto" }, children: [pageInfo.start, "-", pageInfo.end, " of ", pageInfo.totalCount] })] }), _jsxs(Drawer, { anchor: "right", open: Boolean(activeUid), onClose: closeDetail, slotProps: { backdrop: { sx: { zIndex: 1400 } } }, sx: { zIndex: 1400 }, PaperProps: { sx: { width: "min(520px, 100vw)", p: 2, zIndex: 1400 } }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [_jsx(Typography, { fontWeight: 800, noWrap: true, title: activeFile ? getFileLabel(activeFile) : activeUid || "", sx: { flex: 1, minWidth: 0 }, children: activeFile ? getFileLabel(activeFile) : activeUid }), _jsx(Button, { variant: "outlined", onClick: closeDetail, children: "Close" })] }), activeLoading && _jsx(LinearProgress, { sx: { mt: 1.5 } }), activeError && (_jsx(Alert, { severity: "error", sx: { mt: 1.5 }, children: activeError })), activeFile && (_jsxs(Stack, { spacing: 2, sx: { mt: 2 }, children: [_jsxs(Box, { children: [_jsx(Typography, { variant: "caption", color: "text.secondary", children: "UID" }), _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", children: [_jsx(Typography, { component: "code", variant: "body2", sx: { wordBreak: "break-all", fontFamily: "monospace" }, children: activeFile.uid }), _jsx(CopyButton, { value: activeFile.uid, tooltip: "Copy UID", size: "small", iconFontSize: "small" })] })] }), _jsxs(Box, { children: [_jsx(Typography, { variant: "caption", color: "text.secondary", children: "Preview" }), _jsxs(Paper, { variant: "outlined", sx: {
+                                    }, children: showThumb ? (_jsx(Box, { component: "img", src: thumbUrl || "", alt: "", sx: {
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "contain",
+                                        } })) : (_jsxs(Box, { textAlign: "center", children: [_jsx(Typography, { fontWeight: 800, color: "text.secondary", children: guessIconLabel(f) }), _jsx(Typography, { variant: "caption", color: "text.secondary", children: isImageMime(f.mime_type)
+                                                    ? "Image"
+                                                    : isVideoMime(f.mime_type)
+                                                        ? "Video"
+                                                        : "File" })] })) }), _jsx(Typography, { fontWeight: 700, noWrap: true, title: getFileLabel(f), children: getFileLabel(f) }), _jsxs(Stack, { direction: "row", spacing: 0.5, flexWrap: "wrap", children: [f.is_public && (_jsx(Chip, { label: "Public", size: "small", variant: "outlined" })), f.archived_at && (_jsx(Chip, { label: "Archived", size: "small", variant: "outlined" })), _jsx(Chip, { label: formatBytes(f.byte_size), size: "small", variant: "outlined" })] })] }, f.uid));
+                    }), !isLoading && items.length === 0 && (_jsx(Typography, { color: "text.secondary", sx: { py: 2 }, children: "No files found." }))] })), _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", sx: { mt: 1.5 }, children: [_jsx(Button, { size: "small", variant: "outlined", onClick: () => setOffset(Math.max(0, offset - limit)), disabled: isLoading || offset <= 0, children: "Prev" }), _jsx(Button, { size: "small", variant: "outlined", onClick: () => setOffset(offset + limit), disabled: isLoading || offset + limit >= totalCount, children: "Next" }), _jsxs(Typography, { variant: "body2", color: "text.secondary", sx: { ml: "auto" }, children: [pageInfo.start, "-", pageInfo.end, " of ", pageInfo.totalCount] })] }), _jsxs(Drawer, { anchor: "right", open: Boolean(activeUid), onClose: closeDetail, slotProps: { backdrop: { sx: { zIndex: 1400 } } }, sx: { zIndex: 1400 }, PaperProps: { sx: { width: "min(520px, 100vw)", p: 2, zIndex: 1400 } }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [!detailIsRenaming && (_jsxs(_Fragment, { children: [_jsx(Typography, { fontWeight: 800, noWrap: true, title: activeFile ? getFileLabel(activeFile) : activeUid || "", sx: { flex: 1, minWidth: 0 }, children: activeFile ? getFileLabel(activeFile) : activeUid }), activeFile &&
+                                        (renameSubmittingUid === activeFile.uid ? (_jsx(Tooltip, { title: "Renaming...", children: _jsx(CircularProgress, { size: 16, thickness: 5 }) })) : (_jsx(Tooltip, { title: "Rename", children: _jsx(IconButton, { size: "small", disabled: Boolean(renameSubmittingUid), onClick: (e) => {
+                                                    stop(e);
+                                                    setActiveError(null);
+                                                    setDetailIsRenaming(true);
+                                                    setDetailRenameText(getFileLabel(activeFile));
+                                                }, children: _jsx(EditOutlinedIcon, { fontSize: "small" }) }) })))] })), detailIsRenaming && activeFile && (_jsxs(Stack, { direction: "row", spacing: 0.5, alignItems: "center", sx: { flex: 1, minWidth: 0 }, children: [_jsx(TextField, { size: "small", value: detailRenameText, disabled: renameSubmittingUid === activeFile.uid, autoFocus: true, fullWidth: true, onClick: (e) => stop(e), onChange: (e) => setDetailRenameText(e.target.value), onKeyDown: (e) => {
+                                            if (e.key === "Escape") {
+                                                if (renameSubmittingUid === activeFile.uid) {
+                                                    return;
+                                                }
+                                                stop(e);
+                                                setDetailIsRenaming(false);
+                                                setDetailRenameText(getFileLabel(activeFile));
+                                                return;
+                                            }
+                                            if (e.key === "Enter") {
+                                                if (renameSubmittingUid === activeFile.uid) {
+                                                    return;
+                                                }
+                                                stop(e);
+                                                void submitRename({
+                                                    fileUid: activeFile.uid,
+                                                    previousName: String(activeFile.original_filename || "").trim(),
+                                                    nextName: detailRenameText,
+                                                    source: "detail",
+                                                });
+                                            }
+                                        } }), _jsx(Tooltip, { title: "Save", children: _jsx(IconButton, { size: "small", disabled: renameSubmittingUid === activeFile.uid, onClick: (e) => {
+                                                stop(e);
+                                                void submitRename({
+                                                    fileUid: activeFile.uid,
+                                                    previousName: String(activeFile.original_filename || "").trim(),
+                                                    nextName: detailRenameText,
+                                                    source: "detail",
+                                                });
+                                            }, children: renameSubmittingUid === activeFile.uid ? (_jsx(CircularProgress, { size: 16, thickness: 5 })) : (_jsx(CheckOutlinedIcon, { fontSize: "small" })) }) })] })), _jsx(Button, { variant: "outlined", onClick: closeDetail, children: "Close" })] }), activeLoading && _jsx(LinearProgress, { sx: { mt: 1.5 } }), activeError && (_jsx(Alert, { severity: "error", sx: { mt: 1.5 }, children: activeError })), activeFile && (_jsxs(Stack, { spacing: 2, sx: { mt: 2 }, children: [_jsxs(Box, { children: [_jsx(Typography, { variant: "caption", color: "text.secondary", children: "UID" }), _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", sx: { mt: 0.25 }, children: [_jsx(Typography, { variant: "body2", sx: { wordBreak: "break-all", fontFamily: "monospace" }, children: activeFile.uid }), _jsx(CopyButton, { value: activeFile.uid, tooltip: "Copy UID", size: "small", iconFontSize: "small" })] })] }), _jsxs(Box, { children: [_jsx(Typography, { variant: "caption", color: "text.secondary", children: "Preview" }), _jsxs(Paper, { variant: "outlined", sx: {
                                             mt: 1,
                                             p: 1.5,
                                             borderRadius: 2,
                                             bgcolor: "action.hover",
-                                        }, children: [activeUrl && isImageMime(activeFile.mime_type) && (_jsx(Box, { component: "img", src: activeUrl, alt: "", sx: { width: "100%", maxHeight: 320, objectFit: "contain" } })), activeUrl && isSupportedVideoMime(activeFile.mime_type) && (_jsxs(Box, { component: "video", controls: true, preload: "metadata", sx: { width: "100%", maxHeight: 320 }, children: [_jsx("source", { src: activeUrl, type: activeFile.mime_type }), "Your browser cannot play this video."] })), (!activeUrl || (!isImageMime(activeFile.mime_type) && !isSupportedVideoMime(activeFile.mime_type))) && (_jsxs(Typography, { color: "text.secondary", variant: "body2", children: ["No inline preview available for ", activeFile.mime_type || "this file", "."] }))] }), _jsxs(Stack, { direction: "row", spacing: 1, flexWrap: "wrap", sx: { mt: 1 }, children: [_jsx(CopyButton, { value: api.getContentUrl({ fileUid: activeFile.uid }), tooltip: "Copy URL", size: "small", iconFontSize: "small" }), _jsx(Button, { size: "small", variant: "outlined", component: "a", href: api.getContentUrl({ fileUid: activeFile.uid, download: true }), target: "_blank", rel: "noopener noreferrer", children: "Download" }), activeUrlKind && _jsx(Chip, { label: `URL: ${activeUrlKind}`, size: "small" })] })] }), _jsxs(Box, { children: [_jsx(Typography, { fontWeight: 800, children: "Metadata" }), _jsxs(Stack, { spacing: 1.5, sx: { mt: 1 }, children: [_jsx(TextField, { size: "small", label: "Title", value: safeTrim(activeFile.title), onChange: (e) => setActiveFile({ ...activeFile, title: e.target.value }) }), _jsx(TextField, { size: "small", label: "Alt text (images)", value: safeTrim(activeFile.alt_text), onChange: (e) => setActiveFile({ ...activeFile, alt_text: e.target.value }) }), _jsx(TextField, { size: "small", label: "Tags (comma-separated)", placeholder: "e.g. hero, landing, press", value: tagsText, onChange: (e) => setTagsText(e.target.value) }), _jsx(FormControlLabel, { control: _jsx(Checkbox, { checked: activeIsLocalStorage ? true : Boolean(activeFile.is_public), disabled: activeIsLocalStorage, onChange: (e) => setActiveFile({ ...activeFile, is_public: e.target.checked }) }), label: "Public" }), activeIsLocalStorage && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: { mt: -1 }, children: "Local files are always public." })), _jsxs(Stack, { direction: "row", spacing: 1, children: [_jsx(Button, { variant: "contained", onClick: () => void (async () => {
+                                        }, children: [activeUrl && isImageMime(activeFile.mime_type) && (_jsx(Box, { component: "img", src: activeUrl, alt: "", sx: { width: "100%", maxHeight: 320, objectFit: "contain" } })), activeUrl && isSupportedVideoMime(activeFile.mime_type) && (_jsxs(Box, { component: "video", controls: true, preload: "metadata", sx: { width: "100%", maxHeight: 320 }, children: [_jsx("source", { src: activeUrl, type: activeFile.mime_type }), "Your browser cannot play this video."] })), (!activeUrl ||
+                                                (!isImageMime(activeFile.mime_type) &&
+                                                    !isSupportedVideoMime(activeFile.mime_type))) && (_jsxs(Typography, { color: "text.secondary", variant: "body2", children: ["No inline preview available for", " ", activeFile.mime_type || "this file", "."] }))] }), _jsxs(Stack, { direction: "row", spacing: 1, flexWrap: "wrap", sx: { mt: 1 }, children: [_jsx(CopyButton, { value: api.getContentUrl({ fileUid: activeFile.uid }), tooltip: "Copy URL", size: "small", iconFontSize: "small" }), _jsx(Button, { size: "small", variant: "outlined", component: "a", href: api.getContentUrl({
+                                                    fileUid: activeFile.uid,
+                                                    download: true,
+                                                }), target: "_blank", rel: "noopener noreferrer", children: "Download" }), activeUrlKind && (_jsx(Chip, { label: `URL: ${activeUrlKind}`, size: "small" }))] })] }), _jsxs(Box, { children: [_jsx(Typography, { fontWeight: 800, children: "Metadata" }), _jsxs(Stack, { spacing: 1.5, sx: { mt: 1 }, children: [_jsx(TextField, { size: "small", label: "Title", value: safeTrim(activeFile.title), onChange: (e) => setActiveFile({
+                                                    ...activeFile,
+                                                    title: e.target.value,
+                                                }) }), _jsx(TextField, { size: "small", label: "Alt text (images)", value: safeTrim(activeFile.alt_text), onChange: (e) => setActiveFile({
+                                                    ...activeFile,
+                                                    alt_text: e.target.value,
+                                                }) }), _jsx(TextField, { size: "small", label: "Tags (comma-separated)", placeholder: "e.g. hero, landing, press", value: tagsText, onChange: (e) => setTagsText(e.target.value) }), _jsx(FormControlLabel, { control: _jsx(Checkbox, { checked: activeIsLocalStorage
+                                                        ? true
+                                                        : Boolean(activeFile.is_public), disabled: activeIsLocalStorage, onChange: (e) => setActiveFile({
+                                                        ...activeFile,
+                                                        is_public: e.target.checked,
+                                                    }) }), label: "Public" }), activeIsLocalStorage && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: { mt: -1 }, children: "Local files are always public." })), _jsxs(Stack, { direction: "row", spacing: 1, children: [_jsx(Button, { variant: "contained", onClick: () => void (async () => {
                                                             setActiveError(null);
                                                             try {
                                                                 const updated = await api.patchFile({
@@ -794,9 +1068,10 @@ export const FmMediaLibrary = (props) => {
                                                                 });
                                                                 setActiveFile({ ...activeFile, ...updated });
                                                                 await reload();
+                                                                await loadDetail();
                                                             }
                                                             catch (e) {
-                                                                setActiveError(e?.message || "Update failed");
+                                                                setActiveError(e?.message || "Save failed");
                                                             }
                                                         })(), children: "Save" }), _jsx(Button, { variant: "outlined", onClick: () => void loadDetail(), children: "Reload" })] })] })] }), _jsxs(Box, { children: [_jsx(Typography, { fontWeight: 800, children: "Actions" }), _jsxs(Stack, { direction: "row", spacing: 1, flexWrap: "wrap", sx: { mt: 1 }, children: [!activeFile.archived_at && (_jsx(Button, { variant: "outlined", onClick: () => void (async () => {
                                                     await api.archiveFile(activeFile.uid);
@@ -813,11 +1088,18 @@ export const FmMediaLibrary = (props) => {
                                                     if (!ok) {
                                                         return;
                                                     }
-                                                    await api.deleteFile({ fileUid: activeFile.uid, force: true });
+                                                    await api.deleteFile({
+                                                        fileUid: activeFile.uid,
+                                                        force: true,
+                                                    });
                                                     await reload();
                                                     closeDetail();
                                                 })(), children: "Delete" })] })] }), _jsxs(Box, { children: [_jsx(Typography, { fontWeight: 800, children: "Move" }), _jsx(MoveForm, { fileUid: activeFile.uid, onMove: async (toBucket, toFolderPath) => {
-                                            await api.moveFile({ fileUid: activeFile.uid, toBucket, toFolderPath });
+                                            await api.moveFile({
+                                                fileUid: activeFile.uid,
+                                                toBucket,
+                                                toFolderPath,
+                                            });
                                             await reload();
                                             await loadDetail();
                                         } })] }), _jsxs(Box, { children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [_jsx(Typography, { fontWeight: 800, children: "Where used" }), _jsx(Button, { size: "small", sx: { ml: "auto" }, onClick: () => void loadLinks(), children: "Refresh" })] }), linksLoading && _jsx(LinearProgress, { sx: { mt: 1 } }), linksError && (_jsx(Alert, { severity: "error", sx: { mt: 1 }, children: linksError })), _jsx(CreateLinkForm, { onCreate: async (linkedEntityType, linkedEntityUid, linkedField) => {
@@ -869,11 +1151,22 @@ export const FmMediaLibrary = (props) => {
                                                         enqueueUploads(e.target.files);
                                                     }
                                                     e.currentTarget.value = "";
-                                                } })] })] }), _jsxs(Stack, { direction: "row", spacing: 1, sx: { mt: 2 }, children: [_jsx(Button, { variant: "contained", onClick: () => void runAllUploads(), children: "Upload all" }), _jsx(Button, { variant: "outlined", onClick: () => setUploadItems([]), children: "Clear" })] }), _jsx(TableContainer, { component: Paper, variant: "outlined", sx: { mt: 2 }, children: _jsxs(Table, { size: "small", children: [_jsx(TableHead, { children: _jsxs(TableRow, { children: [_jsx(TableCell, { children: "File" }), _jsx(TableCell, { children: "Visibility" }), _jsx(TableCell, { children: "Mode" }), _jsx(TableCell, { children: "Status" }), _jsx(TableCell, { children: "Actions" })] }) }), _jsxs(TableBody, { children: [uploadItems.map((u) => (_jsxs(TableRow, { children: [_jsxs(TableCell, { children: [_jsx(Typography, { fontWeight: 700, children: u.file.name }), _jsxs(Typography, { variant: "caption", color: "text.secondary", children: [formatBytes(u.file.size), " \u00B7 ", u.file.type || "application/octet-stream"] }), u.error && (_jsx(Alert, { severity: u.status === "error" ? "error" : "warning", sx: { mt: 0.5, py: 0, px: 1 }, children: u.error }))] }), _jsx(TableCell, { children: _jsx(FormControl, { size: "small", sx: { minWidth: 90 }, children: _jsxs(Select, { value: u.visibility, onChange: (e) => setUploadItems((prev) => prev.map((x) => x.id === u.id
-                                                                        ? { ...x, visibility: e.target.value }
+                                                } })] })] }), _jsxs(Stack, { direction: "row", spacing: 1, sx: { mt: 2 }, children: [_jsx(Button, { variant: "contained", onClick: () => void runAllUploads(), children: "Upload all" }), _jsx(Button, { variant: "outlined", onClick: () => setUploadItems([]), children: "Clear" })] }), _jsx(TableContainer, { component: Paper, variant: "outlined", sx: { mt: 2 }, children: _jsxs(Table, { size: "small", children: [_jsx(TableHead, { children: _jsxs(TableRow, { children: [_jsx(TableCell, { children: "File" }), _jsx(TableCell, { children: "Visibility" }), _jsx(TableCell, { children: "Mode" }), _jsx(TableCell, { children: "Status" }), _jsx(TableCell, { children: "Actions" })] }) }), _jsxs(TableBody, { children: [uploadItems.map((u) => (_jsxs(TableRow, { children: [_jsxs(TableCell, { children: [_jsx(Typography, { fontWeight: 700, children: u.file.name }), _jsxs(Typography, { variant: "caption", color: "text.secondary", children: [formatBytes(u.file.size), " \u00B7", " ", u.file.type || "application/octet-stream"] }), u.error && (_jsx(Alert, { severity: u.status === "error" ? "error" : "warning", sx: { mt: 0.5, py: 0, px: 1 }, children: u.error }))] }), _jsx(TableCell, { children: _jsx(FormControl, { size: "small", sx: { minWidth: 90 }, children: _jsxs(Select, { value: u.visibility, onChange: (e) => setUploadItems((prev) => prev.map((x) => x.id === u.id
+                                                                        ? {
+                                                                            ...x,
+                                                                            visibility: e.target.value,
+                                                                        }
                                                                         : x)), children: [_jsx(MenuItem, { value: "private", children: "Private" }), _jsx(MenuItem, { value: "public", children: "Public" })] }) }) }), _jsx(TableCell, { children: _jsx(FormControl, { size: "small", sx: { minWidth: 90 }, children: _jsxs(Select, { value: u.modePreference, onChange: (e) => setUploadItems((prev) => prev.map((x) => x.id === u.id
-                                                                        ? { ...x, modePreference: e.target.value }
-                                                                        : x)), children: [_jsx(MenuItem, { value: "auto", children: "Auto" }), _jsx(MenuItem, { value: "proxied", children: "Proxied" })] }) }) }), _jsxs(TableCell, { children: [_jsx(Typography, { variant: "body2", children: formatUploadStatus(u) }), u.progressPct !== null && (_jsxs(Box, { sx: { display: "flex", alignItems: "center", gap: 1, mt: 0.5 }, children: [(() => {
+                                                                        ? {
+                                                                            ...x,
+                                                                            modePreference: e.target.value,
+                                                                        }
+                                                                        : x)), children: [_jsx(MenuItem, { value: "auto", children: "Auto" }), _jsx(MenuItem, { value: "proxied", children: "Proxied" })] }) }) }), _jsxs(TableCell, { children: [_jsx(Typography, { variant: "body2", children: formatUploadStatus(u) }), u.progressPct !== null && (_jsxs(Box, { sx: {
+                                                                        display: "flex",
+                                                                        alignItems: "center",
+                                                                        gap: 1,
+                                                                        mt: 0.5,
+                                                                    }, children: [(() => {
                                                                             const hasWarningOrError = u.status === "error" || Boolean(u.error);
                                                                             const isCompleteClean = u.status === "done" && !hasWarningOrError;
                                                                             return (_jsx(LinearProgress, { variant: "determinate", value: u.progressPct, sx: {
@@ -899,12 +1192,13 @@ export const FmMediaLibrary = (props) => {
                                                                                     ? "Reupload"
                                                                                     : "Uploaded"
                                                                                 : "Upload";
-                                                                        return (_jsx(Button, { size: "small", variant: "outlined", onClick: () => void runUpload(u.id), disabled: inFlight || (u.status === "done" && !hasWarningOrError), children: label }));
+                                                                        return (_jsx(Button, { size: "small", variant: "outlined", onClick: () => void runUpload(u.id), disabled: inFlight ||
+                                                                                (u.status === "done" && !hasWarningOrError), children: label }));
                                                                     })(), _jsx(Tooltip, { title: "Remove", children: _jsx("span", { children: _jsx(IconButton, { size: "small", sx: { color: "error.main" }, onClick: () => setUploadItems((prev) => prev.filter((x) => x.id !== u.id)), disabled: u.status === "uploading" ||
                                                                                     u.status === "finalizing" ||
                                                                                     u.status === "processing_variants" ||
                                                                                     u.status === "uploading_variants" ||
-                                                                                    u.status === "init", children: _jsx(DeleteOutlineIcon, { fontSize: "small" }) }) }) })] }) })] }, u.id))), uploadItems.length === 0 && (_jsx(TableRow, { children: _jsx(TableCell, { colSpan: 5, children: _jsx(Typography, { color: "text.secondary", variant: "body2", children: "No files queued." }) }) }))] })] }) })] }), _jsx(DialogActions, { children: _jsx(Button, { onClick: () => setIsUploadOpen(false), children: "Close" }) })] })] }));
+                                                                                    u.status === "init", children: _jsx(DeleteOutlineIcon, { fontSize: "small" }) }) }) })] }) })] }, u.id))), uploadItems.length === 0 && (_jsx(TableRow, { children: _jsx(TableCell, { colSpan: 5, children: _jsx(Typography, { color: "text.secondary", variant: "body2", children: "No files queued." }) }) }))] })] }) })] }), _jsx(DialogActions, { children: _jsx(Button, { onClick: () => setIsUploadOpen(false), children: "Close" }) })] }), _jsx(Snackbar, { open: Boolean(renameSuccessMessage), autoHideDuration: 2500, anchorOrigin: { vertical: "bottom", horizontal: "center" }, sx: { zIndex: (muiTheme) => muiTheme.zIndex.snackbar + 2 }, onClose: () => setRenameSuccessMessage(null), children: _jsx(Alert, { onClose: () => setRenameSuccessMessage(null), severity: "success", variant: "filled", sx: { width: "100%" }, children: renameSuccessMessage }) })] }));
 };
 // ─── Sub-components ─────────────────────────────────────────────────────────
 const MoveForm = ({ onMove }) => {

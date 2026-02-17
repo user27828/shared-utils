@@ -16,6 +16,7 @@ export const FM_PURPOSES = [
     "resume",
     "job",
     "cms_asset",
+    "cms_b64",
     "avatar",
     "generic",
 ];
@@ -188,6 +189,16 @@ export const FmVariantUploadFinalizeResponseSchema = z
 // =============================================================================
 // Patch / Move / Link request schemas (Zod)
 // =============================================================================
+/** POST /files/:fileUid/rename — rename original filename (metadata). */
+export const FmFileRenameRequestSchema = z
+    .object({
+    original_filename: z.string().min(1).max(1024).optional(),
+    originalFilename: z.string().min(1).max(1024).optional(),
+})
+    .strict()
+    .refine((d) => d.original_filename || d.originalFilename, {
+    message: "originalFilename is required",
+});
 /** PATCH /files/:fileUid — user-updateable metadata fields only. */
 export const FmFilePatchRequestSchema = z
     .object({

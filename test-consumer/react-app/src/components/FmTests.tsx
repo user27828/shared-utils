@@ -137,6 +137,20 @@ const createMockFmApi = (seedFiles: FmFileRow[]): FmApi => {
     return next;
   };
 
+  const renameFile = async (input: {
+    fileUid: string;
+    originalFilename: string;
+  }): Promise<FmFileRow> => {
+    const existing = await getFile(input.fileUid);
+    const next: FmFileRow = {
+      ...existing,
+      original_filename: String(input.originalFilename || "").trim(),
+      updated_at: new Date().toISOString(),
+    };
+    filesByUid.set(next.uid, next);
+    return next;
+  };
+
   const archiveFile = async (fileUid: string): Promise<FmFileRow> => {
     const existing = await getFile(fileUid);
     const next: FmFileRow = {
@@ -192,6 +206,7 @@ const createMockFmApi = (seedFiles: FmFileRow[]): FmApi => {
     listFiles,
     getFile,
     patchFile,
+    renameFile,
 
     // Lifecycle
     archiveFile,

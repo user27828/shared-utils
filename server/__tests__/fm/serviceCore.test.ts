@@ -1317,6 +1317,78 @@ describe("FmServiceCore", () => {
     });
   });
 
+  // ── Rename (original filename) ─────────────────────────────────────
+
+  describe("renameFile", () => {
+    test("updates original_filename and emits a patch write event", async () => {
+      const onWrite = jest.fn();
+      const { service, connector } = buildService({ onWrite });
+      connector.getFileByUid.mockResolvedValue(makeFakeFile());
+      connector.updateFileByUid.mockResolvedValue(
+        makeFakeFile({ original_filename: "new-name.jpg" }),
+      );
+
+      const result = await service.renameFile({
+        fileUid: "file-abc",
+        originalFilename: "new-name.jpg",
+        userUid: "user-1",
+      });
+
+      expect(connector.updateFileByUid).toHaveBeenCalledWith(
+        "file-abc",
+        expect.objectContaining({ original_filename: "new-name.jpg" }),
+      );
+      expect(onWrite).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: "patch",
+          fileUid: "file-abc",
+          userUid: "user-1",
+        }),
+      );
+      expect(result.original_filename).toBe("new-name.jpg");
+    });
+
+    test("no-ops when filename is unchanged", async () => {
+      const { service, connector } = buildService();
+      const file = makeFakeFile({ original_filename: "photo.jpg" });
+      connector.getFileByUid.mockResolvedValue(file);
+
+      const result = await service.renameFile({
+        fileUid: "file-abc",
+        originalFilename: "photo.jpg",
+      });
+
+      expect(connector.updateFileByUid).not.toHaveBeenCalled();
+      expect(result).toEqual(file);
+    });
+
+    test("rejects invalid filenames with path separators", async () => {
+      const { service, connector } = buildService();
+      connector.getFileByUid.mockResolvedValue(makeFakeFile());
+
+      await expect(
+        service.renameFile({
+          fileUid: "file-abc",
+          originalFilename: "../evil.jpg",
+        }),
+      ).rejects.toThrow(FmValidationError);
+    });
+
+    test("rejects disallowed extensions for the file purpose", async () => {
+      const { service, connector } = buildService();
+      connector.getFileByUid.mockResolvedValue(
+        makeFakeFile({ purpose: "avatar" }),
+      );
+
+      await expect(
+        service.renameFile({
+          fileUid: "file-abc",
+          originalFilename: "avatar.gif",
+        }),
+      ).rejects.toThrow(FmPolicyError);
+    });
+  });
+
   // ── Delegation methods ───────────────────────────────────────────────
 
   describe("listFiles / getFileByUid / listVariantsForFile", () => {

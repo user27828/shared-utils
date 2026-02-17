@@ -66,6 +66,7 @@ import { CmsClient } from "../CmsClient.js";
 import type { CmsApi } from "../CmsApi.js";
 import type {
   CmsAdminUiConfig,
+  CmsImageUploadContext,
   CmsMediaPickerProps,
 } from "./CmsAdminUiConfig.js";
 import { defaultToast } from "./CmsAdminUiConfig.js";
@@ -75,9 +76,8 @@ import CmsBodyEditor, {
   contentTypeToMime,
   mimeToContentType,
 } from "./CmsBodyEditor.js";
-import CmsHistoryDrawer, {
-  HISTORY_DRAWER_WIDTH,
-} from "./CmsHistoryDrawer.js";
+import CmsHistoryDrawer, { HISTORY_DRAWER_WIDTH } from "./CmsHistoryDrawer.js";
+import { useFmApi } from "../../fm/FmClientProvider.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -324,7 +324,18 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     }
     setEditEpoch(Date.now());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, slug, content, tags, optionsJson, password, locale, postType, contentType, isLoading]);
+  }, [
+    title,
+    slug,
+    content,
+    tags,
+    optionsJson,
+    password,
+    locale,
+    postType,
+    contentType,
+    isLoading,
+  ]);
 
   // Reset to visual mode when content type changes
   useEffect(() => {
@@ -461,9 +472,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
         ) as CmsEditorContentType,
       );
       setContent(item.content || "<p></p>");
-      setTags(
-        Array.isArray((item as any).tags) ? (item as any).tags : [],
-      );
+      setTags(Array.isArray((item as any).tags) ? (item as any).tags : []);
       setOptionsJson(
         (item as any).options
           ? JSON.stringify((item as any).options, null, 2)
@@ -856,9 +865,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
         ) as CmsEditorContentType,
       );
       setContent(snap.content ?? "<p></p>");
-      setTags(
-        Array.isArray(snap.tags) ? snap.tags : [],
-      );
+      setTags(Array.isArray(snap.tags) ? snap.tags : []);
       setOptionsJson(
         snap.options ? JSON.stringify(snap.options, null, 2) : "{}",
       );
@@ -904,6 +911,72 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     setLoadedRevisionId(null);
     announce("Returned to current version");
   }, [announce]);
+
+  // ── Effective image upload handler ────────────────────────────────────
+  const contextFmApi = useFmApi();
+
+  const effectiveOnUploadImage = useCallback(
+    async (
+      file: File,
+      context?: CmsImageUploadContext,
+    ): Promise<string | null> => {
+      // Prefer explicit callback
+      if (config?.onUploadImage) {
+        return config.onUploadImage(file, context);
+      }
+
+      // Auto-upload via FM API (explicit config override → context → default)
+      const fmApi = config?.fmApi || contextFmApi;
+
+      // ── Build a meaningful filename for browser-pasted images ────────
+      // Browsers generate generic names like "image.png" / "image.jpeg" for
+      // clipboard pastes.  Replace with a CMS-contextual name so files are
+      // identifiable in the media library.
+      const isGenericPasteName = /^image\.[a-z]+$/i.test(file.name);
+      let uploadFile = file;
+      if (isGenericPasteName) {
+        // Normalize extension: prefer .jpg over .jpeg for consistency
+        const rawExt = file.name.replace(/^.*\./, "").toLowerCase();
+        const ext = rawExt === "jpeg" ? "jpg" : rawExt;
+        const rnd = Math.random().toString(36).slice(2, 8);
+        let prefix: string;
+        if (slug) {
+          // Use slug (truncated) as a human-readable prefix
+          prefix = slug.slice(0, 40);
+        } else if (propUid) {
+          prefix = propUid;
+        } else {
+          prefix = "img-paste";
+        }
+        const newName = `${prefix}-${rnd}.${ext}`;
+        uploadFile = new File([file], newName, { type: file.type });
+      }
+
+      // Pasted images → purpose "cms_b64" → stored in "cms-b64" bucket
+      // (separate from picker-uploaded "cms" bucket).
+      // Regular uploads use default purpose → "cms" bucket.
+      const init = await fmApi.uploadInit({
+        request: {
+          originalFilename: uploadFile.name,
+          mimeType: uploadFile.type || "application/octet-stream",
+          sizeBytes: uploadFile.size,
+          ...(isGenericPasteName ? { purpose: "cms_b64" as const } : {}),
+        },
+      });
+
+      await fmApi.uploadProxied({
+        fileUid: init.fileUid,
+        body: uploadFile,
+        contentType: uploadFile.type || "application/octet-stream",
+      });
+
+      return fmApi.getContentUrl({ fileUid: init.fileUid });
+    },
+    [config?.onUploadImage, config?.fmApi, contextFmApi, slug, propUid],
+  );
+
+  // Upload is always available: explicit callback, explicit fmApi, or context/default FM client
+  const hasUploadHandler = true;
 
   // ── Media picker (promise-based) ──────────────────────────────────────
   const openMediaPicker = (): Promise<{ uid: string } | null> => {
@@ -1018,7 +1091,13 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
       </Box>
 
       {/* ═══ FLEX WRAPPER: history drawer + main content ═══ */}
-      <Box sx={{ display: "flex", position: "relative", minHeight: "calc(100vh - 64px)" }}>
+      <Box
+        sx={{
+          display: "flex",
+          position: "relative",
+          minHeight: "calc(100vh - 64px)",
+        }}
+      >
         {/* History drawer (flex-based sidebar) */}
         {!isNew && (
           <CmsHistoryDrawer
@@ -1042,685 +1121,723 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
 
         {/* Main content area */}
         <Box sx={{ flex: 1, minWidth: 0, ml: 1 }}>
-
-      {/* Loaded revision banner */}
-      {loadedRevisionId && (
-        <Alert
-          severity="info"
-          sx={{ mb: 2 }}
-          action={
-            <Stack direction="row" spacing={1}>
-              <Button
-                size="small"
-                color="inherit"
-                onClick={handleDismissRevision}
-              >
-                Dismiss
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                color="inherit"
-                onClick={() => handleRestoreRevision(loadedRevisionId)}
-                disabled={isSaving}
-              >
-                Restore this revision
-              </Button>
-            </Stack>
-          }
-        >
-          Previewing revision {
-            history.find((h) => h.id === loadedRevisionId)?.revision ??
-            loadedRevisionId
-          }. Changes have not been saved.
-        </Alert>
-      )}
-
-      <Stack direction={{ xs: "column", lg: "row" }} spacing={3}>
-        {/* ═══ LEFT COLUMN ═══ */}
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          {/* Header */}
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            sx={{ mb: 2 }}
-          >
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Tooltip title="Back to list">
-                <IconButton onClick={() => nav?.goToList?.()}>
-                  <ArrowBackIcon />
-                </IconButton>
-              </Tooltip>
-              <Typography variant="h5">
-                {isNew ? "New CMS Item" : "Edit CMS Item"}
-              </Typography>
-            </Stack>
-
-            <Stack direction="row" spacing={1}>
-              {!isNew && (
-                <Tooltip
-                  title={
-                    historyDrawerOpen
-                      ? "Close history"
-                      : "Open history"
-                  }
-                >
-                  <IconButton
-                    onClick={() =>
-                      setHistoryDrawerOpen((o) => !o)
-                    }
-                    color={historyDrawerOpen ? "primary" : "default"}
-                    size="small"
-                  >
-                    <HistoryIcon />
-                  </IconButton>
-                </Tooltip>
-              )}
-              {canPreview && previewUrl && (
-                <Button
-                  size="small"
-                  href={previewUrl}
-                  target="_blank"
-                  startIcon={<OpenInNewIcon />}
-                >
-                  Preview
-                </Button>
-              )}
-              <Button
-                variant="contained"
-                onClick={handleSave}
-                disabled={isSaving || isLoading}
-              >
-                {isSaving ? "Saving..." : "Save"}
-              </Button>
-            </Stack>
-          </Stack>
-
-          {/* Error */}
-          {error && (
+          {/* Loaded revision banner */}
+          {loadedRevisionId && (
             <Alert
-              ref={errorAlertRef}
-              severity="error"
-              onClose={() => setError(null)}
+              severity="info"
               sx={{ mb: 2 }}
-              tabIndex={-1}
+              action={
+                <Stack direction="row" spacing={1}>
+                  <Button
+                    size="small"
+                    color="inherit"
+                    onClick={handleDismissRevision}
+                  >
+                    Dismiss
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="inherit"
+                    onClick={() => handleRestoreRevision(loadedRevisionId)}
+                    disabled={isSaving}
+                  >
+                    Restore this revision
+                  </Button>
+                </Stack>
+              }
             >
-              {error}
+              Previewing revision{" "}
+              {history.find((h) => h.id === loadedRevisionId)?.revision ??
+                loadedRevisionId}
+              . Changes have not been saved.
             </Alert>
           )}
 
-          {/* Metadata form */}
-          <Paper sx={{ p: 2, mb: 2 }}>
-            <TextField
-              label="Title"
-              fullWidth
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onBlur={handleTitleBlur}
-              sx={{ mb: isSlugEditing ? 2 : "1px" }}
-            />
-
-            {!isSlugEditing ? (
+          <Stack direction={{ xs: "column", lg: "row" }} spacing={3}>
+            {/* ═══ LEFT COLUMN ═══ */}
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              {/* Header */}
               <Stack
                 direction="row"
+                justifyContent="space-between"
                 alignItems="center"
-                spacing={1}
-                sx={{
-                  border: 1,
-                  borderColor: "divider",
-                  borderRadius: 1,
-                  px: 1,
-                  py: 0.5,
-                  bgcolor: "background.default",
-                }}
+                sx={{ mb: 2 }}
               >
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  Slug:
-                </Typography>
-
-                <Tooltip title={slugPath || "No slug"}>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontFamily: "monospace",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      maxWidth: { xs: "55vw", md: 360 },
-                      px: 0.5,
-                      py: 0.25,
-                      borderRadius: 0.75,
-                      bgcolor: "action.hover",
-                    }}
-                  >
-                    {slugPath || "—"}
-                  </Typography>
-                </Tooltip>
-
-                <Box sx={{ flex: 1 }} />
-
-                <Tooltip title={slugPath ? "Copy slug" : "No slug to copy"}>
-                  <span>
-                    <IconButton
-                      size="small"
-                      onClick={handleCopySlug}
-                      disabled={!slugPath}
-                      aria-label="Copy slug"
-                    >
-                      <ContentCopyIcon fontSize="small" />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-
-                <Tooltip title="Edit slug">
-                  <IconButton
-                    size="small"
-                    onClick={handleStartSlugEdit}
-                    aria-label="Edit slug"
-                  >
-                    <EditIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </Stack>
-            ) : (
-              <TextField
-                label="Slug"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                size="small"
-                fullWidth
-                autoFocus
-                onBlur={handleSlugBlur}
-                onKeyDown={handleSlugKeyDown}
-                sx={{ maxWidth: { xs: "100%", md: 520 } }}
-                helperText="Used in the URL path. Leading '/' is optional."
-                inputProps={{
-                  style: { fontFamily: "monospace" },
-                }}
-              />
-            )}
-          </Paper>
-
-          {/* Editor panel with toolbar */}
-          <Paper variant="outlined" sx={{ overflow: "hidden" }}>
-            {/* Toolbar: Content type · Locale · Post type ·  Visual | Text */}
-            <Stack
-              direction="row"
-              alignItems="center"
-              justifyContent="space-between"
-              flexWrap="nowrap"
-              gap={1.5}
-              sx={{
-                px: 2,
-                py: 1,
-                borderColor: "divider",
-                bgcolor: "action.hover",
-              }}
-            >
-              <Stack
-                direction="row"
-                alignItems="center"
-                gap={1.5}
-                sx={{ minWidth: 0, flexShrink: 0 }}
-              >
-                <FormControl size="small" sx={{ minWidth: 110 }}>
-                  <InputLabel>Content</InputLabel>
-                  <Select
-                    value={contentType}
-                    label="Content"
-                    onChange={(e) => {
-                      const next = e.target.value as CmsEditorContentType;
-                      if (hasEditorContent && next !== contentType) {
-                        setPendingContentType(next);
-                      } else {
-                        setContentType(next);
-                      }
-                    }}
-                  >
-                    <MenuItem value="html">HTML</MenuItem>
-                    <MenuItem value="markdown">Markdown</MenuItem>
-                    <MenuItem value="json">JSON</MenuItem>
-                    <MenuItem value="text">Text</MenuItem>
-                  </Select>
-                </FormControl>
-
-                <FormControl size="small" sx={{ minWidth: 110 }}>
-                  <InputLabel>Locale</InputLabel>
-                  <Select
-                    value={locale}
-                    label="Locale"
-                    onChange={(e) => setLocale(e.target.value)}
-                  >
-                    {localeOptions.map((opt) => (
-                      <MenuItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                <FormControl size="small" sx={{ minWidth: 110 }}>
-                  <InputLabel>Post type</InputLabel>
-                  <Select
-                    value={postType}
-                    label="Post type"
-                    onChange={(e) => setPostType(e.target.value)}
-                  >
-                    {postTypeOpts.map((opt) => (
-                      <MenuItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Stack>
-
-              {hasVisualMode && (
-                <ToggleButtonGroup
-                  value={editorMode}
-                  exclusive
-                  onChange={(_, v) => {
-                    if (v) {
-                      setEditorMode(v);
-                    }
-                  }}
-                  size="small"
-                  sx={{ ml: "auto" }}
-                >
-                  <ToggleButton
-                    value="visual"
-                    sx={{ px: 1.5, py: 0.25, fontSize: "0.8rem", textTransform: "none" }}
-                  >
-                    Visual
-                  </ToggleButton>
-                  <ToggleButton
-                    value="text"
-                    sx={{ px: 1.5, py: 0.25, fontSize: "0.8rem", textTransform: "none" }}
-                  >
-                    Text
-                  </ToggleButton>
-                </ToggleButtonGroup>
-              )}
-            </Stack>
-
-            {/* Editor body — key forces clean remount on mode toggle */}
-            <CmsBodyEditor
-              key={`body-${contentType}-${editorMode}`}
-              contentType={effectiveContentType}
-              value={content}
-              onChange={setContent}
-              editor={config?.editorPreference}
-              onPickAsset={
-                config?.renderMediaPicker ? () => openMediaPicker() : undefined
-              }
-            />
-          </Paper>
-
-          {/* Tags & Password */}
-          <Paper sx={{ p: 2, mt: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              Tags
-            </Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: tags.length > 0 ? 1 : 0 }}>
-              {tags.map((tag, idx) => (
-                <Chip
-                  key={`${tag}-${idx}`}
-                  label={tag}
-                  size="small"
-                  onDelete={() => setTags((prev) => prev.filter((_, i) => i !== idx))}
-                  sx={{ mb: 0.5 }}
-                />
-              ))}
-            </Stack>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <TextField
-                label="Add tag"
-                size="small"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    const val = tagInput.trim();
-                    if (val && !tags.includes(val)) {
-                      setTags((prev) => [...prev, val]);
-                    }
-                    setTagInput("");
-                  }
-                }}
-                sx={{ flex: 1 }}
-              />
-              <IconButton
-                size="small"
-                color="primary"
-                onClick={() => {
-                  const val = tagInput.trim();
-                  if (val && !tags.includes(val)) {
-                    setTags((prev) => [...prev, val]);
-                  }
-                  setTagInput("");
-                }}
-                disabled={!tagInput.trim()}
-              >
-                <AddIcon />
-              </IconButton>
-            </Stack>
-
-            <Divider sx={{ my: 2 }} />
-
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              Password Protection
-            </Typography>
-            <TextField
-              label="Password (optional)"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={isNew ? "" : "(unchanged)"}
-              fullWidth
-              size="small"
-            />
-          </Paper>
-
-          {/* Advanced options accordion */}
-          <Accordion sx={{ mt: 2 }}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography>Advanced Options (JSON)</Typography>
-              {optionsParse.error && (
-                <Chip
-                  label="Invalid JSON"
-                  size="small"
-                  color="error"
-                  sx={{ ml: 1 }}
-                />
-              )}
-            </AccordionSummary>
-            <AccordionDetails>
-              <CmsBodyEditor
-                contentType="json"
-                value={optionsJson}
-                onChange={setOptionsJson}
-                height={260}
-              />
-            </AccordionDetails>
-          </Accordion>
-        </Box>
-
-        {/* ═══ RIGHT SIDEBAR ═══ */}
-        <Box sx={{ width: { xs: "100%", lg: 420 }, flexShrink: 0 }}>
-          {/* Status panel */}
-          <Paper sx={{ p: 2, mb: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              Status
-            </Typography>
-
-            <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-              {etag && <Chip label={etag} size="small" variant="outlined" />}
-              {lockedBy && (
-                <Chip
-                  label={`Locked by ${lockedBy}`}
-                  size="small"
-                  icon={<LockIcon fontSize="small" />}
-                  color="warning"
-                />
-              )}
-            </Stack>
-
-            {!isNew && (
-              <Stack spacing={0.75} sx={{ mb: 1 }}>
                 <Stack direction="row" alignItems="center" spacing={1}>
-                  <Chip
-                    label={status === "published" ? "Published" : status === "trash" ? "Trash" : "Draft"}
-                    size="small"
-                    color={
-                      status === "published"
-                        ? "success"
-                        : status === "trash"
-                          ? "error"
-                          : "default"
-                    }
-                    variant={status === "published" ? "filled" : "outlined"}
-                  />
-                  {status === "published" && (
-                    <Typography variant="caption" color="text.secondary" noWrap>
-                      {publishedAtText}
-                    </Typography>
-                  )}
+                  <Tooltip title="Back to list">
+                    <IconButton onClick={() => nav?.goToList?.()}>
+                      <ArrowBackIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Typography variant="h5">
+                    {isNew ? "New CMS Item" : "Edit CMS Item"}
+                  </Typography>
                 </Stack>
 
+                <Stack direction="row" spacing={1}>
+                  {!isNew && (
+                    <Tooltip
+                      title={
+                        historyDrawerOpen ? "Close history" : "Open history"
+                      }
+                    >
+                      <IconButton
+                        onClick={() => setHistoryDrawerOpen((o) => !o)}
+                        color={historyDrawerOpen ? "primary" : "default"}
+                        size="small"
+                      >
+                        <HistoryIcon />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  {canPreview && previewUrl && (
+                    <Button
+                      size="small"
+                      href={previewUrl}
+                      target="_blank"
+                      startIcon={<OpenInNewIcon />}
+                    >
+                      Preview
+                    </Button>
+                  )}
+                  <Button
+                    variant="contained"
+                    onClick={handleSave}
+                    disabled={isSaving || isLoading}
+                  >
+                    {isSaving ? "Saving..." : "Save"}
+                  </Button>
+                </Stack>
+              </Stack>
+
+              {/* Error */}
+              {error && (
+                <Alert
+                  ref={errorAlertRef}
+                  severity="error"
+                  onClose={() => setError(null)}
+                  sx={{ mb: 2 }}
+                  tabIndex={-1}
+                >
+                  {error}
+                </Alert>
+              )}
+
+              {/* Metadata form */}
+              <Paper sx={{ p: 2, mb: 2 }}>
+                <TextField
+                  label="Title"
+                  fullWidth
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  onBlur={handleTitleBlur}
+                  sx={{ mb: isSlugEditing ? 2 : "1px" }}
+                />
+
+                {!isSlugEditing ? (
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={1}
+                    sx={{
+                      border: 1,
+                      borderColor: "divider",
+                      borderRadius: 1,
+                      px: 1,
+                      py: 0.5,
+                      bgcolor: "background.default",
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "text.secondary" }}
+                    >
+                      Slug:
+                    </Typography>
+
+                    <Tooltip title={slugPath || "No slug"}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontFamily: "monospace",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          maxWidth: { xs: "55vw", md: 360 },
+                          px: 0.5,
+                          py: 0.25,
+                          borderRadius: 0.75,
+                          bgcolor: "action.hover",
+                        }}
+                      >
+                        {slugPath || "—"}
+                      </Typography>
+                    </Tooltip>
+
+                    <Box sx={{ flex: 1 }} />
+
+                    <Tooltip title={slugPath ? "Copy slug" : "No slug to copy"}>
+                      <span>
+                        <IconButton
+                          size="small"
+                          onClick={handleCopySlug}
+                          disabled={!slugPath}
+                          aria-label="Copy slug"
+                        >
+                          <ContentCopyIcon fontSize="small" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+
+                    <Tooltip title="Edit slug">
+                      <IconButton
+                        size="small"
+                        onClick={handleStartSlugEdit}
+                        aria-label="Edit slug"
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
+                ) : (
+                  <TextField
+                    label="Slug"
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    size="small"
+                    fullWidth
+                    autoFocus
+                    onBlur={handleSlugBlur}
+                    onKeyDown={handleSlugKeyDown}
+                    sx={{ maxWidth: { xs: "100%", md: 520 } }}
+                    helperText="Used in the URL path. Leading '/' is optional."
+                    inputProps={{
+                      style: { fontFamily: "monospace" },
+                    }}
+                  />
+                )}
+              </Paper>
+
+              {/* Editor panel with toolbar */}
+              <Paper variant="outlined" sx={{ overflow: "hidden" }}>
+                {/* Toolbar: Content type · Locale · Post type ·  Visual | Text */}
                 <Stack
                   direction="row"
                   alignItems="center"
                   justifyContent="space-between"
-                  spacing={1}
+                  flexWrap="nowrap"
+                  gap={1.5}
+                  sx={{
+                    px: 2,
+                    py: 1,
+                    borderColor: "divider",
+                    bgcolor: "action.hover",
+                  }}
                 >
-                  <Typography variant="body2">Revisions: {revisionsCount}</Typography>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<HistoryIcon fontSize="small" />}
-                    onClick={() => setHistoryDrawerOpen(true)}
-                    disabled={historyDrawerOpen || revisionsCount === 0}
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    gap={1.5}
+                    sx={{ minWidth: 0, flexShrink: 0 }}
                   >
-                    Browse
-                  </Button>
-                </Stack>
-              </Stack>
-            )}
+                    <FormControl size="small" sx={{ minWidth: 110 }}>
+                      <InputLabel>Content</InputLabel>
+                      <Select
+                        value={contentType}
+                        label="Content"
+                        onChange={(e) => {
+                          const next = e.target.value as CmsEditorContentType;
+                          if (hasEditorContent && next !== contentType) {
+                            setPendingContentType(next);
+                          } else {
+                            setContentType(next);
+                          }
+                        }}
+                      >
+                        <MenuItem value="html">HTML</MenuItem>
+                        <MenuItem value="markdown">Markdown</MenuItem>
+                        <MenuItem value="json">JSON</MenuItem>
+                        <MenuItem value="text">Text</MenuItem>
+                      </Select>
+                    </FormControl>
 
-            <Divider sx={{ my: 1 }} />
+                    <FormControl size="small" sx={{ minWidth: 110 }}>
+                      <InputLabel>Locale</InputLabel>
+                      <Select
+                        value={locale}
+                        label="Locale"
+                        onChange={(e) => setLocale(e.target.value)}
+                      >
+                        {localeOptions.map((opt) => (
+                          <MenuItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
 
-            <Stack spacing={1}>
-              {!isNew && status !== "published" && status !== "trash" && (
-                <Button
-                  variant="contained"
-                  color="success"
-                  fullWidth
-                  onClick={handlePublish}
-                  disabled={isSaving}
-                >
-                  Publish
-                </Button>
-              )}
+                    <FormControl size="small" sx={{ minWidth: 110 }}>
+                      <InputLabel>Post type</InputLabel>
+                      <Select
+                        value={postType}
+                        label="Post type"
+                        onChange={(e) => setPostType(e.target.value)}
+                      >
+                        {postTypeOpts.map((opt) => (
+                          <MenuItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Stack>
 
-              {!isNew && status !== "trash" && (
-                <Stack direction="row" spacing={1}>
-                  <Button
-                    variant="outlined"
-                    color="warning"
-                    fullWidth
-                    onClick={handleTrash}
-                    disabled={isSaving}
-                  >
-                    Move to Trash
-                  </Button>
-                  {!lockedBy && (
-                    <Button
-                      variant="outlined"
-                      startIcon={<LockIcon />}
-                      fullWidth
-                      onClick={handleLock}
-                      disabled={isSaving}
-                    >
-                      Lock
-                    </Button>
-                  )}
-                  {lockedBy && (
-                    <Button
-                      variant="outlined"
-                      startIcon={<LockOpenIcon />}
-                      fullWidth
-                      onClick={handleUnlock}
-                      disabled={isSaving}
-                    >
-                      Unlock
-                    </Button>
-                  )}
-                </Stack>
-              )}
-
-              {!isNew && status === "trash" && (
-                <>
-                  <Button
-                    startIcon={<RestoreIcon />}
-                    fullWidth
-                    onClick={handleRestore}
-                    disabled={isSaving}
-                  >
-                    Restore
-                  </Button>
-                  <Button
-                    color="error"
-                    startIcon={<DeleteForeverIcon />}
-                    fullWidth
-                    onClick={handleDeletePermanently}
-                    disabled={isSaving}
-                  >
-                    Delete permanently
-                  </Button>
-                </>
-              )}
-
-              {!isNew && status === "trash" && <Divider />}
-            </Stack>
-          </Paper>
-
-          {/* Media & SEO panel */}
-          {config?.renderMediaPicker && (
-            <Paper sx={{ p: 2, mb: 2 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                Media &amp; SEO
-              </Typography>
-
-              {/* Featured image */}
-              <Stack
-                direction="row"
-                alignItems="center"
-                spacing={1}
-                sx={{ mb: 1 }}
-              >
-                <Typography variant="caption" sx={{ minWidth: 100 }}>
-                  Featured image:
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  noWrap
-                  sx={{ flex: 1 }}
-                >
-                  {featuredImageUid || "—"}
-                </Typography>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  startIcon={<AddIcon fontSize="small" />}
-                  onClick={chooseFeaturedImage}
-                >
-                  Choose
-                </Button>
-                {featuredImageUid && (
-                  <Button
-                    size="small"
-                    color="error"
-                    onClick={() =>
-                      updateOptionsJson((o) => {
-                        delete o.featured_image_file_uid;
-                      })
-                    }
-                  >
-                    Clear
-                  </Button>
-                )}
-              </Stack>
-
-              {/* OG image */}
-              <Stack
-                direction="row"
-                alignItems="center"
-                spacing={1}
-                sx={{ mb: 1 }}
-              >
-                <Typography variant="caption" sx={{ minWidth: 100 }}>
-                  OG image:
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  noWrap
-                  sx={{ flex: 1 }}
-                >
-                  {ogImageUid || "—"}
-                </Typography>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  startIcon={<AddIcon fontSize="small" />}
-                  onClick={chooseOgImage}
-                >
-                  Choose
-                </Button>
-                {ogImageUid && (
-                  <Button
-                    size="small"
-                    color="error"
-                    onClick={() =>
-                      updateOptionsJson((o) => {
-                        if (o.seo) {
-                          delete o.seo.og_image_file_uid;
+                  {hasVisualMode && (
+                    <ToggleButtonGroup
+                      value={editorMode}
+                      exclusive
+                      onChange={(_, v) => {
+                        if (v) {
+                          setEditorMode(v);
                         }
-                      })
-                    }
-                  >
-                    Clear
-                  </Button>
-                )}
-              </Stack>
+                      }}
+                      size="small"
+                      sx={{ ml: "auto" }}
+                    >
+                      <ToggleButton
+                        value="visual"
+                        sx={{
+                          px: 1.5,
+                          py: 0.25,
+                          fontSize: "0.8rem",
+                          textTransform: "none",
+                        }}
+                      >
+                        Visual
+                      </ToggleButton>
+                      <ToggleButton
+                        value="text"
+                        sx={{
+                          px: 1.5,
+                          py: 0.25,
+                          fontSize: "0.8rem",
+                          textTransform: "none",
+                        }}
+                      >
+                        Text
+                      </ToggleButton>
+                    </ToggleButtonGroup>
+                  )}
+                </Stack>
 
-              <Divider sx={{ my: 1 }} />
+                {/* Editor body — key forces clean remount on mode toggle */}
+                <CmsBodyEditor
+                  key={`body-${contentType}-${editorMode}`}
+                  contentType={effectiveContentType}
+                  value={content}
+                  onChange={setContent}
+                  editor={config?.editorPreference}
+                  onUploadImage={
+                    hasUploadHandler ? effectiveOnUploadImage : undefined
+                  }
+                  onPickAsset={
+                    config?.renderMediaPicker
+                      ? () => openMediaPicker()
+                      : undefined
+                  }
+                />
+              </Paper>
 
-              {/* Attachments */}
-              <Typography variant="caption" sx={{ mb: 0.5, display: "block" }}>
-                Attachments
-              </Typography>
-              {attachments.map((att, idx) => (
+              {/* Tags & Password */}
+              <Paper sx={{ p: 2, mt: 2 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  Tags
+                </Typography>
                 <Stack
-                  key={idx}
                   direction="row"
-                  alignItems="center"
                   spacing={1}
-                  sx={{ mb: 0.5 }}
+                  flexWrap="wrap"
+                  sx={{ mb: tags.length > 0 ? 1 : 0 }}
                 >
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    noWrap
+                  {tags.map((tag, idx) => (
+                    <Chip
+                      key={`${tag}-${idx}`}
+                      label={tag}
+                      size="small"
+                      onDelete={() =>
+                        setTags((prev) => prev.filter((_, i) => i !== idx))
+                      }
+                      sx={{ mb: 0.5 }}
+                    />
+                  ))}
+                </Stack>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <TextField
+                    label="Add tag"
+                    size="small"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const val = tagInput.trim();
+                        if (val && !tags.includes(val)) {
+                          setTags((prev) => [...prev, val]);
+                        }
+                        setTagInput("");
+                      }
+                    }}
                     sx={{ flex: 1 }}
-                  >
-                    {att.file_uid}
-                  </Typography>
+                  />
                   <IconButton
                     size="small"
-                    onClick={() => removeAttachment(idx)}
+                    color="primary"
+                    onClick={() => {
+                      const val = tagInput.trim();
+                      if (val && !tags.includes(val)) {
+                        setTags((prev) => [...prev, val]);
+                      }
+                      setTagInput("");
+                    }}
+                    disabled={!tagInput.trim()}
                   >
-                    <DeleteIcon fontSize="small" />
+                    <AddIcon />
                   </IconButton>
                 </Stack>
-              ))}
-              <Button
-                size="small"
-                startIcon={<AddIcon />}
-                onClick={addAttachment}
-              >
-                Add attachment
-              </Button>
-            </Paper>
-          )}
-        </Box>
-      </Stack>
 
-      </Box>{/* /Main content area */}
-      </Box>{/* /FLEX WRAPPER */}
+                <Divider sx={{ my: 2 }} />
+
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  Password Protection
+                </Typography>
+                <TextField
+                  label="Password (optional)"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={isNew ? "" : "(unchanged)"}
+                  fullWidth
+                  size="small"
+                />
+              </Paper>
+
+              {/* Advanced options accordion */}
+              <Accordion sx={{ mt: 2 }}>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography>Advanced Options (JSON)</Typography>
+                  {optionsParse.error && (
+                    <Chip
+                      label="Invalid JSON"
+                      size="small"
+                      color="error"
+                      sx={{ ml: 1 }}
+                    />
+                  )}
+                </AccordionSummary>
+                <AccordionDetails>
+                  <CmsBodyEditor
+                    contentType="json"
+                    value={optionsJson}
+                    onChange={setOptionsJson}
+                    height={260}
+                  />
+                </AccordionDetails>
+              </Accordion>
+            </Box>
+
+            {/* ═══ RIGHT SIDEBAR ═══ */}
+            <Box sx={{ width: { xs: "100%", lg: 420 }, flexShrink: 0 }}>
+              {/* Status panel */}
+              <Paper sx={{ p: 2, mb: 2 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  Status
+                </Typography>
+
+                <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+                  {etag && (
+                    <Chip label={etag} size="small" variant="outlined" />
+                  )}
+                  {lockedBy && (
+                    <Chip
+                      label={`Locked by ${lockedBy}`}
+                      size="small"
+                      icon={<LockIcon fontSize="small" />}
+                      color="warning"
+                    />
+                  )}
+                </Stack>
+
+                {!isNew && (
+                  <Stack spacing={0.75} sx={{ mb: 1 }}>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Chip
+                        label={
+                          status === "published"
+                            ? "Published"
+                            : status === "trash"
+                              ? "Trash"
+                              : "Draft"
+                        }
+                        size="small"
+                        color={
+                          status === "published"
+                            ? "success"
+                            : status === "trash"
+                              ? "error"
+                              : "default"
+                        }
+                        variant={status === "published" ? "filled" : "outlined"}
+                      />
+                      {status === "published" && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          noWrap
+                        >
+                          {publishedAtText}
+                        </Typography>
+                      )}
+                    </Stack>
+
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      spacing={1}
+                    >
+                      <Typography variant="body2">
+                        Revisions: {revisionsCount}
+                      </Typography>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<HistoryIcon fontSize="small" />}
+                        onClick={() => setHistoryDrawerOpen(true)}
+                        disabled={historyDrawerOpen || revisionsCount === 0}
+                      >
+                        Browse
+                      </Button>
+                    </Stack>
+                  </Stack>
+                )}
+
+                <Divider sx={{ my: 1 }} />
+
+                <Stack spacing={1}>
+                  {!isNew && status !== "published" && status !== "trash" && (
+                    <Button
+                      variant="contained"
+                      color="success"
+                      fullWidth
+                      onClick={handlePublish}
+                      disabled={isSaving}
+                    >
+                      Publish
+                    </Button>
+                  )}
+
+                  {!isNew && status !== "trash" && (
+                    <Stack direction="row" spacing={1}>
+                      <Button
+                        variant="outlined"
+                        color="warning"
+                        fullWidth
+                        onClick={handleTrash}
+                        disabled={isSaving}
+                      >
+                        Move to Trash
+                      </Button>
+                      {!lockedBy && (
+                        <Button
+                          variant="outlined"
+                          startIcon={<LockIcon />}
+                          fullWidth
+                          onClick={handleLock}
+                          disabled={isSaving}
+                        >
+                          Lock
+                        </Button>
+                      )}
+                      {lockedBy && (
+                        <Button
+                          variant="outlined"
+                          startIcon={<LockOpenIcon />}
+                          fullWidth
+                          onClick={handleUnlock}
+                          disabled={isSaving}
+                        >
+                          Unlock
+                        </Button>
+                      )}
+                    </Stack>
+                  )}
+
+                  {!isNew && status === "trash" && (
+                    <>
+                      <Button
+                        startIcon={<RestoreIcon />}
+                        fullWidth
+                        onClick={handleRestore}
+                        disabled={isSaving}
+                      >
+                        Restore
+                      </Button>
+                      <Button
+                        color="error"
+                        startIcon={<DeleteForeverIcon />}
+                        fullWidth
+                        onClick={handleDeletePermanently}
+                        disabled={isSaving}
+                      >
+                        Delete permanently
+                      </Button>
+                    </>
+                  )}
+
+                  {!isNew && status === "trash" && <Divider />}
+                </Stack>
+              </Paper>
+
+              {/* Media & SEO panel */}
+              {config?.renderMediaPicker && (
+                <Paper sx={{ p: 2, mb: 2 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Media &amp; SEO
+                  </Typography>
+
+                  {/* Featured image */}
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={1}
+                    sx={{ mb: 1 }}
+                  >
+                    <Typography variant="caption" sx={{ minWidth: 100 }}>
+                      Featured image:
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      noWrap
+                      sx={{ flex: 1 }}
+                    >
+                      {featuredImageUid || "—"}
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<AddIcon fontSize="small" />}
+                      onClick={chooseFeaturedImage}
+                    >
+                      Choose
+                    </Button>
+                    {featuredImageUid && (
+                      <Button
+                        size="small"
+                        color="error"
+                        onClick={() =>
+                          updateOptionsJson((o) => {
+                            delete o.featured_image_file_uid;
+                          })
+                        }
+                      >
+                        Clear
+                      </Button>
+                    )}
+                  </Stack>
+
+                  {/* OG image */}
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={1}
+                    sx={{ mb: 1 }}
+                  >
+                    <Typography variant="caption" sx={{ minWidth: 100 }}>
+                      OG image:
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      noWrap
+                      sx={{ flex: 1 }}
+                    >
+                      {ogImageUid || "—"}
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<AddIcon fontSize="small" />}
+                      onClick={chooseOgImage}
+                    >
+                      Choose
+                    </Button>
+                    {ogImageUid && (
+                      <Button
+                        size="small"
+                        color="error"
+                        onClick={() =>
+                          updateOptionsJson((o) => {
+                            if (o.seo) {
+                              delete o.seo.og_image_file_uid;
+                            }
+                          })
+                        }
+                      >
+                        Clear
+                      </Button>
+                    )}
+                  </Stack>
+
+                  <Divider sx={{ my: 1 }} />
+
+                  {/* Attachments */}
+                  <Typography
+                    variant="caption"
+                    sx={{ mb: 0.5, display: "block" }}
+                  >
+                    Attachments
+                  </Typography>
+                  {attachments.map((att, idx) => (
+                    <Stack
+                      key={idx}
+                      direction="row"
+                      alignItems="center"
+                      spacing={1}
+                      sx={{ mb: 0.5 }}
+                    >
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        noWrap
+                        sx={{ flex: 1 }}
+                      >
+                        {att.file_uid}
+                      </Typography>
+                      <IconButton
+                        size="small"
+                        onClick={() => removeAttachment(idx)}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Stack>
+                  ))}
+                  <Button
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={addAttachment}
+                  >
+                    Add attachment
+                  </Button>
+                </Paper>
+              )}
+            </Box>
+          </Stack>
+        </Box>
+        {/* /Main content area */}
+      </Box>
+      {/* /FLEX WRAPPER */}
 
       {/* Loading overlay */}
       {isLoading && (

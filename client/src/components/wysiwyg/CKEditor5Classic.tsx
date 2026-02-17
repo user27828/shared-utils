@@ -17,14 +17,21 @@ import { CKEditor } from "@ckeditor/ckeditor5-react";
 import { mergeWith } from "lodash-es";
 
 import {
+  Alignment,
   Autoformat,
+  Base64UploadAdapter,
   BlockQuote,
   Bold,
   ClassicEditor,
   Code,
   CodeBlock,
   Essentials,
+  FontBackgroundColor,
+  FontColor,
+  FontFamily,
+  FontSize,
   Fullscreen,
+  GeneralHtmlSupport,
   Heading,
   HorizontalLine,
   Image,
@@ -33,15 +40,20 @@ import {
   ImageStyle,
   ImageToolbar,
   ImageUpload,
+  Indent,
   Italic,
   Link,
   List,
+  ListProperties,
   MediaEmbed,
   Paragraph,
+  PasteFromOffice,
   PasteFromMarkdownExperimental,
   Plugin,
   ButtonView,
   Table,
+  TableCellProperties,
+  TableProperties,
   TableToolbar,
   Underline,
   WordCount,
@@ -301,8 +313,8 @@ body.shared-utils-ckeditor-dark-global .ck.ck-input-text {
 }
 
 /* Fullscreen mode is rendered outside the local container, so we also theme it via a global class. */
-html.shared-utils-ckeditor-dark-fullscreen.ck-fullscreen,
-body.shared-utils-ckeditor-dark-fullscreen.ck-fullscreen {
+html:is(.shared-utils-ckeditor-dark-fullscreen, .shared-utils-ckeditor-dark-global).ck-fullscreen,
+body:is(.shared-utils-ckeditor-dark-fullscreen, .shared-utils-ckeditor-dark-global).ck-fullscreen {
   background: #1a1a1a;
   color: rgba(255, 255, 255, 0.87);
 
@@ -313,42 +325,75 @@ body.shared-utils-ckeditor-dark-fullscreen.ck-fullscreen {
   --ck-color-base-text: rgba(255, 255, 255, 0.87);
   --ck-color-toolbar-background: #18191b;
   --ck-color-dropdown-panel-background: #18191b;
+  --ck-color-editor-background: #1a1a1a;
+  --ck-color-text: rgba(255, 255, 255, 0.87);
 }
 
-body.shared-utils-ckeditor-dark-fullscreen.ck-fullscreen .ck.ck-fullscreen__main-wrapper {
-  background: #1a1a1a;
+html:is(.shared-utils-ckeditor-dark-fullscreen, .shared-utils-ckeditor-dark-global).ck-fullscreen .ck.ck-fullscreen,
+body:is(.shared-utils-ckeditor-dark-fullscreen, .shared-utils-ckeditor-dark-global).ck-fullscreen .ck.ck-fullscreen,
+body:is(.shared-utils-ckeditor-dark-fullscreen, .shared-utils-ckeditor-dark-global).ck-fullscreen .ck.ck-fullscreen__main-wrapper {
+  background: #1a1a1a !important;
 }
 
-body.shared-utils-ckeditor-dark-fullscreen.ck-fullscreen .ck.ck-toolbar {
+body:is(.shared-utils-ckeditor-dark-fullscreen, .shared-utils-ckeditor-dark-global).ck-fullscreen .ck.ck-toolbar {
   background: #18191b;
   border-color: rgba(255, 255, 255, 0.12);
 }
 
-body.shared-utils-ckeditor-dark-fullscreen.ck-fullscreen .ck.ck-toolbar .ck-button,
-body.shared-utils-ckeditor-dark-fullscreen.ck-fullscreen .ck.ck-toolbar .ck-dropdown__button {
+body:is(.shared-utils-ckeditor-dark-fullscreen, .shared-utils-ckeditor-dark-global).ck-fullscreen .ck.ck-toolbar .ck-button,
+body:is(.shared-utils-ckeditor-dark-fullscreen, .shared-utils-ckeditor-dark-global).ck-fullscreen .ck.ck-toolbar .ck-dropdown__button {
   color: rgba(255, 255, 255, 0.87);
 }
 
-body.shared-utils-ckeditor-dark-fullscreen.ck-fullscreen .ck.ck-dropdown__panel {
-  background: #18191b;
+body:is(.shared-utils-ckeditor-dark-fullscreen, .shared-utils-ckeditor-dark-global).ck-fullscreen .ck.ck-dropdown__panel {
+  background: #18191b !important;
   border-color: rgba(255, 255, 255, 0.12);
 }
 
-body.shared-utils-ckeditor-dark-fullscreen.ck-fullscreen .ck.ck-editor__main > .ck-editor__editable,
-body.shared-utils-ckeditor-dark-fullscreen.ck-fullscreen .ck-fullscreen__editable {
-  background: #1a1a1a;
-  color: rgba(255, 255, 255, 0.87);
+html:is(.shared-utils-ckeditor-dark-fullscreen, .shared-utils-ckeditor-dark-global).ck-fullscreen .ck.ck-editor__main > .ck-editor__editable,
+html:is(.shared-utils-ckeditor-dark-fullscreen, .shared-utils-ckeditor-dark-global).ck-fullscreen .ck-fullscreen__editable,
+body:is(.shared-utils-ckeditor-dark-fullscreen, .shared-utils-ckeditor-dark-global).ck-fullscreen .ck.ck-editor__main > .ck-editor__editable,
+body:is(.shared-utils-ckeditor-dark-fullscreen, .shared-utils-ckeditor-dark-global).ck-fullscreen .ck-fullscreen__editable {
+  background: #1a1a1a !important;
+  color: rgba(255, 255, 255, 0.87) !important;
 }
 
 /* Fullscreen plugin intentionally renders a "page" with a hardcoded white background. Override to match dark mode. */
-body.shared-utils-ckeditor-dark-fullscreen.ck-fullscreen
+html:is(.shared-utils-ckeditor-dark-fullscreen, .shared-utils-ckeditor-dark-global).ck-fullscreen
+  .ck.ck-fullscreen__main-wrapper
+  .ck-fullscreen__editable
+  .ck.ck-editor__editable:not(.ck-editor__nested-editable),
+body:is(.shared-utils-ckeditor-dark-fullscreen, .shared-utils-ckeditor-dark-global).ck-fullscreen
+  .ck.ck-fullscreen__main-wrapper
+  .ck-fullscreen__editable
+  .ck.ck-editor__editable:not(.ck-editor__nested-editable),
+html:is(.shared-utils-ckeditor-dark-fullscreen, .shared-utils-ckeditor-dark-global).ck-fullscreen
+  .ck-fullscreen__main-wrapper
+  .ck-fullscreen__editable
+  .ck.ck-editor__editable:not(.ck-editor__nested-editable),
+body:is(.shared-utils-ckeditor-dark-fullscreen, .shared-utils-ckeditor-dark-global).ck-fullscreen
   .ck-fullscreen__main-wrapper
   .ck-fullscreen__editable
   .ck.ck-editor__editable:not(.ck-editor__nested-editable) {
-  background: #1a1a1a;
-  color: rgba(255, 255, 255, 0.87);
+  background: #1a1a1a !important;
+  color: rgba(255, 255, 255, 0.87) !important;
   border-color: rgba(255, 255, 255, 0.12);
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
+}
+
+html:is(.shared-utils-ckeditor-dark-fullscreen, .shared-utils-ckeditor-dark-global).ck-fullscreen
+  .ck-fullscreen__main-wrapper
+  .ck-fullscreen__editable
+  .ck-source-editing-area
+  textarea,
+body:is(.shared-utils-ckeditor-dark-fullscreen, .shared-utils-ckeditor-dark-global).ck-fullscreen
+  .ck-fullscreen__main-wrapper
+  .ck-fullscreen__editable
+  .ck-source-editing-area
+  textarea {
+  background: #1a1a1a !important;
+  color: rgba(255, 255, 255, 0.87) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 `;
 
@@ -366,7 +411,12 @@ const useCkeditorDarkThemeStyles = (enabled: boolean) => {
     if (!styleElement) {
       styleElement = document.createElement("style");
       styleElement.id = styleId;
-      styleElement.textContent = DARK_THEME_STYLES;
+      document.head.appendChild(styleElement);
+    }
+
+    styleElement.textContent = DARK_THEME_STYLES;
+
+    if (styleElement.parentNode === document.head) {
       document.head.appendChild(styleElement);
     }
   }, [enabled]);
@@ -717,9 +767,6 @@ const CKEditor5Classic: React.FC<CKEditor5ClassicProps> = (props) => {
   const fullscreenActiveRef = useRef<boolean>(false);
   const darkModeRef = useRef<boolean>(darkMode);
   const globalDarkAppliedRef = useRef<boolean>(false);
-  const fullscreenOwnerTokenRef = useRef<string>(
-    `shared-utils-ckeditor-${Math.random().toString(16).slice(2)}`,
-  );
 
   const [wordCountStats, setWordCountStats] = useState<WordCountStats>({
     words: 0,
@@ -742,40 +789,15 @@ const CKEditor5Classic: React.FC<CKEditor5ClassicProps> = (props) => {
       return;
     }
 
-    const token = fullscreenOwnerTokenRef.current;
     const globalClassName = "shared-utils-ckeditor-dark-fullscreen";
     const shouldEnable = !!darkModeRef.current && !!fullscreenActiveRef.current;
 
-    const enable = () => {
+    if (shouldEnable) {
       document.body.classList.add(globalClassName);
       document.documentElement.classList.add(globalClassName);
-      document.body.dataset.sharedUtilsCkeditorFullscreenDarkOwner = token;
-      document.documentElement.dataset.sharedUtilsCkeditorFullscreenDarkOwner =
-        token;
-    };
-
-    const disable = () => {
-      const bodyOwner =
-        document.body.dataset.sharedUtilsCkeditorFullscreenDarkOwner;
-      const htmlOwner =
-        document.documentElement.dataset.sharedUtilsCkeditorFullscreenDarkOwner;
-
-      if (bodyOwner === token) {
-        document.body.classList.remove(globalClassName);
-        delete document.body.dataset.sharedUtilsCkeditorFullscreenDarkOwner;
-      }
-
-      if (htmlOwner === token) {
-        document.documentElement.classList.remove(globalClassName);
-        delete document.documentElement.dataset
-          .sharedUtilsCkeditorFullscreenDarkOwner;
-      }
-    };
-
-    if (shouldEnable) {
-      enable();
     } else {
-      disable();
+      document.body.classList.remove(globalClassName);
+      document.documentElement.classList.remove(globalClassName);
     }
   }, []);
 
@@ -912,6 +934,13 @@ const CKEditor5Classic: React.FC<CKEditor5ClassicProps> = (props) => {
       Bold,
       Italic,
       Underline,
+      Alignment,
+      FontSize,
+      FontFamily,
+      FontColor,
+      FontBackgroundColor,
+      ListProperties,
+      Indent,
       Code,
       Link,
       List,
@@ -919,9 +948,12 @@ const CKEditor5Classic: React.FC<CKEditor5ClassicProps> = (props) => {
       CodeBlock,
       Table,
       TableToolbar,
+      TableProperties,
+      TableCellProperties,
       HorizontalLine,
       MediaEmbed,
       Fullscreen,
+      GeneralHtmlSupport,
       Image,
       ImageCaption,
       ImageStyle,
@@ -929,8 +961,10 @@ const CKEditor5Classic: React.FC<CKEditor5ClassicProps> = (props) => {
       ImageToolbar,
       ImageUpload,
       Autoformat,
+      PasteFromOffice,
       PasteFromMarkdownExperimental,
       WordCount,
+      ...(!onUploadImage ? [Base64UploadAdapter] : []),
       editorPlugins.uploadAdapterPlugin,
       editorPlugins.filePickerPlugin,
       ...additionalPlugins,
@@ -940,6 +974,7 @@ const CKEditor5Classic: React.FC<CKEditor5ClassicProps> = (props) => {
       licenseKey: "GPL",
       plugins,
       toolbar: {
+        shouldNotGroupWhenFull: true,
         items: [
           "undo",
           "redo",
@@ -951,9 +986,17 @@ const CKEditor5Classic: React.FC<CKEditor5ClassicProps> = (props) => {
           "underline",
           "code",
           "|",
+          "fontSize",
+          "fontFamily",
+          "fontColor",
+          "fontBackgroundColor",
+          "|",
           "link",
           "bulletedList",
           "numberedList",
+          "outdent",
+          "indent",
+          "alignment",
           "|",
           "blockQuote",
           "codeBlock",
@@ -980,10 +1023,41 @@ const CKEditor5Classic: React.FC<CKEditor5ClassicProps> = (props) => {
         ],
       },
       table: {
-        contentToolbar: ["tableColumn", "tableRow", "mergeTableCells"],
+        contentToolbar: [
+          "tableColumn",
+          "tableRow",
+          "mergeTableCells",
+          "|",
+          "tableProperties",
+          "tableCellProperties",
+        ],
+      },
+      list: {
+        properties: {
+          styles: true,
+          startIndex: true,
+          reversed: true,
+        },
+      },
+      fontFamily: {
+        supportAllValues: true,
+      },
+      fontSize: {
+        options: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22],
+        supportAllValues: true,
       },
       mediaEmbed: {
         previewsInData: false,
+      },
+      htmlSupport: {
+        allow: [
+          {
+            name: /^(p|h[1-6]|span|div|a|table|thead|tbody|tfoot|tr|th|td|ol|ul|li|figure|figcaption|img|blockquote|pre|code)$/,
+            styles: true,
+            classes: true,
+            attributes: true,
+          },
+        ],
       },
       wordCount: {
         onUpdate: handleWordCountUpdate,
@@ -994,6 +1068,7 @@ const CKEditor5Classic: React.FC<CKEditor5ClassicProps> = (props) => {
     editorPlugins.filePickerPlugin,
     editorPlugins.uploadAdapterPlugin,
     handleWordCountUpdate,
+    onUploadImage,
   ]);
 
   const finalConfig = useMemo(() => {
@@ -1030,9 +1105,7 @@ const CKEditor5Classic: React.FC<CKEditor5ClassicProps> = (props) => {
             editorRef.current = editor;
             isReadyRef.current = true;
 
-            // Keep fullscreen styling aligned with darkMode.
-            // Fullscreen toggles the `ck-fullscreen` class on <html>/<body>, but the editor UI is rendered
-            // outside our local container, so we add our own global dark marker while fullscreen is active.
+            // Keep fullscreen dark styling aligned with darkMode.
             const fullscreenCommand = editor.commands.get("fullscreen");
             if (
               fullscreenCommand &&

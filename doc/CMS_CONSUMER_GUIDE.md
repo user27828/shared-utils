@@ -6,11 +6,11 @@ How to use the shared-utils CMS module in a consuming application. Covers the cl
 
 The CMS is split across three export paths:
 
-| Export path | Contents | Used by |
-|---|---|---|
-| `@user27828/shared-utils/cms` | Zod schemas, TypeScript types, error classes | Both client and server |
-| `@user27828/shared-utils/cms/server` | `CmsServiceCore`, connector interface, Express router factories, middleware factories | Server only |
-| `@user27828/shared-utils/cms/client` | `CmsClient`, React hooks, portable admin UI pages/components | Client only |
+| Export path                          | Contents                                                                              | Used by                |
+| ------------------------------------ | ------------------------------------------------------------------------------------- | ---------------------- |
+| `@user27828/shared-utils/cms`        | Zod schemas, TypeScript types, error classes                                          | Both client and server |
+| `@user27828/shared-utils/cms/server` | `CmsServiceCore`, connector interface, Express router factories, middleware factories | Server only            |
+| `@user27828/shared-utils/cms/client` | `CmsClient`, React hooks, portable admin UI pages/components                          | Client only            |
 
 ## 1. Server Composition
 
@@ -46,7 +46,9 @@ import { CmsServiceCore } from "@user27828/shared-utils/cms/server";
 const core = new CmsServiceCore({
   connector: myCustomConnector,
   reservedSlugs: ["admin", "api"],
-  onAfterWrite: async (event) => { /* ... */ },
+  onAfterWrite: async (event) => {
+    /* ... */
+  },
   lockTtlMs: 10 * 60 * 1000, // optional, default: 10 minutes
 });
 ```
@@ -101,8 +103,8 @@ export const cmsAdminRateLimit = createCmsAdminRateLimitMiddleware({
   redisUrl: process.env.REDIS_URL, // optional; falls back to in-memory
   getUserKey,
   adminRules: {
-    read:  { maxRequests: 240, windowMs: 60_000 },
-    write: { maxRequests: 30,  windowMs: 60_000 },
+    read: { maxRequests: 240, windowMs: 60_000 },
+    write: { maxRequests: 30, windowMs: 60_000 },
   },
 });
 
@@ -110,9 +112,9 @@ export const cmsPublicRateLimit = createCmsPublicRateLimitMiddleware({
   redisUrl: process.env.REDIS_URL,
   getUserKey,
   publicRules: {
-    read:   { maxRequests: 120, windowMs: 60_000 },
-    write:  { maxRequests: 60,  windowMs: 60_000 },
-    unlock: { maxRequests: 10,  windowMs: 60_000 },
+    read: { maxRequests: 120, windowMs: 60_000 },
+    write: { maxRequests: 60, windowMs: 60_000 },
+    unlock: { maxRequests: 10, windowMs: 60_000 },
   },
 });
 ```
@@ -146,11 +148,11 @@ const app = express();
 app.use(
   "/api/admin/cms",
   express.json({ limit: "1mb" }),
-  authMiddleware,          // your auth middleware
-  cmsAdminRateLimit,       // from step 1.3
+  authMiddleware, // your auth middleware
+  cmsAdminRateLimit, // from step 1.3
   createCmsAdminRouter({
-    service: core,         // CmsServiceCore from step 1.1
-    authz: cmsAuthz,       // from step 1.2
+    service: core, // CmsServiceCore from step 1.1
+    authz: cmsAuthz, // from step 1.2
     onAfterWrite: async ({ uid, event, actorUid, row, req }) => {
       // Optional: app-specific side effects (file-link sync, etc.)
     },
@@ -161,13 +163,21 @@ app.use(
 app.use(
   "/api/public/cms",
   express.json({ limit: "4kb" }),
-  cmsPublicRateLimit,      // from step 1.3
+  cmsPublicRateLimit, // from step 1.3
   createCmsPublicRouter({
     service: core,
     unlockToken: {
-      sign: (claims, ttl) => unlockToken.sign({ ...claims, ttlSeconds: ttl }).token,
+      sign: (claims, ttl) =>
+        unlockToken.sign({ ...claims, ttlSeconds: ttl }).token,
       verify: (token) => {
-        const result = unlockToken.verify({ token, uid: "", postType: "", locale: "", slug: "", passwordVersion: 0 });
+        const result = unlockToken.verify({
+          token,
+          uid: "",
+          postType: "",
+          locale: "",
+          slug: "",
+          passwordVersion: 0,
+        });
         return result.ok ? result.claims : null;
       },
     },
@@ -185,8 +195,13 @@ let _router: express.Router | null = null;
 
 const getRouter = (): express.Router => {
   if (!_router) {
-    const cmsSvc = new CmsService({ /* ... */ });
-    _router = createCmsAdminRouter({ service: cmsSvc.cmsServiceCore, authz: cmsAuthz });
+    const cmsSvc = new CmsService({
+      /* ... */
+    });
+    _router = createCmsAdminRouter({
+      service: cmsSvc.cmsServiceCore,
+      authz: cmsAuthz,
+    });
   }
   return _router;
 };
@@ -200,32 +215,32 @@ export default router;
 
 The admin router exposes these endpoints (all relative to mount path):
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/` | List CMS items (query params: `q`, `status`, `post_type`, `locale`, `tag`, `limit`, `offset`, `orderBy`, `orderDirection`, `includeTrash`) |
-| GET | `/:uid` | Get a single item by UID |
-| POST | `/` | Create a new item |
-| PUT | `/:uid` | Update an item (requires `If-Match` header) |
-| POST | `/:uid/publish` | Publish an item (requires `If-Match` header) |
-| POST | `/:uid/trash` | Trash an item (requires `If-Match` header) |
-| POST | `/:uid/restore` | Restore from trash (requires `If-Match` header) |
-| DELETE | `/:uid` | Permanently delete (must be trashed first) |
-| POST | `/empty-trash` | Delete all trashed items |
-| POST | `/:uid/lock` | Lock an item |
-| DELETE | `/:uid/lock` | Unlock an item |
-| GET | `/:uid/collaborators` | List collaborators |
-| PUT | `/:uid/collaborators` | Replace collaborators |
-| GET | `/:uid/history` | List history revisions |
-| POST | `/:uid/history/:historyId/restore` | Restore a history revision (requires `If-Match`) |
-| POST | `/:uid/history/:historyId/soft-delete` | Soft-delete a history revision |
-| DELETE | `/:uid/history/:historyId` | Hard-delete a history revision |
+| Method | Path                                   | Description                                                                                                                                |
+| ------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/`                                    | List CMS items (query params: `q`, `status`, `post_type`, `locale`, `tag`, `limit`, `offset`, `orderBy`, `orderDirection`, `includeTrash`) |
+| GET    | `/:uid`                                | Get a single item by UID                                                                                                                   |
+| POST   | `/`                                    | Create a new item                                                                                                                          |
+| PUT    | `/:uid`                                | Update an item (requires `If-Match` header)                                                                                                |
+| POST   | `/:uid/publish`                        | Publish an item (requires `If-Match` header)                                                                                               |
+| POST   | `/:uid/trash`                          | Trash an item (requires `If-Match` header)                                                                                                 |
+| POST   | `/:uid/restore`                        | Restore from trash (requires `If-Match` header)                                                                                            |
+| DELETE | `/:uid`                                | Permanently delete (must be trashed first)                                                                                                 |
+| POST   | `/empty-trash`                         | Delete all trashed items                                                                                                                   |
+| POST   | `/:uid/lock`                           | Lock an item                                                                                                                               |
+| DELETE | `/:uid/lock`                           | Unlock an item                                                                                                                             |
+| GET    | `/:uid/collaborators`                  | List collaborators                                                                                                                         |
+| PUT    | `/:uid/collaborators`                  | Replace collaborators                                                                                                                      |
+| GET    | `/:uid/history`                        | List history revisions                                                                                                                     |
+| POST   | `/:uid/history/:historyId/restore`     | Restore a history revision (requires `If-Match`)                                                                                           |
+| POST   | `/:uid/history/:historyId/soft-delete` | Soft-delete a history revision                                                                                                             |
+| DELETE | `/:uid/history/:historyId`             | Hard-delete a history revision                                                                                                             |
 
 ### Public router endpoints
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/:postType/:locale/:slug` | Fetch published content (supports `If-None-Match` for 304) |
-| POST | `/:postType/:locale/:slug/unlock` | Exchange password for unlock token |
+| Method | Path                              | Description                                                |
+| ------ | --------------------------------- | ---------------------------------------------------------- |
+| GET    | `/:postType/:locale/:slug`        | Fetch published content (supports `If-None-Match` for 304) |
+| POST   | `/:postType/:locale/:slug/unlock` | Exchange password for unlock token                         |
 
 ## 2. Client SDK
 
@@ -237,7 +252,7 @@ The admin router exposes these endpoints (all relative to mount path):
 import { CmsClient } from "@user27828/shared-utils/cms/client";
 
 const client = new CmsClient({
-  adminBaseUrl: "/api/admin/cms",   // default
+  adminBaseUrl: "/api/admin/cms", // default
   publicBaseUrl: "/api/public/cms", // default
 });
 
@@ -305,7 +320,9 @@ const PageContent: React.FC<{ slug: string }> = ({ slug }) => {
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Not found</p>;
 
-  return <div dangerouslySetInnerHTML={{ __html: data?.sanitized_html || "" }} />;
+  return (
+    <div dangerouslySetInnerHTML={{ __html: data?.sanitized_html || "" }} />
+  );
 };
 ```
 
@@ -380,6 +397,62 @@ const config: CmsAdminUiConfig = {
 };
 ```
 
+#### Automatic image paste/drop upload
+
+When an image is pasted or dropped into the CMS editor, it is automatically uploaded to FM and the inline base64 data-URI is replaced with the FM content URL. **No additional configuration is required** — `CmsEditPage` uses the FM client from `FmClientProvider` context (or the default `FmClient` if no provider is present).
+
+- Pasted/dropped images → `folderPath: "cms-b64"`
+- Editor file-picker uploads → `folderPath: "cms"`
+
+To override the FM instance used for uploads, set `fmApi` in the config:
+
+```tsx
+const config: CmsAdminUiConfig = {
+  // ... other config ...
+  fmApi: myCustomFmClient, // overrides the context/default FM client
+};
+```
+
+#### Custom upload handler (advanced)
+
+If you need full control over the upload pipeline (e.g. custom storage, resizing, or non-FM backends), provide `onUploadImage`. When present, it takes precedence over the automatic FM upload.
+
+```tsx
+const config: CmsAdminUiConfig = {
+  // ... other config ...
+
+  // Optional explicit image upload adapter (overrides fmApi for uploads).
+  // context.source is:
+  //   - "editor-upload" for direct editor uploads
+  //   - "pasted-data-uri" for embedded base64 images rewritten by CmsBodyEditor
+  onUploadImage: async (file, context) => {
+    const folderPath =
+      context?.source === "pasted-data-uri" ? "cms-b64" : "cms";
+
+    const init = await fmApi.uploadInit({
+      request: {
+        purpose: "cms_asset",
+        originalFilename: file.name,
+        mimeType: file.type || "application/octet-stream",
+        sizeBytes: file.size,
+        visibility: "public",
+        folderPath,
+      },
+    });
+
+    await fmApi.uploadProxied({
+      fileUid: init.fileUid,
+      body: file,
+      contentType: file.type || "application/octet-stream",
+    });
+
+    return fmApi.getContentUrl({
+      fileUid: init.fileUid,
+    });
+  },
+};
+```
+
 ### 3.3 Mounting pages
 
 ```tsx
@@ -394,7 +467,9 @@ import { CmsListPage, CmsEditPage } from "@user27828/shared-utils/cms/client";
 Where the edit wrapper extracts the UID from the URL:
 
 ```tsx
-const CmsEditPageWrapper: React.FC<{ config: CmsAdminUiConfig }> = ({ config }) => {
+const CmsEditPageWrapper: React.FC<{ config: CmsAdminUiConfig }> = ({
+  config,
+}) => {
   const { uid } = useParams();
   return (
     <CmsEditPage
@@ -421,16 +496,27 @@ export const useCmsAdminUiConfig = (): CmsAdminUiConfig => {
   const user = useAppSelector((state) => state.user);
   const editorPref = user?.profile?.optionsJson?.admin?.cmsEditor ?? "ckeditor";
 
-  return useMemo((): CmsAdminUiConfig => ({
-    api: new CmsClient(),
-    reservedSlugs: ["admin", "api", "auth"],
-    localeOptions: LOCALE_OPTIONS,
-    toast: { success: (m) => snackbar.success(m), error: (m) => snackbar.error(m), info: (m) => snackbar.info(m) },
-    navigation: { goToList: () => navigate("/cms"), goToEdit: (uid) => navigate(`/cms/${uid}`), goToCreate: () => navigate("/cms/new") },
-    renderMediaPicker: (props) => <MyMediaPicker {...props} />,
-    getContentUrl: (uid) => `/api/files/${uid}`,
-    editorPreference: editorPref,
-  }), [navigate, snackbar, editorPref]);
+  return useMemo(
+    (): CmsAdminUiConfig => ({
+      api: new CmsClient(),
+      reservedSlugs: ["admin", "api", "auth"],
+      localeOptions: LOCALE_OPTIONS,
+      toast: {
+        success: (m) => snackbar.success(m),
+        error: (m) => snackbar.error(m),
+        info: (m) => snackbar.info(m),
+      },
+      navigation: {
+        goToList: () => navigate("/cms"),
+        goToEdit: (uid) => navigate(`/cms/${uid}`),
+        goToCreate: () => navigate("/cms/new"),
+      },
+      renderMediaPicker: (props) => <MyMediaPicker {...props} />,
+      getContentUrl: (uid) => `/api/files/${uid}`,
+      editorPreference: editorPref,
+    }),
+    [navigate, snackbar, editorPref],
+  );
 };
 ```
 
@@ -476,13 +562,13 @@ import {
 ```ts
 import {
   CmsError,
-  CmsPreconditionFailedError,  // 412 — ETag mismatch
-  CmsConflictError,             // 409 — slug change needs confirmation
-  CmsNotFoundError,             // 404
-  CmsValidationError,           // 400 — invalid input
-  CmsLockedError,               // 423 — locked by another user
-  CmsAuthenticationError,       // 401
-  CmsAuthorizationError,        // 403
+  CmsPreconditionFailedError, // 412 — ETag mismatch
+  CmsConflictError, // 409 — slug change needs confirmation
+  CmsNotFoundError, // 404
+  CmsValidationError, // 400 — invalid input
+  CmsLockedError, // 423 — locked by another user
+  CmsAuthenticationError, // 401
+  CmsAuthorizationError, // 403
   isCmsError,
   cmsErrorToResponse,
 } from "@user27828/shared-utils/cms";
@@ -492,27 +578,27 @@ All errors extend `CmsError` which carries `statusCode` and `code` properties. U
 
 ## 5. CmsServiceCore Method Reference
 
-| Method | Description |
-|---|---|
-| `list(params)` | List items with filtering, search, pagination |
-| `getByUid(uid)` | Get a single item (throws 404 if missing) |
-| `create({ request, actorUserUid })` | Create a new item (draft status) |
-| `updateByUid({ uid, patch, ifMatchHeader, actorUserUid })` | Update with ETag concurrency check |
-| `publishByUid({ uid, publishedAt?, ifMatchHeader, actorUserUid })` | Publish (sets status, published_at) |
-| `trashByUid({ uid, ifMatchHeader, actorUserUid })` | Move to trash |
-| `restoreByUid({ uid, ifMatchHeader, actorUserUid })` | Restore from trash to draft |
-| `deleteByUid({ uid, actorUserUid })` | Permanent delete (must be trashed first) |
-| `emptyTrash({ limit?, actorUserUid })` | Bulk-delete all trashed items |
-| `lockByUid({ uid, actorUserUid })` | Lock for editing |
-| `unlockByUid({ uid, actorUserUid, force? })` | Unlock |
-| `listHistory({ cmsUid, limit?, offset?, includeSoftDeleted? })` | List history revisions |
-| `restoreHistoryRevision({ cmsUid, historyId, ifMatchHeader, actorUserUid })` | Restore a revision to head |
-| `softDeleteHistoryRevision({ historyId, actorUserUid })` | Soft-delete a revision |
-| `hardDeleteHistoryRevision(historyId)` | Permanently delete a revision |
-| `listCollaborators(cmsUid)` | List collaborators for an item |
-| `replaceCollaborators(cmsUid, collaborators)` | Replace all collaborators |
-| `getPublicPayloadBySlug({ postType, locale, slug })` | Render published content (sanitized) |
-| `getPublicHead({ postType, locale, slug })` | Lightweight read for 304/password checks |
+| Method                                                                       | Description                                   |
+| ---------------------------------------------------------------------------- | --------------------------------------------- |
+| `list(params)`                                                               | List items with filtering, search, pagination |
+| `getByUid(uid)`                                                              | Get a single item (throws 404 if missing)     |
+| `create({ request, actorUserUid })`                                          | Create a new item (draft status)              |
+| `updateByUid({ uid, patch, ifMatchHeader, actorUserUid })`                   | Update with ETag concurrency check            |
+| `publishByUid({ uid, publishedAt?, ifMatchHeader, actorUserUid })`           | Publish (sets status, published_at)           |
+| `trashByUid({ uid, ifMatchHeader, actorUserUid })`                           | Move to trash                                 |
+| `restoreByUid({ uid, ifMatchHeader, actorUserUid })`                         | Restore from trash to draft                   |
+| `deleteByUid({ uid, actorUserUid })`                                         | Permanent delete (must be trashed first)      |
+| `emptyTrash({ limit?, actorUserUid })`                                       | Bulk-delete all trashed items                 |
+| `lockByUid({ uid, actorUserUid })`                                           | Lock for editing                              |
+| `unlockByUid({ uid, actorUserUid, force? })`                                 | Unlock                                        |
+| `listHistory({ cmsUid, limit?, offset?, includeSoftDeleted? })`              | List history revisions                        |
+| `restoreHistoryRevision({ cmsUid, historyId, ifMatchHeader, actorUserUid })` | Restore a revision to head                    |
+| `softDeleteHistoryRevision({ historyId, actorUserUid })`                     | Soft-delete a revision                        |
+| `hardDeleteHistoryRevision(historyId)`                                       | Permanently delete a revision                 |
+| `listCollaborators(cmsUid)`                                                  | List collaborators for an item                |
+| `replaceCollaborators(cmsUid, collaborators)`                                | Replace all collaborators                     |
+| `getPublicPayloadBySlug({ postType, locale, slug })`                         | Render published content (sanitized)          |
+| `getPublicHead({ postType, locale, slug })`                                  | Lightweight read for 304/password checks      |
 
 All write methods that accept `ifMatchHeader` enforce optimistic concurrency. Callers must pass the ETag from the last read.
 
@@ -522,14 +608,18 @@ The `onAfterWrite` callback fires after every successful write:
 
 ```ts
 type CmsWriteEventType =
-  | "create" | "update" | "publish"
-  | "trash" | "restore" | "delete"
+  | "create"
+  | "update"
+  | "publish"
+  | "trash"
+  | "restore"
+  | "delete"
   | "history_restore";
 
 interface CmsAfterWriteEvent {
   type: CmsWriteEventType;
   uid: string;
-  row?: CmsHeadRow;       // present for all except "delete"
+  row?: CmsHeadRow; // present for all except "delete"
   actorUserUid?: string | null;
 }
 ```

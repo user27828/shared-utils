@@ -34,6 +34,9 @@ export type { CmsPasswordGateProps } from "./CmsPasswordGate.js";
 export type {
   CmsAdminUiConfig,
   CmsEditorPreference,
+  CmsImageUploadContext,
+  CmsImageUploadHandler,
+  CmsImageUploadSource,
   CmsMediaPickerProps,
   CmsToastAdapter,
   CmsNavigationAdapter,

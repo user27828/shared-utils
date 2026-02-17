@@ -18,6 +18,7 @@ export const FM_PURPOSES = [
   "resume",
   "job",
   "cms_asset",
+  "cms_b64",
   "avatar",
   "generic",
 ] as const;
@@ -269,6 +270,19 @@ export type FmVariantUploadFinalizeResponse = z.infer<
 // Patch / Move / Link request schemas (Zod)
 // =============================================================================
 
+/** POST /files/:fileUid/rename — rename original filename (metadata). */
+export const FmFileRenameRequestSchema = z
+  .object({
+    original_filename: z.string().min(1).max(1024).optional(),
+    originalFilename: z.string().min(1).max(1024).optional(),
+  })
+  .strict()
+  .refine((d) => d.original_filename || d.originalFilename, {
+    message: "originalFilename is required",
+  });
+
+export type FmFileRenameRequest = z.infer<typeof FmFileRenameRequestSchema>;
+
 /** PATCH /files/:fileUid — user-updateable metadata fields only. */
 export const FmFilePatchRequestSchema = z
   .object({
@@ -366,6 +380,7 @@ export interface FmFileInsert {
  * Patch input for fm_files. Only user/service-updateable fields.
  */
 export interface FmFilePatch {
+  original_filename?: string;
   title?: string;
   alt_text?: string;
   tags?: string[];
@@ -520,6 +535,7 @@ export type FmUploadProgressCallback = (progress: {
 export interface FmWriteEvent {
   action:
     | "upload"
+    | "patch"
     | "delete"
     | "move"
     | "archive"

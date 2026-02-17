@@ -5,6 +5,7 @@
  * The host provides media picker, navigation, and toast functionality.
  */
 import type { CmsApi } from "../CmsApi.js";
+import type { FmApi } from "../../fm/FmApi.js";
 
 // ─── Media picker adapter ─────────────────────────────────────────────────
 
@@ -39,6 +40,17 @@ export interface CmsNavigationAdapter {
 
 /** WYSIWYG editor choices for the CMS body editor. */
 export type CmsEditorPreference = "ckeditor" | "tinymce";
+
+export type CmsImageUploadSource = "editor-upload" | "pasted-data-uri";
+
+export type CmsImageUploadContext = {
+  source: CmsImageUploadSource;
+};
+
+export type CmsImageUploadHandler = (
+  file: File,
+  context?: CmsImageUploadContext,
+) => Promise<string | null>;
 
 // ─── Main config ──────────────────────────────────────────────────────────
 
@@ -76,6 +88,28 @@ export interface CmsAdminUiConfig {
    * Defaults to "ckeditor".
    */
   editorPreference?: CmsEditorPreference;
+
+  /**
+   * FM API client instance.  When provided (and `onUploadImage` is absent),
+   * the CMS editor automatically uploads pasted / dropped images to FM and
+   * replaces inline base64 data-URIs with the uploaded content URL.
+   *
+   * Pasted images are stored under `folderPath: "cms-b64"`; direct editor
+   * uploads (file-picker) under `folderPath: "cms"`.
+   */
+  fmApi?: FmApi;
+
+  /**
+   * Optional image upload handler used by HTML/Markdown editors.
+   *
+   * The `context.source` distinguishes direct editor uploads from
+   * pasted data-URI normalization uploads.
+   *
+   * When omitted but `fmApi` is provided, a default handler that uploads
+   * via `fmApi.uploadInit` → `fmApi.uploadProxied` → `fmApi.getContentUrl`
+   * is used automatically.
+   */
+  onUploadImage?: CmsImageUploadHandler;
 }
 
 // ─── Default toast (console) ──────────────────────────────────────────────

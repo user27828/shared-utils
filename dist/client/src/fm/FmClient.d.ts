@@ -54,6 +54,7 @@ export interface FmClientConfig {
 export declare class FmClient implements FmApi {
     private adminBaseUrl;
     private contentBaseUrl;
+    private hasExplicitContentBase;
     private publicBaseUrl;
     private fetchFn;
     constructor(config?: FmClientConfig);
@@ -118,6 +119,10 @@ export declare class FmClient implements FmApi {
             tags?: string[];
             is_public?: boolean;
         };
+    }): Promise<FmFileRow>;
+    renameFile(input: {
+        fileUid: string;
+        originalFilename: string;
     }): Promise<FmFileRow>;
     archiveFile(fileUid: string): Promise<FmFileRow>;
     restoreFile(fileUid: string): Promise<FmFileRow>;
