@@ -277,10 +277,12 @@ const buildMovedObjectKey = (input: {
  *  - web: largest by width
  *  - preview: median by width
  *  - If no exact match, fall back to "web" variants for thumb/preview requests
+ *  - If targetWidth is provided, pick the variant closest to that width
  */
 const pickVariant = (
   variants: FmFileVariantRow[],
   kind: string,
+  targetWidth?: number,
 ): FmFileVariantRow | undefined => {
   const exact = variants.filter((vv) => vv.variant_kind === kind);
   const candidates = exact.length
@@ -299,6 +301,21 @@ const pickVariant = (
     .sort((a, b) => (a.width as number) - (b.width as number));
 
   const ordered = byWidth.length ? byWidth : candidates;
+
+  // Exact width match: pick the variant closest to targetWidth
+  if (targetWidth && byWidth.length) {
+    let best = byWidth[0];
+    let bestDist = Math.abs((best.width as number) - targetWidth);
+    for (const v of byWidth) {
+      const dist = Math.abs((v.width as number) - targetWidth);
+      if (dist < bestDist) {
+        best = v;
+        bestDist = dist;
+      }
+    }
+    return best;
+  }
+
   if (kind === "thumb") {
     return ordered[0];
   }
@@ -1056,6 +1073,8 @@ export class FmServiceCore {
   async resolveContentAccess(input: {
     fileUid: string;
     variantKind?: string;
+    /** Exact variant width — picks the variant closest to this width. */
+    variantWidth?: number;
   }): Promise<{
     provider: "local" | "s3";
     ref: FmObjectRef;
@@ -1073,9 +1092,13 @@ export class FmServiceCore {
     let contentType = file.mime_type || undefined;
     let usingVariant = false;
 
-    if (input.variantKind) {
+    if (input.variantKind || input.variantWidth) {
       const variants = await this.connector.listVariantsForFile(input.fileUid);
-      const v = pickVariant(variants, input.variantKind);
+      const v = pickVariant(
+        variants,
+        input.variantKind || "web",
+        input.variantWidth,
+      );
       if (v) {
         ref = decodeFmStorageKey(v.storage_key);
         contentType = v.mime_type || contentType;
@@ -1132,11 +1155,37 @@ export class FmServiceCore {
   /**
    * List files with pagination, filtering, and sorting.
    *
+   * When `includeVariants` is true, each returned file row is augmented
+   * with a `variants` array containing its `fm_file_variants` rows.
+   * This avoids N+1 fetches in UI components that need variant info
+   * (e.g. the picker's size-select dropdown).
+   *
    * @param params - Filter, sort, and pagination parameters.
+   * @param options - Optional flags (e.g. includeVariants).
    * @returns Paginated file listing result.
    */
-  async listFiles(params: FmFileListFilters): Promise<FmFileListResult> {
-    return await this.connector.listFiles(params);
+  async listFiles(
+    params: FmFileListFilters,
+    options?: { includeVariants?: boolean },
+  ): Promise<FmFileListResult> {
+    const result = await this.connector.listFiles(params);
+    const include = options?.includeVariants ?? Boolean(params.includeVariants);
+
+    if (include && result.items.length > 0) {
+      const variantsByFile = new Map<string, FmFileVariantRow[]>();
+      const allVariants = await Promise.all(
+        result.items.map((f) => this.connector.listVariantsForFile(f.uid)),
+      );
+      for (let i = 0; i < result.items.length; i++) {
+        variantsByFile.set(result.items[i].uid, allVariants[i]);
+      }
+      result.items = result.items.map((f) => ({
+        ...f,
+        variants: variantsByFile.get(f.uid) || [],
+      }));
+    }
+
+    return result;
   }
 
   // ── Get File ───────────────────────────────────────────────────────

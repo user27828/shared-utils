@@ -417,6 +417,9 @@ export function createFmRouter(config: CreateFmRouterConfig): Router {
         ),
         orderBy,
         orderDirection,
+        includeVariants: coerceBoolean(
+          pickFirst(req.query.includeVariants as string | string[] | undefined),
+        ),
       });
 
       ok(res, result);
@@ -783,7 +786,7 @@ export function createFmRouter(config: CreateFmRouterConfig): Router {
         assertOwnerOrAdmin(file, ctx);
 
         const variants = await service.listVariantsForFile(fileUid);
-        ok(res, variants);
+        ok(res, { items: variants });
       } catch (err) {
         sendFmError(res, err);
       }

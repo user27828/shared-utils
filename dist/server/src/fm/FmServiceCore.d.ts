@@ -182,6 +182,8 @@ export declare class FmServiceCore {
     resolveContentAccess(input: {
         fileUid: string;
         variantKind?: string;
+        /** Exact variant width — picks the variant closest to this width. */
+        variantWidth?: number;
     }): Promise<{
         provider: "local" | "s3";
         ref: FmObjectRef;
@@ -193,10 +195,18 @@ export declare class FmServiceCore {
     /**
      * List files with pagination, filtering, and sorting.
      *
+     * When `includeVariants` is true, each returned file row is augmented
+     * with a `variants` array containing its `fm_file_variants` rows.
+     * This avoids N+1 fetches in UI components that need variant info
+     * (e.g. the picker's size-select dropdown).
+     *
      * @param params - Filter, sort, and pagination parameters.
+     * @param options - Optional flags (e.g. includeVariants).
      * @returns Paginated file listing result.
      */
-    listFiles(params: FmFileListFilters): Promise<FmFileListResult>;
+    listFiles(params: FmFileListFilters, options?: {
+        includeVariants?: boolean;
+    }): Promise<FmFileListResult>;
     /**
      * Get a single file by its UID.
      *

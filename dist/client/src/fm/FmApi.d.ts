@@ -171,6 +171,8 @@ export interface FmApi {
         fileUid: string;
         download?: boolean;
         variantKind?: string;
+        /** Exact variant width for precise size selection. */
+        variantWidth?: number;
     }): string;
     /**
      * Build the proxy-upload URL for a file (used by upload-proxied flow).

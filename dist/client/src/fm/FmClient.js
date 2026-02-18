@@ -190,6 +190,7 @@ export class FmClient {
             orderBy: params?.orderBy,
             orderDirection: params?.orderDirection,
             ownerUserUid: params?.ownerUserUid,
+            includeVariants: params?.includeVariants,
         });
         // withParams always produces at least "/"
         const suffix = path === "/" ? "/files" : `/files${path}`;
@@ -281,12 +282,14 @@ export class FmClient {
             return withParams(`${this.contentBaseUrl}/${encodeURIComponent(input.fileUid)}`, {
                 dl: input.download ? 1 : undefined,
                 v: input.variantKind,
+                w: input.variantWidth,
             });
         }
         // Admin router content streaming: <adminBaseUrl>/files/<uid>/content
         return withParams(`${this.adminBaseUrl}/files/${encodeURIComponent(input.fileUid)}/content`, {
             download: input.download ? 1 : undefined,
             variantKind: input.variantKind,
+            w: input.variantWidth,
         });
     }
     getProxyUploadUrl(fileUid) {

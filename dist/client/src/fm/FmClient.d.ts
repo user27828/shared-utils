@@ -173,6 +173,8 @@ export declare class FmClient implements FmApi {
         fileUid: string;
         download?: boolean;
         variantKind?: string;
+        /** Exact variant width for precise size selection. */
+        variantWidth?: number;
     }): string;
     getProxyUploadUrl(fileUid: string): string;
     getVariantProxyUploadUrl(variantUid: string): string;

@@ -36,6 +36,7 @@ export const useFmListFiles = (params = {}) => {
         orderBy: params.orderBy,
         orderDirection: params.orderDirection,
         ownerUserUid: params.ownerUserUid,
+        includeVariants: params.includeVariants,
     }), [
         params.search,
         params.limit,
@@ -45,6 +46,7 @@ export const useFmListFiles = (params = {}) => {
         params.orderBy,
         params.orderDirection,
         params.ownerUserUid,
+        params.includeVariants,
     ]);
     const reload = useCallback(async () => {
         if (!enabled) {

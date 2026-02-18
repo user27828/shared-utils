@@ -14,7 +14,15 @@ export interface CmsMediaPickerProps {
   title?: string;
   selectedFileUid?: string | null;
   onClose: () => void;
-  onSelect: (file: { uid: string; name?: string; url?: string }) => void;
+  onSelect: (file: {
+    uid: string;
+    name?: string;
+    url?: string;
+    width?: number;
+    height?: number;
+    /** Variant kind ("thumb", "preview", "web") when user selects a size variant. */
+    variantKind?: string;
+  }) => void;
 }
 
 // ─── Toast adapter ─────────────────────────────────────────────────────────

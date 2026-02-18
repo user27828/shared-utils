@@ -26,6 +26,8 @@ export interface CmsBodyEditorProps {
         uid: string;
         name?: string;
         url?: string;
+        width?: number;
+        height?: number;
     } | null>;
     /** Callback to upload an image directly. */
     onUploadImage?: CmsImageUploadHandler;

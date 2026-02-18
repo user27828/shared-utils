@@ -241,7 +241,17 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   const conflictRef = useRef<ConflictCtx | null>(null);
   const slugBeforeEditRef = useRef<string>("");
   const pickerResolveRef = useRef<
-    ((file: { uid: string } | null) => void) | null
+    | ((
+        file: {
+          uid: string;
+          name?: string;
+          url?: string;
+          width?: number;
+          height?: number;
+          variantKind?: string;
+        } | null,
+      ) => void)
+    | null
   >(null);
 
   // ── Dirty-tracking epoch ──────────────────────────────────────────────
@@ -979,14 +989,30 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   const hasUploadHandler = true;
 
   // ── Media picker (promise-based) ──────────────────────────────────────
-  const openMediaPicker = (): Promise<{ uid: string } | null> => {
+  const openMediaPicker = (): Promise<{
+    uid: string;
+    name?: string;
+    url?: string;
+    width?: number;
+    height?: number;
+    variantKind?: string;
+  } | null> => {
     return new Promise((resolve) => {
       pickerResolveRef.current = resolve;
       setPickerOpen(true);
     });
   };
 
-  const handleMediaPickerSelect = (file: { uid: string } | null) => {
+  const handleMediaPickerSelect = (
+    file: {
+      uid: string;
+      name?: string;
+      url?: string;
+      width?: number;
+      height?: number;
+      variantKind?: string;
+    } | null,
+  ) => {
     setPickerOpen(false);
     pickerResolveRef.current?.(file);
     pickerResolveRef.current = null;
@@ -1454,7 +1480,28 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                   }
                   onPickAsset={
                     config?.renderMediaPicker
-                      ? () => openMediaPicker()
+                      ? async () => {
+                          const result = await openMediaPicker();
+                          if (!result) {
+                            return null;
+                          }
+                          // Build variant-aware URL if not already provided
+                          const fmApi = config?.fmApi || contextFmApi;
+                          let url = result.url;
+                          if (!url) {
+                            url = config?.getContentUrl
+                              ? config.getContentUrl(
+                                  result.uid,
+                                  result.variantKind,
+                                )
+                              : fmApi.getContentUrl({
+                                  fileUid: result.uid,
+                                  variantKind: result.variantKind,
+                                  variantWidth: result.width,
+                                });
+                          }
+                          return { ...result, url };
+                        }
                       : undefined
                   }
                 />

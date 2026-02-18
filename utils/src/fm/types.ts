@@ -472,6 +472,12 @@ export interface FmFileListFilters {
   orderBy?: FmFilesOrderBy;
   /** Sort direction. */
   orderDirection?: FmOrderDirection;
+  /**
+   * When true, each returned file row will include a `variants` array
+   * with its `fm_file_variants` rows. Useful for UI components that
+   * need variant info (e.g. image-size picker) without extra round-trips.
+   */
+  includeVariants?: boolean;
 }
 
 /**

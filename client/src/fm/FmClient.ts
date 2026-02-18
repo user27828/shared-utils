@@ -361,6 +361,7 @@ export class FmClient implements FmApi {
       orderBy: params?.orderBy,
       orderDirection: params?.orderDirection,
       ownerUserUid: params?.ownerUserUid,
+      includeVariants: params?.includeVariants,
     });
     // withParams always produces at least "/"
     const suffix = path === "/" ? "/files" : `/files${path}`;
@@ -539,6 +540,8 @@ export class FmClient implements FmApi {
     fileUid: string;
     download?: boolean;
     variantKind?: string;
+    /** Exact variant width for precise size selection. */
+    variantWidth?: number;
   }): string {
     if (this.hasExplicitContentBase) {
       // Standalone content router pattern: <contentBaseUrl>/<uid>
@@ -547,6 +550,7 @@ export class FmClient implements FmApi {
         {
           dl: input.download ? 1 : undefined,
           v: input.variantKind,
+          w: input.variantWidth,
         },
       );
     }
@@ -556,6 +560,7 @@ export class FmClient implements FmApi {
       {
         download: input.download ? 1 : undefined,
         variantKind: input.variantKind,
+        w: input.variantWidth,
       },
     );
   }

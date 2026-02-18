@@ -922,7 +922,25 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                                                                             fontSize: "0.8rem",
                                                                             textTransform: "none",
                                                                         }, children: "Text" })] }))] }), _jsx(CmsBodyEditor, { contentType: effectiveContentType, value: content, onChange: setContent, editor: config?.editorPreference, onUploadImage: hasUploadHandler ? effectiveOnUploadImage : undefined, onPickAsset: config?.renderMediaPicker
-                                                            ? () => openMediaPicker()
+                                                            ? async () => {
+                                                                const result = await openMediaPicker();
+                                                                if (!result) {
+                                                                    return null;
+                                                                }
+                                                                // Build variant-aware URL if not already provided
+                                                                const fmApi = config?.fmApi || contextFmApi;
+                                                                let url = result.url;
+                                                                if (!url) {
+                                                                    url = config?.getContentUrl
+                                                                        ? config.getContentUrl(result.uid, result.variantKind)
+                                                                        : fmApi.getContentUrl({
+                                                                            fileUid: result.uid,
+                                                                            variantKind: result.variantKind,
+                                                                            variantWidth: result.width,
+                                                                        });
+                                                                }
+                                                                return { ...result, url };
+                                                            }
                                                             : undefined }, `body-${contentType}-${editorMode}`)] }), _jsxs(Paper, { sx: { p: 2, mt: 2 }, children: [_jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Tags" }), _jsx(Stack, { direction: "row", spacing: 1, flexWrap: "wrap", sx: { mb: tags.length > 0 ? 1 : 0 }, children: tags.map((tag, idx) => (_jsx(Chip, { label: tag, size: "small", onDelete: () => setTags((prev) => prev.filter((_, i) => i !== idx)), sx: { mb: 0.5 } }, `${tag}-${idx}`))) }), _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", children: [_jsx(TextField, { label: "Add tag", size: "small", value: tagInput, onChange: (e) => setTagInput(e.target.value), onKeyDown: (e) => {
                                                                     if (e.key === "Enter") {
                                                                         e.preventDefault();

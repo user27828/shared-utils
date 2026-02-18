@@ -301,12 +301,20 @@ const guessKindFromUrl = (url) => {
     }
     return "file";
 };
-const tryInsertImageUrl = (editor, url, alt) => {
+const tryInsertImageUrl = (editor, url, alt, width, height) => {
+    // Build dimension attributes (CKEditor ImageResize expects string px values)
+    const dimAttrs = {};
+    if (width) {
+        dimAttrs.width = String(width);
+    }
+    if (height) {
+        dimAttrs.height = String(height);
+    }
     const candidates = [
-        ["insertImage", { source: url, altText: alt }],
-        ["insertImage", { source: [url], altText: alt }],
-        ["imageInsert", { source: url, altText: alt }],
-        ["imageInsert", { source: [url], altText: alt }],
+        ["insertImage", { source: url, altText: alt, ...dimAttrs }],
+        ["insertImage", { source: [url], altText: alt, ...dimAttrs }],
+        ["imageInsert", { source: url, altText: alt, ...dimAttrs }],
+        ["imageInsert", { source: [url], altText: alt, ...dimAttrs }],
     ];
     for (const [command, args] of candidates) {
         try {
@@ -405,7 +413,7 @@ const createSharedUtilsFilePickerPlugin = (options) => {
                                     return;
                                 }
                                 const url = resolveUrl(pick.url);
-                                tryInsertImageUrl(editor, url, pick.alt);
+                                tryInsertImageUrl(editor, url, pick.alt, pick.width, pick.height);
                             }
                             catch (err) {
                                 console.error("CKEditor5Classic shared image picker failed", err);
@@ -454,9 +462,21 @@ const createSharedUtilsFilePickerPlugin = (options) => {
                                     return;
                                 }
                                 const url = resolveUrl(pick.url);
-                                if (editor.commands.get("mediaEmbed")) {
-                                    editor.execute("mediaEmbed", url);
+                                // If the picker returned an image (e.g. from FM), insert
+                                // as image rather than media embed to avoid MediaRegistry
+                                // errors on unrecognised URLs.
+                                if (pick.kind === "image") {
+                                    tryInsertImageUrl(editor, url, pick.alt, pick.width, pick.height);
                                     return;
+                                }
+                                if (editor.commands.get("mediaEmbed")) {
+                                    try {
+                                        editor.execute("mediaEmbed", url);
+                                        return;
+                                    }
+                                    catch {
+                                        // URL not recognised by MediaRegistry — fall through to link.
+                                    }
                                 }
                                 insertLink(editor, url, pick.text || pick.title || url);
                             }

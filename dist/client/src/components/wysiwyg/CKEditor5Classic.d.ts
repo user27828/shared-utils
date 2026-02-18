@@ -21,6 +21,10 @@ export type CKEditor5PickResult = {
     text?: string;
     alt?: string;
     kind?: "file" | "image" | "media";
+    /** Optional width for the inserted image (pixels). */
+    width?: number;
+    /** Optional height for the inserted image (pixels). */
+    height?: number;
 };
 export type CKEditor5ProgressFn = (percent: number) => void;
 export type CKEditor5ImageUploadRequest = {

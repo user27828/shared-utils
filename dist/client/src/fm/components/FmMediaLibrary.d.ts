@@ -11,7 +11,7 @@
  * @module @user27828/shared-utils/fm/client
  */
 import React from "react";
-import type { FmFileRow } from "../../../../utils/src/fm/types.js";
+import type { FmFileRow, FmFileVariantRow } from "../../../../utils/src/fm/types.js";
 import type { FmApi } from "../FmApi.js";
 /** Props for the {@link FmMediaLibrary} component. */
 export interface FmMediaLibraryProps {
@@ -21,8 +21,11 @@ export interface FmMediaLibraryProps {
     includeArchived?: boolean;
     /** Page size; defaults to 25. */
     pageSize?: number;
-    /** Called when a file is selected. */
-    onSelect?: (file: FmFileRow) => void;
+    /**
+     * Called when a file is selected. The optional `variant` is provided when
+     * the user picks a specific size variant instead of the original.
+     */
+    onSelect?: (file: FmFileRow, variant?: FmFileVariantRow) => void;
     /** Optional externally-controlled selected UID. */
     selectedFileUid?: string | null;
     /** If true, allow multi-select + bulk actions. Defaults to true when onSelect is not provided. */

@@ -103,13 +103,20 @@ export function createFmContentRouter(config) {
             const ctx = authz.getActorContext(req);
             // Resolve variant from query params (short names: v, w)
             let variantKind;
+            let variantWidth;
             const vParam = (req.query.v || req.query.variant || "").trim();
             const wParam = (req.query.w || "").trim();
             if (vParam && ALLOWED_VARIANT_KINDS.has(vParam)) {
                 variantKind = vParam;
             }
-            else if (wParam) {
-                variantKind = widthToVariantKind(wParam);
+            if (wParam) {
+                const parsed = parseInt(wParam, 10);
+                if (Number.isFinite(parsed) && parsed > 0) {
+                    variantWidth = parsed;
+                }
+                if (!variantKind) {
+                    variantKind = widthToVariantKind(wParam);
+                }
             }
             const download = String(req.query.dl || req.query.download || "").trim() === "1";
             // Resolve content access via FmServiceCore
@@ -118,6 +125,7 @@ export function createFmContentRouter(config) {
                 access = await service.resolveContentAccess({
                     fileUid,
                     variantKind,
+                    variantWidth,
                 });
             }
             catch (err) {

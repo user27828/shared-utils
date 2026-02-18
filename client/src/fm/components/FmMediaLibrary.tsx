@@ -21,8 +21,10 @@ import {
   Alert,
   Box,
   Button,
+  ButtonGroup,
   Checkbox,
   Chip,
+  ClickAwayListener,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -31,11 +33,14 @@ import {
   Drawer,
   FormControl,
   FormControlLabel,
+  Grow,
   IconButton,
   InputLabel,
   LinearProgress,
   MenuItem,
+  MenuList,
   Paper,
+  Popper,
   Select,
   Snackbar,
   Stack,
@@ -56,12 +61,14 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import CheckOutlinedIcon from "@mui/icons-material/CheckOutlined";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import type { SelectChangeEvent } from "@mui/material/Select";
 import CopyButton from "../../components/CopyButton.js";
 
 import type {
   FmFileRow,
+  FmFileVariantRow,
   FmFilesOrderBy,
 } from "../../../../utils/src/fm/types.js";
 import type { FmApi } from "../FmApi.js";
@@ -80,8 +87,11 @@ export interface FmMediaLibraryProps {
   includeArchived?: boolean;
   /** Page size; defaults to 25. */
   pageSize?: number;
-  /** Called when a file is selected. */
-  onSelect?: (file: FmFileRow) => void;
+  /**
+   * Called when a file is selected. The optional `variant` is provided when
+   * the user picks a specific size variant instead of the original.
+   */
+  onSelect?: (file: FmFileRow, variant?: FmFileVariantRow) => void;
   /** Optional externally-controlled selected UID. */
   selectedFileUid?: string | null;
   /** If true, allow multi-select + bulk actions. Defaults to true when onSelect is not provided. */
@@ -419,6 +429,9 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
           : false,
     orderBy: sortBy,
     orderDirection: sortOrder,
+    // In picker mode, include variants so the size-select dropdown
+    // works without extra per-file API calls.
+    includeVariants: Boolean(props.onSelect),
     api,
   });
 
@@ -1510,76 +1523,22 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                               </>
                             )}
                             {isRenaming && (
-                              <>
-                                <TextField
-                                  size="small"
-                                  multiline
-                                  maxRows={3}
-                                  value={renameText}
-                                  disabled={isRenameSubmitting}
-                                  autoFocus
-                                  onClick={(e) => stop(e)}
-                                  onChange={(e) =>
-                                    setRenameText(e.target.value)
-                                  }
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Escape") {
-                                      if (isRenameSubmitting) {
-                                        return;
-                                      }
-                                      stop(e);
-                                      cancelInlineRename();
-                                      return;
-                                    }
-                                    if (e.key === "Enter") {
-                                      if (isRenameSubmitting) {
-                                        return;
-                                      }
-                                      stop(e);
-                                      void submitRename({
-                                        fileUid: f.uid,
-                                        previousName: String(
-                                          f.original_filename || "",
-                                        ).trim(),
-                                        nextName: renameText,
-                                        source: "list",
-                                      });
-                                    }
-                                  }}
-                                  sx={{
-                                    "& .MuiInputBase-root": {
-                                      fontSize: 14,
-                                    },
-                                    minWidth: 200,
-                                  }}
-                                />
-                                <Tooltip title="Save">
-                                  <IconButton
-                                    size="small"
-                                    disabled={isRenameSubmitting}
-                                    onClick={(e) => {
-                                      stop(e);
-                                      void submitRename({
-                                        fileUid: f.uid,
-                                        previousName: String(
-                                          f.original_filename || "",
-                                        ).trim(),
-                                        nextName: renameText,
-                                        source: "list",
-                                      });
-                                    }}
-                                  >
-                                    {isRenameSubmitting ? (
-                                      <CircularProgress
-                                        size={16}
-                                        thickness={5}
-                                      />
-                                    ) : (
-                                      <CheckOutlinedIcon fontSize="small" />
-                                    )}
-                                  </IconButton>
-                                </Tooltip>
-                              </>
+                              <InlineRenameField
+                                value={renameText}
+                                onChange={setRenameText}
+                                onSubmit={() =>
+                                  void submitRename({
+                                    fileUid: f.uid,
+                                    previousName: String(
+                                      f.original_filename || "",
+                                    ).trim(),
+                                    nextName: renameText,
+                                    source: "list",
+                                  })
+                                }
+                                onCancel={cancelInlineRename}
+                                isSubmitting={isRenameSubmitting}
+                              />
                             )}
                           </Stack>
                           <Typography
@@ -1636,44 +1595,18 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <Stack direction="column" spacing={0.5}>
                         {props.onSelect && (
-                          <Button
-                            size="small"
-                            variant="contained"
-                            onClick={() => props.onSelect?.(f)}
-                            sx={{ minWidth: 0, px: 1, alignSelf: "flex-start" }}
-                          >
-                            Select
-                          </Button>
-                        )}
-                        <Stack
-                          direction="row"
-                          spacing={0.5}
-                          alignItems="center"
-                        >
-                          <CopyButton
-                            value={api.getContentUrl({ fileUid: f.uid })}
-                            tooltip="Copy URL"
-                            size="small"
-                            iconFontSize="small"
+                          <FmSelectButton
+                            file={f}
+                            api={api}
+                            onSelect={props.onSelect}
                           />
-                          <Tooltip title="Details">
-                            <IconButton
-                              size="small"
-                              onClick={() => openDetail(f.uid)}
-                            >
-                              <InfoOutlinedIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Delete">
-                            <IconButton
-                              size="small"
-                              sx={{ color: "error.main" }}
-                              onClick={() => void handleDeleteInline(f)}
-                            >
-                              <DeleteOutlineIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
+                        )}
+                        <FmFileActionIcons
+                          file={f}
+                          api={api}
+                          onOpenDetail={openDetail}
+                          onDelete={handleDeleteInline}
+                        />
                       </Stack>
                     </TableCell>
                   </TableRow>
@@ -1713,6 +1646,8 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
               previewMode === "thumbnails" &&
               isImageMime(f.mime_type) &&
               Boolean(thumbUrl);
+            const isRenaming = renamingUid === f.uid;
+            const isRenameSubmitting = renameSubmittingUid === f.uid;
 
             return (
               <Paper
@@ -1779,10 +1714,80 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                   )}
                 </Box>
 
-                <Typography fontWeight={700} noWrap title={getFileLabel(f)}>
-                  {getFileLabel(f)}
-                </Typography>
-                <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                {/* Filename + edit icon */}
+                {!isRenaming ? (
+                  <Stack
+                    direction="row"
+                    spacing={0.5}
+                    alignItems="center"
+                    sx={{ minWidth: 0 }}
+                  >
+                    <Typography
+                      fontWeight={700}
+                      noWrap
+                      title={getFileLabel(f)}
+                      sx={{ minWidth: 0, flex: 1 }}
+                    >
+                      {getFileLabel(f)}
+                    </Typography>
+                    {isRenameSubmitting ? (
+                      <CircularProgress size={16} thickness={5} />
+                    ) : (
+                      <Tooltip title="Rename">
+                        <IconButton
+                          size="small"
+                          disabled={Boolean(renameSubmittingUid)}
+                          onClick={(e) => {
+                            stop(e);
+                            setRenamingUid(f.uid);
+                            setRenameText(getFileLabel(f));
+                          }}
+                        >
+                          <EditOutlinedIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </Stack>
+                ) : (
+                  <Box onClick={(e) => stop(e)}>
+                    <InlineRenameField
+                      value={renameText}
+                      onChange={setRenameText}
+                      onSubmit={() =>
+                        void submitRename({
+                          fileUid: f.uid,
+                          previousName: String(
+                            f.original_filename || "",
+                          ).trim(),
+                          nextName: renameText,
+                          source: "list",
+                        })
+                      }
+                      onCancel={cancelInlineRename}
+                      isSubmitting={isRenameSubmitting}
+                      compact
+                    />
+                  </Box>
+                )}
+
+                {/* Select button (picker mode) */}
+                {props.onSelect && (
+                  <Box onClick={(e) => stop(e)}>
+                    <FmSelectButton
+                      file={f}
+                      api={api}
+                      onSelect={props.onSelect}
+                    />
+                  </Box>
+                )}
+
+                {/* Status chips + action icons */}
+                <Stack
+                  direction="row"
+                  spacing={0.5}
+                  flexWrap="wrap"
+                  alignItems="center"
+                >
                   {f.is_public && (
                     <Chip label="Public" size="small" variant="outlined" />
                   )}
@@ -1794,6 +1799,17 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                     size="small"
                     variant="outlined"
                   />
+                  <Box
+                    sx={{ ml: "auto", flexShrink: 0 }}
+                    onClick={(e) => stop(e)}
+                  >
+                    <FmFileActionIcons
+                      file={f}
+                      api={api}
+                      onOpenDetail={openDetail}
+                      onDelete={handleDeleteInline}
+                    />
+                  </Box>
                 </Stack>
               </Paper>
             );
@@ -2611,6 +2627,245 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
         </Alert>
       </Snackbar>
     </Box>
+  );
+};
+
+// ─── Shared list/grid sub-components ────────────────────────────────────────
+
+/** Inline rename text field with save/cancel, shared by list and grid views. */
+const InlineRenameField: React.FC<{
+  value: string;
+  onChange: (v: string) => void;
+  onSubmit: () => void;
+  onCancel: () => void;
+  isSubmitting: boolean;
+  /** Compact mode for grid view (single-line, smaller font). */
+  compact?: boolean;
+}> = ({ value, onChange, onSubmit, onCancel, isSubmitting, compact }) => (
+  <Stack direction="row" spacing={0.5} alignItems="center">
+    <TextField
+      size="small"
+      multiline={!compact}
+      maxRows={compact ? undefined : 3}
+      value={value}
+      disabled={isSubmitting}
+      autoFocus
+      fullWidth={compact}
+      onClick={(e) => stop(e)}
+      onChange={(e) => onChange(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          if (isSubmitting) {
+            return;
+          }
+          stop(e);
+          onCancel();
+          return;
+        }
+        if (e.key === "Enter") {
+          if (isSubmitting) {
+            return;
+          }
+          stop(e);
+          onSubmit();
+        }
+      }}
+      sx={{
+        "& .MuiInputBase-root": { fontSize: compact ? 13 : 14 },
+        ...(compact ? {} : { minWidth: 200 }),
+      }}
+    />
+    <Tooltip title="Save">
+      <IconButton
+        size="small"
+        disabled={isSubmitting}
+        onClick={(e) => {
+          stop(e);
+          onSubmit();
+        }}
+      >
+        {isSubmitting ? (
+          <CircularProgress size={16} thickness={5} />
+        ) : (
+          <CheckOutlinedIcon fontSize="small" />
+        )}
+      </IconButton>
+    </Tooltip>
+  </Stack>
+);
+
+/** Shared action icons: copy URL, details, delete. Used by both list and grid views. */
+const FmFileActionIcons: React.FC<{
+  file: FmFileRow;
+  api: FmApi;
+  onOpenDetail: (uid: string) => void;
+  onDelete: (file: FmFileRow) => void;
+}> = ({ file, api, onOpenDetail, onDelete }) => (
+  <Stack direction="row" spacing={0.5} alignItems="center">
+    <CopyButton
+      value={api.getContentUrl({ fileUid: file.uid })}
+      tooltip="Copy URL"
+      size="small"
+      iconFontSize="small"
+    />
+    <Tooltip title="Details">
+      <IconButton size="small" onClick={() => onOpenDetail(file.uid)}>
+        <InfoOutlinedIcon fontSize="small" />
+      </IconButton>
+    </Tooltip>
+    <Tooltip title="Delete">
+      <IconButton
+        size="small"
+        sx={{ color: "error.main" }}
+        onClick={() => void onDelete(file)}
+      >
+        <DeleteOutlineIcon fontSize="small" />
+      </IconButton>
+    </Tooltip>
+  </Stack>
+);
+
+/**
+ * Select button with optional variant-size dropdown for images.
+ *
+ * For images: renders a split `ButtonGroup` — the main button selects the
+ * original file; the dropdown arrow lazily loads variants from
+ * `fm_file_variants` and shows resolution options (e.g. "Select size: 640×480").
+ *
+ * For non-images: renders a plain "Select" button.
+ */
+const FmSelectButton: React.FC<{
+  file: FmFileRow;
+  api: FmApi;
+  onSelect: (file: FmFileRow, variant?: FmFileVariantRow) => void;
+}> = ({ file, api, onSelect }) => {
+  const [open, setOpen] = useState(false);
+  const [variants, setVariants] = useState<FmFileVariantRow[] | null>(() => {
+    // Use pre-loaded variants from the file row if available (passthrough field).
+    const embedded = (file as any).variants as FmFileVariantRow[] | undefined;
+    if (Array.isArray(embedded)) {
+      return embedded
+        .filter((v) => v.width && v.height)
+        .sort((a, b) => (a.width || 0) - (b.width || 0));
+    }
+    return null;
+  });
+  const [loading, setLoading] = useState(false);
+  const anchorRef = useRef<HTMLDivElement>(null);
+
+  const isImage = isImageMime(file.mime_type);
+
+  const handleToggle = useCallback(async () => {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    // Already fetched (or pre-loaded) — just open.
+    if (variants !== null) {
+      setOpen(true);
+      return;
+    }
+    // Fetch variants lazily on first click.
+    setLoading(true);
+    try {
+      const result = await api.listVariants(file.uid);
+      // Handle both `{ items: [...] }` and raw array responses.
+      const raw: FmFileVariantRow[] = Array.isArray(result)
+        ? result
+        : result.items || [];
+      const sized = raw
+        .filter((v: FmFileVariantRow) => v.width && v.height)
+        .sort(
+          (a: FmFileVariantRow, b: FmFileVariantRow) =>
+            (a.width || 0) - (b.width || 0),
+        );
+      setVariants(sized);
+      setOpen(true);
+    } catch {
+      setVariants([]);
+      setOpen(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [open, variants, api, file.uid]);
+
+  if (!isImage) {
+    return (
+      <Button
+        size="small"
+        variant="contained"
+        onClick={() => onSelect(file)}
+        sx={{ minWidth: 0, px: 1, alignSelf: "flex-start" }}
+      >
+        Select
+      </Button>
+    );
+  }
+
+  return (
+    <>
+      <ButtonGroup
+        variant="contained"
+        size="small"
+        ref={anchorRef}
+        sx={{ alignSelf: "flex-start" }}
+      >
+        <Button onClick={() => onSelect(file)} sx={{ minWidth: 0, px: 1 }}>
+          Select
+        </Button>
+        <Button
+          size="small"
+          onClick={() => void handleToggle()}
+          sx={{ minWidth: 0, px: 0.5 }}
+          aria-label="Select variant size"
+        >
+          {loading ? (
+            <CircularProgress size={16} thickness={5} color="inherit" />
+          ) : (
+            <ArrowDropDownIcon fontSize="small" />
+          )}
+        </Button>
+      </ButtonGroup>
+      <Popper
+        open={open}
+        anchorEl={anchorRef.current}
+        placement="bottom-start"
+        transition
+        sx={{ zIndex: 1500 }}
+      >
+        {({ TransitionProps, placement }) => (
+          <Grow
+            {...TransitionProps}
+            style={{
+              transformOrigin:
+                placement === "bottom-start" ? "left top" : "left bottom",
+            }}
+          >
+            <Paper elevation={8}>
+              <ClickAwayListener onClickAway={() => setOpen(false)}>
+                <MenuList dense>
+                  {variants && variants.length > 0 ? (
+                    variants.map((v) => (
+                      <MenuItem
+                        key={v.uid}
+                        onClick={() => {
+                          onSelect(file, v);
+                          setOpen(false);
+                        }}
+                      >
+                        {`Select size: ${v.width}\u00D7${v.height}`}
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem disabled>No size variants</MenuItem>
+                  )}
+                </MenuList>
+              </ClickAwayListener>
+            </Paper>
+          </Grow>
+        )}
+      </Popper>
+    </>
   );
 };
 

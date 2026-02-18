@@ -18,6 +18,11 @@ export interface UseFmListFilesParams {
     orderDirection?: "asc" | "desc";
     /** Scope to files owned by a specific user. */
     ownerUserUid?: string;
+    /**
+     * Include `variants` array on each file row in the response.
+     * Avoids per-file API calls for variant data (e.g. image-size picker).
+     */
+    includeVariants?: boolean;
     /** Set to false to disable auto-fetching. Default: true. */
     enabled?: boolean;
     /** Optional FmApi implementation. Falls back to defaultFmClient. */

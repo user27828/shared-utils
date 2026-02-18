@@ -267,6 +267,7 @@ export function createFmRouter(config) {
                 offset: parseIntOr(pickFirst(req.query.offset), 0),
                 orderBy,
                 orderDirection,
+                includeVariants: coerceBoolean(pickFirst(req.query.includeVariants)),
             });
             ok(res, result);
         }
@@ -550,7 +551,7 @@ export function createFmRouter(config) {
             }
             assertOwnerOrAdmin(file, ctx);
             const variants = await service.listVariantsForFile(fileUid);
-            ok(res, variants);
+            ok(res, { items: variants });
         }
         catch (err) {
             sendFmError(res, err);

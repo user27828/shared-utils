@@ -126,6 +126,7 @@ export interface FmApiFunctions {
         fileUid: string;
         download?: boolean;
         variantKind?: string;
+        variantWidth?: number;
     }) => string;
     fmGetProxyUploadUrl: (input: {
         fileUid: string;

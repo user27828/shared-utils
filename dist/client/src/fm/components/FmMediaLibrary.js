@@ -12,11 +12,12 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
  * @module @user27828/shared-utils/fm/client
  */
 import { useCallback, useEffect, useMemo, useRef, useState, } from "react";
-import { Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Drawer, FormControl, FormControlLabel, IconButton, InputLabel, LinearProgress, MenuItem, Paper, Select, Snackbar, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography, useTheme, } from "@mui/material";
+import { Alert, Box, Button, ButtonGroup, Checkbox, Chip, ClickAwayListener, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Drawer, FormControl, FormControlLabel, Grow, IconButton, InputLabel, LinearProgress, MenuItem, MenuList, Paper, Popper, Select, Snackbar, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography, useTheme, } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import CheckOutlinedIcon from "@mui/icons-material/CheckOutlined";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import CopyButton from "../../components/CopyButton.js";
 import { useFmApi } from "../FmClientProvider.js";
@@ -257,6 +258,9 @@ export const FmMediaLibrary = (props) => {
                 : false,
         orderBy: sortBy,
         orderDirection: sortOrder,
+        // In picker mode, include variants so the size-select dropdown
+        // works without extra per-file API calls.
+        includeVariants: Boolean(props.onSelect),
         api,
     });
     const selectedUid = props.selectedFileUid || null;
@@ -911,45 +915,16 @@ export const FmMediaLibrary = (props) => {
                                                                                             stop(e);
                                                                                             setRenamingUid(f.uid);
                                                                                             setRenameText(getFileLabel(f));
-                                                                                        }, children: _jsx(EditOutlinedIcon, { fontSize: "small" }) }) }))] })), isRenaming && (_jsxs(_Fragment, { children: [_jsx(TextField, { size: "small", multiline: true, maxRows: 3, value: renameText, disabled: isRenameSubmitting, autoFocus: true, onClick: (e) => stop(e), onChange: (e) => setRenameText(e.target.value), onKeyDown: (e) => {
-                                                                                        if (e.key === "Escape") {
-                                                                                            if (isRenameSubmitting) {
-                                                                                                return;
-                                                                                            }
-                                                                                            stop(e);
-                                                                                            cancelInlineRename();
-                                                                                            return;
-                                                                                        }
-                                                                                        if (e.key === "Enter") {
-                                                                                            if (isRenameSubmitting) {
-                                                                                                return;
-                                                                                            }
-                                                                                            stop(e);
-                                                                                            void submitRename({
-                                                                                                fileUid: f.uid,
-                                                                                                previousName: String(f.original_filename || "").trim(),
-                                                                                                nextName: renameText,
-                                                                                                source: "list",
-                                                                                            });
-                                                                                        }
-                                                                                    }, sx: {
-                                                                                        "& .MuiInputBase-root": {
-                                                                                            fontSize: 14,
-                                                                                        },
-                                                                                        minWidth: 200,
-                                                                                    } }), _jsx(Tooltip, { title: "Save", children: _jsx(IconButton, { size: "small", disabled: isRenameSubmitting, onClick: (e) => {
-                                                                                            stop(e);
-                                                                                            void submitRename({
-                                                                                                fileUid: f.uid,
-                                                                                                previousName: String(f.original_filename || "").trim(),
-                                                                                                nextName: renameText,
-                                                                                                source: "list",
-                                                                                            });
-                                                                                        }, children: isRenameSubmitting ? (_jsx(CircularProgress, { size: 16, thickness: 5 })) : (_jsx(CheckOutlinedIcon, { fontSize: "small" })) }) })] }))] }), _jsx(Typography, { variant: "caption", color: "text.secondary", noWrap: true, sx: { display: "block" }, children: f.uid }), _jsxs(Stack, { direction: "row", spacing: 0.5, flexWrap: "wrap", sx: { mt: 0.5 }, children: [f.is_public && (_jsx(Chip, { label: "Public", size: "small", variant: "outlined" })), f.archived_at && (_jsx(Chip, { label: "Archived", size: "small", variant: "outlined" }))] })] })] }) }), _jsx(TableCell, { children: _jsx(Typography, { variant: "body2", noWrap: true, title: f.mime_type, sx: {
+                                                                                        }, children: _jsx(EditOutlinedIcon, { fontSize: "small" }) }) }))] })), isRenaming && (_jsx(InlineRenameField, { value: renameText, onChange: setRenameText, onSubmit: () => void submitRename({
+                                                                                fileUid: f.uid,
+                                                                                previousName: String(f.original_filename || "").trim(),
+                                                                                nextName: renameText,
+                                                                                source: "list",
+                                                                            }), onCancel: cancelInlineRename, isSubmitting: isRenameSubmitting }))] }), _jsx(Typography, { variant: "caption", color: "text.secondary", noWrap: true, sx: { display: "block" }, children: f.uid }), _jsxs(Stack, { direction: "row", spacing: 0.5, flexWrap: "wrap", sx: { mt: 0.5 }, children: [f.is_public && (_jsx(Chip, { label: "Public", size: "small", variant: "outlined" })), f.archived_at && (_jsx(Chip, { label: "Archived", size: "small", variant: "outlined" }))] })] })] }) }), _jsx(TableCell, { children: _jsx(Typography, { variant: "body2", noWrap: true, title: f.mime_type, sx: {
                                                         display: "block",
                                                         overflow: "hidden",
                                                         textOverflow: "ellipsis",
-                                                    }, children: f.mime_type }) }), _jsx(TableCell, { align: "right", children: _jsx(Typography, { variant: "body2", children: formatBytes(f.byte_size) }) }), _jsx(TableCell, { onClick: (e) => e.stopPropagation(), children: _jsxs(Stack, { direction: "column", spacing: 0.5, children: [props.onSelect && (_jsx(Button, { size: "small", variant: "contained", onClick: () => props.onSelect?.(f), sx: { minWidth: 0, px: 1, alignSelf: "flex-start" }, children: "Select" })), _jsxs(Stack, { direction: "row", spacing: 0.5, alignItems: "center", children: [_jsx(CopyButton, { value: api.getContentUrl({ fileUid: f.uid }), tooltip: "Copy URL", size: "small", iconFontSize: "small" }), _jsx(Tooltip, { title: "Details", children: _jsx(IconButton, { size: "small", onClick: () => openDetail(f.uid), children: _jsx(InfoOutlinedIcon, { fontSize: "small" }) }) }), _jsx(Tooltip, { title: "Delete", children: _jsx(IconButton, { size: "small", sx: { color: "error.main" }, onClick: () => void handleDeleteInline(f), children: _jsx(DeleteOutlineIcon, { fontSize: "small" }) }) })] })] }) })] }, f.uid));
+                                                    }, children: f.mime_type }) }), _jsx(TableCell, { align: "right", children: _jsx(Typography, { variant: "body2", children: formatBytes(f.byte_size) }) }), _jsx(TableCell, { onClick: (e) => e.stopPropagation(), children: _jsxs(Stack, { direction: "column", spacing: 0.5, children: [props.onSelect && (_jsx(FmSelectButton, { file: f, api: api, onSelect: props.onSelect })), _jsx(FmFileActionIcons, { file: f, api: api, onOpenDetail: openDetail, onDelete: handleDeleteInline })] }) })] }, f.uid));
                                 }), !isLoading && items.length === 0 && (_jsx(TableRow, { children: _jsx(TableCell, { colSpan: enableBulkActions ? 5 : 4, children: _jsx(Typography, { color: "text.secondary", sx: { py: 2, textAlign: "center" }, children: "No files found." }) }) }))] })] }) })), viewMode === "grid" && (_jsxs(Box, { sx: {
                     display: "grid",
                     gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
@@ -961,6 +936,8 @@ export const FmMediaLibrary = (props) => {
                         const showThumb = previewMode === "thumbnails" &&
                             isImageMime(f.mime_type) &&
                             Boolean(thumbUrl);
+                        const isRenaming = renamingUid === f.uid;
+                        const isRenameSubmitting = renameSubmittingUid === f.uid;
                         return (_jsxs(Paper, { variant: "outlined", sx: {
                                 p: 1.25,
                                 cursor: "pointer",
@@ -995,7 +972,16 @@ export const FmMediaLibrary = (props) => {
                                                     ? "Image"
                                                     : isVideoMime(f.mime_type)
                                                         ? "Video"
-                                                        : "File" })] })) }), _jsx(Typography, { fontWeight: 700, noWrap: true, title: getFileLabel(f), children: getFileLabel(f) }), _jsxs(Stack, { direction: "row", spacing: 0.5, flexWrap: "wrap", children: [f.is_public && (_jsx(Chip, { label: "Public", size: "small", variant: "outlined" })), f.archived_at && (_jsx(Chip, { label: "Archived", size: "small", variant: "outlined" })), _jsx(Chip, { label: formatBytes(f.byte_size), size: "small", variant: "outlined" })] })] }, f.uid));
+                                                        : "File" })] })) }), !isRenaming ? (_jsxs(Stack, { direction: "row", spacing: 0.5, alignItems: "center", sx: { minWidth: 0 }, children: [_jsx(Typography, { fontWeight: 700, noWrap: true, title: getFileLabel(f), sx: { minWidth: 0, flex: 1 }, children: getFileLabel(f) }), isRenameSubmitting ? (_jsx(CircularProgress, { size: 16, thickness: 5 })) : (_jsx(Tooltip, { title: "Rename", children: _jsx(IconButton, { size: "small", disabled: Boolean(renameSubmittingUid), onClick: (e) => {
+                                                    stop(e);
+                                                    setRenamingUid(f.uid);
+                                                    setRenameText(getFileLabel(f));
+                                                }, children: _jsx(EditOutlinedIcon, { sx: { fontSize: 16 } }) }) }))] })) : (_jsx(Box, { onClick: (e) => stop(e), children: _jsx(InlineRenameField, { value: renameText, onChange: setRenameText, onSubmit: () => void submitRename({
+                                            fileUid: f.uid,
+                                            previousName: String(f.original_filename || "").trim(),
+                                            nextName: renameText,
+                                            source: "list",
+                                        }), onCancel: cancelInlineRename, isSubmitting: isRenameSubmitting, compact: true }) })), props.onSelect && (_jsx(Box, { onClick: (e) => stop(e), children: _jsx(FmSelectButton, { file: f, api: api, onSelect: props.onSelect }) })), _jsxs(Stack, { direction: "row", spacing: 0.5, flexWrap: "wrap", alignItems: "center", children: [f.is_public && (_jsx(Chip, { label: "Public", size: "small", variant: "outlined" })), f.archived_at && (_jsx(Chip, { label: "Archived", size: "small", variant: "outlined" })), _jsx(Chip, { label: formatBytes(f.byte_size), size: "small", variant: "outlined" }), _jsx(Box, { sx: { ml: "auto", flexShrink: 0 }, onClick: (e) => stop(e), children: _jsx(FmFileActionIcons, { file: f, api: api, onOpenDetail: openDetail, onDelete: handleDeleteInline }) })] })] }, f.uid));
                     }), !isLoading && items.length === 0 && (_jsx(Typography, { color: "text.secondary", sx: { py: 2 }, children: "No files found." }))] })), _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", sx: { mt: 1.5 }, children: [_jsx(Button, { size: "small", variant: "outlined", onClick: () => setOffset(Math.max(0, offset - limit)), disabled: isLoading || offset <= 0, children: "Prev" }), _jsx(Button, { size: "small", variant: "outlined", onClick: () => setOffset(offset + limit), disabled: isLoading || offset + limit >= totalCount, children: "Next" }), _jsxs(Typography, { variant: "body2", color: "text.secondary", sx: { ml: "auto" }, children: [pageInfo.start, "-", pageInfo.end, " of ", pageInfo.totalCount] })] }), _jsxs(Drawer, { anchor: "right", open: Boolean(activeUid), onClose: closeDetail, slotProps: { backdrop: { sx: { zIndex: 1400 } } }, sx: { zIndex: 1400 }, PaperProps: { sx: { width: "min(520px, 100vw)", p: 2, zIndex: 1400 } }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [!detailIsRenaming && (_jsxs(_Fragment, { children: [_jsx(Typography, { fontWeight: 800, noWrap: true, title: activeFile ? getFileLabel(activeFile) : activeUid || "", sx: { flex: 1, minWidth: 0 }, children: activeFile ? getFileLabel(activeFile) : activeUid }), activeFile &&
                                         (renameSubmittingUid === activeFile.uid ? (_jsx(Tooltip, { title: "Renaming...", children: _jsx(CircularProgress, { size: 16, thickness: 5 }) })) : (_jsx(Tooltip, { title: "Rename", children: _jsx(IconButton, { size: "small", disabled: Boolean(renameSubmittingUid), onClick: (e) => {
                                                     stop(e);
@@ -1200,6 +1186,99 @@ export const FmMediaLibrary = (props) => {
                                                                                     u.status === "processing_variants" ||
                                                                                     u.status === "uploading_variants" ||
                                                                                     u.status === "init", children: _jsx(DeleteOutlineIcon, { fontSize: "small" }) }) }) })] }) })] }, u.id))), uploadItems.length === 0 && (_jsx(TableRow, { children: _jsx(TableCell, { colSpan: 5, children: _jsx(Typography, { color: "text.secondary", variant: "body2", children: "No files queued." }) }) }))] })] }) })] }), _jsx(DialogActions, { children: _jsx(Button, { onClick: () => setIsUploadOpen(false), children: "Close" }) })] }), _jsx(Snackbar, { open: Boolean(renameSuccessMessage), autoHideDuration: 2500, anchorOrigin: { vertical: "bottom", horizontal: "center" }, sx: { zIndex: (muiTheme) => muiTheme.zIndex.snackbar + 2 }, onClose: () => setRenameSuccessMessage(null), children: _jsx(Alert, { onClose: () => setRenameSuccessMessage(null), severity: "success", variant: "filled", sx: { width: "100%" }, children: renameSuccessMessage }) })] }));
+};
+// ─── Shared list/grid sub-components ────────────────────────────────────────
+/** Inline rename text field with save/cancel, shared by list and grid views. */
+const InlineRenameField = ({ value, onChange, onSubmit, onCancel, isSubmitting, compact }) => (_jsxs(Stack, { direction: "row", spacing: 0.5, alignItems: "center", children: [_jsx(TextField, { size: "small", multiline: !compact, maxRows: compact ? undefined : 3, value: value, disabled: isSubmitting, autoFocus: true, fullWidth: compact, onClick: (e) => stop(e), onChange: (e) => onChange(e.target.value), onKeyDown: (e) => {
+                if (e.key === "Escape") {
+                    if (isSubmitting) {
+                        return;
+                    }
+                    stop(e);
+                    onCancel();
+                    return;
+                }
+                if (e.key === "Enter") {
+                    if (isSubmitting) {
+                        return;
+                    }
+                    stop(e);
+                    onSubmit();
+                }
+            }, sx: {
+                "& .MuiInputBase-root": { fontSize: compact ? 13 : 14 },
+                ...(compact ? {} : { minWidth: 200 }),
+            } }), _jsx(Tooltip, { title: "Save", children: _jsx(IconButton, { size: "small", disabled: isSubmitting, onClick: (e) => {
+                    stop(e);
+                    onSubmit();
+                }, children: isSubmitting ? (_jsx(CircularProgress, { size: 16, thickness: 5 })) : (_jsx(CheckOutlinedIcon, { fontSize: "small" })) }) })] }));
+/** Shared action icons: copy URL, details, delete. Used by both list and grid views. */
+const FmFileActionIcons = ({ file, api, onOpenDetail, onDelete }) => (_jsxs(Stack, { direction: "row", spacing: 0.5, alignItems: "center", children: [_jsx(CopyButton, { value: api.getContentUrl({ fileUid: file.uid }), tooltip: "Copy URL", size: "small", iconFontSize: "small" }), _jsx(Tooltip, { title: "Details", children: _jsx(IconButton, { size: "small", onClick: () => onOpenDetail(file.uid), children: _jsx(InfoOutlinedIcon, { fontSize: "small" }) }) }), _jsx(Tooltip, { title: "Delete", children: _jsx(IconButton, { size: "small", sx: { color: "error.main" }, onClick: () => void onDelete(file), children: _jsx(DeleteOutlineIcon, { fontSize: "small" }) }) })] }));
+/**
+ * Select button with optional variant-size dropdown for images.
+ *
+ * For images: renders a split `ButtonGroup` — the main button selects the
+ * original file; the dropdown arrow lazily loads variants from
+ * `fm_file_variants` and shows resolution options (e.g. "Select size: 640×480").
+ *
+ * For non-images: renders a plain "Select" button.
+ */
+const FmSelectButton = ({ file, api, onSelect }) => {
+    const [open, setOpen] = useState(false);
+    const [variants, setVariants] = useState(() => {
+        // Use pre-loaded variants from the file row if available (passthrough field).
+        const embedded = file.variants;
+        if (Array.isArray(embedded)) {
+            return embedded
+                .filter((v) => v.width && v.height)
+                .sort((a, b) => (a.width || 0) - (b.width || 0));
+        }
+        return null;
+    });
+    const [loading, setLoading] = useState(false);
+    const anchorRef = useRef(null);
+    const isImage = isImageMime(file.mime_type);
+    const handleToggle = useCallback(async () => {
+        if (open) {
+            setOpen(false);
+            return;
+        }
+        // Already fetched (or pre-loaded) — just open.
+        if (variants !== null) {
+            setOpen(true);
+            return;
+        }
+        // Fetch variants lazily on first click.
+        setLoading(true);
+        try {
+            const result = await api.listVariants(file.uid);
+            // Handle both `{ items: [...] }` and raw array responses.
+            const raw = Array.isArray(result)
+                ? result
+                : result.items || [];
+            const sized = raw
+                .filter((v) => v.width && v.height)
+                .sort((a, b) => (a.width || 0) - (b.width || 0));
+            setVariants(sized);
+            setOpen(true);
+        }
+        catch {
+            setVariants([]);
+            setOpen(true);
+        }
+        finally {
+            setLoading(false);
+        }
+    }, [open, variants, api, file.uid]);
+    if (!isImage) {
+        return (_jsx(Button, { size: "small", variant: "contained", onClick: () => onSelect(file), sx: { minWidth: 0, px: 1, alignSelf: "flex-start" }, children: "Select" }));
+    }
+    return (_jsxs(_Fragment, { children: [_jsxs(ButtonGroup, { variant: "contained", size: "small", ref: anchorRef, sx: { alignSelf: "flex-start" }, children: [_jsx(Button, { onClick: () => onSelect(file), sx: { minWidth: 0, px: 1 }, children: "Select" }), _jsx(Button, { size: "small", onClick: () => void handleToggle(), sx: { minWidth: 0, px: 0.5 }, "aria-label": "Select variant size", children: loading ? (_jsx(CircularProgress, { size: 16, thickness: 5, color: "inherit" })) : (_jsx(ArrowDropDownIcon, { fontSize: "small" })) })] }), _jsx(Popper, { open: open, anchorEl: anchorRef.current, placement: "bottom-start", transition: true, sx: { zIndex: 1500 }, children: ({ TransitionProps, placement }) => (_jsx(Grow, { ...TransitionProps, style: {
+                        transformOrigin: placement === "bottom-start" ? "left top" : "left bottom",
+                    }, children: _jsx(Paper, { elevation: 8, children: _jsx(ClickAwayListener, { onClickAway: () => setOpen(false), children: _jsx(MenuList, { dense: true, children: variants && variants.length > 0 ? (variants.map((v) => (_jsx(MenuItem, { onClick: () => {
+                                        onSelect(file, v);
+                                        setOpen(false);
+                                    }, children: `Select size: ${v.width}\u00D7${v.height}` }, v.uid)))) : (_jsx(MenuItem, { disabled: true, children: "No size variants" })) }) }) }) })) })] }));
 };
 // ─── Sub-components ─────────────────────────────────────────────────────────
 const MoveForm = ({ onMove }) => {

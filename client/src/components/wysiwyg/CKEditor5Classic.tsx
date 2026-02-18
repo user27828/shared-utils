@@ -78,6 +78,10 @@ export type CKEditor5PickResult = {
   text?: string;
   alt?: string;
   kind?: "file" | "image" | "media";
+  /** Optional width for the inserted image (pixels). */
+  width?: number;
+  /** Optional height for the inserted image (pixels). */
+  height?: number;
 };
 
 export type CKEditor5ProgressFn = (percent: number) => void;
@@ -471,12 +475,27 @@ const guessKindFromUrl = (url: string): "image" | "media" | "file" => {
   return "file";
 };
 
-const tryInsertImageUrl = (editor: any, url: string, alt?: string) => {
+const tryInsertImageUrl = (
+  editor: any,
+  url: string,
+  alt?: string,
+  width?: number,
+  height?: number,
+) => {
+  // Build dimension attributes (CKEditor ImageResize expects string px values)
+  const dimAttrs: Record<string, string> = {};
+  if (width) {
+    dimAttrs.width = String(width);
+  }
+  if (height) {
+    dimAttrs.height = String(height);
+  }
+
   const candidates: Array<[string, any]> = [
-    ["insertImage", { source: url, altText: alt }],
-    ["insertImage", { source: [url], altText: alt }],
-    ["imageInsert", { source: url, altText: alt }],
-    ["imageInsert", { source: [url], altText: alt }],
+    ["insertImage", { source: url, altText: alt, ...dimAttrs }],
+    ["insertImage", { source: [url], altText: alt, ...dimAttrs }],
+    ["imageInsert", { source: url, altText: alt, ...dimAttrs }],
+    ["imageInsert", { source: [url], altText: alt, ...dimAttrs }],
   ];
 
   for (const [command, args] of candidates) {
@@ -604,7 +623,13 @@ const createSharedUtilsFilePickerPlugin = (options: SharedPickerOptions) => {
                 }
 
                 const url = resolveUrl(pick.url);
-                tryInsertImageUrl(editor, url, pick.alt);
+                tryInsertImageUrl(
+                  editor,
+                  url,
+                  pick.alt,
+                  pick.width,
+                  pick.height,
+                );
               } catch (err) {
                 console.error(
                   "CKEditor5Classic shared image picker failed",
@@ -665,9 +690,28 @@ const createSharedUtilsFilePickerPlugin = (options: SharedPickerOptions) => {
                 }
 
                 const url = resolveUrl(pick.url);
-                if (editor.commands.get("mediaEmbed")) {
-                  editor.execute("mediaEmbed", url);
+
+                // If the picker returned an image (e.g. from FM), insert
+                // as image rather than media embed to avoid MediaRegistry
+                // errors on unrecognised URLs.
+                if (pick.kind === "image") {
+                  tryInsertImageUrl(
+                    editor,
+                    url,
+                    pick.alt,
+                    pick.width,
+                    pick.height,
+                  );
                   return;
+                }
+
+                if (editor.commands.get("mediaEmbed")) {
+                  try {
+                    editor.execute("mediaEmbed", url);
+                    return;
+                  } catch {
+                    // URL not recognised by MediaRegistry — fall through to link.
+                  }
                 }
 
                 insertLink(editor, url, pick.text || pick.title || url);

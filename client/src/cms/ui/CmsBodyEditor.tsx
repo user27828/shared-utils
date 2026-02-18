@@ -72,6 +72,8 @@ export interface CmsBodyEditorProps {
     uid: string;
     name?: string;
     url?: string;
+    width?: number;
+    height?: number;
   } | null>;
   /** Callback to upload an image directly. */
   onUploadImage?: CmsImageUploadHandler;
@@ -341,7 +343,13 @@ const HtmlEditor: React.FC<{
             ? (_cb: any, _value: any, _meta: any) => {
                 onPickAsset().then((result) => {
                   if (result?.url) {
-                    _cb(result.url, { title: result.name || "" });
+                    _cb(result.url, {
+                      title: result.name || "",
+                      ...(result.width ? { width: String(result.width) } : {}),
+                      ...(result.height
+                        ? { height: String(result.height) }
+                        : {}),
+                    });
                   }
                 });
               }
@@ -383,6 +391,9 @@ const HtmlEditor: React.FC<{
                 url: result.url,
                 title: result.name || "",
                 alt: result.name || "",
+                width: result.width,
+                height: result.height,
+                kind: "image" as const,
               };
             }
           : undefined

@@ -160,6 +160,7 @@ export function createFmContentRouter(
 
         // Resolve variant from query params (short names: v, w)
         let variantKind: string | undefined;
+        let variantWidth: number | undefined;
         const vParam = (
           (req.query.v || req.query.variant || "") as string
         ).trim();
@@ -167,8 +168,15 @@ export function createFmContentRouter(
 
         if (vParam && ALLOWED_VARIANT_KINDS.has(vParam)) {
           variantKind = vParam;
-        } else if (wParam) {
-          variantKind = widthToVariantKind(wParam);
+        }
+        if (wParam) {
+          const parsed = parseInt(wParam, 10);
+          if (Number.isFinite(parsed) && parsed > 0) {
+            variantWidth = parsed;
+          }
+          if (!variantKind) {
+            variantKind = widthToVariantKind(wParam);
+          }
         }
 
         const download =
@@ -180,6 +188,7 @@ export function createFmContentRouter(
           access = await service.resolveContentAccess({
             fileUid,
             variantKind,
+            variantWidth,
           });
         } catch (err) {
           // If variant resolution failed and fallback is enabled, try original

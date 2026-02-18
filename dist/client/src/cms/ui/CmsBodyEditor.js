@@ -182,7 +182,13 @@ const HtmlEditor = ({ value, onChange, height, editor, onPickAsset, onUploadImag
                     ? (_cb, _value, _meta) => {
                         onPickAsset().then((result) => {
                             if (result?.url) {
-                                _cb(result.url, { title: result.name || "" });
+                                _cb(result.url, {
+                                    title: result.name || "",
+                                    ...(result.width ? { width: String(result.width) } : {}),
+                                    ...(result.height
+                                        ? { height: String(result.height) }
+                                        : {}),
+                                });
                             }
                         });
                     }
@@ -211,6 +217,9 @@ const HtmlEditor = ({ value, onChange, height, editor, onPickAsset, onUploadImag
                     url: result.url,
                     title: result.name || "",
                     alt: result.name || "",
+                    width: result.width,
+                    height: result.height,
+                    kind: "image",
                 };
             }
             : undefined, onUploadImage: onUploadImage
