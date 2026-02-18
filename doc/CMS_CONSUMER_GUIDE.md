@@ -487,14 +487,27 @@ const CmsEditPageWrapper: React.FC<{ config: CmsAdminUiConfig }> = ({
 For a cleaner pattern, build the config inside a React hook so it can depend on app state (user preferences, router, snackbar context):
 
 ```tsx
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 export const useCmsAdminUiConfig = (): CmsAdminUiConfig => {
   const navigate = useNavigate();
   const snackbar = useSnackbar();
+  const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.user);
   const editorPref = user?.profile?.optionsJson?.admin?.cmsEditor ?? "ckeditor";
+
+  // Persist the editor preference when changed via the dev-only switcher.
+  const handleEditorPrefChange = useCallback(
+    (editor: CmsEditorPreference) => {
+      dispatch(
+        updateUserOptions({
+          admin: { ...user?.profile?.optionsJson?.admin, cmsEditor: editor },
+        }),
+      );
+    },
+    [dispatch, user?.profile?.optionsJson?.admin],
+  );
 
   return useMemo(
     (): CmsAdminUiConfig => ({
@@ -514,11 +527,16 @@ export const useCmsAdminUiConfig = (): CmsAdminUiConfig => {
       renderMediaPicker: (props) => <MyMediaPicker {...props} />,
       getContentUrl: (uid) => `/api/files/${uid}`,
       editorPreference: editorPref,
+      onEditorPreferenceChange: handleEditorPrefChange,
     }),
-    [navigate, snackbar, editorPref],
+    [navigate, snackbar, editorPref, handleEditorPrefChange],
   );
 };
 ```
+
+> **Note:** In development mode, a dev-only "Editor" dropdown (with orange
+> border) appears next to "Post type" for HTML content. Changing it calls
+> `onEditorPreferenceChange` so your app can persist the choice.
 
 ### 3.5 Additional shared components
 

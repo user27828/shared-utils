@@ -29,6 +29,7 @@ import CmsConflictDialog from "./CmsConflictDialog.js";
 import CmsBodyEditor, { contentTypeToMime, mimeToContentType, } from "./CmsBodyEditor.js";
 import CmsHistoryDrawer from "./CmsHistoryDrawer.js";
 import { useFmApi } from "../../fm/FmClientProvider.js";
+import { isDev } from "../../../../utils/index.js";
 // ─── Helpers ──────────────────────────────────────────────────────────────
 const safeJsonParse = (input) => {
     const trimmed = input.trim();
@@ -105,6 +106,19 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
     const [password, setPassword] = useState("");
     const [includeSoftDeletedHistory, setIncludeSoftDeletedHistory] = useState(false);
     const [editorMode, setEditorMode] = useState("visual");
+    // ── Dev-only editor switcher ───────────────────────────────────────────
+    const devMode = useMemo(() => isDev(), []);
+    const [editorOverride, setEditorOverride] = useState(config?.editorPreference ?? "ckeditor");
+    // Sync with external config changes (e.g. consumer persisted preference)
+    useEffect(() => {
+        if (config?.editorPreference) {
+            setEditorOverride(config.editorPreference);
+        }
+    }, [config?.editorPreference]);
+    const handleEditorOverride = useCallback((next) => {
+        setEditorOverride(next);
+        config?.onEditorPreferenceChange?.(next);
+    }, [config]);
     // ── UI state ──────────────────────────────────────────────────────────
     const [isSlugEditing, setIsSlugEditing] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -152,7 +166,7 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
     const effectiveContentType = hasVisualMode && editorMode === "text" ? "text" : contentType;
     /** Whether the editor body contains user-authored content (beyond the default empty state). */
     const hasEditorContent = useMemo(() => {
-        const trimmed = content.trim();
+        const trimmed = (content ?? "").trim();
         if (!trimmed) {
             return false;
         }
@@ -875,7 +889,7 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                     position: "relative",
                     minHeight: "calc(100vh - 64px)",
                 }, children: [!isNew && (_jsx(CmsHistoryDrawer, { open: historyDrawerOpen, onClose: () => setHistoryDrawerOpen(false), history: history, loadedRevisionId: loadedRevisionId, isDirty: isDirty, isSaving: isSaving, includeSoftDeleted: includeSoftDeletedHistory, onIncludeSoftDeletedChange: setIncludeSoftDeletedHistory, onLoadRevision: handleLoadRevision, onRestoreRevision: handleRestoreRevision, onSoftDeleteRevision: handleSoftDeleteRevision, onHardDeleteRevision: handleHardDeleteRevision, onDismissRevision: handleDismissRevision, currentVersionNumber: row?.version_number, currentUpdatedAt: row?.updated_at })), _jsxs(Box, { sx: { flex: 1, minWidth: 0, ml: 1 }, children: [loadedRevisionId && (_jsxs(Alert, { severity: "info", sx: { mb: 2 }, action: _jsxs(Stack, { direction: "row", spacing: 1, children: [_jsx(Button, { size: "small", color: "inherit", onClick: handleDismissRevision, children: "Dismiss" }), _jsx(Button, { size: "small", variant: "outlined", color: "inherit", onClick: () => handleRestoreRevision(loadedRevisionId), disabled: isSaving, children: "Restore this revision" })] }), children: ["Previewing revision", " ", history.find((h) => h.id === loadedRevisionId)?.revision ??
-                                        loadedRevisionId, ". Changes have not been saved."] })), _jsxs(Stack, { direction: { xs: "column", lg: "row" }, spacing: 3, children: [_jsxs(Box, { sx: { flex: 1, minWidth: 0 }, children: [_jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { mb: 2 }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [_jsx(Tooltip, { title: "Back to list", children: _jsx(IconButton, { onClick: () => nav?.goToList?.(), children: _jsx(ArrowBackIcon, {}) }) }), _jsx(Typography, { variant: "h5", children: isNew ? "New CMS Item" : "Edit CMS Item" })] }), _jsxs(Stack, { direction: "row", spacing: 1, children: [!isNew && (_jsx(Tooltip, { title: historyDrawerOpen ? "Close history" : "Open history", children: _jsx(IconButton, { onClick: () => setHistoryDrawerOpen((o) => !o), color: historyDrawerOpen ? "primary" : "default", size: "small", children: _jsx(HistoryIcon, {}) }) })), canPreview && previewUrl && (_jsx(Button, { size: "small", href: previewUrl, target: "_blank", startIcon: _jsx(OpenInNewIcon, {}), children: "Preview" })), _jsx(Button, { variant: "contained", onClick: handleSave, disabled: isSaving || isLoading, children: isSaving ? "Saving..." : "Save" })] })] }), error && (_jsx(Alert, { ref: errorAlertRef, severity: "error", onClose: () => setError(null), sx: { mb: 2 }, tabIndex: -1, children: error })), _jsxs(Paper, { sx: { p: 2, mb: 2 }, children: [_jsx(TextField, { label: "Title", fullWidth: true, value: title, onChange: (e) => setTitle(e.target.value), onBlur: handleTitleBlur, sx: { mb: isSlugEditing ? 2 : "1px" } }), !isSlugEditing ? (_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, sx: {
+                                        loadedRevisionId, ". Changes have not been saved."] })), _jsxs(Stack, { direction: { xs: "column", lg: "row" }, spacing: 3, children: [_jsxs(Box, { sx: { flex: 1, minWidth: 0 }, children: [_jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { mb: 2 }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [_jsx(Tooltip, { title: "Back to list", children: _jsx(IconButton, { onClick: () => nav?.goToList?.(), children: _jsx(ArrowBackIcon, {}) }) }), _jsx(Typography, { variant: "h5", children: isNew ? "New CMS Item" : "Edit CMS Item" })] }), _jsxs(Stack, { direction: "row", spacing: 1, children: [!isNew && (_jsx(Tooltip, { title: historyDrawerOpen ? "Close history" : "Open history", children: _jsx(Button, { onClick: () => setHistoryDrawerOpen((o) => !o), color: historyDrawerOpen ? "primary" : "info", size: "small", startIcon: _jsx(HistoryIcon, {}), children: "History" }) })), canPreview && previewUrl && (_jsx(Button, { size: "small", href: previewUrl, target: "_blank", startIcon: _jsx(OpenInNewIcon, {}), children: "Preview" })), _jsx(Button, { variant: "contained", onClick: handleSave, disabled: isSaving || isLoading, children: isSaving ? "Saving..." : "Save" })] })] }), error && (_jsx(Alert, { ref: errorAlertRef, severity: "error", onClose: () => setError(null), sx: { mb: 2 }, tabIndex: -1, children: error })), _jsxs(Paper, { sx: { p: 2, mb: 2 }, children: [_jsx(TextField, { label: "Title", fullWidth: true, value: title, onChange: (e) => setTitle(e.target.value), onBlur: handleTitleBlur, sx: { mb: isSlugEditing ? 2 : "1px" } }), !isSlugEditing ? (_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, sx: {
                                                             border: 1,
                                                             borderColor: "divider",
                                                             borderRadius: 1,
@@ -907,7 +921,15 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                                                                                     else {
                                                                                         setContentType(next);
                                                                                     }
-                                                                                }, children: [_jsx(MenuItem, { value: "html", children: "HTML" }), _jsx(MenuItem, { value: "markdown", children: "Markdown" }), _jsx(MenuItem, { value: "json", children: "JSON" }), _jsx(MenuItem, { value: "text", children: "Text" })] })] }), _jsxs(FormControl, { size: "small", sx: { minWidth: 110 }, children: [_jsx(InputLabel, { children: "Locale" }), _jsx(Select, { value: locale, label: "Locale", onChange: (e) => setLocale(e.target.value), children: localeOptions.map((opt) => (_jsx(MenuItem, { value: opt.value, children: opt.label }, opt.value))) })] }), _jsxs(FormControl, { size: "small", sx: { minWidth: 110 }, children: [_jsx(InputLabel, { children: "Post type" }), _jsx(Select, { value: postType, label: "Post type", onChange: (e) => setPostType(e.target.value), children: postTypeOpts.map((opt) => (_jsx(MenuItem, { value: opt.value, children: opt.label }, opt.value))) })] })] }), hasVisualMode && (_jsxs(ToggleButtonGroup, { value: editorMode, exclusive: true, onChange: (_, v) => {
+                                                                                }, children: [_jsx(MenuItem, { value: "html", children: "HTML" }), _jsx(MenuItem, { value: "markdown", children: "Markdown" }), _jsx(MenuItem, { value: "json", children: "JSON" }), _jsx(MenuItem, { value: "text", children: "Text" })] })] }), _jsxs(FormControl, { size: "small", sx: { minWidth: 110 }, children: [_jsx(InputLabel, { children: "Locale" }), _jsx(Select, { value: locale, label: "Locale", onChange: (e) => setLocale(e.target.value), children: localeOptions.map((opt) => (_jsx(MenuItem, { value: opt.value, children: opt.label }, opt.value))) })] }), _jsxs(FormControl, { size: "small", sx: { minWidth: 110 }, children: [_jsx(InputLabel, { children: "Post type" }), _jsx(Select, { value: postType, label: "Post type", onChange: (e) => setPostType(e.target.value), children: postTypeOpts.map((opt) => (_jsx(MenuItem, { value: opt.value, children: opt.label }, opt.value))) })] }), devMode && contentType === "html" && (_jsx(Tooltip, { title: "Dev only \u2014 switch WYSIWYG editor", placement: "top-end", children: _jsxs(FormControl, { size: "small", sx: {
+                                                                                minWidth: 105,
+                                                                                "& .MuiOutlinedInput-notchedOutline": {
+                                                                                    borderColor: "warning.main",
+                                                                                },
+                                                                                "& .MuiInputLabel-root": {
+                                                                                    color: "warning.main",
+                                                                                },
+                                                                            }, children: [_jsx(InputLabel, { children: "Editor" }), _jsxs(Select, { value: editorOverride, label: "Editor", onChange: (e) => handleEditorOverride(e.target.value), children: [_jsx(MenuItem, { value: "ckeditor", children: "CKEditor" }), _jsx(MenuItem, { value: "tinymce", children: "TinyMCE" })] })] }) }))] }), hasVisualMode && (_jsxs(ToggleButtonGroup, { value: editorMode, exclusive: true, onChange: (_, v) => {
                                                                     if (v) {
                                                                         setEditorMode(v);
                                                                     }
@@ -921,7 +943,7 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                                                                             py: 0.25,
                                                                             fontSize: "0.8rem",
                                                                             textTransform: "none",
-                                                                        }, children: "Text" })] }))] }), _jsx(CmsBodyEditor, { contentType: effectiveContentType, value: content, onChange: setContent, editor: config?.editorPreference, onUploadImage: hasUploadHandler ? effectiveOnUploadImage : undefined, onPickAsset: config?.renderMediaPicker
+                                                                        }, children: "Text" })] }))] }), _jsx(CmsBodyEditor, { contentType: effectiveContentType, value: content, onChange: setContent, editor: editorOverride, onUploadImage: hasUploadHandler ? effectiveOnUploadImage : undefined, onPickAsset: config?.renderMediaPicker
                                                             ? async () => {
                                                                 const result = await openMediaPicker();
                                                                 if (!result) {
@@ -941,7 +963,7 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                                                                 }
                                                                 return { ...result, url };
                                                             }
-                                                            : undefined }, `body-${contentType}-${editorMode}`)] }), _jsxs(Paper, { sx: { p: 2, mt: 2 }, children: [_jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Tags" }), _jsx(Stack, { direction: "row", spacing: 1, flexWrap: "wrap", sx: { mb: tags.length > 0 ? 1 : 0 }, children: tags.map((tag, idx) => (_jsx(Chip, { label: tag, size: "small", onDelete: () => setTags((prev) => prev.filter((_, i) => i !== idx)), sx: { mb: 0.5 } }, `${tag}-${idx}`))) }), _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", children: [_jsx(TextField, { label: "Add tag", size: "small", value: tagInput, onChange: (e) => setTagInput(e.target.value), onKeyDown: (e) => {
+                                                            : undefined }, `body-${contentType}-${editorMode}-${editorOverride}`)] }), _jsxs(Paper, { sx: { p: 2, mt: 2 }, children: [_jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Tags" }), _jsx(Stack, { direction: "row", spacing: 1, flexWrap: "wrap", sx: { mb: tags.length > 0 ? 1 : 0 }, children: tags.map((tag, idx) => (_jsx(Chip, { label: tag, size: "small", onDelete: () => setTags((prev) => prev.filter((_, i) => i !== idx)), sx: { mb: 0.5 } }, `${tag}-${idx}`))) }), _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", children: [_jsx(TextField, { label: "Add tag", size: "small", value: tagInput, onChange: (e) => setTagInput(e.target.value), onKeyDown: (e) => {
                                                                     if (e.key === "Enter") {
                                                                         e.preventDefault();
                                                                         const val = tagInput.trim();

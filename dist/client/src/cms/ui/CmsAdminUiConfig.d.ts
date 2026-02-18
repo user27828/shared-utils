@@ -82,6 +82,15 @@ export interface CmsAdminUiConfig {
      */
     editorPreference?: CmsEditorPreference;
     /**
+     * Called when the user changes the WYSIWYG editor preference via the
+     * dev-only editor switcher.  The host app should persist the new value
+     * (e.g. into `userProfile.optionsJson.admin.cmsEditor`) so it survives
+     * page reloads.
+     *
+     * Only relevant in development mode; the switcher is hidden in production.
+     */
+    onEditorPreferenceChange?: (editor: CmsEditorPreference) => void;
+    /**
      * FM API client instance.  When provided (and `onUploadImage` is absent),
      * the CMS editor automatically uploads pasted / dropped images to FM and
      * replaces inline base64 data-URIs with the uploaded content URL.

@@ -66,6 +66,7 @@ import { CmsClient } from "../CmsClient.js";
 import type { CmsApi } from "../CmsApi.js";
 import type {
   CmsAdminUiConfig,
+  CmsEditorPreference,
   CmsImageUploadContext,
   CmsMediaPickerProps,
 } from "./CmsAdminUiConfig.js";
@@ -78,6 +79,7 @@ import CmsBodyEditor, {
 } from "./CmsBodyEditor.js";
 import CmsHistoryDrawer, { HISTORY_DRAWER_WIDTH } from "./CmsHistoryDrawer.js";
 import { useFmApi } from "../../fm/FmClientProvider.js";
+import { isDev } from "../../../../utils/index.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -209,6 +211,26 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     useState(false);
   const [editorMode, setEditorMode] = useState<"visual" | "text">("visual");
 
+  // ── Dev-only editor switcher ───────────────────────────────────────────
+  const devMode = useMemo(() => isDev(), []);
+  const [editorOverride, setEditorOverride] = useState<CmsEditorPreference>(
+    config?.editorPreference ?? "ckeditor",
+  );
+  // Sync with external config changes (e.g. consumer persisted preference)
+  useEffect(() => {
+    if (config?.editorPreference) {
+      setEditorOverride(config.editorPreference);
+    }
+  }, [config?.editorPreference]);
+
+  const handleEditorOverride = useCallback(
+    (next: CmsEditorPreference) => {
+      setEditorOverride(next);
+      config?.onEditorPreferenceChange?.(next);
+    },
+    [config],
+  );
+
   // ── UI state ──────────────────────────────────────────────────────────
   const [isSlugEditing, setIsSlugEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -301,7 +323,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
 
   /** Whether the editor body contains user-authored content (beyond the default empty state). */
   const hasEditorContent = useMemo(() => {
-    const trimmed = content.trim();
+    const trimmed = (content ?? "").trim();
     if (!trimmed) {
       return false;
     }
@@ -1219,13 +1241,14 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                         historyDrawerOpen ? "Close history" : "Open history"
                       }
                     >
-                      <IconButton
+                      <Button
                         onClick={() => setHistoryDrawerOpen((o) => !o)}
-                        color={historyDrawerOpen ? "primary" : "default"}
+                        color={historyDrawerOpen ? "primary" : "info"}
                         size="small"
+                        startIcon={<HistoryIcon />}
                       >
-                        <HistoryIcon />
-                      </IconButton>
+                        History
+                      </Button>
                     </Tooltip>
                   )}
                   {canPreview && previewUrl && (
@@ -1428,6 +1451,41 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                         ))}
                       </Select>
                     </FormControl>
+
+                    {/* Dev-only WYSIWYG editor switcher */}
+                    {devMode && contentType === "html" && (
+                      <Tooltip
+                        title="Dev only — switch WYSIWYG editor"
+                        placement="top-end"
+                      >
+                        <FormControl
+                          size="small"
+                          sx={{
+                            minWidth: 105,
+                            "& .MuiOutlinedInput-notchedOutline": {
+                              borderColor: "warning.main",
+                            },
+                            "& .MuiInputLabel-root": {
+                              color: "warning.main",
+                            },
+                          }}
+                        >
+                          <InputLabel>Editor</InputLabel>
+                          <Select
+                            value={editorOverride}
+                            label="Editor"
+                            onChange={(e) =>
+                              handleEditorOverride(
+                                e.target.value as CmsEditorPreference,
+                              )
+                            }
+                          >
+                            <MenuItem value="ckeditor">CKEditor</MenuItem>
+                            <MenuItem value="tinymce">TinyMCE</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Tooltip>
+                    )}
                   </Stack>
 
                   {hasVisualMode && (
@@ -1468,13 +1526,13 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                   )}
                 </Stack>
 
-                {/* Editor body — key forces clean remount on mode toggle */}
+                {/* Editor body — key forces clean remount on mode/editor toggle */}
                 <CmsBodyEditor
-                  key={`body-${contentType}-${editorMode}`}
+                  key={`body-${contentType}-${editorMode}-${editorOverride}`}
                   contentType={effectiveContentType}
                   value={content}
                   onChange={setContent}
-                  editor={config?.editorPreference}
+                  editor={editorOverride}
                   onUploadImage={
                     hasUploadHandler ? effectiveOnUploadImage : undefined
                   }

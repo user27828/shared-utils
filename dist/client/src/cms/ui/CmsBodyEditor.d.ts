@@ -10,6 +10,17 @@
  */
 import React from "react";
 import type { CmsEditorPreference, CmsImageUploadHandler } from "./CmsAdminUiConfig.js";
+/**
+ * Parse `html` and replace any `<img>` tags whose `src` is a local-file URL
+ * with a visible inline text placeholder.  The browser can never load these
+ * paths from a web origin (they are Windows `file:///` temp paths produced by
+ * Microsoft Word on paste), so replacing them early prevents broken-image
+ * icons from being saved into CMS content.
+ *
+ * Operates on a detached DOM fragment — no side-effects on the live document.
+ * A fast regex pre-check skips the DOM work in the common (no local-file) case.
+ */
+export declare const stripLocalFileImages: (html: string) => string;
 export type CmsEditorContentType = "html" | "markdown" | "json" | "text";
 export declare const contentTypeToMime: (shorthand: CmsEditorContentType) => "text/html" | "text/markdown" | "application/json" | "text/plain";
 export declare const mimeToContentType: (mime: string | undefined) => CmsEditorContentType;

@@ -369,7 +369,7 @@ const createSharedUtilsFilePickerPlugin = (options) => {
                         }
                         return { url, kind: "media" };
                     }
-                    const accept = filetype === "image" ? "image/*" : "*/*";
+                    const accept = filetype === "image" ? "image/*,video/*" : "*/*";
                     const file = await pickLocalFile({ accept });
                     if (!file) {
                         return null;
@@ -401,7 +401,7 @@ const createSharedUtilsFilePickerPlugin = (options) => {
                 editor.ui.componentFactory.add("sharedUtilsInsertImage", (locale) => {
                     const view = new ButtonView(locale);
                     view.set({
-                        label: "Insert image",
+                        label: "Insert Img/Vid",
                         tooltip: true,
                         withText: true,
                     });
@@ -413,10 +413,25 @@ const createSharedUtilsFilePickerPlugin = (options) => {
                                     return;
                                 }
                                 const url = resolveUrl(pick.url);
-                                tryInsertImageUrl(editor, url, pick.alt, pick.width, pick.height);
+                                // Images (and FM picks which always return kind:"image")
+                                if (!pick.kind || pick.kind === "image") {
+                                    tryInsertImageUrl(editor, url, pick.alt, pick.width, pick.height);
+                                    return;
+                                }
+                                // Non-image media: try native mediaEmbed, fall back to link
+                                if (editor.commands.get("mediaEmbed")) {
+                                    try {
+                                        editor.execute("mediaEmbed", url);
+                                        return;
+                                    }
+                                    catch {
+                                        // URL not recognised by MediaRegistry — fall through to link.
+                                    }
+                                }
+                                insertLink(editor, url, pick.text || pick.title || url);
                             }
                             catch (err) {
-                                console.error("CKEditor5Classic shared image picker failed", err);
+                                console.error("CKEditor5Classic shared Img/Vid picker failed", err);
                             }
                         })();
                     });
@@ -447,46 +462,10 @@ const createSharedUtilsFilePickerPlugin = (options) => {
                     });
                     return view;
                 });
-                editor.ui.componentFactory.add("sharedUtilsInsertMedia", (locale) => {
-                    const view = new ButtonView(locale);
-                    view.set({
-                        label: "Insert media",
-                        tooltip: true,
-                        withText: true,
-                    });
-                    view.on("execute", () => {
-                        void (async () => {
-                            try {
-                                const pick = await runPicker("media");
-                                if (!pick) {
-                                    return;
-                                }
-                                const url = resolveUrl(pick.url);
-                                // If the picker returned an image (e.g. from FM), insert
-                                // as image rather than media embed to avoid MediaRegistry
-                                // errors on unrecognised URLs.
-                                if (pick.kind === "image") {
-                                    tryInsertImageUrl(editor, url, pick.alt, pick.width, pick.height);
-                                    return;
-                                }
-                                if (editor.commands.get("mediaEmbed")) {
-                                    try {
-                                        editor.execute("mediaEmbed", url);
-                                        return;
-                                    }
-                                    catch {
-                                        // URL not recognised by MediaRegistry — fall through to link.
-                                    }
-                                }
-                                insertLink(editor, url, pick.text || pick.title || url);
-                            }
-                            catch (err) {
-                                console.error("CKEditor5Classic shared media picker failed", err);
-                            }
-                        })();
-                    });
-                    return view;
-                });
+                // Backward compatibility: register "sharedUtilsInsertMedia" as an
+                // alias for "sharedUtilsInsertImage" so custom toolbar configs that
+                // reference the old name still work.
+                editor.ui.componentFactory.add("sharedUtilsInsertMedia", (locale) => editor.ui.componentFactory.create("sharedUtilsInsertImage"));
             }
         },
         _a.pluginName = "SharedUtilsFilePicker",
@@ -760,7 +739,6 @@ const CKEditor5Classic = (props) => {
                     "sharedUtilsInsertImage",
                     "sharedUtilsInsertFile",
                     "mediaEmbed",
-                    "sharedUtilsInsertMedia",
                     "|",
                     "horizontalLine",
                     "|",

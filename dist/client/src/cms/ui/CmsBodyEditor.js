@@ -12,6 +12,48 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import React, { useMemo, useRef, useState, Suspense } from "react";
 import { Box, LinearProgress, Typography, useColorScheme } from "@mui/material";
 import { hasEmbeddedBase64Image, normalizeEmbeddedHtmlImages, } from "./normalizeEmbeddedHtmlImages.js";
+// ─── Paste sanitization helpers ───────────────────────────────────────────
+/**
+ * Returns true when `src` is a local-filesystem URL that can never be loaded
+ * by the browser from a web origin — e.g. the `file:///C:/Users/.../msohtmlclip`
+ * temp paths that Microsoft Word embeds when pasting rich content.
+ */
+const isLocalFileImageSrc = (src) => {
+    const trimmed = src.trim().toLowerCase();
+    // Covers file:///... and file:\\... (Windows UNC) paths
+    return trimmed.startsWith("file://") || trimmed.startsWith("file:\\");
+};
+const LOCAL_FILE_IMAGE_PLACEHOLDER = "[!! Pasted Image Unavailable - Replace or delete this notice !!]";
+/**
+ * Parse `html` and replace any `<img>` tags whose `src` is a local-file URL
+ * with a visible inline text placeholder.  The browser can never load these
+ * paths from a web origin (they are Windows `file:///` temp paths produced by
+ * Microsoft Word on paste), so replacing them early prevents broken-image
+ * icons from being saved into CMS content.
+ *
+ * Operates on a detached DOM fragment — no side-effects on the live document.
+ * A fast regex pre-check skips the DOM work in the common (no local-file) case.
+ */
+export const stripLocalFileImages = (html) => {
+    // Fast path: nothing to do
+    if (!/src\s*=\s*["']\s*file:/i.test(html)) {
+        return html;
+    }
+    if (typeof document === "undefined") {
+        // SSR fallback — regex replacement (best effort)
+        return html.replace(/<img\b[^>]*\bsrc\s*=\s*["']\s*file:[^"']*["'][^>]*\/?>/gi, LOCAL_FILE_IMAGE_PLACEHOLDER);
+    }
+    const template = document.createElement("template");
+    template.innerHTML = html;
+    template.content.querySelectorAll("img[src]").forEach((img) => {
+        const src = img.getAttribute("src") || "";
+        if (isLocalFileImageSrc(src)) {
+            const placeholder = document.createTextNode(LOCAL_FILE_IMAGE_PLACEHOLDER);
+            img.parentNode?.replaceChild(placeholder, img);
+        }
+    });
+    return template.innerHTML;
+};
 export const contentTypeToMime = (shorthand) => {
     switch (shorthand) {
         case "html":
@@ -154,7 +196,36 @@ const HtmlEditor = ({ value, onChange, height, editor, onPickAsset, onUploadImag
             } }));
     }
     if (editor === "tinymce") {
-        return (_jsx(EditorComponent, { value: value, onEditorChange: onChange, darkMode: isDark, init: {
+        // Adapt CmsImageUploadHandler → TinyMceImageUploadRequest so we reuse
+        // TinyMceEditor's own blobInfo extraction (filename, mimeType, progress).
+        const tinyMceUploadImage = onUploadImage
+            ? async (request) => {
+                const file = new File([request.blob], request.filename, {
+                    type: request.mimeType || "application/octet-stream",
+                });
+                const url = await onUploadImage(file, { source: "editor-upload" });
+                if (!url) {
+                    throw new Error("Upload failed");
+                }
+                return { url };
+            }
+            : undefined;
+        // Adapt onPickAsset → TinyMceEditor's onPickFile prop to reuse its
+        // file_picker_callback wiring (including per-filetype meta handling).
+        const tinyMcePickFile = onPickAsset
+            ? async (_request) => {
+                const result = await onPickAsset();
+                if (!result?.url) {
+                    return null;
+                }
+                return {
+                    url: result.url,
+                    title: result.name || "",
+                    alt: result.name || "",
+                };
+            }
+            : undefined;
+        return (_jsx(EditorComponent, { data: value, onChange: (_event, helpers) => onChange(helpers.getData()), darkMode: isDark, onPickFile: tinyMcePickFile, onUploadImage: tinyMceUploadImage, init: {
                 license_key: "gpl",
                 height,
                 menubar: true,
@@ -178,32 +249,20 @@ const HtmlEditor = ({ value, onChange, height, editor, onPickAsset, onUploadImag
                     "wordcount",
                 ],
                 toolbar: "undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | code fullscreen",
-                file_picker_callback: onPickAsset
-                    ? (_cb, _value, _meta) => {
-                        onPickAsset().then((result) => {
-                            if (result?.url) {
-                                _cb(result.url, {
-                                    title: result.name || "",
-                                    ...(result.width ? { width: String(result.width) } : {}),
-                                    ...(result.height
-                                        ? { height: String(result.height) }
-                                        : {}),
-                                });
-                            }
-                        });
-                    }
-                    : undefined,
-                images_upload_handler: onUploadImage
-                    ? async (blobInfo) => {
-                        const url = await onUploadImage(blobInfo.blob(), {
-                            source: "editor-upload",
-                        });
-                        if (!url) {
-                            throw new Error("Upload failed");
-                        }
-                        return url;
-                    }
-                    : undefined,
+                // Allow pasted data-URI blobs to land in the editor so they can
+                // be picked up by images_upload_handler and sent to FM.
+                paste_data_images: true,
+                // Upload images immediately on paste rather than deferring.
+                automatic_uploads: true,
+                // Strip unresolvable local-file image references from pasted content
+                // BEFORE they enter the editor DOM.  This covers Microsoft Word
+                // "Insert > Copy HTML" pastes which embed
+                // file:///C:/Users/.../msohtmlclip.../clip_image*.jpg paths that the
+                // browser can never fetch from a web origin — removing them prevents
+                // broken-image placeholders from being saved into CMS content.
+                paste_preprocess: (_pluginApi, data) => {
+                    data.content = stripLocalFileImages(data.content);
+                },
             } }));
     }
     // CKEditor — onChange receives (event, { getData }) per CKEditor5Classic API
