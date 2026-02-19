@@ -19,6 +19,8 @@ export interface CmsMediaPickerProps {
         height?: number;
         /** Variant kind ("thumb", "preview", "web") when user selects a size variant. */
         variantKind?: string;
+        /** MIME type of the selected file (e.g. "video/mp4", "image/png"). */
+        mimeType?: string;
     }) => void;
 }
 export interface CmsToastAdapter {

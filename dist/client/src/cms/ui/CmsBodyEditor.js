@@ -302,7 +302,7 @@ const HtmlEditor = ({ value, onChange, height, editor, onPickAsset, onUploadImag
                     alt: result.name || "",
                     width: result.width,
                     height: result.height,
-                    kind: "image",
+                    mimeType: result.mimeType,
                 };
             }
             : undefined, onUploadImage: onUploadImage

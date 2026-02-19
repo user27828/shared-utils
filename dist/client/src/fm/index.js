@@ -19,6 +19,8 @@ export { FmClientProvider, useFmApi, } from "./FmClientProvider.js";
 export { createFmApiFunctions, } from "./createFmApiFunctions.js";
 // ── Components ────────────────────────────────────────────────────────────
 export { FmMediaLibrary, } from "./components/FmMediaLibrary.js";
+export { FmVideoViewer, } from "./components/FmVideoViewer.js";
+export { FmImageViewer, } from "./components/FmImageViewer.js";
 export { FmFilePicker, } from "./components/FmFilePicker.js";
 // ── Image variant utilities ───────────────────────────────────────────────
 export { generateImageVariants, constrainToCanvasLimits, supportsOffscreenCanvas, DEFAULT_VARIANT_WIDTHS, MAX_CANVAS_DIMENSION, } from "./utils/imageVariants.js";

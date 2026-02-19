@@ -25,6 +25,8 @@ export type CKEditor5PickResult = {
     width?: number;
     /** Optional height for the inserted image (pixels). */
     height?: number;
+    /** MIME type of the picked asset (e.g. "video/mp4", "image/png"). */
+    mimeType?: string;
 };
 export type CKEditor5ProgressFn = (percent: number) => void;
 export type CKEditor5ImageUploadRequest = {

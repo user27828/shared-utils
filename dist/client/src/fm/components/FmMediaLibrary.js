@@ -13,17 +13,25 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
  */
 import { useCallback, useEffect, useMemo, useRef, useState, } from "react";
 import { useDebouncedValue } from "../../helpers/debounce.js";
-import { Alert, Box, Button, ButtonGroup, Checkbox, Chip, ClickAwayListener, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Drawer, FormControl, FormControlLabel, Grow, IconButton, InputLabel, LinearProgress, MenuItem, MenuList, Paper, Popper, Select, Snackbar, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography, useTheme, } from "@mui/material";
+import { Alert, Box, Button, ButtonGroup, Checkbox, Chip, ClickAwayListener, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Drawer, FormControl, FormControlLabel, Grow, IconButton, InputLabel, LinearProgress, MenuItem, MenuList, Paper, Popper, Select, Snackbar, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography, useTheme, } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import CheckOutlinedIcon from "@mui/icons-material/CheckOutlined";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import OpenInFullIcon from "@mui/icons-material/OpenInFull";
+import ViewListIcon from "@mui/icons-material/ViewList";
+import GridViewIcon from "@mui/icons-material/GridView";
+import PictureInPictureAltIcon from "@mui/icons-material/PictureInPictureAlt";
+import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
 import CopyButton from "../../components/CopyButton.js";
 import { useFmApi } from "../FmClientProvider.js";
 import { useFmListFiles } from "../hooks/useFmListFiles.js";
 import { DEFAULT_VARIANT_WIDTHS, generateImageVariants, } from "../utils/imageVariants.js";
+import { FmVideoViewer } from "./FmVideoViewer.js";
+import { FmImageViewer } from "./FmImageViewer.js";
+import { TagsInput } from "../../components/form/TagsInput.js";
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const formatBytes = (n) => {
     const v = Number(n);
@@ -39,6 +47,99 @@ const formatBytes = (n) => {
     }
     const mb = kb / 1024;
     return `${mb.toFixed(1)} MB`;
+};
+/** Format an ISO date string to local YYYY/MM/DD HH:MM. */
+const formatCreatedAt = (iso) => {
+    if (!iso) {
+        return "\u2014";
+    }
+    try {
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) {
+            return "\u2014";
+        }
+        const y = d.getFullYear();
+        const mo = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        const h = String(d.getHours()).padStart(2, "0");
+        const min = String(d.getMinutes()).padStart(2, "0");
+        return `${y}/${mo}/${day} ${h}:${min}`;
+    }
+    catch {
+        return "\u2014";
+    }
+};
+const PAGE_SIZES = [10, 25, 50, 100];
+// ─── LocalStorage persistence ───────────────────────────────────────────────
+const FM_SETTINGS_KEY = "fm-media-library-settings";
+const FM_SETTINGS_DEFAULTS = {
+    viewMode: "list",
+    previewMode: "thumbnails",
+    sortBy: "created_at",
+    sortOrder: "desc",
+    publicFilter: "all",
+    pageSize: 25,
+};
+const VALID_VIEW_MODES = new Set(["list", "grid"]);
+const VALID_PREVIEW_MODES = new Set(["thumbnails", "icons"]);
+const VALID_SORT_BY = new Set([
+    "created_at",
+    "updated_at",
+    "byte_size",
+    "original_filename",
+    "title",
+]);
+const VALID_SORT_ORDER = new Set(["asc", "desc"]);
+const VALID_PUBLIC_FILTER = new Set(["all", "public", "private"]);
+/** Load persisted FM view settings from localStorage with validation. */
+const loadFmSettings = () => {
+    if (typeof window === "undefined") {
+        return { ...FM_SETTINGS_DEFAULTS };
+    }
+    try {
+        const raw = window.localStorage.getItem(FM_SETTINGS_KEY);
+        if (!raw) {
+            return { ...FM_SETTINGS_DEFAULTS };
+        }
+        const p = JSON.parse(raw);
+        return {
+            viewMode: VALID_VIEW_MODES.has(p.viewMode)
+                ? p.viewMode
+                : FM_SETTINGS_DEFAULTS.viewMode,
+            previewMode: VALID_PREVIEW_MODES.has(p.previewMode)
+                ? p.previewMode
+                : FM_SETTINGS_DEFAULTS.previewMode,
+            sortBy: VALID_SORT_BY.has(p.sortBy)
+                ? p.sortBy
+                : FM_SETTINGS_DEFAULTS.sortBy,
+            sortOrder: VALID_SORT_ORDER.has(p.sortOrder)
+                ? p.sortOrder
+                : FM_SETTINGS_DEFAULTS.sortOrder,
+            publicFilter: VALID_PUBLIC_FILTER.has(p.publicFilter)
+                ? p.publicFilter
+                : FM_SETTINGS_DEFAULTS.publicFilter,
+            pageSize: typeof p.pageSize === "number" && p.pageSize > 0 && p.pageSize <= 200
+                ? p.pageSize
+                : FM_SETTINGS_DEFAULTS.pageSize,
+        };
+    }
+    catch {
+        return { ...FM_SETTINGS_DEFAULTS };
+    }
+};
+/** Persist FM view settings to localStorage (merge with existing). */
+const saveFmSettings = (settings) => {
+    if (typeof window === "undefined") {
+        return;
+    }
+    try {
+        const current = loadFmSettings();
+        const merged = { ...current, ...settings };
+        window.localStorage.setItem(FM_SETTINGS_KEY, JSON.stringify(merged));
+    }
+    catch {
+        // localStorage unavailable or full — ignore silently
+    }
 };
 const clampPct = (pct) => {
     if (!Number.isFinite(pct)) {
@@ -90,6 +191,13 @@ const safeTrim = (v) => {
         return "";
     }
     return String(v).trim();
+};
+/** Convert null/undefined to empty string without trimming (preserves user input). */
+const safeStr = (v) => {
+    if (v === null || v === undefined) {
+        return "";
+    }
+    return String(v);
 };
 const getExtLower = (filename) => {
     const s = String(filename || "").trim();
@@ -159,6 +267,17 @@ const guessIconLabel = (f) => {
     }
     return "FILE";
 };
+/**
+ * For files without a preview, extract a short uppercase extension label
+ * (e.g. "PDF", "DOCX") from the filename. Falls back to guessIconLabel.
+ */
+const getFileExtLabel = (f) => {
+    const ext = getExtLower(f.original_filename || f.uid);
+    if (ext) {
+        return ext.toUpperCase();
+    }
+    return guessIconLabel(f);
+};
 const uploadWithXhr = async (input) => {
     await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -203,17 +322,20 @@ export const FmMediaLibrary = (props) => {
     const theme = useTheme();
     const contextApi = useFmApi();
     const api = props.api || contextApi;
+    // Load persisted settings once on mount.
+    const [storedSettings] = useState(() => loadFmSettings());
     const [search, setSearch] = useState(props.initialSearch || "");
     const [offset, setOffset] = useState(0);
-    const limit = props.pageSize || 25;
+    const [itemsPerPage, setItemsPerPage] = useState(props.pageSize ?? storedSettings.pageSize);
+    const limit = itemsPerPage;
     const enableUpload = props.enableUpload !== false;
     const enableBulkActions = props.enableBulkActions !== false && !props.onSelect;
-    const [viewMode, setViewMode] = useState("list");
-    const [previewMode, setPreviewMode] = useState("thumbnails");
-    const [publicFilter, setPublicFilter] = useState("all");
+    const [viewMode, setViewMode] = useState(storedSettings.viewMode);
+    const [previewMode, setPreviewMode] = useState(storedSettings.previewMode);
+    const [publicFilter, setPublicFilter] = useState(storedSettings.publicFilter);
     const [includeArchived, setIncludeArchived] = useState(Boolean(props.includeArchived));
-    const [sortBy, setSortBy] = useState("created_at");
-    const [sortOrder, setSortOrder] = useState("desc");
+    const [sortBy, setSortBy] = useState(storedSettings.sortBy);
+    const [sortOrder, setSortOrder] = useState(storedSettings.sortOrder);
     const [selectedUids, setSelectedUids] = useState(() => new Set());
     const [activeUid, setActiveUid] = useState(null);
     const [activeFile, setActiveFile] = useState(null);
@@ -225,6 +347,8 @@ export const FmMediaLibrary = (props) => {
         .trim()
         .toLowerCase() === "local";
     const [tagsText, setTagsText] = useState("");
+    /** Tags as an array for the TagsInput component (detail drawer). */
+    const [fmTags, setFmTags] = useState([]);
     const [renamingUid, setRenamingUid] = useState(null);
     const [renameText, setRenameText] = useState("");
     const [detailIsRenaming, setDetailIsRenaming] = useState(false);
@@ -239,6 +363,10 @@ export const FmMediaLibrary = (props) => {
     const [uploadItems, setUploadItems] = useState([]);
     const thumbUrlCacheRef = useRef(new Map());
     const [thumbTick, setThumbTick] = useState(0);
+    /** File currently being shown in the expanded video viewer. */
+    const [expandedVideoFile, setExpandedVideoFile] = useState(null);
+    /** File currently being shown in the expanded image viewer. */
+    const [expandedImageFile, setExpandedImageFile] = useState(null);
     // Debounce search to avoid firing an API request on every keystroke.
     const [debouncedSearch] = useDebouncedValue(search, { wait: 300 });
     // Reset pagination when debounced search changes.
@@ -249,6 +377,28 @@ export const FmMediaLibrary = (props) => {
     useEffect(() => {
         setSelectedUids(new Set());
     }, [debouncedSearch, includeArchived, publicFilter, sortBy, sortOrder]);
+    // Persist view settings to localStorage whenever they change.
+    useEffect(() => {
+        saveFmSettings({
+            viewMode,
+            previewMode,
+            sortBy,
+            sortOrder,
+            publicFilter,
+            pageSize: itemsPerPage,
+        });
+    }, [viewMode, previewMode, sortBy, sortOrder, publicFilter, itemsPerPage]);
+    /** Handle clickable column-header sorting. */
+    const handleSortClick = (column) => {
+        if (sortBy === column) {
+            setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+        }
+        else {
+            setSortBy(column);
+            // Default: ascending for filename, descending for date/size.
+            setSortOrder(column === "original_filename" ? "asc" : "desc");
+        }
+    };
     const { items, totalCount, isLoading, error, reload } = useFmListFiles({
         search: debouncedSearch.trim() || undefined,
         limit,
@@ -425,9 +575,11 @@ export const FmMediaLibrary = (props) => {
     useEffect(() => {
         if (!activeFile) {
             setTagsText("");
+            setFmTags([]);
             return;
         }
         setTagsText(formatTagsCsv(activeFile.tags));
+        setFmTags(Array.isArray(activeFile.tags) ? [...activeFile.tags] : []);
     }, [activeFile?.uid]);
     useEffect(() => {
         if (!activeUid) {
@@ -884,12 +1036,12 @@ export const FmMediaLibrary = (props) => {
                             if (v) {
                                 setViewMode(v);
                             }
-                        }, children: [_jsx(ToggleButton, { value: "list", children: "List" }), _jsx(ToggleButton, { value: "grid", children: "Grid" })] }), _jsxs(ToggleButtonGroup, { size: "small", value: previewMode, exclusive: true, onChange: (_, v) => {
+                        }, children: [_jsx(ToggleButton, { value: "list", "aria-label": "List view", children: _jsx(Tooltip, { title: "List view", children: _jsx(ViewListIcon, { fontSize: "small" }) }) }), _jsx(ToggleButton, { value: "grid", "aria-label": "Grid view", children: _jsx(Tooltip, { title: "Grid view", children: _jsx(GridViewIcon, { fontSize: "small" }) }) })] }), _jsxs(ToggleButtonGroup, { size: "small", value: previewMode, exclusive: true, onChange: (_, v) => {
                             if (v) {
                                 setPreviewMode(v);
                             }
                         }, children: [_jsx(ToggleButton, { value: "thumbnails", children: "Thumbs" }), _jsx(ToggleButton, { value: "icons", children: "Icons" })] }), _jsx(Tooltip, { title: "Refresh", children: _jsx("span", { children: _jsx(IconButton, { "aria-label": "Refresh", onClick: () => void reload(), disabled: isLoading, children: _jsx(RefreshIcon, {}) }) }) }), enableUpload && (_jsx(Button, { variant: "contained", onClick: () => setIsUploadOpen(true), children: "Upload" }))] }), enableBulkActions && selectedUids.size > 0 && (_jsxs(Stack, { direction: "row", spacing: 1, flexWrap: "wrap", alignItems: "center", useFlexGap: true, sx: { mt: 1.5 }, children: [_jsx(Chip, { label: `${selectedUids.size} selected`, size: "small" }), _jsx(Button, { size: "small", variant: "outlined", onClick: () => void bulkArchive(), children: "Archive" }), _jsx(Button, { size: "small", variant: "outlined", onClick: () => void bulkRestore(), children: "Restore" }), _jsx(Button, { size: "small", variant: "outlined", onClick: () => void bulkMove(), children: "Move" }), _jsx(Button, { size: "small", variant: "outlined", onClick: () => void bulkTags(), children: "Tags" }), _jsx(Button, { size: "small", variant: "outlined", color: "error", onClick: () => void bulkDelete(), children: "Delete" }), _jsx(Button, { size: "small", variant: "text", onClick: () => setSelectedUids(new Set()), children: "Clear" })] })), error && (_jsx(Alert, { severity: "error", sx: { mt: 1.5 }, children: error })), isLoading && items.length === 0 && !error && (_jsx(Box, { sx: { display: "flex", justifyContent: "center", py: 6 }, children: _jsx(CircularProgress, {}) })), viewMode === "list" && (_jsx(TableContainer, { component: Paper, variant: "outlined", sx: { mt: 1.5 }, children: _jsxs(Table, { size: "small", sx: { tableLayout: "fixed" }, children: [_jsx(TableHead, { children: _jsxs(TableRow, { children: [enableBulkActions && (_jsx(TableCell, { padding: "checkbox", children: _jsx(Checkbox, { size: "small", checked: items.length > 0 && selectedUids.size === items.length, indeterminate: selectedUids.size > 0 &&
-                                                selectedUids.size < items.length, onChange: (e) => setAllSelected(e.target.checked) }) })), _jsx(TableCell, { sx: { width: "55%" }, children: "File" }), _jsx(TableCell, { sx: { width: "25%" }, children: "Type" }), _jsx(TableCell, { align: "right", sx: { width: 110 }, children: "Size" }), _jsx(TableCell, { sx: { width: props.onSelect ? 180 : 220 }, children: "Actions" })] }) }), _jsxs(TableBody, { children: [items.map((f) => {
+                                                selectedUids.size < items.length, onChange: (e) => setAllSelected(e.target.checked) }) })), _jsx(TableCell, { children: _jsx(TableSortLabel, { active: sortBy === "original_filename", direction: sortBy === "original_filename" ? sortOrder : "asc", onClick: () => handleSortClick("original_filename"), children: "File" }) }), _jsx(TableCell, { sx: { width: 150 }, children: _jsx(TableSortLabel, { active: sortBy === "created_at", direction: sortBy === "created_at" ? sortOrder : "desc", onClick: () => handleSortClick("created_at"), children: "Created" }) }), _jsx(TableCell, { align: "right", sx: { width: 100 }, children: _jsx(TableSortLabel, { active: sortBy === "byte_size", direction: sortBy === "byte_size" ? sortOrder : "desc", onClick: () => handleSortClick("byte_size"), children: "Size" }) }), _jsx(TableCell, { sx: { width: props.onSelect ? 180 : 220 }, children: "Actions" })] }) }), _jsxs(TableBody, { children: [items.map((f) => {
                                     const isExternallySelected = Boolean(selectedUid && f.uid === selectedUid);
                                     const isMultiSelected = selectedUids.has(f.uid);
                                     const thumbUrl = thumbUrlCacheRef.current.get(f.uid) || null;
@@ -914,7 +1066,12 @@ export const FmMediaLibrary = (props) => {
                                                                     width: "100%",
                                                                     height: "100%",
                                                                     objectFit: "cover",
-                                                                } })) : (_jsx(Typography, { variant: "caption", fontWeight: 700, color: "text.secondary", children: guessIconLabel(f) })) }), _jsxs(Box, { sx: { minWidth: 0 }, children: [_jsxs(Stack, { direction: "row", spacing: 0.5, alignItems: "center", sx: { minWidth: 0 }, children: [!isRenaming && (_jsxs(_Fragment, { children: [_jsx(Typography, { fontWeight: 700, noWrap: true, title: getFileLabel(f), sx: { minWidth: 0 }, children: getFileLabel(f) }), isRenameSubmitting ? (_jsx(Tooltip, { title: "Renaming...", children: _jsx(CircularProgress, { size: 16, thickness: 5 }) })) : (_jsx(Tooltip, { title: "Rename", children: _jsx(IconButton, { size: "small", disabled: Boolean(renameSubmittingUid), onClick: (e) => {
+                                                                } })) : (_jsxs(Box, { sx: {
+                                                                    display: "flex",
+                                                                    flexDirection: "column",
+                                                                    alignItems: "center",
+                                                                    gap: 0.25,
+                                                                }, children: [_jsx(InsertDriveFileOutlinedIcon, { sx: { fontSize: 22, color: "text.secondary" } }), _jsx(Typography, { variant: "caption", fontWeight: 700, color: "text.secondary", sx: { fontSize: "0.65rem" }, children: getFileExtLabel(f) })] })) }), _jsxs(Box, { sx: { minWidth: 0 }, children: [_jsxs(Stack, { direction: "row", spacing: 0.5, alignItems: "center", sx: { minWidth: 0 }, children: [!isRenaming && (_jsxs(_Fragment, { children: [_jsx(Typography, { fontWeight: 700, noWrap: true, title: getFileLabel(f), sx: { minWidth: 0 }, children: getFileLabel(f) }), isRenameSubmitting ? (_jsx(Tooltip, { title: "Renaming...", children: _jsx(CircularProgress, { size: 16, thickness: 5 }) })) : (_jsx(Tooltip, { title: "Rename", children: _jsx(IconButton, { size: "small", disabled: Boolean(renameSubmittingUid), onClick: (e) => {
                                                                                             stop(e);
                                                                                             setRenamingUid(f.uid);
                                                                                             setRenameText(getFileLabel(f));
@@ -923,11 +1080,7 @@ export const FmMediaLibrary = (props) => {
                                                                                 previousName: String(f.original_filename || "").trim(),
                                                                                 nextName: renameText,
                                                                                 source: "list",
-                                                                            }), onCancel: cancelInlineRename, isSubmitting: isRenameSubmitting }))] }), _jsx(Typography, { variant: "caption", color: "text.secondary", noWrap: true, sx: { display: "block" }, children: f.uid }), _jsxs(Stack, { direction: "row", spacing: 0.5, flexWrap: "wrap", sx: { mt: 0.5 }, children: [f.is_public && (_jsx(Chip, { label: "Public", size: "small", variant: "outlined" })), f.archived_at && (_jsx(Chip, { label: "Archived", size: "small", variant: "outlined" }))] })] })] }) }), _jsx(TableCell, { children: _jsx(Typography, { variant: "body2", noWrap: true, title: f.mime_type, sx: {
-                                                        display: "block",
-                                                        overflow: "hidden",
-                                                        textOverflow: "ellipsis",
-                                                    }, children: f.mime_type }) }), _jsx(TableCell, { align: "right", children: _jsx(Typography, { variant: "body2", children: formatBytes(f.byte_size) }) }), _jsx(TableCell, { onClick: (e) => e.stopPropagation(), children: _jsxs(Stack, { direction: "column", spacing: 0.5, children: [props.onSelect && (_jsx(FmSelectButton, { file: f, api: api, onSelect: props.onSelect })), _jsx(FmFileActionIcons, { file: f, api: api, onOpenDetail: openDetail, onDelete: handleDeleteInline })] }) })] }, f.uid));
+                                                                            }), onCancel: cancelInlineRename, isSubmitting: isRenameSubmitting }))] }), _jsxs(Typography, { variant: "caption", color: "text.secondary", noWrap: true, sx: { display: "block" }, title: `${f.mime_type} | ${f.uid}`, children: [f.mime_type, " | ", f.uid] }), _jsxs(Stack, { direction: "row", spacing: 0.5, flexWrap: "wrap", sx: { mt: 0.5 }, children: [f.is_public && (_jsx(Chip, { label: "Public", size: "small", variant: "outlined" })), f.archived_at && (_jsx(Chip, { label: "Archived", size: "small", variant: "outlined" }))] })] })] }) }), _jsx(TableCell, { children: _jsx(Typography, { variant: "body2", noWrap: true, children: formatCreatedAt(f.created_at) }) }), _jsx(TableCell, { align: "right", children: _jsx(Typography, { variant: "body2", children: formatBytes(f.byte_size) }) }), _jsx(TableCell, { onClick: (e) => e.stopPropagation(), children: _jsxs(Stack, { direction: "column", spacing: 0.5, children: [props.onSelect && (_jsx(FmSelectButton, { file: f, api: api, onSelect: props.onSelect })), _jsx(FmFileActionIcons, { file: f, api: api, onOpenDetail: openDetail, onDelete: handleDeleteInline })] }) })] }, f.uid));
                                 }), !isLoading && items.length === 0 && (_jsx(TableRow, { children: _jsx(TableCell, { colSpan: enableBulkActions ? 5 : 4, children: _jsx(Typography, { color: "text.secondary", sx: { py: 2, textAlign: "center" }, children: "No files found." }) }) }))] })] }) })), viewMode === "grid" && (_jsxs(Box, { sx: {
                     display: "grid",
                     gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
@@ -967,15 +1120,44 @@ export const FmMediaLibrary = (props) => {
                                         alignItems: "center",
                                         justifyContent: "center",
                                         overflow: "hidden",
-                                    }, children: showThumb ? (_jsx(Box, { component: "img", src: thumbUrl || "", alt: "", sx: {
-                                            width: "100%",
-                                            height: "100%",
-                                            objectFit: "contain",
-                                        } })) : (_jsxs(Box, { textAlign: "center", children: [_jsx(Typography, { fontWeight: 800, color: "text.secondary", children: guessIconLabel(f) }), _jsx(Typography, { variant: "caption", color: "text.secondary", children: isImageMime(f.mime_type)
-                                                    ? "Image"
-                                                    : isVideoMime(f.mime_type)
-                                                        ? "Video"
-                                                        : "File" })] })) }), !isRenaming ? (_jsxs(Stack, { direction: "row", spacing: 0.5, alignItems: "center", sx: { minWidth: 0 }, children: [_jsx(Typography, { fontWeight: 700, noWrap: true, title: getFileLabel(f), sx: { minWidth: 0, flex: 1 }, children: getFileLabel(f) }), isRenameSubmitting ? (_jsx(CircularProgress, { size: 16, thickness: 5 })) : (_jsx(Tooltip, { title: "Rename", children: _jsx(IconButton, { size: "small", disabled: Boolean(renameSubmittingUid), onClick: (e) => {
+                                        position: "relative",
+                                    }, children: showThumb ? (_jsxs(_Fragment, { children: [_jsx(Box, { component: "img", src: thumbUrl || "", alt: "", sx: {
+                                                    width: "100%",
+                                                    height: "100%",
+                                                    objectFit: "contain",
+                                                } }), _jsx(Tooltip, { title: "Expand image", children: _jsx(IconButton, { size: "small", sx: {
+                                                        position: "absolute",
+                                                        top: 4,
+                                                        right: 4,
+                                                        bgcolor: "rgba(0,0,0,0.5)",
+                                                        color: "#fff",
+                                                        "&:hover": { bgcolor: "rgba(0,0,0,0.7)" },
+                                                        zIndex: 1,
+                                                    }, onClick: (e) => {
+                                                        stop(e);
+                                                        setExpandedImageFile(f);
+                                                    }, children: _jsx(OpenInFullIcon, { sx: { fontSize: 16 } }) }) })] })) : previewMode === "thumbnails" &&
+                                        isSupportedVideoMime(f.mime_type) ? (_jsxs(_Fragment, { children: [_jsx(Box, { component: "video", preload: "metadata", controls: true, onClick: (e) => e.stopPropagation(), sx: {
+                                                    width: "100%",
+                                                    height: "100%",
+                                                    objectFit: "contain",
+                                                }, children: _jsx("source", { src: api.getContentUrl({ fileUid: f.uid }), type: f.mime_type }) }), _jsx(Tooltip, { title: "Picture-in-picture", children: _jsx(IconButton, { size: "small", sx: {
+                                                        position: "absolute",
+                                                        top: 4,
+                                                        right: 4,
+                                                        bgcolor: "rgba(0,0,0,0.5)",
+                                                        color: "#fff",
+                                                        "&:hover": { bgcolor: "rgba(0,0,0,0.7)" },
+                                                        zIndex: 1,
+                                                    }, onClick: (e) => {
+                                                        stop(e);
+                                                        setExpandedVideoFile(f);
+                                                    }, children: _jsx(PictureInPictureAltIcon, { sx: { fontSize: 16 } }) }) })] })) : (_jsxs(Box, { textAlign: "center", sx: {
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            alignItems: "center",
+                                            gap: 0.5,
+                                        }, children: [_jsx(InsertDriveFileOutlinedIcon, { sx: { fontSize: 40, color: "text.secondary" } }), _jsx(Typography, { variant: "caption", fontWeight: 700, color: "text.secondary", children: getFileExtLabel(f) })] })) }), !isRenaming ? (_jsxs(Stack, { direction: "row", spacing: 0.5, alignItems: "center", sx: { minWidth: 0 }, children: [_jsx(Typography, { fontWeight: 700, noWrap: true, title: getFileLabel(f), sx: { minWidth: 0, flex: 1 }, children: getFileLabel(f) }), isRenameSubmitting ? (_jsx(CircularProgress, { size: 16, thickness: 5 })) : (_jsx(Tooltip, { title: "Rename", children: _jsx(IconButton, { size: "small", disabled: Boolean(renameSubmittingUid), onClick: (e) => {
                                                     stop(e);
                                                     setRenamingUid(f.uid);
                                                     setRenameText(getFileLabel(f));
@@ -985,7 +1167,13 @@ export const FmMediaLibrary = (props) => {
                                             nextName: renameText,
                                             source: "list",
                                         }), onCancel: cancelInlineRename, isSubmitting: isRenameSubmitting, compact: true }) })), props.onSelect && (_jsx(Box, { onClick: (e) => stop(e), children: _jsx(FmSelectButton, { file: f, api: api, onSelect: props.onSelect }) })), _jsxs(Stack, { direction: "row", spacing: 0.5, flexWrap: "wrap", alignItems: "center", children: [f.is_public && (_jsx(Chip, { label: "Public", size: "small", variant: "outlined" })), f.archived_at && (_jsx(Chip, { label: "Archived", size: "small", variant: "outlined" })), _jsx(Chip, { label: formatBytes(f.byte_size), size: "small", variant: "outlined" }), _jsx(Box, { sx: { ml: "auto", flexShrink: 0 }, onClick: (e) => stop(e), children: _jsx(FmFileActionIcons, { file: f, api: api, onOpenDetail: openDetail, onDelete: handleDeleteInline }) })] })] }, f.uid));
-                    }), !isLoading && items.length === 0 && (_jsx(Typography, { color: "text.secondary", sx: { py: 2 }, children: "No files found." }))] })), _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", sx: { mt: 1.5 }, children: [_jsx(Button, { size: "small", variant: "outlined", onClick: () => setOffset(Math.max(0, offset - limit)), disabled: isLoading || offset <= 0, children: "Prev" }), _jsx(Button, { size: "small", variant: "outlined", onClick: () => setOffset(offset + limit), disabled: isLoading || offset + limit >= totalCount, children: "Next" }), _jsxs(Typography, { variant: "body2", color: "text.secondary", sx: { ml: "auto" }, children: [pageInfo.start, "-", pageInfo.end, " of ", pageInfo.totalCount] })] }), _jsxs(Drawer, { anchor: "right", open: Boolean(activeUid), onClose: closeDetail, slotProps: { backdrop: { sx: { zIndex: 1400 } } }, sx: { zIndex: 1400 }, PaperProps: { sx: { width: "min(520px, 100vw)", p: 2, zIndex: 1400 } }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [!detailIsRenaming && (_jsxs(_Fragment, { children: [_jsx(Typography, { fontWeight: 800, noWrap: true, title: activeFile ? getFileLabel(activeFile) : activeUid || "", sx: { flex: 1, minWidth: 0 }, children: activeFile ? getFileLabel(activeFile) : activeUid }), activeFile &&
+                    }), !isLoading && items.length === 0 && (_jsx(Typography, { color: "text.secondary", sx: { py: 2 }, children: "No files found." }))] })), _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", sx: { mt: 1.5 }, children: [_jsx(Button, { size: "small", variant: "outlined", onClick: () => setOffset(Math.max(0, offset - limit)), disabled: isLoading || offset <= 0, children: "Prev" }), _jsx(Button, { size: "small", variant: "outlined", onClick: () => setOffset(offset + limit), disabled: isLoading || offset + limit >= totalCount, children: "Next" }), _jsx(FormControl, { size: "small", sx: { minWidth: 70 }, children: _jsx(Select, { value: itemsPerPage, onChange: (e) => {
+                                const v = Number(e.target.value);
+                                if (v > 0) {
+                                    setItemsPerPage(v);
+                                    setOffset(0);
+                                }
+                            }, children: PAGE_SIZES.map((s) => (_jsx(MenuItem, { value: s, children: s }, s))) }) }), _jsxs(Typography, { variant: "body2", color: "text.secondary", sx: { ml: "auto" }, children: [pageInfo.start, "-", pageInfo.end, " of ", pageInfo.totalCount] })] }), _jsxs(Drawer, { anchor: "right", open: Boolean(activeUid), onClose: closeDetail, slotProps: { backdrop: { sx: { zIndex: 1400 } } }, sx: { zIndex: 1400 }, PaperProps: { sx: { width: "min(520px, 100vw)", p: 2, zIndex: 1400 } }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [!detailIsRenaming && (_jsxs(_Fragment, { children: [_jsx(Typography, { fontWeight: 800, noWrap: true, title: activeFile ? getFileLabel(activeFile) : activeUid || "", sx: { flex: 1, minWidth: 0 }, children: activeFile ? getFileLabel(activeFile) : activeUid }), activeFile &&
                                         (renameSubmittingUid === activeFile.uid ? (_jsx(Tooltip, { title: "Renaming...", children: _jsx(CircularProgress, { size: 16, thickness: 5 }) })) : (_jsx(Tooltip, { title: "Rename", children: _jsx(IconButton, { size: "small", disabled: Boolean(renameSubmittingUid), onClick: (e) => {
                                                     stop(e);
                                                     setActiveError(null);
@@ -1026,18 +1214,36 @@ export const FmMediaLibrary = (props) => {
                                             p: 1.5,
                                             borderRadius: 2,
                                             bgcolor: "action.hover",
-                                        }, children: [activeUrl && isImageMime(activeFile.mime_type) && (_jsx(Box, { component: "img", src: activeUrl, alt: "", sx: { width: "100%", maxHeight: 320, objectFit: "contain" } })), activeUrl && isSupportedVideoMime(activeFile.mime_type) && (_jsxs(Box, { component: "video", controls: true, preload: "metadata", sx: { width: "100%", maxHeight: 320 }, children: [_jsx("source", { src: activeUrl, type: activeFile.mime_type }), "Your browser cannot play this video."] })), (!activeUrl ||
+                                        }, children: [activeUrl && isImageMime(activeFile.mime_type) && (_jsxs(Box, { sx: { position: "relative" }, children: [_jsx(Box, { component: "img", src: activeUrl, alt: "", sx: {
+                                                            width: "100%",
+                                                            maxHeight: 320,
+                                                            objectFit: "contain",
+                                                        } }), _jsx(Tooltip, { title: "Expand image", children: _jsx(IconButton, { size: "small", sx: {
+                                                                position: "absolute",
+                                                                top: 4,
+                                                                right: 4,
+                                                                bgcolor: "rgba(0,0,0,0.5)",
+                                                                color: "#fff",
+                                                                "&:hover": { bgcolor: "rgba(0,0,0,0.7)" },
+                                                            }, onClick: () => setExpandedImageFile(activeFile), children: _jsx(OpenInFullIcon, { sx: { fontSize: 18 } }) }) })] })), activeUrl && isSupportedVideoMime(activeFile.mime_type) && (_jsxs(Box, { sx: { position: "relative" }, children: [_jsxs(Box, { component: "video", controls: true, preload: "metadata", sx: { width: "100%", maxHeight: 320, display: "block" }, children: [_jsx("source", { src: activeUrl, type: activeFile.mime_type }), "Your browser cannot play this video."] }), _jsx(Tooltip, { title: "Picture-in-picture", children: _jsx(IconButton, { size: "small", sx: {
+                                                                position: "absolute",
+                                                                top: 4,
+                                                                right: 4,
+                                                                bgcolor: "rgba(0,0,0,0.5)",
+                                                                color: "#fff",
+                                                                "&:hover": { bgcolor: "rgba(0,0,0,0.7)" },
+                                                            }, onClick: () => setExpandedVideoFile(activeFile), children: _jsx(PictureInPictureAltIcon, { sx: { fontSize: 18 } }) }) })] })), (!activeUrl ||
                                                 (!isImageMime(activeFile.mime_type) &&
                                                     !isSupportedVideoMime(activeFile.mime_type))) && (_jsxs(Typography, { color: "text.secondary", variant: "body2", children: ["No inline preview available for", " ", activeFile.mime_type || "this file", "."] }))] }), _jsxs(Stack, { direction: "row", spacing: 1, flexWrap: "wrap", sx: { mt: 1 }, children: [_jsx(CopyButton, { value: api.getContentUrl({ fileUid: activeFile.uid }), tooltip: "Copy URL", size: "small", iconFontSize: "small" }), _jsx(Button, { size: "small", variant: "outlined", component: "a", href: api.getContentUrl({
                                                     fileUid: activeFile.uid,
                                                     download: true,
-                                                }), target: "_blank", rel: "noopener noreferrer", children: "Download" }), activeUrlKind && (_jsx(Chip, { label: `URL: ${activeUrlKind}`, size: "small" }))] })] }), _jsxs(Box, { children: [_jsx(Typography, { fontWeight: 800, children: "Metadata" }), _jsxs(Stack, { spacing: 1.5, sx: { mt: 1 }, children: [_jsx(TextField, { size: "small", label: "Title", value: safeTrim(activeFile.title), onChange: (e) => setActiveFile({
+                                                }), target: "_blank", rel: "noopener noreferrer", children: "Download" }), activeUrlKind && (_jsx(Chip, { label: `URL: ${activeUrlKind}`, size: "small" }))] })] }), _jsxs(Box, { children: [_jsx(Typography, { fontWeight: 800, children: "Metadata" }), _jsxs(Stack, { spacing: 1.5, sx: { mt: 1 }, children: [_jsx(TextField, { size: "small", label: "Title", value: safeStr(activeFile.title), onChange: (e) => setActiveFile({
                                                     ...activeFile,
                                                     title: e.target.value,
-                                                }) }), _jsx(TextField, { size: "small", label: "Alt text (images)", value: safeTrim(activeFile.alt_text), onChange: (e) => setActiveFile({
+                                                }) }), _jsx(TextField, { size: "small", label: "Alt text (images)", value: safeStr(activeFile.alt_text), onChange: (e) => setActiveFile({
                                                     ...activeFile,
                                                     alt_text: e.target.value,
-                                                }) }), _jsx(TextField, { size: "small", label: "Tags (comma-separated)", placeholder: "e.g. hero, landing, press", value: tagsText, onChange: (e) => setTagsText(e.target.value) }), _jsx(FormControlLabel, { control: _jsx(Checkbox, { checked: activeIsLocalStorage
+                                                }) }), _jsx(TagsInput, { value: fmTags, onChange: setFmTags, label: "Add tag", placeholder: "e.g. hero, landing, press", maxTags: 50, maxLength: 128, size: "small", lowercase: true }), _jsx(FormControlLabel, { control: _jsx(Checkbox, { checked: activeIsLocalStorage
                                                         ? true
                                                         : Boolean(activeFile.is_public), disabled: activeIsLocalStorage, onChange: (e) => setActiveFile({
                                                         ...activeFile,
@@ -1050,7 +1256,7 @@ export const FmMediaLibrary = (props) => {
                                                                     patch: {
                                                                         title: safeTrim(activeFile.title),
                                                                         alt_text: safeTrim(activeFile.alt_text),
-                                                                        tags: parseTagsCsv(tagsText),
+                                                                        tags: fmTags,
                                                                         is_public: activeIsLocalStorage
                                                                             ? true
                                                                             : Boolean(activeFile.is_public),
@@ -1188,7 +1394,9 @@ export const FmMediaLibrary = (props) => {
                                                                                     u.status === "finalizing" ||
                                                                                     u.status === "processing_variants" ||
                                                                                     u.status === "uploading_variants" ||
-                                                                                    u.status === "init", children: _jsx(DeleteOutlineIcon, { fontSize: "small" }) }) }) })] }) })] }, u.id))), uploadItems.length === 0 && (_jsx(TableRow, { children: _jsx(TableCell, { colSpan: 5, children: _jsx(Typography, { color: "text.secondary", variant: "body2", children: "No files queued." }) }) }))] })] }) })] }), _jsx(DialogActions, { children: _jsx(Button, { onClick: () => setIsUploadOpen(false), children: "Close" }) })] }), _jsx(Snackbar, { open: Boolean(renameSuccessMessage), autoHideDuration: 2500, anchorOrigin: { vertical: "bottom", horizontal: "center" }, sx: { zIndex: (muiTheme) => muiTheme.zIndex.snackbar + 2 }, onClose: () => setRenameSuccessMessage(null), children: _jsx(Alert, { onClose: () => setRenameSuccessMessage(null), severity: "success", variant: "filled", sx: { width: "100%" }, children: renameSuccessMessage }) })] }));
+                                                                                    u.status === "init", children: _jsx(DeleteOutlineIcon, { fontSize: "small" }) }) }) })] }) })] }, u.id))), uploadItems.length === 0 && (_jsx(TableRow, { children: _jsx(TableCell, { colSpan: 5, children: _jsx(Typography, { color: "text.secondary", variant: "body2", children: "No files queued." }) }) }))] })] }) })] }), _jsx(DialogActions, { children: _jsx(Button, { onClick: () => setIsUploadOpen(false), children: "Close" }) })] }), _jsx(Snackbar, { open: Boolean(renameSuccessMessage), autoHideDuration: 2500, anchorOrigin: { vertical: "bottom", horizontal: "center" }, sx: { zIndex: (muiTheme) => muiTheme.zIndex.snackbar + 2 }, onClose: () => setRenameSuccessMessage(null), children: _jsx(Alert, { onClose: () => setRenameSuccessMessage(null), severity: "success", variant: "filled", sx: { width: "100%" }, children: renameSuccessMessage }) }), _jsx(FmVideoViewer, { open: Boolean(expandedVideoFile), onClose: () => setExpandedVideoFile(null), src: expandedVideoFile
+                    ? api.getContentUrl({ fileUid: expandedVideoFile.uid })
+                    : "", mimeType: expandedVideoFile?.mime_type || "", title: expandedVideoFile ? getFileLabel(expandedVideoFile) : "" }), _jsx(FmImageViewer, { open: Boolean(expandedImageFile), onClose: () => setExpandedImageFile(null), fileUid: expandedImageFile?.uid || "", api: api, title: expandedImageFile ? getFileLabel(expandedImageFile) : "", file: expandedImageFile, onSelect: props.onSelect })] }));
 };
 // ─── Shared list/grid sub-components ────────────────────────────────────────
 /** Inline rename text field with save/cancel, shared by list and grid views. */

@@ -13,6 +13,8 @@ export type WysiwygPickResult = {
   text?: string;
   alt?: string;
   kind?: WysiwygAssetKind;
+  /** MIME type of the picked asset (e.g. "video/mp4", "image/png"). */
+  mimeType?: string;
 };
 
 export type WysiwygProgressFn = (percent: number) => void;

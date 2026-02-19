@@ -14,11 +14,7 @@ export * from "../../../utils/src/fm/index.js";
 // ── API layer ─────────────────────────────────────────────────────────────
 export { FmClient, FmClientError } from "./FmClient.js";
 export type { FmClientConfig } from "./FmClient.js";
-export type {
-  FmApi,
-  FmReadUrlResult,
-  FmDeleteResult,
-} from "./FmApi.js";
+export type { FmApi, FmReadUrlResult, FmDeleteResult } from "./FmApi.js";
 
 // ── Hooks ─────────────────────────────────────────────────────────────────
 export {
@@ -45,6 +41,14 @@ export {
   FmMediaLibrary,
   type FmMediaLibraryProps,
 } from "./components/FmMediaLibrary.js";
+export {
+  FmVideoViewer,
+  type FmVideoViewerProps,
+} from "./components/FmVideoViewer.js";
+export {
+  FmImageViewer,
+  type FmImageViewerProps,
+} from "./components/FmImageViewer.js";
 export {
   FmFilePicker,
   type FmFilePickerProps,

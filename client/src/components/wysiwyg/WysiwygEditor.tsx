@@ -149,6 +149,7 @@ const normalizePickResultForCkeditor = (
     text: pick.text,
     alt: pick.alt,
     kind: pick.kind,
+    mimeType: pick.mimeType,
   };
 };
 

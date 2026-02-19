@@ -10,6 +10,7 @@ export type { CopyButtonProps } from "./src/components/CopyButton.js";
 export { default as PasteButton } from "./src/components/PasteButton.js";
 export type { PasteButtonProps } from "./src/components/PasteButton.js";
 export { default as FileIcon } from "./src/components/FileIcon.js";
+export { TagsInput, type TagsInputProps, } from "./src/components/form/TagsInput.js";
 export * from "./src/helpers/functions.js";
 export * from "./src/helpers/countries.js";
 export * from "./src/helpers/languages.js";

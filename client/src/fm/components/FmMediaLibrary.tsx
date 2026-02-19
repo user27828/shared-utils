@@ -51,6 +51,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
@@ -64,6 +65,11 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import CheckOutlinedIcon from "@mui/icons-material/CheckOutlined";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import OpenInFullIcon from "@mui/icons-material/OpenInFull";
+import ViewListIcon from "@mui/icons-material/ViewList";
+import GridViewIcon from "@mui/icons-material/GridView";
+import PictureInPictureAltIcon from "@mui/icons-material/PictureInPictureAlt";
+import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
 import type { SelectChangeEvent } from "@mui/material/Select";
 import CopyButton from "../../components/CopyButton.js";
 
@@ -79,6 +85,9 @@ import {
   DEFAULT_VARIANT_WIDTHS,
   generateImageVariants,
 } from "../utils/imageVariants.js";
+import { FmVideoViewer } from "./FmVideoViewer.js";
+import { FmImageViewer } from "./FmImageViewer.js";
+import { TagsInput } from "../../components/form/TagsInput.js";
 
 /** Props for the {@link FmMediaLibrary} component. */
 export interface FmMediaLibraryProps {
@@ -124,9 +133,117 @@ const formatBytes = (n: number | null | undefined): string => {
   return `${mb.toFixed(1)} MB`;
 };
 
+/** Format an ISO date string to local YYYY/MM/DD HH:MM. */
+const formatCreatedAt = (iso: string | null | undefined): string => {
+  if (!iso) {
+    return "\u2014";
+  }
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) {
+      return "\u2014";
+    }
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const h = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    return `${y}/${mo}/${day} ${h}:${min}`;
+  } catch {
+    return "\u2014";
+  }
+};
+
 type ViewMode = "list" | "grid";
 type PreviewMode = "thumbnails" | "icons";
 type PublicFilter = "all" | "public" | "private";
+
+const PAGE_SIZES = [10, 25, 50, 100] as const;
+
+// ─── LocalStorage persistence ───────────────────────────────────────────────
+
+const FM_SETTINGS_KEY = "fm-media-library-settings";
+
+interface FmViewSettings {
+  viewMode: ViewMode;
+  previewMode: PreviewMode;
+  sortBy: FmFilesOrderBy;
+  sortOrder: "asc" | "desc";
+  publicFilter: PublicFilter;
+  pageSize: number;
+}
+
+const FM_SETTINGS_DEFAULTS: FmViewSettings = {
+  viewMode: "list",
+  previewMode: "thumbnails",
+  sortBy: "created_at",
+  sortOrder: "desc",
+  publicFilter: "all",
+  pageSize: 25,
+};
+
+const VALID_VIEW_MODES = new Set<string>(["list", "grid"]);
+const VALID_PREVIEW_MODES = new Set<string>(["thumbnails", "icons"]);
+const VALID_SORT_BY = new Set<string>([
+  "created_at",
+  "updated_at",
+  "byte_size",
+  "original_filename",
+  "title",
+]);
+const VALID_SORT_ORDER = new Set<string>(["asc", "desc"]);
+const VALID_PUBLIC_FILTER = new Set<string>(["all", "public", "private"]);
+
+/** Load persisted FM view settings from localStorage with validation. */
+const loadFmSettings = (): FmViewSettings => {
+  if (typeof window === "undefined") {
+    return { ...FM_SETTINGS_DEFAULTS };
+  }
+  try {
+    const raw = window.localStorage.getItem(FM_SETTINGS_KEY);
+    if (!raw) {
+      return { ...FM_SETTINGS_DEFAULTS };
+    }
+    const p = JSON.parse(raw);
+    return {
+      viewMode: VALID_VIEW_MODES.has(p.viewMode)
+        ? (p.viewMode as ViewMode)
+        : FM_SETTINGS_DEFAULTS.viewMode,
+      previewMode: VALID_PREVIEW_MODES.has(p.previewMode)
+        ? (p.previewMode as PreviewMode)
+        : FM_SETTINGS_DEFAULTS.previewMode,
+      sortBy: VALID_SORT_BY.has(p.sortBy)
+        ? (p.sortBy as FmFilesOrderBy)
+        : FM_SETTINGS_DEFAULTS.sortBy,
+      sortOrder: VALID_SORT_ORDER.has(p.sortOrder)
+        ? (p.sortOrder as "asc" | "desc")
+        : FM_SETTINGS_DEFAULTS.sortOrder,
+      publicFilter: VALID_PUBLIC_FILTER.has(p.publicFilter)
+        ? (p.publicFilter as PublicFilter)
+        : FM_SETTINGS_DEFAULTS.publicFilter,
+      pageSize:
+        typeof p.pageSize === "number" && p.pageSize > 0 && p.pageSize <= 200
+          ? p.pageSize
+          : FM_SETTINGS_DEFAULTS.pageSize,
+    };
+  } catch {
+    return { ...FM_SETTINGS_DEFAULTS };
+  }
+};
+
+/** Persist FM view settings to localStorage (merge with existing). */
+const saveFmSettings = (settings: Partial<FmViewSettings>): void => {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    const current = loadFmSettings();
+    const merged = { ...current, ...settings };
+    window.localStorage.setItem(FM_SETTINGS_KEY, JSON.stringify(merged));
+  } catch {
+    // localStorage unavailable or full — ignore silently
+  }
+};
 
 type UploadStatus =
   | "queued"
@@ -197,6 +314,14 @@ const safeTrim = (v: unknown): string => {
     return "";
   }
   return String(v).trim();
+};
+
+/** Convert null/undefined to empty string without trimming (preserves user input). */
+const safeStr = (v: unknown): string => {
+  if (v === null || v === undefined) {
+    return "";
+  }
+  return String(v);
 };
 
 const getExtLower = (filename: string): string => {
@@ -274,6 +399,18 @@ const guessIconLabel = (f: FmFileRow): string => {
   return "FILE";
 };
 
+/**
+ * For files without a preview, extract a short uppercase extension label
+ * (e.g. "PDF", "DOCX") from the filename. Falls back to guessIconLabel.
+ */
+const getFileExtLabel = (f: FmFileRow): string => {
+  const ext = getExtLower(f.original_filename || f.uid);
+  if (ext) {
+    return ext.toUpperCase();
+  }
+  return guessIconLabel(f);
+};
+
 const uploadWithXhr = async (input: {
   method: "PUT" | "POST";
   url: string;
@@ -335,22 +472,34 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
   const contextApi = useFmApi();
   const api: FmApi = props.api || contextApi;
 
+  // Load persisted settings once on mount.
+  const [storedSettings] = useState(() => loadFmSettings());
+
   const [search, setSearch] = useState(props.initialSearch || "");
   const [offset, setOffset] = useState(0);
-  const limit = props.pageSize || 25;
+  const [itemsPerPage, setItemsPerPage] = useState<number>(
+    props.pageSize ?? storedSettings.pageSize,
+  );
+  const limit = itemsPerPage;
 
   const enableUpload = props.enableUpload !== false;
   const enableBulkActions =
     props.enableBulkActions !== false && !props.onSelect;
 
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
-  const [previewMode, setPreviewMode] = useState<PreviewMode>("thumbnails");
-  const [publicFilter, setPublicFilter] = useState<PublicFilter>("all");
+  const [viewMode, setViewMode] = useState<ViewMode>(storedSettings.viewMode);
+  const [previewMode, setPreviewMode] = useState<PreviewMode>(
+    storedSettings.previewMode,
+  );
+  const [publicFilter, setPublicFilter] = useState<PublicFilter>(
+    storedSettings.publicFilter,
+  );
   const [includeArchived, setIncludeArchived] = useState(
     Boolean(props.includeArchived),
   );
-  const [sortBy, setSortBy] = useState<FmFilesOrderBy>("created_at");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [sortBy, setSortBy] = useState<FmFilesOrderBy>(storedSettings.sortBy);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(
+    storedSettings.sortOrder,
+  );
 
   const [selectedUids, setSelectedUids] = useState<Set<string>>(
     () => new Set(),
@@ -370,6 +519,8 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
       .toLowerCase() === "local";
 
   const [tagsText, setTagsText] = useState<string>("");
+  /** Tags as an array for the TagsInput component (detail drawer). */
+  const [fmTags, setFmTags] = useState<string[]>([]);
 
   const [renamingUid, setRenamingUid] = useState<string | null>(null);
   const [renameText, setRenameText] = useState<string>("");
@@ -407,6 +558,15 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
   const thumbUrlCacheRef = useRef<Map<string, string | null>>(new Map());
   const [thumbTick, setThumbTick] = useState(0);
 
+  /** File currently being shown in the expanded video viewer. */
+  const [expandedVideoFile, setExpandedVideoFile] = useState<FmFileRow | null>(
+    null,
+  );
+  /** File currently being shown in the expanded image viewer. */
+  const [expandedImageFile, setExpandedImageFile] = useState<FmFileRow | null>(
+    null,
+  );
+
   // Debounce search to avoid firing an API request on every keystroke.
   const [debouncedSearch] = useDebouncedValue(search, { wait: 300 });
 
@@ -419,6 +579,29 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
   useEffect(() => {
     setSelectedUids(new Set());
   }, [debouncedSearch, includeArchived, publicFilter, sortBy, sortOrder]);
+
+  // Persist view settings to localStorage whenever they change.
+  useEffect(() => {
+    saveFmSettings({
+      viewMode,
+      previewMode,
+      sortBy,
+      sortOrder,
+      publicFilter,
+      pageSize: itemsPerPage,
+    });
+  }, [viewMode, previewMode, sortBy, sortOrder, publicFilter, itemsPerPage]);
+
+  /** Handle clickable column-header sorting. */
+  const handleSortClick = (column: FmFilesOrderBy) => {
+    if (sortBy === column) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(column);
+      // Default: ascending for filename, descending for date/size.
+      setSortOrder(column === "original_filename" ? "asc" : "desc");
+    }
+  };
 
   const { items, totalCount, isLoading, error, reload } = useFmListFiles({
     search: debouncedSearch.trim() || undefined,
@@ -629,9 +812,11 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
   useEffect(() => {
     if (!activeFile) {
       setTagsText("");
+      setFmTags([]);
       return;
     }
     setTagsText(formatTagsCsv(activeFile.tags));
+    setFmTags(Array.isArray(activeFile.tags) ? [...activeFile.tags] : []);
   }, [activeFile?.uid]);
 
   useEffect(() => {
@@ -1274,8 +1459,16 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
             }
           }}
         >
-          <ToggleButton value="list">List</ToggleButton>
-          <ToggleButton value="grid">Grid</ToggleButton>
+          <ToggleButton value="list" aria-label="List view">
+            <Tooltip title="List view">
+              <ViewListIcon fontSize="small" />
+            </Tooltip>
+          </ToggleButton>
+          <ToggleButton value="grid" aria-label="Grid view">
+            <Tooltip title="Grid view">
+              <GridViewIcon fontSize="small" />
+            </Tooltip>
+          </ToggleButton>
         </ToggleButtonGroup>
 
         <ToggleButtonGroup
@@ -1402,10 +1595,34 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                     />
                   </TableCell>
                 )}
-                <TableCell sx={{ width: "55%" }}>File</TableCell>
-                <TableCell sx={{ width: "25%" }}>Type</TableCell>
-                <TableCell align="right" sx={{ width: 110 }}>
-                  Size
+                <TableCell>
+                  <TableSortLabel
+                    active={sortBy === "original_filename"}
+                    direction={
+                      sortBy === "original_filename" ? sortOrder : "asc"
+                    }
+                    onClick={() => handleSortClick("original_filename")}
+                  >
+                    File
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ width: 150 }}>
+                  <TableSortLabel
+                    active={sortBy === "created_at"}
+                    direction={sortBy === "created_at" ? sortOrder : "desc"}
+                    onClick={() => handleSortClick("created_at")}
+                  >
+                    Created
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell align="right" sx={{ width: 100 }}>
+                  <TableSortLabel
+                    active={sortBy === "byte_size"}
+                    direction={sortBy === "byte_size" ? sortOrder : "desc"}
+                    onClick={() => handleSortClick("byte_size")}
+                  >
+                    Size
+                  </TableSortLabel>
                 </TableCell>
                 <TableCell sx={{ width: props.onSelect ? 180 : 220 }}>
                   Actions
@@ -1479,13 +1696,26 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                               }}
                             />
                           ) : (
-                            <Typography
-                              variant="caption"
-                              fontWeight={700}
-                              color="text.secondary"
+                            <Box
+                              sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                gap: 0.25,
+                              }}
                             >
-                              {guessIconLabel(f)}
-                            </Typography>
+                              <InsertDriveFileOutlinedIcon
+                                sx={{ fontSize: 22, color: "text.secondary" }}
+                              />
+                              <Typography
+                                variant="caption"
+                                fontWeight={700}
+                                color="text.secondary"
+                                sx={{ fontSize: "0.65rem" }}
+                              >
+                                {getFileExtLabel(f)}
+                              </Typography>
+                            </Box>
                           )}
                         </Box>
                         <Box sx={{ minWidth: 0 }}>
@@ -1550,8 +1780,9 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                             color="text.secondary"
                             noWrap
                             sx={{ display: "block" }}
+                            title={`${f.mime_type} | ${f.uid}`}
                           >
-                            {f.uid}
+                            {f.mime_type} | {f.uid}
                           </Typography>
                           <Stack
                             direction="row"
@@ -1578,17 +1809,8 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                       </Stack>
                     </TableCell>
                     <TableCell>
-                      <Typography
-                        variant="body2"
-                        noWrap
-                        title={f.mime_type}
-                        sx={{
-                          display: "block",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {f.mime_type}
+                      <Typography variant="body2" noWrap>
+                        {formatCreatedAt(f.created_at)}
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
@@ -1689,30 +1911,101 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                     alignItems: "center",
                     justifyContent: "center",
                     overflow: "hidden",
+                    position: "relative",
                   }}
                 >
                   {showThumb ? (
-                    <Box
-                      component="img"
-                      src={thumbUrl || ""}
-                      alt=""
-                      sx={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "contain",
-                      }}
-                    />
+                    <>
+                      <Box
+                        component="img"
+                        src={thumbUrl || ""}
+                        alt=""
+                        sx={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "contain",
+                        }}
+                      />
+                      <Tooltip title="Expand image">
+                        <IconButton
+                          size="small"
+                          sx={{
+                            position: "absolute",
+                            top: 4,
+                            right: 4,
+                            bgcolor: "rgba(0,0,0,0.5)",
+                            color: "#fff",
+                            "&:hover": { bgcolor: "rgba(0,0,0,0.7)" },
+                            zIndex: 1,
+                          }}
+                          onClick={(e) => {
+                            stop(e);
+                            setExpandedImageFile(f);
+                          }}
+                        >
+                          <OpenInFullIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </>
+                  ) : previewMode === "thumbnails" &&
+                    isSupportedVideoMime(f.mime_type) ? (
+                    <>
+                      <Box
+                        component="video"
+                        preload="metadata"
+                        controls
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        sx={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "contain",
+                        }}
+                      >
+                        <source
+                          src={api.getContentUrl({ fileUid: f.uid })}
+                          type={f.mime_type}
+                        />
+                      </Box>
+                      <Tooltip title="Picture-in-picture">
+                        <IconButton
+                          size="small"
+                          sx={{
+                            position: "absolute",
+                            top: 4,
+                            right: 4,
+                            bgcolor: "rgba(0,0,0,0.5)",
+                            color: "#fff",
+                            "&:hover": { bgcolor: "rgba(0,0,0,0.7)" },
+                            zIndex: 1,
+                          }}
+                          onClick={(e) => {
+                            stop(e);
+                            setExpandedVideoFile(f);
+                          }}
+                        >
+                          <PictureInPictureAltIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </>
                   ) : (
-                    <Box textAlign="center">
-                      <Typography fontWeight={800} color="text.secondary">
-                        {guessIconLabel(f)}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {isImageMime(f.mime_type)
-                          ? "Image"
-                          : isVideoMime(f.mime_type)
-                            ? "Video"
-                            : "File"}
+                    <Box
+                      textAlign="center"
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 0.5,
+                      }}
+                    >
+                      <InsertDriveFileOutlinedIcon
+                        sx={{ fontSize: 40, color: "text.secondary" }}
+                      />
+                      <Typography
+                        variant="caption"
+                        fontWeight={700}
+                        color="text.secondary"
+                      >
+                        {getFileExtLabel(f)}
                       </Typography>
                     </Box>
                   )}
@@ -1844,6 +2137,24 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
         >
           Next
         </Button>
+        <FormControl size="small" sx={{ minWidth: 70 }}>
+          <Select
+            value={itemsPerPage}
+            onChange={(e: SelectChangeEvent<number>) => {
+              const v = Number(e.target.value);
+              if (v > 0) {
+                setItemsPerPage(v);
+                setOffset(0);
+              }
+            }}
+          >
+            {PAGE_SIZES.map((s) => (
+              <MenuItem key={s} value={s}>
+                {s}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
         <Typography variant="body2" color="text.secondary" sx={{ ml: "auto" }}>
           {pageInfo.start}-{pageInfo.end} of {pageInfo.totalCount}
         </Typography>
@@ -2013,22 +2324,62 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                 }}
               >
                 {activeUrl && isImageMime(activeFile.mime_type) && (
-                  <Box
-                    component="img"
-                    src={activeUrl}
-                    alt=""
-                    sx={{ width: "100%", maxHeight: 320, objectFit: "contain" }}
-                  />
+                  <Box sx={{ position: "relative" }}>
+                    <Box
+                      component="img"
+                      src={activeUrl}
+                      alt=""
+                      sx={{
+                        width: "100%",
+                        maxHeight: 320,
+                        objectFit: "contain",
+                      }}
+                    />
+                    <Tooltip title="Expand image">
+                      <IconButton
+                        size="small"
+                        sx={{
+                          position: "absolute",
+                          top: 4,
+                          right: 4,
+                          bgcolor: "rgba(0,0,0,0.5)",
+                          color: "#fff",
+                          "&:hover": { bgcolor: "rgba(0,0,0,0.7)" },
+                        }}
+                        onClick={() => setExpandedImageFile(activeFile)}
+                      >
+                        <OpenInFullIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
                 )}
                 {activeUrl && isSupportedVideoMime(activeFile.mime_type) && (
-                  <Box
-                    component="video"
-                    controls
-                    preload="metadata"
-                    sx={{ width: "100%", maxHeight: 320 }}
-                  >
-                    <source src={activeUrl} type={activeFile.mime_type} />
-                    Your browser cannot play this video.
+                  <Box sx={{ position: "relative" }}>
+                    <Box
+                      component="video"
+                      controls
+                      preload="metadata"
+                      sx={{ width: "100%", maxHeight: 320, display: "block" }}
+                    >
+                      <source src={activeUrl} type={activeFile.mime_type} />
+                      Your browser cannot play this video.
+                    </Box>
+                    <Tooltip title="Picture-in-picture">
+                      <IconButton
+                        size="small"
+                        sx={{
+                          position: "absolute",
+                          top: 4,
+                          right: 4,
+                          bgcolor: "rgba(0,0,0,0.5)",
+                          color: "#fff",
+                          "&:hover": { bgcolor: "rgba(0,0,0,0.7)" },
+                        }}
+                        onClick={() => setExpandedVideoFile(activeFile)}
+                      >
+                        <PictureInPictureAltIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Tooltip>
                   </Box>
                 )}
                 {(!activeUrl ||
@@ -2074,7 +2425,7 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                 <TextField
                   size="small"
                   label="Title"
-                  value={safeTrim((activeFile as any).title)}
+                  value={safeStr((activeFile as any).title)}
                   onChange={(e) =>
                     setActiveFile({
                       ...activeFile,
@@ -2085,7 +2436,7 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                 <TextField
                   size="small"
                   label="Alt text (images)"
-                  value={safeTrim((activeFile as any).alt_text)}
+                  value={safeStr((activeFile as any).alt_text)}
                   onChange={(e) =>
                     setActiveFile({
                       ...activeFile,
@@ -2093,12 +2444,15 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                     } as any)
                   }
                 />
-                <TextField
-                  size="small"
-                  label="Tags (comma-separated)"
+                <TagsInput
+                  value={fmTags}
+                  onChange={setFmTags}
+                  label="Add tag"
                   placeholder="e.g. hero, landing, press"
-                  value={tagsText}
-                  onChange={(e) => setTagsText(e.target.value)}
+                  maxTags={50}
+                  maxLength={128}
+                  size="small"
+                  lowercase
                 />
                 <FormControlLabel
                   control={
@@ -2140,7 +2494,7 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                             patch: {
                               title: safeTrim((activeFile as any).title),
                               alt_text: safeTrim((activeFile as any).alt_text),
-                              tags: parseTagsCsv(tagsText),
+                              tags: fmTags,
                               is_public: activeIsLocalStorage
                                 ? true
                                 : Boolean((activeFile as any).is_public),
@@ -2630,6 +2984,30 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
           {renameSuccessMessage}
         </Alert>
       </Snackbar>
+
+      {/* Expanded video viewer */}
+      <FmVideoViewer
+        open={Boolean(expandedVideoFile)}
+        onClose={() => setExpandedVideoFile(null)}
+        src={
+          expandedVideoFile
+            ? api.getContentUrl({ fileUid: expandedVideoFile.uid })
+            : ""
+        }
+        mimeType={expandedVideoFile?.mime_type || ""}
+        title={expandedVideoFile ? getFileLabel(expandedVideoFile) : ""}
+      />
+
+      {/* Expanded image viewer */}
+      <FmImageViewer
+        open={Boolean(expandedImageFile)}
+        onClose={() => setExpandedImageFile(null)}
+        fileUid={expandedImageFile?.uid || ""}
+        api={api}
+        title={expandedImageFile ? getFileLabel(expandedImageFile) : ""}
+        file={expandedImageFile}
+        onSelect={props.onSelect}
+      />
     </Box>
   );
 };

@@ -39,6 +39,8 @@ export interface CmsBodyEditorProps {
         url?: string;
         width?: number;
         height?: number;
+        /** MIME type of the selected file (e.g. "video/mp4", "image/png"). */
+        mimeType?: string;
     } | null>;
     /** Callback to upload an image directly. */
     onUploadImage?: CmsImageUploadHandler;

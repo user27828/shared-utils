@@ -23,6 +23,7 @@ import LockOpenIcon from "@mui/icons-material/LockOpen";
 import HistoryIcon from "@mui/icons-material/History";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import EditIcon from "@mui/icons-material/Edit";
+import { TagsInput } from "../../components/form/TagsInput.js";
 import { CmsClient } from "../CmsClient.js";
 import { defaultToast } from "./CmsAdminUiConfig.js";
 import CmsConflictDialog from "./CmsConflictDialog.js";
@@ -102,7 +103,6 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
     const [contentType, setContentType] = useState("html");
     const [content, setContent] = useState("<p></p>");
     const [tags, setTags] = useState([]);
-    const [tagInput, setTagInput] = useState("");
     const [optionsJson, setOptionsJson] = useState("{}");
     const [password, setPassword] = useState("");
     const [includeSoftDeletedHistory, setIncludeSoftDeletedHistory] = useState(false);
@@ -1018,22 +1018,7 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                                                                 }
                                                                 return { ...result, url };
                                                             }
-                                                            : undefined }, `body-${contentType}-${editorMode}-${editorOverride}`)] }), _jsxs(Paper, { sx: { p: 2, mt: 2 }, children: [_jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Tags" }), _jsx(Stack, { direction: "row", spacing: 1, flexWrap: "wrap", sx: { mb: tags.length > 0 ? 1 : 0 }, children: tags.map((tag, idx) => (_jsx(Chip, { label: tag, size: "small", onDelete: () => setTags((prev) => prev.filter((_, i) => i !== idx)), sx: { mb: 0.5 } }, `${tag}-${idx}`))) }), _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", children: [_jsx(TextField, { label: "Add tag", size: "small", value: tagInput, onChange: (e) => setTagInput(e.target.value), onKeyDown: (e) => {
-                                                                    if (e.key === "Enter") {
-                                                                        e.preventDefault();
-                                                                        const val = tagInput.trim();
-                                                                        if (val && !tags.includes(val)) {
-                                                                            setTags((prev) => [...prev, val]);
-                                                                        }
-                                                                        setTagInput("");
-                                                                    }
-                                                                }, sx: { flex: 1 } }), _jsx(IconButton, { size: "small", color: "primary", onClick: () => {
-                                                                    const val = tagInput.trim();
-                                                                    if (val && !tags.includes(val)) {
-                                                                        setTags((prev) => [...prev, val]);
-                                                                    }
-                                                                    setTagInput("");
-                                                                }, disabled: !tagInput.trim(), children: _jsx(AddIcon, {}) })] }), _jsx(Divider, { sx: { my: 2 } }), _jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Password Protection" }), _jsx(TextField, { label: "Password (optional)", type: "password", value: password, onChange: (e) => setPassword(e.target.value), placeholder: isNew ? "" : "(unchanged)", fullWidth: true, size: "small" })] }), _jsxs(Accordion, { sx: { mt: 2 }, children: [_jsxs(AccordionSummary, { expandIcon: _jsx(ExpandMoreIcon, {}), children: [_jsx(Typography, { children: "Advanced Options (JSON)" }), optionsParse.error && (_jsx(Chip, { label: "Invalid JSON", size: "small", color: "error", sx: { ml: 1 } }))] }), _jsx(AccordionDetails, { children: _jsx(CmsBodyEditor, { contentType: "json", value: optionsJson, onChange: setOptionsJson, height: 260 }) })] })] }), _jsxs(Box, { sx: { width: { xs: "100%", lg: 420 }, flexShrink: 0 }, children: [_jsxs(Paper, { sx: { p: 2, mb: 2 }, children: [_jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Status" }), _jsxs(Stack, { direction: "row", spacing: 1, sx: { mb: 1 }, children: [etag && (_jsx(Chip, { label: etag, size: "small", variant: "outlined" })), lockedBy && (_jsx(Chip, { label: `Locked by ${lockedBy}`, size: "small", icon: _jsx(LockIcon, { fontSize: "small" }), color: "warning" }))] }), !isNew && (_jsxs(Stack, { spacing: 0.75, sx: { mb: 1 }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [_jsx(Chip, { label: status === "published"
+                                                            : undefined }, `body-${contentType}-${editorMode}-${editorOverride}`)] }), _jsxs(Paper, { sx: { p: 2, mt: 2 }, children: [_jsx(TagsInput, { value: tags, onChange: setTags, label: "Tags", placeholder: "Add tag", size: "small" }), _jsx(Divider, { sx: { my: 2 } }), _jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Password Protection" }), _jsx(TextField, { label: "Password (optional)", type: "password", value: password, onChange: (e) => setPassword(e.target.value), placeholder: isNew ? "" : "(unchanged)", fullWidth: true, size: "small" })] }), _jsxs(Accordion, { sx: { mt: 2 }, children: [_jsxs(AccordionSummary, { expandIcon: _jsx(ExpandMoreIcon, {}), children: [_jsx(Typography, { children: "Advanced Options (JSON)" }), optionsParse.error && (_jsx(Chip, { label: "Invalid JSON", size: "small", color: "error", sx: { ml: 1 } }))] }), _jsx(AccordionDetails, { children: _jsx(CmsBodyEditor, { contentType: "json", value: optionsJson, onChange: setOptionsJson, height: 260 }) })] })] }), _jsxs(Box, { sx: { width: { xs: "100%", lg: 420 }, flexShrink: 0 }, children: [_jsxs(Paper, { sx: { p: 2, mb: 2 }, children: [_jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Status" }), _jsxs(Stack, { direction: "row", spacing: 1, sx: { mb: 1 }, children: [etag && (_jsx(Chip, { label: etag, size: "small", variant: "outlined" })), lockedBy && (_jsx(Chip, { label: `Locked by ${lockedBy}`, size: "small", icon: _jsx(LockIcon, { fontSize: "small" }), color: "warning" }))] }), !isNew && (_jsxs(Stack, { spacing: 0.75, sx: { mb: 1 }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [_jsx(Chip, { label: status === "published"
                                                                             ? "Published"
                                                                             : status === "trash"
                                                                                 ? "Trash"

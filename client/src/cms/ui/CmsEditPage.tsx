@@ -58,6 +58,7 @@ import HistoryIcon from "@mui/icons-material/History";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import EditIcon from "@mui/icons-material/Edit";
 
+import { TagsInput } from "../../components/form/TagsInput.js";
 import type {
   CmsHeadRow,
   CmsHistoryRow,
@@ -205,7 +206,6 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   const [contentType, setContentType] = useState<CmsEditorContentType>("html");
   const [content, setContent] = useState("<p></p>");
   const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
   const [optionsJson, setOptionsJson] = useState("{}");
   const [password, setPassword] = useState("");
   const [includeSoftDeletedHistory, setIncludeSoftDeletedHistory] =
@@ -1062,6 +1062,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     width?: number;
     height?: number;
     variantKind?: string;
+    mimeType?: string;
   } | null> => {
     return new Promise((resolve) => {
       pickerResolveRef.current = resolve;
@@ -1077,6 +1078,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
       width?: number;
       height?: number;
       variantKind?: string;
+      mimeType?: string;
     } | null,
   ) => {
     setPickerOpen(false);
@@ -1637,60 +1639,13 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
 
               {/* Tags & Password */}
               <Paper sx={{ p: 2, mt: 2 }}>
-                <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                  Tags
-                </Typography>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  flexWrap="wrap"
-                  sx={{ mb: tags.length > 0 ? 1 : 0 }}
-                >
-                  {tags.map((tag, idx) => (
-                    <Chip
-                      key={`${tag}-${idx}`}
-                      label={tag}
-                      size="small"
-                      onDelete={() =>
-                        setTags((prev) => prev.filter((_, i) => i !== idx))
-                      }
-                      sx={{ mb: 0.5 }}
-                    />
-                  ))}
-                </Stack>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <TextField
-                    label="Add tag"
-                    size="small"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        const val = tagInput.trim();
-                        if (val && !tags.includes(val)) {
-                          setTags((prev) => [...prev, val]);
-                        }
-                        setTagInput("");
-                      }
-                    }}
-                    sx={{ flex: 1 }}
-                  />
-                  <IconButton
-                    size="small"
-                    color="primary"
-                    onClick={() => {
-                      const val = tagInput.trim();
-                      if (val && !tags.includes(val)) {
-                        setTags((prev) => [...prev, val]);
-                      }
-                      setTagInput("");
-                    }}
-                    disabled={!tagInput.trim()}
-                  >
-                    <AddIcon />
-                  </IconButton>
-                </Stack>
+                <TagsInput
+                  value={tags}
+                  onChange={setTags}
+                  label="Tags"
+                  placeholder="Add tag"
+                  size="small"
+                />
 
                 <Divider sx={{ my: 2 }} />
 

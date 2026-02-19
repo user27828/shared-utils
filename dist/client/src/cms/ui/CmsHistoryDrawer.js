@@ -297,7 +297,9 @@ const CmsHistoryDrawer = React.memo(({ open, onClose, history, loadedRevisionId,
                                     width: "100%",
                                     maxHeight: 280,
                                 },
-                            }, children: _jsx(LocalizationProvider, { dateAdapter: AdapterDateFns, children: _jsx(DateCalendar, { value: selectedDate, onChange: handleDateChange, views: ["day"], slots: { day: RevisionDay }, slotProps: calendarSlotProps, shouldDisableDate: shouldDisableDate, minDate: calendarMinDate, maxDate: calendarMaxDate, sx: {
+                            }, children: _jsx(LocalizationProvider, { dateAdapter: AdapterDateFns, children: _jsx(DateCalendar, { value: selectedDate, onChange: handleDateChange, views: ["day"], slots: {
+                                        day: RevisionDay,
+                                    }, slotProps: calendarSlotProps, shouldDisableDate: shouldDisableDate, minDate: calendarMinDate, maxDate: calendarMaxDate, sx: {
                                         "& .MuiPickersDay-root": { fontSize: "0.75rem" },
                                         "& .Mui-disabled:not(.Mui-selected)": {
                                             color: "text.disabled",
@@ -339,7 +341,11 @@ const CmsHistoryDrawer = React.memo(({ open, onClose, history, loadedRevisionId,
                                                     borderRadius: "50%",
                                                     bgcolor: isDirty ? "warning.main" : "success.main",
                                                     flexShrink: 0,
-                                                } }), _jsxs(Stack, { sx: { flex: 1, minWidth: 0 }, children: [_jsx(Stack, { direction: "row", spacing: 0.5, alignItems: "center", children: _jsx(Chip, { label: `Rev ${currentVersionNumber} (Current)`, size: "small", color: "success", variant: "filled", sx: { height: 22, fontSize: "0.72rem", fontWeight: 600 } }) }), currentUpdatedAt && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: { mt: 0.25 }, children: format(new Date(currentUpdatedAt), "MMM d, h:mm a") }))] }), isDirty && (_jsx(Chip, { label: "Unsaved", size: "small", color: "warning", variant: "outlined", sx: { height: 20, fontSize: "0.65rem" } })), loadedRevisionId && (_jsx(Tooltip, { title: "Return to current version", children: _jsx(IconButton, { size: "small", children: _jsx(VisibilityIcon, { fontSize: "small", color: "primary" }) }) }))] }) })), filteredHistory.length === 0 && (_jsx(Box, { sx: { px: 1.5, py: 4, textAlign: "center" }, children: _jsx(Typography, { variant: "body2", color: "text.secondary", children: "No revision history yet" }) })), groupedByDate.map((group, gi) => (_jsxs(Box, { "data-date-key": group.dateKey, sx: {
+                                                } }), _jsxs(Stack, { sx: { flex: 1, minWidth: 0 }, children: [_jsx(Stack, { direction: "row", spacing: 0.5, alignItems: "center", children: _jsx(Chip, { label: `Rev ${currentVersionNumber} (Current)`, size: "small", color: "success", variant: "filled", sx: {
+                                                                height: 22,
+                                                                fontSize: "0.72rem",
+                                                                fontWeight: 600,
+                                                            } }) }), currentUpdatedAt && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: { mt: 0.25 }, children: format(new Date(currentUpdatedAt), "MMM d, h:mm a") }))] }), isDirty && (_jsx(Chip, { label: "Unsaved", size: "small", color: "warning", variant: "outlined", sx: { height: 20, fontSize: "0.65rem" } })), loadedRevisionId && (_jsx(Tooltip, { title: "Return to current version", children: _jsx(IconButton, { size: "small", children: _jsx(VisibilityIcon, { fontSize: "small", color: "primary" }) }) }))] }) })), filteredHistory.length === 0 && (_jsx(Box, { sx: { px: 1.5, py: 4, textAlign: "center" }, children: _jsx(Typography, { variant: "body2", color: "text.secondary", children: "No revision history yet" }) })), groupedByDate.map((group, gi) => (_jsxs(Box, { "data-date-key": group.dateKey, sx: {
                                         // Flash highlight: instant on, smooth fade off
                                         bgcolor: flashKey === group.dateKey ? flashBg : "transparent",
                                         transition: `background-color ${FLASH_FADE_MS} ease-out`,

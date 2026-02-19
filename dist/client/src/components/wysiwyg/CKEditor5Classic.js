@@ -10,7 +10,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useCallback, useEffect, useMemo, useRef, useState, } from "react";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import { mergeWith } from "lodash-es";
-import { Alignment, Autoformat, Base64UploadAdapter, BlockQuote, Bold, ClassicEditor, Code, CodeBlock, Essentials, FontBackgroundColor, FontColor, FontFamily, FontSize, Fullscreen, GeneralHtmlSupport, Heading, HorizontalLine, Image, ImageCaption, ImageResize, ImageStyle, ImageToolbar, ImageUpload, Indent, Italic, Link, List, ListProperties, MediaEmbed, Paragraph, PasteFromOffice, PasteFromMarkdownExperimental, Plugin, ButtonView, Table, TableCellProperties, TableProperties, TableToolbar, Underline, WordCount, } from "ckeditor5";
+import { Alignment, Autoformat, Base64UploadAdapter, BlockQuote, Bold, ClassicEditor, Code, CodeBlock, Essentials, FontBackgroundColor, FontColor, FontFamily, FontSize, Fullscreen, GeneralHtmlSupport, Heading, HorizontalLine, Image, ImageCaption, ImageResize, ImageStyle, ImageToolbar, ImageUpload, Indent, Italic, Link, List, ListProperties, MediaEmbed, Paragraph, PasteFromOffice, PasteFromMarkdownExperimental, Plugin, ButtonView, Table, TableCellProperties, TableProperties, TableToolbar, Underline, Widget, WidgetResize, WordCount, toWidget, } from "ckeditor5";
 import "ckeditor5/ckeditor5.css";
 import { pickLocalFile } from "./wysiwyg-common.js";
 const LAYOUT_STYLES = `
@@ -45,6 +45,23 @@ const LAYOUT_STYLES = `
   flex: 1 1 auto;
   min-height: 0;
   height: 100%;
+}
+
+/* VideoBlock widget */
+figure.ck-video-widget {
+  display: table;
+  margin: 1em auto;
+  max-width: 100%;
+}
+figure.ck-video-widget video {
+  display: block;
+  width: 100%;
+}
+figure.ck-video-widget.video_resized {
+  display: block;
+}
+figure.ck-video-widget.video_resized video {
+  width: 100%;
 }
 `;
 const DARK_THEME_STYLES = `
@@ -293,6 +310,13 @@ const guessKindFromUrl = (url) => {
         lower.endsWith(".svg")) {
         return "image";
     }
+    if (lower.endsWith(".mp4") ||
+        lower.endsWith(".webm") ||
+        lower.endsWith(".mov") ||
+        lower.endsWith(".ogg") ||
+        lower.endsWith(".avi")) {
+        return "media";
+    }
     if (lower.includes("youtube.com") ||
         lower.includes("youtu.be") ||
         lower.includes("vimeo.com") ||
@@ -300,6 +324,26 @@ const guessKindFromUrl = (url) => {
         return "media";
     }
     return "file";
+};
+/**
+ * Infer asset kind from a MIME type string.
+ * Returns `undefined` when the MIME type is unknown or absent.
+ */
+const guessKindFromMime = (mime) => {
+    if (!mime) {
+        return undefined;
+    }
+    const lower = mime.toLowerCase();
+    if (lower.startsWith("image/")) {
+        return "image";
+    }
+    if (lower.startsWith("video/") || lower.startsWith("audio/")) {
+        return "media";
+    }
+    if (lower === "application/pdf" || lower.startsWith("text/")) {
+        return "file";
+    }
+    return undefined;
 };
 const tryInsertImageUrl = (editor, url, alt, width, height) => {
     // Build dimension attributes (CKEditor ImageResize expects string px values)
@@ -341,6 +385,264 @@ const insertLink = (editor, url, text) => {
     editor.model.change((writer) => {
         writer.insertText(label, { linkHref: url }, position);
     });
+};
+// ── VideoBlock plugin — resizable video widget ────────────────────────────
+/**
+ * A lightweight CKEditor5 plugin that registers a `videoBlock` model element
+ * with full upcast/downcast converters and drag-to-resize handles via
+ * `WidgetResize`.  Produces `<figure class="video"><video …><source …></video></figure>`.
+ */
+class VideoBlockPlugin extends Plugin {
+    static get requires() {
+        return [Widget, WidgetResize];
+    }
+    init() {
+        const editor = this.editor;
+        this._defineSchema();
+        this._defineConverters();
+        this._defineResizeHandles();
+        // Allow clipboard / drag-drop paste of <video> to be upcast.
+        editor.editing.view.document.on("clipboardInput", () => { }, {
+            priority: "lowest",
+        });
+    }
+    // ── Schema ──────────────────────────────────────────────────────────
+    _defineSchema() {
+        const schema = this.editor.model.schema;
+        schema.register("videoBlock", {
+            inheritAllFrom: "$blockObject",
+            allowAttributes: ["src", "mimeType", "resizedWidth"],
+        });
+    }
+    // ── Converters ────────────────────────────────────────────────────────
+    _defineConverters() {
+        const conversion = this.editor.conversion;
+        // ── Upcast: <figure class="video"><video><source src></video></figure>
+        conversion.for("upcast").elementToElement({
+            view: {
+                name: "figure",
+                classes: "video",
+            },
+            model: (viewElement, { writer }) => {
+                const video = viewElement.getChild(0);
+                if (!video || video.name !== "video") {
+                    return null;
+                }
+                let src = "";
+                let mimeType = "";
+                // Prefer <source> child, fall back to video[src].
+                for (const child of video.getChildren()) {
+                    if (child.name === "source") {
+                        src = child.getAttribute("src") || "";
+                        mimeType = child.getAttribute("type") || "";
+                        break;
+                    }
+                }
+                if (!src) {
+                    src = video.getAttribute("src") || "";
+                }
+                if (!src) {
+                    return null;
+                }
+                const attrs = { src };
+                if (mimeType) {
+                    attrs.mimeType = mimeType;
+                }
+                // Read inline width from <figure> if present (persisted resize).
+                const style = viewElement.getAttribute("style") || "";
+                const widthMatch = style.match(/width:\s*([\d.]+(?:px|%))/);
+                if (widthMatch) {
+                    attrs.resizedWidth = widthMatch[1];
+                }
+                return writer.createElement("videoBlock", attrs);
+            },
+            converterPriority: "high",
+        });
+        // ── Upcast: bare <video> (GHS / pasted HTML without <figure> wrapper)
+        conversion.for("upcast").elementToElement({
+            view: { name: "video" },
+            model: (viewElement, { writer }) => {
+                let src = "";
+                let mimeType = "";
+                for (const child of viewElement.getChildren()) {
+                    if (child.name === "source") {
+                        src = child.getAttribute("src") || "";
+                        mimeType = child.getAttribute("type") || "";
+                        break;
+                    }
+                }
+                if (!src) {
+                    src = viewElement.getAttribute("src") || "";
+                }
+                if (!src) {
+                    return null;
+                }
+                const attrs = { src };
+                if (mimeType) {
+                    attrs.mimeType = mimeType;
+                }
+                const style = viewElement.getAttribute("style") || "";
+                const widthMatch = style.match(/width:\s*([\d.]+(?:px|%))/);
+                if (widthMatch) {
+                    attrs.resizedWidth = widthMatch[1];
+                }
+                return writer.createElement("videoBlock", attrs);
+            },
+            converterPriority: "high",
+        });
+        // ── Data downcast: videoBlock → <figure class="video"><video …></video></figure>
+        conversion.for("dataDowncast").elementToStructure({
+            model: "videoBlock",
+            view: (modelElement, { writer }) => {
+                const src = modelElement.getAttribute("src") || "";
+                const mimeType = modelElement.getAttribute("mimeType") || "";
+                const resizedWidth = modelElement.getAttribute("resizedWidth");
+                const sourceEl = mimeType
+                    ? writer.createEmptyElement("source", { src, type: mimeType })
+                    : writer.createEmptyElement("source", { src });
+                const videoEl = writer.createContainerElement("video", { controls: "controls", preload: "metadata" }, [sourceEl]);
+                const figureAttrs = {
+                    class: "video",
+                };
+                if (resizedWidth) {
+                    figureAttrs.style = `width:${resizedWidth};`;
+                }
+                return writer.createContainerElement("figure", figureAttrs, [videoEl]);
+            },
+        });
+        // ── Editing downcast: videoBlock → widget <figure class="video">
+        conversion.for("editingDowncast").elementToStructure({
+            model: "videoBlock",
+            view: (modelElement, { writer }) => {
+                const src = modelElement.getAttribute("src") || "";
+                const mimeType = modelElement.getAttribute("mimeType") || "";
+                const resizedWidth = modelElement.getAttribute("resizedWidth");
+                const sourceEl = mimeType
+                    ? writer.createEmptyElement("source", { src, type: mimeType })
+                    : writer.createEmptyElement("source", { src });
+                const videoEl = writer.createContainerElement("video", {
+                    controls: "controls",
+                    preload: "metadata",
+                    style: "width:100%;display:block;",
+                }, [sourceEl]);
+                const figureAttrs = {
+                    class: "ck-widget ck-video-widget video",
+                };
+                if (resizedWidth) {
+                    figureAttrs.style = `width:${resizedWidth};`;
+                }
+                const figure = writer.createContainerElement("figure", figureAttrs, [
+                    videoEl,
+                ]);
+                return toWidget(figure, writer, {
+                    label: "video widget",
+                });
+            },
+        });
+        // ── resizedWidth attribute downcast (for live resize preview)
+        conversion.for("editingDowncast").add((dispatcher) => {
+            dispatcher.on("attribute:resizedWidth:videoBlock", (evt, data, conversionApi) => {
+                if (!conversionApi.consumable.consume(data.item, evt.name)) {
+                    return;
+                }
+                const viewElement = conversionApi.mapper.toViewElement(data.item);
+                if (!viewElement) {
+                    return;
+                }
+                const writer = conversionApi.writer;
+                if (data.attributeNewValue) {
+                    writer.setStyle("width", data.attributeNewValue, viewElement);
+                    writer.addClass("video_resized", viewElement);
+                }
+                else {
+                    writer.removeStyle("width", viewElement);
+                    writer.removeClass("video_resized", viewElement);
+                }
+            });
+        });
+        conversion.for("dataDowncast").add((dispatcher) => {
+            dispatcher.on("attribute:resizedWidth:videoBlock", (evt, data, conversionApi) => {
+                if (!conversionApi.consumable.consume(data.item, evt.name)) {
+                    return;
+                }
+                const viewElement = conversionApi.mapper.toViewElement(data.item);
+                if (!viewElement) {
+                    return;
+                }
+                const writer = conversionApi.writer;
+                if (data.attributeNewValue) {
+                    writer.setStyle("width", data.attributeNewValue, viewElement);
+                }
+                else {
+                    writer.removeStyle("width", viewElement);
+                }
+            });
+        });
+    }
+    // ── Resize handles ──────────────────────────────────────────────────
+    _defineResizeHandles() {
+        const editor = this.editor;
+        const widgetResize = editor.plugins.get(WidgetResize);
+        // Attach resize handles to each videoBlock widget after it is inserted.
+        editor.editing.downcastDispatcher.on("insert:videoBlock", (_evt, data, conversionApi) => {
+            const modelElement = data.item;
+            const viewElement = conversionApi.mapper.toViewElement(modelElement);
+            if (!viewElement) {
+                return;
+            }
+            // Defer one frame so the DOM element is fully rendered.
+            setTimeout(() => {
+                const domConverter = editor.editing.view.domConverter;
+                const domElement = domConverter.mapViewToDom(viewElement);
+                if (!domElement) {
+                    return;
+                }
+                widgetResize.attachTo({
+                    unit: "px",
+                    modelElement,
+                    viewElement,
+                    editor,
+                    getHandleHost(domWidgetElement) {
+                        return (domWidgetElement.querySelector("video") || domWidgetElement);
+                    },
+                    getResizeHost() {
+                        return domElement;
+                    },
+                    isCentered() {
+                        return false;
+                    },
+                    onCommit(newValue) {
+                        editor.model.change((writer) => {
+                            writer.setAttribute("resizedWidth", newValue, modelElement);
+                        });
+                    },
+                });
+            }, 0);
+        }, { priority: "low" });
+    }
+}
+VideoBlockPlugin.pluginName = "VideoBlock";
+/**
+ * Insert a video into the editor as a `videoBlock` model element,
+ * which is rendered as a resizable widget.
+ */
+const insertVideoBlock = (editor, url, mimeType) => {
+    try {
+        editor.model.change((writer) => {
+            const attrs = { src: url, resizedWidth: "80%" };
+            if (mimeType) {
+                attrs.mimeType = mimeType;
+            }
+            const videoElement = writer.createElement("videoBlock", attrs);
+            editor.model.insertObject(videoElement, null, null, {
+                setSelection: "on",
+            });
+        });
+    }
+    catch {
+        // Fallback: insert as a link if VideoBlock plugin is unavailable.
+        insertLink(editor, url);
+    }
 };
 const createSharedUtilsFilePickerPlugin = (options) => {
     var _a;
@@ -413,20 +715,21 @@ const createSharedUtilsFilePickerPlugin = (options) => {
                                     return;
                                 }
                                 const url = resolveUrl(pick.url);
-                                // Images (and FM picks which always return kind:"image")
-                                if (!pick.kind || pick.kind === "image") {
+                                const effectiveKind = pick.kind ||
+                                    guessKindFromMime(pick.mimeType) ||
+                                    guessKindFromUrl(url);
+                                // Images
+                                if (effectiveKind === "image") {
                                     tryInsertImageUrl(editor, url, pick.alt, pick.width, pick.height);
                                     return;
                                 }
-                                // Non-image media: try native mediaEmbed, fall back to link
-                                if (editor.commands.get("mediaEmbed")) {
-                                    try {
-                                        editor.execute("mediaEmbed", url);
-                                        return;
-                                    }
-                                    catch {
-                                        // URL not recognised by MediaRegistry — fall through to link.
-                                    }
+                                // Media: insert self-hosted video via GHS raw HTML.
+                                // Never use `mediaEmbed` for self-hosted URLs — MediaRegistry
+                                // only recognises external providers (YouTube, Vimeo, etc.) and
+                                // the downcast crashes when the URL isn't registered.
+                                if (effectiveKind === "media") {
+                                    insertVideoBlock(editor, url, pick.mimeType);
+                                    return;
                                 }
                                 insertLink(editor, url, pick.text || pick.title || url);
                             }
@@ -689,6 +992,7 @@ const CKEditor5Classic = (props) => {
             MediaEmbed,
             Fullscreen,
             GeneralHtmlSupport,
+            VideoBlockPlugin,
             Image,
             ImageCaption,
             ImageStyle,
@@ -785,7 +1089,7 @@ const CKEditor5Classic = (props) => {
             htmlSupport: {
                 allow: [
                     {
-                        name: /^(p|h[1-6]|span|div|a|table|thead|tbody|tfoot|tr|th|td|ol|ul|li|figure|figcaption|img|blockquote|pre|code)$/,
+                        name: /^(p|h[1-6]|span|div|a|table|thead|tbody|tfoot|tr|th|td|ol|ul|li|figure|figcaption|img|blockquote|pre|code|audio)$/,
                         styles: true,
                         classes: true,
                         attributes: true,

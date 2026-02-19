@@ -28,6 +28,7 @@ const normalizePickResultForCkeditor = (pick) => {
         text: pick.text,
         alt: pick.alt,
         kind: pick.kind,
+        mimeType: pick.mimeType,
     };
 };
 const WysiwygEditor = (props) => {
