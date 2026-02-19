@@ -8,7 +8,15 @@
  *
  * Media picker integration is injectable via callbacks.
  */
-import React, { useMemo, useRef, useState, lazy, Suspense } from "react";
+import React, {
+  useMemo,
+  useRef,
+  useState,
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+} from "react";
 import { Box, LinearProgress, Typography, useColorScheme } from "@mui/material";
 import type {
   CmsEditorPreference,
@@ -135,7 +143,7 @@ export interface CmsBodyEditorProps {
 
 // ─── Component ────────────────────────────────────────────────────────────
 
-const CmsBodyEditor: React.FC<CmsBodyEditorProps> = ({
+const CmsBodyEditor: React.FC<CmsBodyEditorProps> = React.memo(({
   contentType,
   value,
   onChange,
@@ -148,10 +156,73 @@ const CmsBodyEditor: React.FC<CmsBodyEditorProps> = ({
   const [editorLoading, setEditorLoading] = useState(true);
   const latestHtmlRef = useRef(value);
   const htmlNormalizationRunRef = useRef(0);
+  const normTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
 
   React.useEffect(() => {
     latestHtmlRef.current = value;
   }, [value]);
+
+  // Cleanup normalization timer on unmount.
+  useEffect(() => {
+    return () => {
+      if (normTimerRef.current !== undefined) {
+        clearTimeout(normTimerRef.current);
+      }
+    };
+  }, []);
+
+  /**
+   * Kick off base64 image normalization after a 500ms debounce.
+   * This avoids redundant upload attempts during rapid typing while
+   * images are embedded.  The epoch guard (htmlNormalizationRunRef) still
+   * protects against stale results from earlier runs.
+   */
+  const scheduleNormalization = useCallback(
+    (nextValue: string) => {
+      if (normTimerRef.current !== undefined) {
+        clearTimeout(normTimerRef.current);
+      }
+
+      normTimerRef.current = setTimeout(() => {
+        normTimerRef.current = undefined;
+
+        const runId = htmlNormalizationRunRef.current + 1;
+        htmlNormalizationRunRef.current = runId;
+
+        void normalizeEmbeddedHtmlImages({
+          html: nextValue,
+          uploadImage: async (file, context) => {
+            return await onUploadImage!(file, context);
+          },
+        })
+          .then((normalizedValue) => {
+            if (htmlNormalizationRunRef.current !== runId) {
+              return;
+            }
+
+            if (latestHtmlRef.current !== nextValue) {
+              return;
+            }
+
+            if (normalizedValue === nextValue) {
+              return;
+            }
+
+            latestHtmlRef.current = normalizedValue;
+            onChange(normalizedValue);
+          })
+          .catch((err) => {
+            console.error(
+              "CmsBodyEditor base64 image normalization failed",
+              err,
+            );
+          });
+      }, 500);
+    },
+    [onChange, onUploadImage],
+  );
 
   const handleHtmlEditorChange = React.useCallback(
     (nextValue: string) => {
@@ -166,36 +237,9 @@ const CmsBodyEditor: React.FC<CmsBodyEditorProps> = ({
         return;
       }
 
-      const runId = htmlNormalizationRunRef.current + 1;
-      htmlNormalizationRunRef.current = runId;
-
-      void normalizeEmbeddedHtmlImages({
-        html: nextValue,
-        uploadImage: async (file, context) => {
-          return await onUploadImage(file, context);
-        },
-      })
-        .then((normalizedValue) => {
-          if (htmlNormalizationRunRef.current !== runId) {
-            return;
-          }
-
-          if (latestHtmlRef.current !== nextValue) {
-            return;
-          }
-
-          if (normalizedValue === nextValue) {
-            return;
-          }
-
-          latestHtmlRef.current = normalizedValue;
-          onChange(normalizedValue);
-        })
-        .catch((err) => {
-          console.error("CmsBodyEditor base64 image normalization failed", err);
-        });
+      scheduleNormalization(nextValue);
     },
-    [onChange, onUploadImage],
+    [onChange, onUploadImage, scheduleNormalization],
   );
 
   const containerSx = useMemo(
@@ -285,7 +329,7 @@ const CmsBodyEditor: React.FC<CmsBodyEditorProps> = ({
       />
     </Box>
   );
-};
+});
 
 // ─── Sub-editors (lazy-loaded) ────────────────────────────────────────────
 
@@ -566,5 +610,7 @@ const MarkdownEditor: React.FC<{
 
   return <MdEditor markdown={value} onChange={onChange} />;
 };
+
+CmsBodyEditor.displayName = "CmsBodyEditor";
 
 export default CmsBodyEditor;

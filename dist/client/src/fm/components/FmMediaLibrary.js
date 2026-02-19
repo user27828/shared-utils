@@ -12,6 +12,7 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
  * @module @user27828/shared-utils/fm/client
  */
 import { useCallback, useEffect, useMemo, useRef, useState, } from "react";
+import { useDebouncedValue } from "../../helpers/debounce.js";
 import { Alert, Box, Button, ButtonGroup, Checkbox, Chip, ClickAwayListener, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Drawer, FormControl, FormControlLabel, Grow, IconButton, InputLabel, LinearProgress, MenuItem, MenuList, Paper, Popper, Select, Snackbar, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography, useTheme, } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
@@ -238,16 +239,18 @@ export const FmMediaLibrary = (props) => {
     const [uploadItems, setUploadItems] = useState([]);
     const thumbUrlCacheRef = useRef(new Map());
     const [thumbTick, setThumbTick] = useState(0);
-    // Reset pagination when search changes.
+    // Debounce search to avoid firing an API request on every keystroke.
+    const [debouncedSearch] = useDebouncedValue(search, { wait: 300 });
+    // Reset pagination when debounced search changes.
     useEffect(() => {
         setOffset(0);
-    }, [search]);
+    }, [debouncedSearch]);
     // Reset selection when query changes.
     useEffect(() => {
         setSelectedUids(new Set());
-    }, [search, includeArchived, publicFilter, sortBy, sortOrder]);
+    }, [debouncedSearch, includeArchived, publicFilter, sortBy, sortOrder]);
     const { items, totalCount, isLoading, error, reload } = useFmListFiles({
-        search: search.trim() || undefined,
+        search: debouncedSearch.trim() || undefined,
         limit,
         offset,
         includeArchived,

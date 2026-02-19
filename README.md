@@ -15,6 +15,7 @@ Collection of common utilities for web applications. Features centralized config
     - [🎨 Client Components](#-client-components)
       - [Clipboard Buttons](#clipboard-buttons)
       - [📝 WYSIWYG Editor Components](#-wysiwyg-editor-components)
+      - [⏱️ Debounce Hooks](#️-debounce-hooks)
     - [🚀 Server](#-server)
     - [📝 CMS (Content Management System)](#-cms-content-management-system)
     - [📁 FM (File Manager)](#-fm-file-manager)
@@ -363,6 +364,38 @@ import { MDXEditor } from "@user27828/shared-utils/client/wysiwyg";
 - **Consistent API**: Both editors use similar `data`/`onChange` patterns
 - **Dark Mode**: Built-in dark theme support for both editors
 - **Image Upload**: Unified image upload handler interface
+
+#### ⏱️ Debounce Hooks
+
+Zero-dependency React hooks for debouncing values and callbacks:
+
+```tsx
+import {
+  useDebouncedValue,
+  useDebouncedCallback,
+} from "@user27828/shared-utils/client";
+
+// Debounce a search query — fires 300ms after the user stops typing
+const [debouncedQuery] = useDebouncedValue(query, { wait: 300 });
+
+// Debounce a save function with maxWait cap and flush-on-unmount
+const [debouncedSave, { cancel, flush, isPending }] = useDebouncedCallback(
+  save,
+  { wait: 1000, maxWait: 5000, flushOnUnmount: true },
+);
+```
+
+| Option           | Default     | Description                                         |
+| ---------------- | ----------- | --------------------------------------------------- |
+| `wait`           | `0`         | Delay in ms before executing                        |
+| `leading`        | `false`     | Execute immediately on first call                   |
+| `trailing`       | `true`      | Execute after wait period                           |
+| `maxWait`        | `undefined` | Maximum delay (ms) before forced invocation         |
+| `flushOnUnmount` | `false`     | Flush pending work on unmount instead of cancelling |
+
+`useDebouncedValue` also accepts `equalityFn` (default `Object.is`) to skip debounce when values are equal.
+
+Both hooks return `[result, { cancel, flush, isPending }]` controls.
 
 ### 🚀 [Server](/server/README-SERVER.md)
 

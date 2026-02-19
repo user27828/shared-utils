@@ -9,6 +9,7 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
  * CmsAdminUiConfig for API, navigation, and toast integration.
  */
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { useDebouncedValue } from "../../helpers/debounce.js";
 import { Box, Button, Checkbox, Chip, Container, IconButton, InputAdornment, LinearProgress, Paper, Stack, Tab, Tabs, TextField, Tooltip, Typography, } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
@@ -76,13 +77,15 @@ const CmsListPage = ({ config, activeTab: controlledTab, onTabChange, searchQuer
         }
         return undefined;
     }, [tab]);
+    // Debounce search query to avoid firing an API request on every keystroke.
+    const [debouncedQ] = useDebouncedValue(q, { wait: 300 });
     // ── Load ──────────────────────────────────────────────────────────────
     const load = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
             const resp = await api.adminList({
-                q: q || undefined,
+                q: debouncedQ || undefined,
                 status: statusFilter,
                 includeTrash: tab === "trash" ? true : undefined,
                 limit: 50,
@@ -100,7 +103,7 @@ const CmsListPage = ({ config, activeTab: controlledTab, onTabChange, searchQuer
         finally {
             setIsLoading(false);
         }
-    }, [api, q, statusFilter, tab]);
+    }, [api, debouncedQ, statusFilter, tab]);
     useEffect(() => {
         void load();
     }, [load]);

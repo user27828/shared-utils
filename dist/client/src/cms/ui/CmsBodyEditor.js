@@ -9,7 +9,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  *
  * Media picker integration is injectable via callbacks.
  */
-import React, { useMemo, useRef, useState, Suspense } from "react";
+import React, { useMemo, useRef, useState, Suspense, useCallback, useEffect, } from "react";
 import { Box, LinearProgress, Typography, useColorScheme } from "@mui/material";
 import { hasEmbeddedBase64Image, normalizeEmbeddedHtmlImages, } from "./normalizeEmbeddedHtmlImages.js";
 // ─── Paste sanitization helpers ───────────────────────────────────────────
@@ -83,13 +83,60 @@ export const mimeToContentType = (mime) => {
     }
 };
 // ─── Component ────────────────────────────────────────────────────────────
-const CmsBodyEditor = ({ contentType, value, onChange, height = 500, label, editor = "ckeditor", onPickAsset, onUploadImage, }) => {
+const CmsBodyEditor = React.memo(({ contentType, value, onChange, height = 500, label, editor = "ckeditor", onPickAsset, onUploadImage, }) => {
     const [editorLoading, setEditorLoading] = useState(true);
     const latestHtmlRef = useRef(value);
     const htmlNormalizationRunRef = useRef(0);
+    const normTimerRef = useRef(undefined);
     React.useEffect(() => {
         latestHtmlRef.current = value;
     }, [value]);
+    // Cleanup normalization timer on unmount.
+    useEffect(() => {
+        return () => {
+            if (normTimerRef.current !== undefined) {
+                clearTimeout(normTimerRef.current);
+            }
+        };
+    }, []);
+    /**
+     * Kick off base64 image normalization after a 500ms debounce.
+     * This avoids redundant upload attempts during rapid typing while
+     * images are embedded.  The epoch guard (htmlNormalizationRunRef) still
+     * protects against stale results from earlier runs.
+     */
+    const scheduleNormalization = useCallback((nextValue) => {
+        if (normTimerRef.current !== undefined) {
+            clearTimeout(normTimerRef.current);
+        }
+        normTimerRef.current = setTimeout(() => {
+            normTimerRef.current = undefined;
+            const runId = htmlNormalizationRunRef.current + 1;
+            htmlNormalizationRunRef.current = runId;
+            void normalizeEmbeddedHtmlImages({
+                html: nextValue,
+                uploadImage: async (file, context) => {
+                    return await onUploadImage(file, context);
+                },
+            })
+                .then((normalizedValue) => {
+                if (htmlNormalizationRunRef.current !== runId) {
+                    return;
+                }
+                if (latestHtmlRef.current !== nextValue) {
+                    return;
+                }
+                if (normalizedValue === nextValue) {
+                    return;
+                }
+                latestHtmlRef.current = normalizedValue;
+                onChange(normalizedValue);
+            })
+                .catch((err) => {
+                console.error("CmsBodyEditor base64 image normalization failed", err);
+            });
+        }, 500);
+    }, [onChange, onUploadImage]);
     const handleHtmlEditorChange = React.useCallback((nextValue) => {
         latestHtmlRef.current = nextValue;
         onChange(nextValue);
@@ -99,31 +146,8 @@ const CmsBodyEditor = ({ contentType, value, onChange, height = 500, label, edit
         if (!hasEmbeddedBase64Image(nextValue)) {
             return;
         }
-        const runId = htmlNormalizationRunRef.current + 1;
-        htmlNormalizationRunRef.current = runId;
-        void normalizeEmbeddedHtmlImages({
-            html: nextValue,
-            uploadImage: async (file, context) => {
-                return await onUploadImage(file, context);
-            },
-        })
-            .then((normalizedValue) => {
-            if (htmlNormalizationRunRef.current !== runId) {
-                return;
-            }
-            if (latestHtmlRef.current !== nextValue) {
-                return;
-            }
-            if (normalizedValue === nextValue) {
-                return;
-            }
-            latestHtmlRef.current = normalizedValue;
-            onChange(normalizedValue);
-        })
-            .catch((err) => {
-            console.error("CmsBodyEditor base64 image normalization failed", err);
-        });
-    }, [onChange, onUploadImage]);
+        scheduleNormalization(nextValue);
+    }, [onChange, onUploadImage, scheduleNormalization]);
     const containerSx = useMemo(() => ({
         minHeight: height,
         border: "1px solid",
@@ -149,7 +173,7 @@ const CmsBodyEditor = ({ contentType, value, onChange, height = 500, label, edit
                     background: "transparent",
                     color: "text.primary",
                 } })] }));
-};
+});
 // ─── Sub-editors (lazy-loaded) ────────────────────────────────────────────
 /**
  * HTML editor — loads TinyMCE or CKEditor from shared-utils/client/wysiwyg
@@ -334,4 +358,5 @@ const MarkdownEditor = ({ value, onChange, onPickAsset, onUploadImage }) => {
     }
     return _jsx(MdEditor, { markdown: value, onChange: onChange });
 };
+CmsBodyEditor.displayName = "CmsBodyEditor";
 export default CmsBodyEditor;

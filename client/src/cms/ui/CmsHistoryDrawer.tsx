@@ -180,7 +180,7 @@ const RevisionDay = React.memo<RevisionDayProps>(function RevisionDay(props) {
 
 // ─── Component ────────────────────────────────────────────────────────────
 
-const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = ({
+const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = React.memo(({
   open,
   onClose,
   history,
@@ -941,6 +941,8 @@ const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = ({
       </Box>
     </Box>
   );
-};
+});
+
+CmsHistoryDrawer.displayName = "CmsHistoryDrawer";
 
 export default CmsHistoryDrawer;

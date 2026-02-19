@@ -80,6 +80,7 @@ import CmsBodyEditor, {
 import CmsHistoryDrawer, { HISTORY_DRAWER_WIDTH } from "./CmsHistoryDrawer.js";
 import { useFmApi } from "../../fm/FmClientProvider.js";
 import { isDev } from "../../../../utils/index.js";
+import { useDebouncedCallback } from "../../helpers/debounce.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -341,6 +342,15 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     return editEpoch > lastCleanEpochRef.current;
   }, [isNew, title, content, editEpoch]);
 
+  /** Debounced editEpoch bump — collapses rapid keystrokes into a single
+   *  state update instead of re-rendering on every character. */
+  const [bumpEditEpoch] = useDebouncedCallback(
+    () => {
+      setEditEpoch(Date.now());
+    },
+    { wait: 150, leading: true, trailing: true },
+  );
+
   /** Bump editEpoch when any tracked form field changes after the last
    *  clean epoch.  The guard prevents the effect from firing during the
    *  same tick as load()/save() which also set these fields. */
@@ -354,7 +364,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     if (isLoading) {
       return;
     }
-    setEditEpoch(Date.now());
+    bumpEditEpoch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     title,
@@ -375,14 +385,43 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   }, [contentType]);
 
   // ── ARIA helpers ──────────────────────────────────────────────────────
+  const announceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const announceErrTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  // Cleanup ARIA timers on unmount to prevent memory leaks.
+  useEffect(() => {
+    return () => {
+      if (announceTimerRef.current !== null) {
+        clearTimeout(announceTimerRef.current);
+      }
+      if (announceErrTimerRef.current !== null) {
+        clearTimeout(announceErrTimerRef.current);
+      }
+    };
+  }, []);
+
   const announce = useCallback((msg: string) => {
     setLiveMessage(msg);
-    setTimeout(() => setLiveMessage(""), 4000);
+    if (announceTimerRef.current !== null) {
+      clearTimeout(announceTimerRef.current);
+    }
+    announceTimerRef.current = setTimeout(() => {
+      setLiveMessage("");
+      announceTimerRef.current = null;
+    }, 4000);
   }, []);
 
   const announceErr = useCallback((msg: string) => {
     setLiveErrorMessage(msg);
-    setTimeout(() => setLiveErrorMessage(""), 6000);
+    if (announceErrTimerRef.current !== null) {
+      clearTimeout(announceErrTimerRef.current);
+    }
+    announceErrTimerRef.current = setTimeout(() => {
+      setLiveErrorMessage("");
+      announceErrTimerRef.current = null;
+    }, 6000);
   }, []);
 
   // ── Slug helpers (view/edit row) ─────────────────────────────────────
@@ -530,6 +569,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
       // Clear any loaded revision when reloading
       setLoadedRevisionId(null);
       savedFormRef.current = null;
+      slugManualRef.current = false;
     } catch (err: any) {
       setError(err?.message || "Failed to load CMS item");
     } finally {
@@ -861,6 +901,31 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   };
 
   // ── Load / dismiss revision (preview without server write) ────────────
+  /** Ref-based snapshot of current form state — avoids listing every field
+   *  as a dependency of handleLoadRevision, which previously caused the
+   *  callback to be recreated on every keystroke. */
+  const formStateRef = useRef({
+    title,
+    slug,
+    locale,
+    postType,
+    contentType,
+    content,
+    tags,
+    optionsJson,
+  });
+  // Keep the ref in sync (cheap ref assignment, no render) ─────────
+  formStateRef.current = {
+    title,
+    slug,
+    locale,
+    postType,
+    contentType,
+    content,
+    tags,
+    optionsJson,
+  };
+
   const handleLoadRevision = useCallback(
     (historyId: number) => {
       const rev = history.find((h) => h.id === historyId);
@@ -873,24 +938,15 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
 
       // Save current form state before overwriting (only once per session)
       if (!savedFormRef.current) {
-        savedFormRef.current = {
-          title,
-          slug,
-          locale,
-          postType,
-          contentType,
-          content,
-          tags,
-          optionsJson,
-        };
+        savedFormRef.current = { ...formStateRef.current };
       }
 
       // Populate form from the snapshot
       const snap = rev.snapshot as Record<string, any>;
       setTitle(snap.title ?? "");
       setSlug(snap.slug ?? "");
-      setLocale(snap.locale ?? locale);
-      setPostType(snap.post_type ?? postType);
+      setLocale(snap.locale ?? formStateRef.current.locale);
+      setPostType(snap.post_type ?? formStateRef.current.postType);
       setContentType(
         mimeToContentType(
           snap.content_type ?? "text/html",
@@ -905,19 +961,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
       setLoadedRevisionId(historyId);
       announce(`Loaded revision ${rev.revision ?? rev.id} for preview`);
     },
-    [
-      history,
-      title,
-      slug,
-      locale,
-      postType,
-      contentType,
-      content,
-      tags,
-      optionsJson,
-      toast,
-      announce,
-    ],
+    [history, toast, announce],
   );
 
   const handleDismissRevision = useCallback(() => {
@@ -1104,9 +1148,32 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     });
   };
 
-  // ── Auto-slug on title blur ───────────────────────────────────────────
+  // ── Auto-slug: real-time (debounced) while typing + on blur ───────────
+  const [debouncedAutoSlug] = useDebouncedCallback(
+    (nextTitle: string) => {
+      // Only auto-generate when the user hasn't manually set a slug
+      if (isNew && !slugManualRef.current && nextTitle) {
+        setSlug(slugify(nextTitle));
+      }
+    },
+    { wait: 300 },
+  );
+
+  /** Track whether the user has manually edited the slug so auto-slug
+   *  doesn't overwrite their custom value. */
+  const slugManualRef = useRef(false);
+
+  // Drive auto-slug from title changes (new items only)
+  useEffect(() => {
+    if (isNew) {
+      debouncedAutoSlug(title);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, isNew]);
+
   const handleTitleBlur = () => {
-    if (isNew && !slug && title) {
+    // Final sync on blur — immediate, no debounce wait
+    if (isNew && !slugManualRef.current && title) {
       setSlug(slugify(title));
     }
   };
@@ -1364,7 +1431,10 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                   <TextField
                     label="Slug"
                     value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
+                    onChange={(e) => {
+                      slugManualRef.current = true;
+                      setSlug(e.target.value);
+                    }}
                     size="small"
                     fullWidth
                     autoFocus

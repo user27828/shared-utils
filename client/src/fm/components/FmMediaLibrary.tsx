@@ -17,6 +17,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useDebouncedValue } from "../../helpers/debounce.js";
 import {
   Alert,
   Box,
@@ -406,18 +407,21 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
   const thumbUrlCacheRef = useRef<Map<string, string | null>>(new Map());
   const [thumbTick, setThumbTick] = useState(0);
 
-  // Reset pagination when search changes.
+  // Debounce search to avoid firing an API request on every keystroke.
+  const [debouncedSearch] = useDebouncedValue(search, { wait: 300 });
+
+  // Reset pagination when debounced search changes.
   useEffect(() => {
     setOffset(0);
-  }, [search]);
+  }, [debouncedSearch]);
 
   // Reset selection when query changes.
   useEffect(() => {
     setSelectedUids(new Set());
-  }, [search, includeArchived, publicFilter, sortBy, sortOrder]);
+  }, [debouncedSearch, includeArchived, publicFilter, sortBy, sortOrder]);
 
   const { items, totalCount, isLoading, error, reload } = useFmListFiles({
-    search: search.trim() || undefined,
+    search: debouncedSearch.trim() || undefined,
     limit,
     offset,
     includeArchived,

@@ -73,7 +73,7 @@ const RevisionDay = React.memo(function RevisionDay(props) {
         }, children: _jsx(PickersDay, { day: day, outsideCurrentMonth: outsideCurrentMonth, ...rest }) }, String(day)));
 });
 // ─── Component ────────────────────────────────────────────────────────────
-const CmsHistoryDrawer = ({ open, onClose, history, loadedRevisionId, isDirty, isSaving, includeSoftDeleted, onIncludeSoftDeletedChange, onLoadRevision, onRestoreRevision, onSoftDeleteRevision, onHardDeleteRevision, onDismissRevision, currentVersionNumber, currentUpdatedAt, }) => {
+const CmsHistoryDrawer = React.memo(({ open, onClose, history, loadedRevisionId, isDirty, isSaving, includeSoftDeleted, onIncludeSoftDeletedChange, onLoadRevision, onRestoreRevision, onSoftDeleteRevision, onHardDeleteRevision, onDismissRevision, currentVersionNumber, currentUpdatedAt, }) => {
     const theme = useTheme();
     /** true = push mode (desktop), false = overlay mode (mobile) */
     const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
@@ -396,5 +396,6 @@ const CmsHistoryDrawer = ({ open, onClose, history, loadedRevisionId, isDirty, i
                                                                                     ? `Snapshot: ${Object.keys(h.snapshot || {}).length} fields`
                                                                                     : "Revision info", children: _jsx(IconButton, { size: "small", children: _jsx(InfoOutlinedIcon, { sx: { fontSize: "1rem" } }) }) }), !isSoftDeleted ? (_jsx(Tooltip, { title: "Soft-delete revision", children: _jsx("span", { children: _jsx(IconButton, { size: "small", color: "error", onClick: () => onSoftDeleteRevision(h.id), disabled: isSaving, children: _jsx(DeleteIcon, { sx: { fontSize: "1rem" } }) }) }) })) : (_jsx(Tooltip, { title: "Permanently delete", children: _jsx("span", { children: _jsx(IconButton, { size: "small", color: "error", onClick: () => onHardDeleteRevision(h.id), disabled: isSaving, children: _jsx(DeleteForeverIcon, { sx: { fontSize: "1rem" } }) }) }) }))] })] }) })] }, h.id));
                                             }) })] }, group.dateKey)))] })] }))] }) }));
-};
+});
+CmsHistoryDrawer.displayName = "CmsHistoryDrawer";
 export default CmsHistoryDrawer;

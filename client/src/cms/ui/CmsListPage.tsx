@@ -8,6 +8,7 @@
  * CmsAdminUiConfig for API, navigation, and toast integration.
  */
 import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { useDebouncedValue } from "../../helpers/debounce.js";
 import {
   Box,
   Button,
@@ -133,6 +134,9 @@ const CmsListPage: React.FC<CmsListPageProps> = ({
     return undefined;
   }, [tab]);
 
+  // Debounce search query to avoid firing an API request on every keystroke.
+  const [debouncedQ] = useDebouncedValue(q, { wait: 300 });
+
   // ── Load ──────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -140,7 +144,7 @@ const CmsListPage: React.FC<CmsListPageProps> = ({
 
     try {
       const resp = await api.adminList({
-        q: q || undefined,
+        q: debouncedQ || undefined,
         status: statusFilter,
         includeTrash: tab === "trash" ? true : undefined,
         limit: 50,
@@ -157,7 +161,7 @@ const CmsListPage: React.FC<CmsListPageProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [api, q, statusFilter, tab]);
+  }, [api, debouncedQ, statusFilter, tab]);
 
   useEffect(() => {
     void load();
@@ -221,7 +225,12 @@ const CmsListPage: React.FC<CmsListPageProps> = ({
   // ── Render ────────────────────────────────────────────────────────────
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        sx={{ mb: 2 }}
+      >
         <Typography variant="h5">CMS Content</Typography>
         <Stack direction="row" spacing={1}>
           <Tooltip title="Refresh">
@@ -259,7 +268,11 @@ const CmsListPage: React.FC<CmsListPageProps> = ({
             sx={{ width: 300 }}
           />
         </Stack>
-        <Tabs value={tab} onChange={(_, v) => setTab(v as CmsTabKey)} sx={{ px: 2 }}>
+        <Tabs
+          value={tab}
+          onChange={(_, v) => setTab(v as CmsTabKey)}
+          sx={{ px: 2 }}
+        >
           <Tab label="All" value="all" />
           <Tab label="Draft" value="draft" />
           <Tab label="Published" value="published" />
@@ -275,7 +288,11 @@ const CmsListPage: React.FC<CmsListPageProps> = ({
           </Typography>
           {tab === "trash" && (
             <>
-              <Button size="small" startIcon={<RestoreIcon />} onClick={handleBulkRestore}>
+              <Button
+                size="small"
+                startIcon={<RestoreIcon />}
+                onClick={handleBulkRestore}
+              >
                 Restore selected
               </Button>
               <Button
@@ -320,19 +337,30 @@ const CmsListPage: React.FC<CmsListPageProps> = ({
               <Checkbox
                 size="small"
                 checked={selectedUids.size === items.length && items.length > 0}
-                indeterminate={selectedUids.size > 0 && selectedUids.size < items.length}
+                indeterminate={
+                  selectedUids.size > 0 && selectedUids.size < items.length
+                }
                 onChange={toggleSelectAll}
               />
               <Typography variant="caption" sx={{ flex: 1, ml: 1 }}>
                 Title
               </Typography>
-              <Typography variant="caption" sx={{ width: 100, textAlign: "center" }}>
+              <Typography
+                variant="caption"
+                sx={{ width: 100, textAlign: "center" }}
+              >
                 Status
               </Typography>
-              <Typography variant="caption" sx={{ width: 100, textAlign: "center" }}>
+              <Typography
+                variant="caption"
+                sx={{ width: 100, textAlign: "center" }}
+              >
                 Type
               </Typography>
-              <Typography variant="caption" sx={{ width: 140, textAlign: "right" }}>
+              <Typography
+                variant="caption"
+                sx={{ width: 140, textAlign: "right" }}
+              >
                 Updated
               </Typography>
             </Stack>
@@ -395,7 +423,11 @@ const CmsListPage: React.FC<CmsListPageProps> = ({
       </Paper>
 
       {/* Footer */}
-      <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ mt: 1, display: "block" }}
+      >
         Showing {items.length} of {totalCount} item(s)
       </Typography>
     </Container>

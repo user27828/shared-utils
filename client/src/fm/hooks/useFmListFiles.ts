@@ -8,7 +8,7 @@
  * Ported from db-supabase/client/fm/hooks/useFmListFiles.ts — now uses
  * the FmApi interface instead of standalone functions.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type {
   FmFileListResult,
@@ -83,6 +83,7 @@ export const useFmListFiles = (
   const [data, setData] = useState<FmFileListResult | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   // Memoize the request object so the effect only re-runs when inputs change.
   const request = useMemo(
@@ -115,22 +116,42 @@ export const useFmListFiles = (
       return;
     }
 
+    // Cancel any in-flight request to prevent stale responses
+    if (abortRef.current) {
+      abortRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setIsLoading(true);
     setError(null);
 
     try {
       const next = await api.listFiles(request);
+      if (controller.signal.aborted) {
+        return;
+      }
       setData(next);
     } catch (e: any) {
+      if (controller.signal.aborted) {
+        return;
+      }
       setError(e?.message || "Failed to load files");
       setData(null);
     } finally {
-      setIsLoading(false);
+      if (!controller.signal.aborted) {
+        setIsLoading(false);
+      }
     }
   }, [enabled, api, request]);
 
   useEffect(() => {
     void reload();
+    return () => {
+      if (abortRef.current) {
+        abortRef.current.abort();
+      }
+    };
   }, [reload]);
 
   return {

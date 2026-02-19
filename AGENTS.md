@@ -90,6 +90,66 @@ Note: `yarn test:consumer` starts Vite (React dev server) which does not exit on
   Keys listed in `ENV_JSON_KEYS` are JSON.parsed from the loaded dotenv values and stored in the global options under the `ENV` key.
 - After building the computed environment the loader stores it via `optionsManager.setGlobalOptions({ ENV: {...}, __READONLY__: true })` so consumers can read it with `optionsManager.getOption('ENV')`.
 
+## Debounce Hooks
+
+The client package provides lightweight, zero-dependency debounce hooks in `client/src/helpers/debounce.ts`. These are exported for both internal use and consuming projects.
+
+### Hooks
+
+- **`useDebouncedValue<T>(value, options?)`** — Debounces a reactive value. Returns `[debouncedValue, DebounceControls]`.
+- **`useDebouncedCallback<TArgs, TReturn>(fn, options?)`** — Debounces a callback function. Returns `[debouncedFn, DebounceControls]`. The returned function is referentially stable.
+
+### Options (`DebounceOptions`)
+
+| Option           | Default | Description                                         |
+| ---------------- | ------- | --------------------------------------------------- |
+| `wait`           | `0`     | Delay in ms before executing                        |
+| `leading`        | `false` | Execute on leading edge (immediately on first call) |
+| `trailing`       | `true`  | Execute on trailing edge (after wait period)        |
+| `maxWait`        | —       | Maximum time (ms) before forced invocation          |
+| `flushOnUnmount` | `false` | Flush (instead of cancel) pending work on unmount   |
+
+`useDebouncedValue` also accepts `equalityFn` (default `Object.is`) to skip debounce when values are equal.
+
+### Controls (`DebounceControls`)
+
+Both hooks return `{ cancel(), flush(), isPending() }` as the second element.
+
+### Usage in consuming projects
+
+```ts
+import {
+  useDebouncedValue,
+  useDebouncedCallback,
+} from "@user27828/shared-utils/client";
+
+// Debounce a search query
+const [debouncedQuery] = useDebouncedValue(query, { wait: 300 });
+
+// Debounce a save function
+const [debouncedSave, { cancel, flush }] = useDebouncedCallback(save, {
+  wait: 1000,
+  maxWait: 5000,
+  flushOnUnmount: true,
+});
+```
+
+### Internal usage
+
+- `FmMediaLibrary` — search input debounced at 300ms via `useDebouncedValue`
+- `CmsListPage` — search/filter query debounced at 300ms via `useDebouncedValue`
+- `CmsBodyEditor` — HTML normalization debounced at 500ms (ref-based timer)
+- `CmsEditPage` — ARIA announcement timers tracked in refs with cleanup on unmount
+- `useFmListFiles` — AbortController cancels in-flight requests on dependency change/unmount
+
+### Design principles
+
+- **Zero external dependencies** — pure React hooks + `setTimeout`
+- **Stable references** — returned functions never change across re-renders (ref-based)
+- **Automatic cleanup** — cancel on unmount (or flush if `flushOnUnmount: true`)
+- **Fully typed** — generic argument/return types are inferred
+- Influenced by TanStack Pacer LiteDebouncer (leading/trailing, cancel/flush) and xnimorz/use-debounce (maxWait, equalityFn, flushOnExit)
+
 ## Project-Specific Conventions
 
 - **File Extensions**: Source files are `.ts`/`.tsx`, imports reference `.js`, compiled output is `.js` with `.d.ts` types
@@ -158,6 +218,12 @@ import {
 
 // Importing FM types
 import type { FmFileRow, FmPurpose } from "@user27828/shared-utils/fm";
+
+// Importing debounce hooks
+import {
+  useDebouncedValue,
+  useDebouncedCallback,
+} from "@user27828/shared-utils/client";
 ```
 
 ```bash
@@ -182,6 +248,7 @@ yarn update:data
 - `server/src/fm/FmServiceCore.ts`, `server/src/cms/CmsServiceCore.ts` — Service cores
 - `server/src/fm/FmConnector.ts`, `server/src/cms/connector.ts` — DB connector interfaces
 - `server/src/fm/linkTracker.ts` — CMS ↔ FM link tracking
+- `client/src/helpers/debounce.ts` — Debounce hooks (useDebouncedValue, useDebouncedCallback)
 - `client/src/fm/FmClient.ts`, `client/src/cms/CmsClient.ts` — HTTP API clients
 - `client/src/fm/FmClientProvider.tsx` — React context provider
 - `client/src/cms/ui/` — CMS admin UI pages (CmsEditPage, CmsListPage, etc.)
