@@ -143,193 +143,203 @@ export interface CmsBodyEditorProps {
 
 // ─── Component ────────────────────────────────────────────────────────────
 
-const CmsBodyEditor: React.FC<CmsBodyEditorProps> = React.memo(({
-  contentType,
-  value,
-  onChange,
-  height = 500,
-  label,
-  editor = "ckeditor",
-  onPickAsset,
-  onUploadImage,
-}) => {
-  const [editorLoading, setEditorLoading] = useState(true);
-  const latestHtmlRef = useRef(value);
-  const htmlNormalizationRunRef = useRef(0);
-  const normTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
-  );
-
-  React.useEffect(() => {
-    latestHtmlRef.current = value;
-  }, [value]);
-
-  // Cleanup normalization timer on unmount.
-  useEffect(() => {
-    return () => {
-      if (normTimerRef.current !== undefined) {
-        clearTimeout(normTimerRef.current);
-      }
-    };
-  }, []);
-
-  /**
-   * Kick off base64 image normalization after a 500ms debounce.
-   * This avoids redundant upload attempts during rapid typing while
-   * images are embedded.  The epoch guard (htmlNormalizationRunRef) still
-   * protects against stale results from earlier runs.
-   */
-  const scheduleNormalization = useCallback(
-    (nextValue: string) => {
-      if (normTimerRef.current !== undefined) {
-        clearTimeout(normTimerRef.current);
-      }
-
-      normTimerRef.current = setTimeout(() => {
-        normTimerRef.current = undefined;
-
-        const runId = htmlNormalizationRunRef.current + 1;
-        htmlNormalizationRunRef.current = runId;
-
-        void normalizeEmbeddedHtmlImages({
-          html: nextValue,
-          uploadImage: async (file, context) => {
-            return await onUploadImage!(file, context);
-          },
-        })
-          .then((normalizedValue) => {
-            if (htmlNormalizationRunRef.current !== runId) {
-              return;
-            }
-
-            if (latestHtmlRef.current !== nextValue) {
-              return;
-            }
-
-            if (normalizedValue === nextValue) {
-              return;
-            }
-
-            latestHtmlRef.current = normalizedValue;
-            onChange(normalizedValue);
-          })
-          .catch((err) => {
-            console.error(
-              "CmsBodyEditor base64 image normalization failed",
-              err,
-            );
-          });
-      }, 500);
-    },
-    [onChange, onUploadImage],
-  );
-
-  const handleHtmlEditorChange = React.useCallback(
-    (nextValue: string) => {
-      latestHtmlRef.current = nextValue;
-      onChange(nextValue);
-
-      if (!onUploadImage) {
-        return;
-      }
-
-      if (!hasEmbeddedBase64Image(nextValue)) {
-        return;
-      }
-
-      scheduleNormalization(nextValue);
-    },
-    [onChange, onUploadImage, scheduleNormalization],
-  );
-
-  const containerSx = useMemo(
-    () => ({
-      minHeight: height,
-      border: "1px solid",
-      borderColor: "divider",
-      borderRadius: 1,
-      overflow: "hidden",
-    }),
-    [height],
-  );
-
-  if (contentType === "html") {
-    return (
-      <Box>
-        {label && (
-          <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5 }}>
-            {label}
-          </Typography>
-        )}
-        <Box sx={containerSx}>
-          <Suspense fallback={<LinearProgress />}>
-            <HtmlEditor
-              value={value}
-              onChange={handleHtmlEditorChange}
-              height={height}
-              editor={editor}
-              onPickAsset={onPickAsset}
-              onUploadImage={onUploadImage}
-              onReady={() => setEditorLoading(false)}
-            />
-          </Suspense>
-          {editorLoading && <LinearProgress />}
-        </Box>
-      </Box>
+const CmsBodyEditor: React.FC<CmsBodyEditorProps> = React.memo(
+  ({
+    contentType,
+    value,
+    onChange,
+    height = 500,
+    label,
+    editor = "ckeditor",
+    onPickAsset,
+    onUploadImage,
+  }) => {
+    const [editorLoading, setEditorLoading] = useState(true);
+    const latestHtmlRef = useRef(value);
+    const htmlNormalizationRunRef = useRef(0);
+    const normTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+      undefined,
     );
-  }
 
-  if (contentType === "markdown") {
-    return (
-      <Box>
-        {label && (
-          <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5 }}>
-            {label}
-          </Typography>
-        )}
-        <Box sx={containerSx}>
-          <Suspense fallback={<LinearProgress />}>
-            <MarkdownEditor
-              value={value}
-              onChange={onChange}
-              onPickAsset={onPickAsset}
-              onUploadImage={onUploadImage}
-            />
-          </Suspense>
-        </Box>
-      </Box>
-    );
-  }
+    React.useEffect(() => {
+      latestHtmlRef.current = value;
+    }, [value]);
 
-  // JSON or Plain text — use a simple textarea
-  return (
-    <Box>
-      {label && (
-        <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5 }}>
-          {label} ({contentType === "json" ? "JSON" : "Plain text"})
-        </Typography>
-      )}
-      <Box
-        component="textarea"
-        value={value}
-        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-          onChange(e.target.value)
+    // Cleanup normalization timer on unmount.
+    useEffect(() => {
+      return () => {
+        if (normTimerRef.current !== undefined) {
+          clearTimeout(normTimerRef.current);
         }
-        sx={{
-          ...containerSx,
-          width: "100%",
-          fontFamily: "monospace",
-          fontSize: "0.875rem",
-          p: 2,
-          resize: "vertical",
-          overflow: "auto",
-          background: "transparent",
-          color: "text.primary",
-        }}
-      />
-    </Box>
-  );
-});
+      };
+    }, []);
+
+    /**
+     * Kick off base64 image normalization after a 500ms debounce.
+     * This avoids redundant upload attempts during rapid typing while
+     * images are embedded.  The epoch guard (htmlNormalizationRunRef) still
+     * protects against stale results from earlier runs.
+     */
+    const scheduleNormalization = useCallback(
+      (nextValue: string) => {
+        if (normTimerRef.current !== undefined) {
+          clearTimeout(normTimerRef.current);
+        }
+
+        normTimerRef.current = setTimeout(() => {
+          normTimerRef.current = undefined;
+
+          const runId = htmlNormalizationRunRef.current + 1;
+          htmlNormalizationRunRef.current = runId;
+
+          void normalizeEmbeddedHtmlImages({
+            html: nextValue,
+            uploadImage: async (file, context) => {
+              return await onUploadImage!(file, context);
+            },
+          })
+            .then((normalizedValue) => {
+              if (htmlNormalizationRunRef.current !== runId) {
+                return;
+              }
+
+              if (latestHtmlRef.current !== nextValue) {
+                return;
+              }
+
+              if (normalizedValue === nextValue) {
+                return;
+              }
+
+              latestHtmlRef.current = normalizedValue;
+              onChange(normalizedValue);
+            })
+            .catch((err) => {
+              console.error(
+                "CmsBodyEditor base64 image normalization failed",
+                err,
+              );
+            });
+        }, 500);
+      },
+      [onChange, onUploadImage],
+    );
+
+    const handleHtmlEditorChange = React.useCallback(
+      (nextValue: string) => {
+        latestHtmlRef.current = nextValue;
+        onChange(nextValue);
+
+        if (!onUploadImage) {
+          return;
+        }
+
+        if (!hasEmbeddedBase64Image(nextValue)) {
+          return;
+        }
+
+        scheduleNormalization(nextValue);
+      },
+      [onChange, onUploadImage, scheduleNormalization],
+    );
+
+    const containerSx = useMemo(
+      () => ({
+        minHeight: height,
+        border: "1px solid",
+        borderColor: "divider",
+        borderRadius: 1,
+        overflow: "hidden",
+      }),
+      [height],
+    );
+
+    if (contentType === "html") {
+      return (
+        <Box>
+          {label && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ mb: 0.5 }}
+            >
+              {label}
+            </Typography>
+          )}
+          <Box sx={containerSx}>
+            <Suspense fallback={<LinearProgress />}>
+              <HtmlEditor
+                value={value}
+                onChange={handleHtmlEditorChange}
+                height={height}
+                editor={editor}
+                onPickAsset={onPickAsset}
+                onUploadImage={onUploadImage}
+                onReady={() => setEditorLoading(false)}
+              />
+            </Suspense>
+            {editorLoading && <LinearProgress />}
+          </Box>
+        </Box>
+      );
+    }
+
+    if (contentType === "markdown") {
+      return (
+        <Box>
+          {label && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ mb: 0.5 }}
+            >
+              {label}
+            </Typography>
+          )}
+          <Box sx={containerSx}>
+            <Suspense fallback={<LinearProgress />}>
+              <MarkdownEditor
+                value={value}
+                onChange={onChange}
+                onPickAsset={onPickAsset}
+                onUploadImage={onUploadImage}
+              />
+            </Suspense>
+          </Box>
+        </Box>
+      );
+    }
+
+    // JSON or Plain text — use a simple textarea
+    return (
+      <Box>
+        {label && (
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5 }}>
+            {label} ({contentType === "json" ? "JSON" : "Plain text"})
+          </Typography>
+        )}
+        <Box
+          component="textarea"
+          value={value}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+            onChange(e.target.value)
+          }
+          sx={{
+            ...containerSx,
+            width: "100%",
+            fontFamily: "monospace",
+            fontSize: "0.875rem",
+            p: 2,
+            resize: "vertical",
+            overflow: "auto",
+            background: "transparent",
+            color: "text.primary",
+          }}
+        />
+      </Box>
+    );
+  },
+);
 
 // ─── Sub-editors (lazy-loaded) ────────────────────────────────────────────
 

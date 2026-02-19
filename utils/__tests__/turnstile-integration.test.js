@@ -4,12 +4,10 @@
  */
 
 import { TURNSTILE_TEST_OPTIONS } from "../../__tests__/test-configuration.js";
+import { log, turnstile, Turnstile } from "@shared-utils/utils";
 
 describe("Turnstile Integration", () => {
   it("should demonstrate complete workflow", async () => {
-    // Import from the main package
-    const { turnstile, Turnstile } = await import("@shared-utils/utils");
-
     // Test environment detection
     expect(turnstile.getOptions().environment).toBe("server");
 
@@ -63,11 +61,9 @@ describe("Turnstile Integration", () => {
     console.log("📦 Available methods:", requiredMethods.join(", "));
     console.log("🔧 Environment detection:", options.environment);
     console.log("🚀 Ready for production use!");
-  }, 10000); // Increase timeout for ESM import
+  });
 
   it("should maintain consistency with log utility patterns", async () => {
-    const { log, turnstile } = await import("@shared-utils/utils");
-
     // Both should have setOptions
     expect(typeof log.setOptions).toBe("function");
     expect(typeof turnstile.setOptions).toBe("function");
