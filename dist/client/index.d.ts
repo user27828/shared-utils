@@ -10,6 +10,8 @@ export type { CopyButtonProps } from "./src/components/CopyButton.js";
 export { default as PasteButton } from "./src/components/PasteButton.js";
 export type { PasteButtonProps } from "./src/components/PasteButton.js";
 export { default as FileIcon } from "./src/components/FileIcon.js";
+export { default as StatCard } from "./src/components/StatCard.js";
+export type { StatCardProps, StatBreakdownValue, CornerAction, CornerPlacement, StatCardPreset, TrendDirection, } from "./src/components/StatCard.js";
 export { TagsInput, type TagsInputProps, } from "./src/components/form/TagsInput.js";
 export { default as BackdropLoader, type BackdropLoaderProps, } from "./src/components/layout/BackdropLoader.js";
 export { default as Disconnected, type DisconnectedProps, } from "./src/components/layout/Disconnected.js";

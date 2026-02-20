@@ -16,6 +16,15 @@ export type { CopyButtonProps } from "./src/components/CopyButton.js";
 export { default as PasteButton } from "./src/components/PasteButton.js";
 export type { PasteButtonProps } from "./src/components/PasteButton.js";
 export { default as FileIcon } from "./src/components/FileIcon.js";
+export { default as StatCard } from "./src/components/StatCard.js";
+export type {
+  StatCardProps,
+  StatBreakdownValue,
+  CornerAction,
+  CornerPlacement,
+  StatCardPreset,
+  TrendDirection,
+} from "./src/components/StatCard.js";
 export {
   TagsInput,
   type TagsInputProps,

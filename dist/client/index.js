@@ -9,6 +9,7 @@ export { default as CalendarAdd } from "./src/components/CalendarAdd.js";
 export { default as CopyButton } from "./src/components/CopyButton.js";
 export { default as PasteButton } from "./src/components/PasteButton.js";
 export { default as FileIcon } from "./src/components/FileIcon.js";
+export { default as StatCard } from "./src/components/StatCard.js";
 export { TagsInput, } from "./src/components/form/TagsInput.js";
 // Layout
 export { default as BackdropLoader, } from "./src/components/layout/BackdropLoader.js";
