@@ -37,6 +37,32 @@ export const CMS_CONTENT_TYPES = [
 export const CmsContentTypeSchema = z.enum(CMS_CONTENT_TYPES);
 export type CmsContentType = z.infer<typeof CmsContentTypeSchema>;
 
+// ─── Metadata schemas ─────────────────────────────────────────────────────
+
+/** Version annotation attached to a specific save/revision. */
+export const CmsVersionMetaSchema = z.object({
+  version: z.string().max(256).nullable().optional(),
+  notes: z.string().max(4096).nullable().optional(),
+  dt_updated: z.string().optional(),
+  user_uid: z.string().uuid().nullable().optional(),
+});
+export type CmsVersionMeta = z.infer<typeof CmsVersionMetaSchema>;
+
+/** Persistent content note (not tied to a specific version). */
+export const CmsContentNoteSchema = z.object({
+  note: z.string().min(1).max(4096),
+  dt_updated: z.string(),
+  user_uid: z.string().uuid().nullable().optional(),
+});
+export type CmsContentNote = z.infer<typeof CmsContentNoteSchema>;
+
+/** Top-level metadata bag stored in the `cms.metadata` JSONB column. */
+export const CmsMetadataSchema = z.object({
+  version: CmsVersionMetaSchema.nullable().optional(),
+  notes: z.array(CmsContentNoteSchema).optional(),
+});
+export type CmsMetadata = z.infer<typeof CmsMetadataSchema>;
+
 // ─── Row schemas ──────────────────────────────────────────────────────────
 
 export const CmsHeadRowSchema = z
@@ -50,6 +76,7 @@ export const CmsHeadRowSchema = z
     locale: z.string().optional(),
     post_type: CmsPostTypeSchema.optional(),
     options: z.unknown().optional(),
+    metadata: z.unknown().optional(),
     tags: z.array(z.string()).nullable().optional(),
     password_hash: z.string().nullable().optional(),
     password_version: z.number().int().nonnegative().optional(),
@@ -98,6 +125,7 @@ export const CmsCreateRequestSchema = z
     locale: z.string().min(1).max(32),
     post_type: CmsPostTypeSchema,
     options: z.unknown().optional(),
+    metadata: z.unknown().optional(),
     tags: z.array(z.string().min(1).max(40)).max(20).optional(),
     password: z.string().min(1).max(512).optional(),
   })

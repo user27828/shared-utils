@@ -58,6 +58,7 @@ import SkipPreviousIcon from "@mui/icons-material/SkipPrevious";
 import TodayIcon from "@mui/icons-material/Today";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+import EditIcon from "@mui/icons-material/Edit";
 
 import {
   format,
@@ -70,6 +71,8 @@ import {
 } from "date-fns";
 
 import type { CmsHistoryRow } from "../../../../utils/src/cms/types.js";
+import type { CmsVersionMeta } from "../../../../utils/src/cms/types.js";
+import CmsVersionNotesForm from "./CmsVersionNotesForm.js";
 
 // ─── Constants ────────────────────────────────────────────────────────────
 
@@ -115,6 +118,13 @@ export interface CmsHistoryDrawerProps {
   currentVersionNumber?: number;
   /** Head `updated_at` ISO string. */
   currentUpdatedAt?: string;
+  /** Called to update version metadata on a history revision. */
+  onUpdateHistoryMeta?: (
+    historyId: number,
+    data: { version: string; notes: string },
+  ) => Promise<void>;
+  /** Current head version metadata (for the "(Current)" entry label). */
+  currentVersionMeta?: CmsVersionMeta | null;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -197,6 +207,8 @@ const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = React.memo(
     onDismissRevision,
     currentVersionNumber,
     currentUpdatedAt,
+    onUpdateHistoryMeta,
+    currentVersionMeta,
   }) => {
     const theme = useTheme();
     /** true = push mode (desktop), false = overlay mode (mobile) */
@@ -207,6 +219,10 @@ const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = React.memo(
 
     /** Date-key of the group currently flash-highlighted (null = none). */
     const [flashKey, setFlashKey] = useState<string | null>(null);
+
+    /** History revision currently being annotated (version/notes edit). */
+    const [editingMetaId, setEditingMetaId] = useState<number | null>(null);
+    const [editMetaSaving, setEditMetaSaving] = useState(false);
 
     /** Lazy mount: avoid rendering expensive content until first open. */
     const [hasOpened, setHasOpened] = useState(open);
@@ -378,6 +394,59 @@ const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = React.memo(
       setSelectedDate(oldest.date);
       scrollToDate(oldest.dateKey);
     }, [groupedByDate, scrollToDate]);
+
+    // ── Version meta helpers ───────────────────────────────────────────
+    /** Extract version metadata from a history row's snapshot. */
+    const getSnapshotVersionMeta = useCallback(
+      (h: CmsHistoryRow): CmsVersionMeta | null => {
+        const snap = h.snapshot as Record<string, unknown> | null;
+        if (!snap || typeof snap !== "object") {
+          return null;
+        }
+        const meta = snap.metadata as Record<string, unknown> | null;
+        if (!meta || typeof meta !== "object") {
+          return null;
+        }
+        const v = meta.version as CmsVersionMeta | null;
+        if (!v || typeof v !== "object") {
+          return null;
+        }
+        if (!v.version && !v.notes) {
+          return null;
+        }
+        return v;
+      },
+      [],
+    );
+
+    /** Chip display label for a revision — version name or "Rev N". */
+    const getRevisionLabel = useCallback(
+      (h: CmsHistoryRow): string => {
+        const vm = getSnapshotVersionMeta(h);
+        if (vm?.version) {
+          return vm.version;
+        }
+        return `Rev ${h.revision ?? h.id}`;
+      },
+      [getSnapshotVersionMeta],
+    );
+
+    /** Handle saving version meta on a history revision. */
+    const handleSaveHistoryMeta = useCallback(
+      async (historyId: number, data: { version: string; notes: string }) => {
+        if (!onUpdateHistoryMeta) {
+          return;
+        }
+        setEditMetaSaving(true);
+        try {
+          await onUpdateHistoryMeta(historyId, data);
+          setEditingMetaId(null);
+        } finally {
+          setEditMetaSaving(false);
+        }
+      },
+      [onUpdateHistoryMeta],
+    );
 
     // ── Dot colour helper ──────────────────────────────────────────────
     const getDotColor = useCallback(
@@ -648,7 +717,11 @@ const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = React.memo(
                           alignItems="center"
                         >
                           <Chip
-                            label={`Rev ${currentVersionNumber} (Current)`}
+                            label={
+                              currentVersionMeta?.version
+                                ? currentVersionMeta.version
+                                : `Rev ${currentVersionNumber}`
+                            }
                             size="small"
                             color="success"
                             variant="filled"
@@ -659,6 +732,24 @@ const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = React.memo(
                             }}
                           />
                         </Stack>
+                        {currentVersionMeta?.notes && (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{
+                              mt: 0.25,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              fontSize: "0.68rem",
+                              fontStyle: "italic",
+                            }}
+                          >
+                            {currentVersionMeta.notes.length > 60
+                              ? `${currentVersionMeta.notes.slice(0, 60)}…`
+                              : currentVersionMeta.notes}
+                          </Typography>
+                        )}
                         {currentUpdatedAt && (
                           <Typography
                             variant="caption"
@@ -672,22 +763,34 @@ const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = React.memo(
                           </Typography>
                         )}
                       </Stack>
-                      {isDirty && (
+                      <Stack spacing={0.5} alignItems="flex-end">
+                        {isDirty && (
+                          <Chip
+                            label="Unsaved"
+                            size="small"
+                            color="warning"
+                            variant="outlined"
+                            sx={{ height: 20, fontSize: "0.65rem" }}
+                          />
+                        )}
                         <Chip
-                          label="Unsaved"
+                          label="Current"
                           size="small"
-                          color="warning"
+                          color="success"
                           variant="outlined"
                           sx={{ height: 20, fontSize: "0.65rem" }}
                         />
-                      )}
-                      {loadedRevisionId && (
-                        <Tooltip title="Return to current version">
-                          <IconButton size="small">
-                            <VisibilityIcon fontSize="small" color="primary" />
-                          </IconButton>
-                        </Tooltip>
-                      )}
+                        {loadedRevisionId && (
+                          <Tooltip title="Return to current version">
+                            <IconButton size="small">
+                              <VisibilityIcon
+                                fontSize="small"
+                                color="primary"
+                              />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Stack>
                     </Stack>
                   </Box>
                 )}
@@ -799,7 +902,7 @@ const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = React.memo(
                                     alignItems="center"
                                   >
                                     <Chip
-                                      label={`Rev ${h.revision ?? h.id}`}
+                                      label={getRevisionLabel(h)}
                                       size="small"
                                       variant="outlined"
                                       sx={{ height: 20, fontSize: "0.7rem" }}
@@ -821,7 +924,67 @@ const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = React.memo(
                                         sx={{ height: 20, fontSize: "0.65rem" }}
                                       />
                                     )}
+                                    {onUpdateHistoryMeta &&
+                                      editingMetaId !== h.id && (
+                                        <Tooltip title="Edit version label / notes">
+                                          <IconButton
+                                            size="small"
+                                            onClick={() =>
+                                              setEditingMetaId(h.id!)
+                                            }
+                                            sx={{ p: 0.25 }}
+                                          >
+                                            <EditIcon
+                                              sx={{ fontSize: "0.85rem" }}
+                                            />
+                                          </IconButton>
+                                        </Tooltip>
+                                      )}
                                   </Stack>
+                                  {(() => {
+                                    const vm = getSnapshotVersionMeta(h);
+                                    return vm?.notes ? (
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{
+                                          mt: 0.25,
+                                          overflow: "hidden",
+                                          textOverflow: "ellipsis",
+                                          whiteSpace: "nowrap",
+                                          fontSize: "0.68rem",
+                                          fontStyle: "italic",
+                                        }}
+                                      >
+                                        {vm.notes.length > 50
+                                          ? `${vm.notes.slice(0, 50)}…`
+                                          : vm.notes}
+                                      </Typography>
+                                    ) : null;
+                                  })()}
+                                  {editingMetaId === h.id &&
+                                    onUpdateHistoryMeta && (
+                                      <Box sx={{ mt: 0.5, mb: 0.5 }}>
+                                        <CmsVersionNotesForm
+                                          initialVersion={
+                                            getSnapshotVersionMeta(h)
+                                              ?.version ?? ""
+                                          }
+                                          initialNotes={
+                                            getSnapshotVersionMeta(h)?.notes ??
+                                            ""
+                                          }
+                                          isSaving={editMetaSaving}
+                                          onSave={(data) =>
+                                            handleSaveHistoryMeta(h.id!, data)
+                                          }
+                                          onCancel={() =>
+                                            setEditingMetaId(null)
+                                          }
+                                          saveLabel="Update"
+                                        />
+                                      </Box>
+                                    )}
                                   <Typography
                                     variant="caption"
                                     color="text.secondary"

@@ -13,6 +13,7 @@ import type {
   CmsUpdateRequest,
   CmsPublicPayload,
   CmsCollaboratorRow,
+  CmsMetadata,
 } from "../../../utils/src/cms/types.js";
 
 export type CmsAdminListParams = {
@@ -56,7 +57,7 @@ export interface CmsApi {
 
   adminListHistory(
     uid: string,
-    opts?: { limit?: number; offset?: number },
+    opts?: { limit?: number; offset?: number; fields?: "summary" | "full" },
   ): Promise<{
     items: CmsHistoryRow[];
     totalCount: number;
@@ -76,6 +77,20 @@ export interface CmsApi {
     uid: string;
     historyId: number;
   }): Promise<void>;
+
+  adminUpdateHistoryMeta(input: {
+    uid: string;
+    historyId: number;
+    version?: string | null;
+    notes?: string | null;
+  }): Promise<CmsHistoryRow>;
+
+  // ── Admin metadata ──────────────────────────────────────────────────
+
+  adminUpdateMetadata(input: {
+    uid: string;
+    metadata: CmsMetadata;
+  }): Promise<CmsHeadRow>;
 
   // ── Admin lock ──────────────────────────────────────────────────────
 

@@ -19,11 +19,13 @@ import type {
   CmsAfterWriteEvent,
   CmsCollaboratorRow,
   CmsPublicHead,
+  CmsMetadata,
 } from "../../../utils/src/cms/types.js";
 import {
   CmsCreateRequestSchema,
   CmsUpdateRequestSchema,
   CmsListRequestSchema,
+  CmsMetadataSchema,
 } from "../../../utils/src/cms/types.js";
 import {
   CmsNotFoundError,
@@ -133,6 +135,10 @@ export class CmsServiceCore {
       locale,
       post_type: parsed.post_type,
       options: parsed.options ?? null,
+      metadata: this.stampMetadataUserUid(
+        parsed.metadata ?? {},
+        input.actorUserUid,
+      ),
       tags: parsed.tags ?? null,
       password_hash: passwordHash,
       password_version: passwordVersion,
@@ -197,6 +203,12 @@ export class CmsServiceCore {
     }
     if (parsed.options !== undefined) {
       dbPatch.options = parsed.options;
+    }
+    if (parsed.metadata !== undefined) {
+      dbPatch.metadata = this.stampMetadataUserUid(
+        parsed.metadata,
+        input.actorUserUid,
+      );
     }
     if (parsed.tags !== undefined) {
       dbPatch.tags = parsed.tags;
@@ -606,6 +618,7 @@ export class CmsServiceCore {
       locale: snapshot.locale as string | undefined,
       post_type: snapshot.post_type as any,
       options: snapshot.options,
+      metadata: snapshot.metadata ?? null,
       tags: snapshot.tags as string[] | null | undefined,
       version_number: newVersion,
       etag: computeCmsEtag(input.cmsUid, newVersion),
@@ -812,6 +825,141 @@ export class CmsServiceCore {
     }
   }
 
+  // ─── Metadata: lightweight update (no snapshot, no version bump) ────
+
+  /**
+   * Update only the metadata column of a CMS item without creating a
+   * history snapshot or bumping the version/etag. Used for adding
+   * content notes or editing version annotations independently of
+   * content saves.
+   */
+  async updateMetadataByUid(input: {
+    uid: string;
+    metadata: unknown;
+    actorUserUid?: string | null;
+  }): Promise<CmsHeadRow> {
+    const current = await this.connector.getByUid(input.uid);
+    if (!current) {
+      throw new CmsNotFoundError(`CMS item not found: ${input.uid}`);
+    }
+
+    // Validate metadata shape (lenient — accept partial structures)
+    const safeMeta =
+      input.metadata && typeof input.metadata === "object"
+        ? input.metadata
+        : {};
+
+    // Stamp user_uid on version meta and content notes
+    const stampedMeta = this.stampMetadataUserUid(safeMeta, input.actorUserUid);
+
+    const updated = await this.connector.updateByUid(input.uid, {
+      metadata: stampedMeta,
+      updated_at: new Date().toISOString(),
+    });
+
+    if (!updated) {
+      throw new CmsNotFoundError(
+        `CMS item not found after update: ${input.uid}`,
+      );
+    }
+
+    return updated;
+  }
+
+  // ─── History: update version metadata on a snapshot ─────────────────
+
+  /**
+   * Annotate a history revision with version metadata (version label
+   * and/or notes). Modifies the snapshot JSON in-place without
+   * affecting the head row.
+   */
+  async updateHistoryVersionMeta(input: {
+    historyId: number;
+    version?: string | null;
+    notes?: string | null;
+    actorUserUid?: string | null;
+  }): Promise<CmsHistoryRow> {
+    const row = await this.connector.getHistoryById(input.historyId);
+    if (!row) {
+      throw new CmsNotFoundError(
+        `History revision not found: ${input.historyId}`,
+      );
+    }
+
+    const snapshot = (row.snapshot as Record<string, unknown> | null) ?? {};
+    const existingMeta =
+      (snapshot.metadata as Record<string, unknown> | null) ?? {};
+
+    // Build updated version meta — null out if both fields empty
+    const hasVersion = input.version != null && input.version.trim() !== "";
+    const hasNotes = input.notes != null && input.notes.trim() !== "";
+
+    const versionMeta =
+      hasVersion || hasNotes
+        ? {
+            version: hasVersion ? input.version!.trim() : null,
+            notes: hasNotes ? input.notes!.trim() : null,
+            dt_updated: new Date().toISOString(),
+            user_uid: input.actorUserUid || null,
+          }
+        : null;
+
+    const updatedSnapshot = {
+      ...snapshot,
+      metadata: {
+        ...existingMeta,
+        version: versionMeta,
+      },
+    };
+
+    const updated = await this.connector.updateHistoryById(input.historyId, {
+      snapshot: updatedSnapshot,
+    });
+
+    if (!updated) {
+      throw new CmsNotFoundError(
+        `History revision not found: ${input.historyId}`,
+      );
+    }
+
+    return updated;
+  }
+
+  /**
+   * Stamp `user_uid` on metadata.version and any metadata.notes entries
+   * that do not already have a `user_uid`. Mutates a shallow copy.
+   */
+  private stampMetadataUserUid(
+    metadata: unknown,
+    actorUserUid?: string | null,
+  ): Record<string, unknown> {
+    if (!metadata || typeof metadata !== "object") {
+      return {};
+    }
+    const meta = { ...(metadata as Record<string, unknown>) };
+    const uid = actorUserUid || null;
+
+    // Stamp version meta
+    if (meta.version && typeof meta.version === "object") {
+      meta.version = {
+        ...(meta.version as Record<string, unknown>),
+        user_uid: uid,
+      };
+    }
+
+    // Stamp notes entries that lack user_uid
+    if (Array.isArray(meta.notes)) {
+      meta.notes = meta.notes.map((n: unknown) => {
+        if (n && typeof n === "object" && !(n as any).user_uid) {
+          return { ...(n as Record<string, unknown>), user_uid: uid };
+        }
+        return n;
+      });
+    }
+
+    return meta;
+  }
+
   /**
    * Build a snapshot object from a CMS head row for history storage.
    */
@@ -825,6 +973,7 @@ export class CmsServiceCore {
       locale: row.locale ?? null,
       post_type: row.post_type ?? null,
       options: row.options ?? null,
+      metadata: row.metadata ?? null,
       tags: row.tags ?? null,
       status: row.status ?? null,
       etag: row.etag ?? null,

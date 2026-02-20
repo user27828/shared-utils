@@ -127,6 +127,33 @@ export declare class CmsServiceCore {
      */
     private createHistorySnapshot;
     /**
+     * Update only the metadata column of a CMS item without creating a
+     * history snapshot or bumping the version/etag. Used for adding
+     * content notes or editing version annotations independently of
+     * content saves.
+     */
+    updateMetadataByUid(input: {
+        uid: string;
+        metadata: unknown;
+        actorUserUid?: string | null;
+    }): Promise<CmsHeadRow>;
+    /**
+     * Annotate a history revision with version metadata (version label
+     * and/or notes). Modifies the snapshot JSON in-place without
+     * affecting the head row.
+     */
+    updateHistoryVersionMeta(input: {
+        historyId: number;
+        version?: string | null;
+        notes?: string | null;
+        actorUserUid?: string | null;
+    }): Promise<CmsHistoryRow>;
+    /**
+     * Stamp `user_uid` on metadata.version and any metadata.notes entries
+     * that do not already have a `user_uid`. Mutates a shallow copy.
+     */
+    private stampMetadataUserUid;
+    /**
      * Build a snapshot object from a CMS head row for history storage.
      */
     private buildHistorySnapshot;

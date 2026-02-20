@@ -5,7 +5,7 @@
  * (`CmsClient`) uses fetch(). Tests or custom transports can provide
  * alternative implementations.
  */
-import type { CmsHeadRow, CmsHistoryRow, CmsListResponse, CmsCreateRequest, CmsUpdateRequest, CmsPublicPayload, CmsCollaboratorRow } from "../../../utils/src/cms/types.js";
+import type { CmsHeadRow, CmsHistoryRow, CmsListResponse, CmsCreateRequest, CmsUpdateRequest, CmsPublicPayload, CmsCollaboratorRow, CmsMetadata } from "../../../utils/src/cms/types.js";
 export type CmsAdminListParams = {
     q?: string;
     status?: string;
@@ -47,6 +47,7 @@ export interface CmsApi {
     adminListHistory(uid: string, opts?: {
         limit?: number;
         offset?: number;
+        fields?: "summary" | "full";
     }): Promise<{
         items: CmsHistoryRow[];
         totalCount: number;
@@ -66,6 +67,16 @@ export interface CmsApi {
         uid: string;
         historyId: number;
     }): Promise<void>;
+    adminUpdateHistoryMeta(input: {
+        uid: string;
+        historyId: number;
+        version?: string | null;
+        notes?: string | null;
+    }): Promise<CmsHistoryRow>;
+    adminUpdateMetadata(input: {
+        uid: string;
+        metadata: CmsMetadata;
+    }): Promise<CmsHeadRow>;
     adminLock(uid: string): Promise<CmsHeadRow>;
     adminUnlock(uid: string): Promise<CmsHeadRow>;
     adminListCollaborators(uid: string): Promise<CmsCollaboratorRow[]>;

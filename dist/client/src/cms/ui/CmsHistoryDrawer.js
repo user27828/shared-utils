@@ -37,7 +37,9 @@ import SkipPreviousIcon from "@mui/icons-material/SkipPrevious";
 import TodayIcon from "@mui/icons-material/Today";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+import EditIcon from "@mui/icons-material/Edit";
 import { format, isToday, isYesterday, subDays, startOfDay, startOfMonth, endOfMonth, } from "date-fns";
+import CmsVersionNotesForm from "./CmsVersionNotesForm.js";
 // ─── Constants ────────────────────────────────────────────────────────────
 /** Drawer width in pixels. Exported so the parent can coordinate layout. */
 export const HISTORY_DRAWER_WIDTH = 340;
@@ -73,7 +75,7 @@ const RevisionDay = React.memo(function RevisionDay(props) {
         }, children: _jsx(PickersDay, { day: day, outsideCurrentMonth: outsideCurrentMonth, ...rest }) }, String(day)));
 });
 // ─── Component ────────────────────────────────────────────────────────────
-const CmsHistoryDrawer = React.memo(({ open, onClose, history, loadedRevisionId, isDirty, isSaving, includeSoftDeleted, onIncludeSoftDeletedChange, onLoadRevision, onRestoreRevision, onSoftDeleteRevision, onHardDeleteRevision, onDismissRevision, currentVersionNumber, currentUpdatedAt, }) => {
+const CmsHistoryDrawer = React.memo(({ open, onClose, history, loadedRevisionId, isDirty, isSaving, includeSoftDeleted, onIncludeSoftDeletedChange, onLoadRevision, onRestoreRevision, onSoftDeleteRevision, onHardDeleteRevision, onDismissRevision, currentVersionNumber, currentUpdatedAt, onUpdateHistoryMeta, currentVersionMeta, }) => {
     const theme = useTheme();
     /** true = push mode (desktop), false = overlay mode (mobile) */
     const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
@@ -82,6 +84,9 @@ const CmsHistoryDrawer = React.memo(({ open, onClose, history, loadedRevisionId,
     const [selectedDate, setSelectedDate] = useState(null);
     /** Date-key of the group currently flash-highlighted (null = none). */
     const [flashKey, setFlashKey] = useState(null);
+    /** History revision currently being annotated (version/notes edit). */
+    const [editingMetaId, setEditingMetaId] = useState(null);
+    const [editMetaSaving, setEditMetaSaving] = useState(false);
     /** Lazy mount: avoid rendering expensive content until first open. */
     const [hasOpened, setHasOpened] = useState(open);
     useEffect(() => {
@@ -219,6 +224,48 @@ const CmsHistoryDrawer = React.memo(({ open, onClose, history, loadedRevisionId,
         setSelectedDate(oldest.date);
         scrollToDate(oldest.dateKey);
     }, [groupedByDate, scrollToDate]);
+    // ── Version meta helpers ───────────────────────────────────────────
+    /** Extract version metadata from a history row's snapshot. */
+    const getSnapshotVersionMeta = useCallback((h) => {
+        const snap = h.snapshot;
+        if (!snap || typeof snap !== "object") {
+            return null;
+        }
+        const meta = snap.metadata;
+        if (!meta || typeof meta !== "object") {
+            return null;
+        }
+        const v = meta.version;
+        if (!v || typeof v !== "object") {
+            return null;
+        }
+        if (!v.version && !v.notes) {
+            return null;
+        }
+        return v;
+    }, []);
+    /** Chip display label for a revision — version name or "Rev N". */
+    const getRevisionLabel = useCallback((h) => {
+        const vm = getSnapshotVersionMeta(h);
+        if (vm?.version) {
+            return vm.version;
+        }
+        return `Rev ${h.revision ?? h.id}`;
+    }, [getSnapshotVersionMeta]);
+    /** Handle saving version meta on a history revision. */
+    const handleSaveHistoryMeta = useCallback(async (historyId, data) => {
+        if (!onUpdateHistoryMeta) {
+            return;
+        }
+        setEditMetaSaving(true);
+        try {
+            await onUpdateHistoryMeta(historyId, data);
+            setEditingMetaId(null);
+        }
+        finally {
+            setEditMetaSaving(false);
+        }
+    }, [onUpdateHistoryMeta]);
     // ── Dot colour helper ──────────────────────────────────────────────
     const getDotColor = useCallback((h, isLastOverall) => {
         if (h.soft_deleted_at) {
@@ -341,11 +388,22 @@ const CmsHistoryDrawer = React.memo(({ open, onClose, history, loadedRevisionId,
                                                     borderRadius: "50%",
                                                     bgcolor: isDirty ? "warning.main" : "success.main",
                                                     flexShrink: 0,
-                                                } }), _jsxs(Stack, { sx: { flex: 1, minWidth: 0 }, children: [_jsx(Stack, { direction: "row", spacing: 0.5, alignItems: "center", children: _jsx(Chip, { label: `Rev ${currentVersionNumber} (Current)`, size: "small", color: "success", variant: "filled", sx: {
+                                                } }), _jsxs(Stack, { sx: { flex: 1, minWidth: 0 }, children: [_jsx(Stack, { direction: "row", spacing: 0.5, alignItems: "center", children: _jsx(Chip, { label: currentVersionMeta?.version
+                                                                ? currentVersionMeta.version
+                                                                : `Rev ${currentVersionNumber}`, size: "small", color: "success", variant: "filled", sx: {
                                                                 height: 22,
                                                                 fontSize: "0.72rem",
                                                                 fontWeight: 600,
-                                                            } }) }), currentUpdatedAt && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: { mt: 0.25 }, children: format(new Date(currentUpdatedAt), "MMM d, h:mm a") }))] }), isDirty && (_jsx(Chip, { label: "Unsaved", size: "small", color: "warning", variant: "outlined", sx: { height: 20, fontSize: "0.65rem" } })), loadedRevisionId && (_jsx(Tooltip, { title: "Return to current version", children: _jsx(IconButton, { size: "small", children: _jsx(VisibilityIcon, { fontSize: "small", color: "primary" }) }) }))] }) })), filteredHistory.length === 0 && (_jsx(Box, { sx: { px: 1.5, py: 4, textAlign: "center" }, children: _jsx(Typography, { variant: "body2", color: "text.secondary", children: "No revision history yet" }) })), groupedByDate.map((group, gi) => (_jsxs(Box, { "data-date-key": group.dateKey, sx: {
+                                                            } }) }), currentVersionMeta?.notes && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: {
+                                                            mt: 0.25,
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            whiteSpace: "nowrap",
+                                                            fontSize: "0.68rem",
+                                                            fontStyle: "italic",
+                                                        }, children: currentVersionMeta.notes.length > 60
+                                                            ? `${currentVersionMeta.notes.slice(0, 60)}…`
+                                                            : currentVersionMeta.notes })), currentUpdatedAt && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: { mt: 0.25 }, children: format(new Date(currentUpdatedAt), "MMM d, h:mm a") }))] }), _jsxs(Stack, { spacing: 0.5, alignItems: "flex-end", children: [isDirty && (_jsx(Chip, { label: "Unsaved", size: "small", color: "warning", variant: "outlined", sx: { height: 20, fontSize: "0.65rem" } })), _jsx(Chip, { label: "Current", size: "small", color: "success", variant: "outlined", sx: { height: 20, fontSize: "0.65rem" } }), loadedRevisionId && (_jsx(Tooltip, { title: "Return to current version", children: _jsx(IconButton, { size: "small", children: _jsx(VisibilityIcon, { fontSize: "small", color: "primary" }) }) }))] })] }) })), filteredHistory.length === 0 && (_jsx(Box, { sx: { px: 1.5, py: 4, textAlign: "center" }, children: _jsx(Typography, { variant: "body2", color: "text.secondary", children: "No revision history yet" }) })), groupedByDate.map((group, gi) => (_jsxs(Box, { "data-date-key": group.dateKey, sx: {
                                         // Flash highlight: instant on, smooth fade off
                                         bgcolor: flashKey === group.dateKey ? flashBg : "transparent",
                                         transition: `background-color ${FLASH_FADE_MS} ease-out`,
@@ -389,7 +447,23 @@ const CmsHistoryDrawer = React.memo(({ open, onClose, history, loadedRevisionId,
                                                                         border: 1,
                                                                         borderColor: alpha(theme.palette.primary.main, 0.3),
                                                                     }),
-                                                                }, children: [_jsxs(Stack, { sx: { flex: 1, minWidth: 0 }, children: [_jsxs(Stack, { direction: "row", spacing: 0.5, alignItems: "center", children: [_jsx(Chip, { label: `Rev ${h.revision ?? h.id}`, size: "small", variant: "outlined", sx: { height: 20, fontSize: "0.7rem" } }), isSoftDeleted && (_jsx(Chip, { label: "deleted", size: "small", color: "error", variant: "outlined", sx: { height: 20, fontSize: "0.65rem" } })), isLoaded && (_jsx(Chip, { label: "loaded", size: "small", color: "primary", sx: { height: 20, fontSize: "0.65rem" } }))] }), _jsx(Typography, { variant: "caption", color: "text.secondary", sx: { mt: 0.25 }, children: h.created_at
+                                                                }, children: [_jsxs(Stack, { sx: { flex: 1, minWidth: 0 }, children: [_jsxs(Stack, { direction: "row", spacing: 0.5, alignItems: "center", children: [_jsx(Chip, { label: getRevisionLabel(h), size: "small", variant: "outlined", sx: { height: 20, fontSize: "0.7rem" } }), isSoftDeleted && (_jsx(Chip, { label: "deleted", size: "small", color: "error", variant: "outlined", sx: { height: 20, fontSize: "0.65rem" } })), isLoaded && (_jsx(Chip, { label: "loaded", size: "small", color: "primary", sx: { height: 20, fontSize: "0.65rem" } })), onUpdateHistoryMeta &&
+                                                                                        editingMetaId !== h.id && (_jsx(Tooltip, { title: "Edit version label / notes", children: _jsx(IconButton, { size: "small", onClick: () => setEditingMetaId(h.id), sx: { p: 0.25 }, children: _jsx(EditIcon, { sx: { fontSize: "0.85rem" } }) }) }))] }), (() => {
+                                                                                const vm = getSnapshotVersionMeta(h);
+                                                                                return vm?.notes ? (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: {
+                                                                                        mt: 0.25,
+                                                                                        overflow: "hidden",
+                                                                                        textOverflow: "ellipsis",
+                                                                                        whiteSpace: "nowrap",
+                                                                                        fontSize: "0.68rem",
+                                                                                        fontStyle: "italic",
+                                                                                    }, children: vm.notes.length > 50
+                                                                                        ? `${vm.notes.slice(0, 50)}…`
+                                                                                        : vm.notes })) : null;
+                                                                            })(), editingMetaId === h.id &&
+                                                                                onUpdateHistoryMeta && (_jsx(Box, { sx: { mt: 0.5, mb: 0.5 }, children: _jsx(CmsVersionNotesForm, { initialVersion: getSnapshotVersionMeta(h)
+                                                                                        ?.version ?? "", initialNotes: getSnapshotVersionMeta(h)?.notes ??
+                                                                                        "", isSaving: editMetaSaving, onSave: (data) => handleSaveHistoryMeta(h.id, data), onCancel: () => setEditingMetaId(null), saveLabel: "Update" }) })), _jsx(Typography, { variant: "caption", color: "text.secondary", sx: { mt: 0.25 }, children: h.created_at
                                                                                     ? format(new Date(h.created_at), "h:mm:ss a")
                                                                                     : "\u2014" }), h.created_by_email && (_jsx(Typography, { variant: "caption", color: "text.disabled", sx: {
                                                                                     fontSize: "0.65rem",

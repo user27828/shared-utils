@@ -31,6 +31,12 @@ export type { CmsBodyRendererProps } from "./CmsBodyRenderer.js";
 export { default as CmsPasswordGate } from "./CmsPasswordGate.js";
 export type { CmsPasswordGateProps } from "./CmsPasswordGate.js";
 
+export { default as CmsVersionNotesForm } from "./CmsVersionNotesForm.js";
+export type { CmsVersionNotesFormProps } from "./CmsVersionNotesForm.js";
+
+export { default as CmsContentNotes } from "./CmsContentNotes.js";
+export type { CmsContentNotesProps } from "./CmsContentNotes.js";
+
 export type {
   CmsAdminUiConfig,
   CmsEditorPreference,

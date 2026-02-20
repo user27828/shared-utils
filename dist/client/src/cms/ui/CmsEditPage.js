@@ -10,7 +10,7 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
  * adapters for navigation, toasts, and media picker.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, } from "react";
-import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Chip, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControl, IconButton, InputLabel, MenuItem, Paper, Select, Stack, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography, } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, ButtonGroup, Chip, ClickAwayListener, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControl, Grow, IconButton, InputLabel, MenuItem, Paper, Popper, Select, Stack, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography, } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
@@ -23,12 +23,15 @@ import LockOpenIcon from "@mui/icons-material/LockOpen";
 import HistoryIcon from "@mui/icons-material/History";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import EditIcon from "@mui/icons-material/Edit";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import { TagsInput } from "../../components/form/TagsInput.js";
 import { CmsClient } from "../CmsClient.js";
 import { defaultToast } from "./CmsAdminUiConfig.js";
 import CmsConflictDialog from "./CmsConflictDialog.js";
 import CmsBodyEditor, { contentTypeToMime, mimeToContentType, } from "./CmsBodyEditor.js";
 import CmsHistoryDrawer from "./CmsHistoryDrawer.js";
+import CmsVersionNotesForm from "./CmsVersionNotesForm.js";
+import CmsContentNotes from "./CmsContentNotes.js";
 import { useFmApi } from "../../fm/FmClientProvider.js";
 import { isDev } from "../../../../utils/index.js";
 import { useDebouncedCallback } from "../../helpers/debounce.js";
@@ -90,11 +93,22 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
     const api = config?.api ?? defaultApi;
     const toast = config?.toast ?? defaultToast;
     const nav = config?.navigation;
+    // Stable refs so callbacks never depend on api/toast/nav identity.
+    // This prevents parent re-renders (e.g. auth context refresh) from
+    // causing load() to regenerate and re-fire.
+    const apiRef = useRef(api);
+    apiRef.current = api;
+    const toastRef = useRef(toast);
+    toastRef.current = toast;
+    const navRef = useRef(nav);
+    navRef.current = nav;
     const localeOptions = useMemo(() => config?.localeOptions ?? [{ label: "English", value: "en" }], [config?.localeOptions]);
     const isNew = !propUid;
     // ── Data state ────────────────────────────────────────────────────────
     const [row, setRow] = useState(null);
     const [history, setHistory] = useState([]);
+    /** History count from the server (lightweight, comes with GET /:uid). */
+    const [historyCount, setHistoryCount] = useState(0);
     // ── Form state ────────────────────────────────────────────────────────
     const [title, setTitle] = useState("");
     const [slug, setSlug] = useState("");
@@ -132,6 +146,12 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
     const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
     const [loadedRevisionId, setLoadedRevisionId] = useState(null);
     const [pendingContentType, setPendingContentType] = useState(null);
+    // ── Metadata / version-notes state ────────────────────────────────────
+    const [metadata, setMetadata] = useState({});
+    const [saveVersionOpen, setSaveVersionOpen] = useState(false);
+    const saveVersionAnchorRef = useRef(null);
+    /** Whether the version/notes editor in the Status card is open. */
+    const [statusVersionEditing, setStatusVersionEditing] = useState(false);
     /** Snapshot of live form state before loading a revision, so we
      *  can restore it when the user dismisses the preview. */
     const savedFormRef = useRef(null);
@@ -151,7 +171,7 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
     const lockedBy = row?.locked_by;
     const publishedAtIso = row?.published_at ?? row?.first_published_at ?? null;
     const publishedAtText = useMemo(() => formatIsoDateTime(publishedAtIso) ?? "—", [publishedAtIso]);
-    const revisionsCount = history.length;
+    const revisionsCount = history.length || historyCount;
     const optionsParse = useMemo(() => safeJsonParse(optionsJson), [optionsJson]);
     const canPreview = useMemo(() => !isNew &&
         status !== "trash" &&
@@ -188,6 +208,13 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
     const [bumpEditEpoch] = useDebouncedCallback(() => {
         setEditEpoch(Date.now());
     }, { wait: 150, leading: true, trailing: true });
+    /**
+     * Tracks the number of programmatic field updates that should NOT mark
+     * the form dirty.  Incremented before load/save populates fields,
+     * decremented by the effect — prevents the isLoading→false transition
+     * from bumping editEpoch.
+     */
+    const suppressDirtyRef = useRef(0);
     /** Bump editEpoch when any tracked form field changes after the last
      *  clean epoch.  The guard prevents the effect from firing during the
      *  same tick as load()/save() which also set these fields. */
@@ -199,6 +226,12 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         }
         // Skip during loading — field changes come from the server, not the user
         if (isLoading) {
+            return;
+        }
+        // Consume a suppression token from load()/save() — the effect fires
+        // once when isLoading flips false, but those field values are clean.
+        if (suppressDirtyRef.current > 0) {
+            suppressDirtyRef.current -= 1;
             return;
         }
         bumpEditEpoch();
@@ -302,18 +335,18 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
     }, []);
     const handleCopySlug = useCallback(async () => {
         if (!slugPath) {
-            toast.info("No slug to copy");
+            toastRef.current.info("No slug to copy");
             return;
         }
         const ok = await copyToClipboard(slugPath);
         if (ok) {
-            toast.success("Slug copied");
+            toastRef.current.success("Slug copied");
             announce("Slug copied to clipboard");
             return;
         }
-        toast.error("Copy failed");
+        toastRef.current.error("Copy failed");
         announceErr("Copy failed");
-    }, [announce, announceErr, copyToClipboard, slugPath, toast]);
+    }, [announce, announceErr, copyToClipboard, slugPath]);
     const handleStartSlugEdit = useCallback(() => {
         slugBeforeEditRef.current = slug;
         setIsSlugEditing(true);
@@ -334,15 +367,20 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         }
     }, []);
     // ── Load ──────────────────────────────────────────────────────────────
-    const load = useCallback(async () => {
+    const load = useCallback(async (opts) => {
         if (isNew) {
             return;
         }
         setIsSlugEditing(false);
-        setIsLoading(true);
+        if (!opts?.silent) {
+            setIsLoading(true);
+        }
         setError(null);
         try {
-            const item = await api.adminGet(propUid);
+            const item = await apiRef.current.adminGet(propUid);
+            // Suppress the dirty-tracking effect that fires when isLoading
+            // transitions false — these field changes are from the server.
+            suppressDirtyRef.current += 1;
             setRow(item);
             setTitle(item.title || "");
             setSlug(item.slug || "");
@@ -355,20 +393,17 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                 ? JSON.stringify(item.options, null, 2)
                 : "{}");
             setPassword("");
+            // Populate metadata from server
+            const rawMeta = item.metadata;
+            setMetadata(rawMeta && typeof rawMeta === "object" ? rawMeta : {});
+            // Capture history_count from server (lightweight — no history fetch)
+            if (typeof item.history_count === "number") {
+                setHistoryCount(item.history_count);
+            }
             // Mark form as clean after populating from server data
             const epoch = Date.now();
             lastCleanEpochRef.current = epoch;
             setEditEpoch(epoch);
-            // Load history (larger batch for calendar navigation)
-            try {
-                const hist = await api.adminListHistory(propUid, {
-                    limit: 500,
-                });
-                setHistory(hist.items ?? hist ?? []);
-            }
-            catch {
-                /* non-critical */
-            }
             // Clear any loaded revision when reloading
             setLoadedRevisionId(null);
             savedFormRef.current = null;
@@ -380,17 +415,39 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         finally {
             setIsLoading(false);
         }
-    }, [
-        api,
-        propUid,
-        isNew,
-        defaultLocale,
-        defaultPostType,
-        includeSoftDeletedHistory,
-    ]);
+    }, [propUid, isNew, defaultLocale, defaultPostType]);
     useEffect(() => {
         void load();
     }, [load]);
+    // ── Load history (lazy — only when drawer is open) ────────────────────
+    const loadHistory = useCallback(async () => {
+        if (isNew || !propUid) {
+            return;
+        }
+        try {
+            const hist = await apiRef.current.adminListHistory(propUid, {
+                limit: 500,
+                fields: "summary",
+            });
+            setHistory(hist.items ?? []);
+            setHistoryCount(hist.totalCount ?? hist.items?.length ?? 0);
+        }
+        catch {
+            /* non-critical */
+        }
+    }, [propUid, isNew]);
+    // Fetch history when the drawer opens for the first time (or after save)
+    const historyLoadedForRef = useRef(null);
+    useEffect(() => {
+        if (historyDrawerOpen && propUid) {
+            // Reload if we haven't loaded yet or if the row changed (after save)
+            const key = `${propUid}:${row?.version_number ?? 0}`;
+            if (historyLoadedForRef.current !== key) {
+                historyLoadedForRef.current = key;
+                void loadHistory();
+            }
+        }
+    }, [historyDrawerOpen, propUid, row?.version_number, loadHistory]);
     // ── Focus error alert ─────────────────────────────────────────────────
     useEffect(() => {
         if (error && errorAlertRef.current) {
@@ -398,7 +455,20 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         }
     }, [error]);
     // ── Build patch ───────────────────────────────────────────────────────
-    const buildPatch = useCallback(() => {
+    const buildPatch = useCallback((versionMeta) => {
+        const patchMeta = { ...metadata };
+        if (versionMeta) {
+            const hasVersion = versionMeta.version.trim().length > 0;
+            const hasNotes = versionMeta.notes.trim().length > 0;
+            patchMeta.version =
+                hasVersion || hasNotes
+                    ? {
+                        version: hasVersion ? versionMeta.version.trim() : null,
+                        notes: hasNotes ? versionMeta.notes.trim() : null,
+                        dt_updated: new Date().toISOString(),
+                    }
+                    : null;
+        }
         const patch = {
             title,
             slug,
@@ -408,6 +478,7 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
             content,
             tags: [...tags],
             options: optionsParse.value ?? {},
+            metadata: patchMeta,
         };
         if (password) {
             patch.password = password;
@@ -423,6 +494,7 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         tags,
         optionsParse.value,
         password,
+        metadata,
     ]);
     // ── Conflict handling ─────────────────────────────────────────────────
     const openConflict = (ctx) => {
@@ -438,31 +510,31 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         setIsSaving(true);
         try {
             // Re-fetch to get the latest etag
-            const latest = await api.adminGet(ctx.uid);
+            const latest = await apiRef.current.adminGet(ctx.uid);
             const latestEtag = latest?.etag || "*";
             switch (ctx.kind) {
                 case "save":
-                    await api.adminUpdate({
+                    await apiRef.current.adminUpdate({
                         uid: ctx.uid,
                         patch: (ctx.localPatch || buildPatch()),
                         ifMatch: latestEtag,
                     });
                     break;
                 case "publish":
-                    await api.adminPublish({
+                    await apiRef.current.adminPublish({
                         uid: ctx.uid,
                         ifMatch: latestEtag,
                     });
                     break;
                 case "trash":
-                    await api.adminTrash({ uid: ctx.uid, ifMatch: latestEtag });
+                    await apiRef.current.adminTrash({ uid: ctx.uid, ifMatch: latestEtag });
                     break;
                 case "restore":
-                    await api.adminRestore({ uid: ctx.uid, ifMatch: latestEtag });
+                    await apiRef.current.adminRestore({ uid: ctx.uid, ifMatch: latestEtag });
                     break;
                 case "restoreRevision":
                     if (ctx.historyId) {
-                        await api.adminRestoreHistory({
+                        await apiRef.current.adminRestoreHistory({
                             uid: ctx.uid,
                             historyId: ctx.historyId,
                             ifMatch: latestEtag,
@@ -470,18 +542,18 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                     }
                     break;
             }
-            toast.info("Saved (overwrote latest version)");
-            await load();
+            toastRef.current.info("Saved (overwrote latest version)");
+            await load({ silent: true });
         }
         catch (err) {
-            toast.error(err?.message || "Overwrite failed");
+            toastRef.current.error(err?.message || "Overwrite failed");
         }
         finally {
             setIsSaving(false);
         }
     };
     // ── Save ──────────────────────────────────────────────────────────────
-    const handleSave = async () => {
+    const handleSave = async (versionMeta) => {
         if (optionsParse.error) {
             setError(`Invalid JSON in options: ${optionsParse.error}`);
             return;
@@ -489,21 +561,23 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         setIsSaving(true);
         setError(null);
         try {
+            const patch = buildPatch(versionMeta);
             if (isNew) {
-                const created = await api.adminCreate(buildPatch());
-                toast.success("Created successfully");
+                const created = await apiRef.current.adminCreate(patch);
+                toastRef.current.success("Created successfully");
                 announce("Item created");
-                nav?.goToEdit?.(created.uid);
+                navRef.current?.goToEdit?.(created.uid);
             }
             else {
-                await api.adminUpdate({
+                await apiRef.current.adminUpdate({
                     uid: propUid,
-                    patch: buildPatch(),
+                    patch: patch,
                     ifMatch: etag || "*",
                 });
-                toast.success("Saved");
-                announce("Saved");
-                await load();
+                toastRef.current.success(versionMeta ? "Version saved" : "Saved");
+                announce(versionMeta ? "Version saved" : "Saved");
+                historyLoadedForRef.current = null; // Force history reload on next open
+                await load({ silent: true });
             }
         }
         catch (err) {
@@ -511,19 +585,104 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                 openConflict({
                     kind: "save",
                     uid: propUid,
-                    localPatch: buildPatch(),
+                    localPatch: buildPatch(versionMeta),
                 });
                 return;
             }
             const msg = err?.message || "Save failed";
             setError(msg);
-            toast.error(msg);
+            toastRef.current.error(msg);
             announceErr(msg);
         }
         finally {
             setIsSaving(false);
+            setSaveVersionOpen(false);
         }
     };
+    /** Handle "Save Version" from the split-button popover. */
+    const handleSaveVersion = useCallback((data) => {
+        void handleSave(data);
+    }, 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [buildPatch, propUid, etag, isNew, optionsParse.error]);
+    // ── Content notes helpers ─────────────────────────────────────────────
+    const contentNotes = useMemo(() => (Array.isArray(metadata.notes) ? metadata.notes : []), [metadata.notes]);
+    const handleAddContentNote = useCallback(async (note) => {
+        if (!propUid) {
+            return;
+        }
+        const newNote = {
+            note,
+            dt_updated: new Date().toISOString(),
+        };
+        const updated = {
+            ...metadata,
+            notes: [...contentNotes, newNote],
+        };
+        try {
+            const row = await apiRef.current.adminUpdateMetadata({
+                uid: propUid,
+                metadata: updated,
+            });
+            // Refresh metadata from server response
+            const rawMeta = row.metadata;
+            setMetadata(rawMeta && typeof rawMeta === "object" ? rawMeta : updated);
+            toastRef.current.success("Note added");
+        }
+        catch (err) {
+            toastRef.current.error(err?.message || "Failed to add note");
+        }
+    }, [propUid, metadata, contentNotes]);
+    const handleRemoveContentNote = useCallback(async (index) => {
+        if (!propUid) {
+            return;
+        }
+        const updatedNotes = contentNotes.filter((_, i) => i !== index);
+        const updated = {
+            ...metadata,
+            notes: updatedNotes,
+        };
+        try {
+            const row = await apiRef.current.adminUpdateMetadata({
+                uid: propUid,
+                metadata: updated,
+            });
+            const rawMeta = row.metadata;
+            setMetadata(rawMeta && typeof rawMeta === "object" ? rawMeta : updated);
+            toastRef.current.success("Note removed");
+        }
+        catch (err) {
+            toastRef.current.error(err?.message || "Failed to remove note");
+        }
+    }, [propUid, metadata, contentNotes]);
+    /** Update the current version meta (label + notes) from the Status card. */
+    const handleUpdateVersionMeta = useCallback(async (data) => {
+        if (!propUid) {
+            return;
+        }
+        const updated = {
+            ...metadata,
+            version: {
+                ...(metadata.version ?? {}),
+                version: data.version || null,
+                notes: data.notes || null,
+                dt_updated: new Date().toISOString(),
+            },
+        };
+        try {
+            const row = await apiRef.current.adminUpdateMetadata({
+                uid: propUid,
+                metadata: updated,
+            });
+            const rawMeta = row.metadata;
+            setMetadata(rawMeta && typeof rawMeta === "object" ? rawMeta : updated);
+            toastRef.current.success("Version info updated");
+            setStatusVersionEditing(false);
+        }
+        catch (err) {
+            toastRef.current.error(err?.message || "Failed to update version info");
+        }
+    }, [propUid, metadata]);
     // ── Publish ───────────────────────────────────────────────────────────
     const handlePublish = async () => {
         if (isNew) {
@@ -531,17 +690,17 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         }
         setIsSaving(true);
         try {
-            await api.adminPublish({ uid: propUid, ifMatch: etag || "*" });
-            toast.success("Published");
+            await apiRef.current.adminPublish({ uid: propUid, ifMatch: etag || "*" });
+            toastRef.current.success("Published");
             announce("Published");
-            await load();
+            await load({ silent: true });
         }
         catch (err) {
             if (isPreconditionFailed(err)) {
                 openConflict({ kind: "publish", uid: propUid });
                 return;
             }
-            toast.error(err?.message || "Publish failed");
+            toastRef.current.error(err?.message || "Publish failed");
         }
         finally {
             setIsSaving(false);
@@ -554,12 +713,12 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         }
         setIsSaving(true);
         try {
-            const updated = await api.adminTrash({
+            const updated = await apiRef.current.adminTrash({
                 uid: propUid,
                 ifMatch: etag || "*",
             });
             setRow(updated);
-            toast.success("Moved to trash");
+            toastRef.current.success("Moved to trash");
             announce("Moved to trash");
         }
         catch (err) {
@@ -567,7 +726,7 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                 openConflict({ kind: "trash", uid: propUid });
                 return;
             }
-            toast.error(err?.message || "Trash failed");
+            toastRef.current.error(err?.message || "Trash failed");
         }
         finally {
             setIsSaving(false);
@@ -580,12 +739,12 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         }
         setIsSaving(true);
         try {
-            const updated = await api.adminRestore({
+            const updated = await apiRef.current.adminRestore({
                 uid: propUid,
                 ifMatch: etag || "*",
             });
             setRow(updated);
-            toast.success("Restored from trash");
+            toastRef.current.success("Restored from trash");
             announce("Restored");
         }
         catch (err) {
@@ -593,7 +752,7 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                 openConflict({ kind: "restore", uid: propUid });
                 return;
             }
-            toast.error(err?.message || "Restore failed");
+            toastRef.current.error(err?.message || "Restore failed");
         }
         finally {
             setIsSaving(false);
@@ -610,12 +769,12 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         }
         setIsSaving(true);
         try {
-            await api.adminDeletePermanently(propUid);
-            toast.success("Deleted permanently");
-            nav?.goToList?.();
+            await apiRef.current.adminDeletePermanently(propUid);
+            toastRef.current.success("Deleted permanently");
+            navRef.current?.goToList?.();
         }
         catch (err) {
-            toast.error(err?.message || "Delete failed");
+            toastRef.current.error(err?.message || "Delete failed");
         }
         finally {
             setIsSaving(false);
@@ -627,12 +786,12 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
             return;
         }
         try {
-            await api.adminLock(propUid);
-            toast.success("Locked");
-            await load();
+            await apiRef.current.adminLock(propUid);
+            toastRef.current.success("Locked");
+            await load({ silent: true });
         }
         catch (err) {
-            toast.error(err?.message || "Lock failed");
+            toastRef.current.error(err?.message || "Lock failed");
         }
     };
     const handleUnlock = async () => {
@@ -640,25 +799,26 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
             return;
         }
         try {
-            await api.adminUnlock(propUid);
-            toast.success("Unlocked");
-            await load();
+            await apiRef.current.adminUnlock(propUid);
+            toastRef.current.success("Unlocked");
+            await load({ silent: true });
         }
         catch (err) {
-            toast.error(err?.message || "Unlock failed");
+            toastRef.current.error(err?.message || "Unlock failed");
         }
     };
     // ── History operations ────────────────────────────────────────────────
     const handleRestoreRevision = async (historyId) => {
         setIsSaving(true);
         try {
-            await api.adminRestoreHistory({
+            await apiRef.current.adminRestoreHistory({
                 uid: propUid,
                 historyId,
                 ifMatch: etag || "*",
             });
-            toast.success("Revision restored");
-            await load();
+            toastRef.current.success("Revision restored");
+            historyLoadedForRef.current = null; // Force history reload
+            await load({ silent: true });
         }
         catch (err) {
             if (isPreconditionFailed(err)) {
@@ -669,7 +829,7 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                 });
                 return;
             }
-            toast.error(err?.message || "Restore revision failed");
+            toastRef.current.error(err?.message || "Restore revision failed");
         }
         finally {
             setIsSaving(false);
@@ -681,12 +841,12 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
             return;
         }
         try {
-            await api.adminSoftDeleteHistory({ uid: propUid, historyId });
-            toast.success("Revision soft-deleted");
-            await load();
+            await apiRef.current.adminSoftDeleteHistory({ uid: propUid, historyId });
+            toastRef.current.success("Revision soft-deleted");
+            await loadHistory();
         }
         catch (err) {
-            toast.error(err?.message || "Soft-delete failed");
+            toastRef.current.error(err?.message || "Soft-delete failed");
         }
     };
     const handleHardDeleteRevision = async (historyId) => {
@@ -695,12 +855,22 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
             return;
         }
         try {
-            await api.adminHardDeleteHistory({ uid: propUid, historyId });
-            toast.success("Revision permanently deleted");
-            await load();
+            await apiRef.current.adminHardDeleteHistory({ uid: propUid, historyId });
+            toastRef.current.success("Revision permanently deleted");
+            await loadHistory();
         }
         catch (err) {
-            toast.error(err?.message || "Hard-delete failed");
+            toastRef.current.error(err?.message || "Hard-delete failed");
+        }
+    };
+    const handleUpdateHistoryMeta = async (historyId, data) => {
+        try {
+            await apiRef.current.adminUpdateHistoryMeta({ uid: propUid, historyId, ...data });
+            toastRef.current.success("Version info updated");
+            await loadHistory();
+        }
+        catch (err) {
+            toastRef.current.error(err?.message || "Failed to update version info");
         }
     };
     // ── Load / dismiss revision (preview without server write) ────────────
@@ -731,7 +901,7 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
     const handleLoadRevision = useCallback((historyId) => {
         const rev = history.find((h) => h.id === historyId);
         if (!rev?.snapshot) {
-            toast.error("Revision snapshot not available");
+            toastRef.current.error("Revision snapshot not available");
             return;
         }
         setIsSlugEditing(false);
@@ -751,7 +921,7 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         setOptionsJson(snap.options ? JSON.stringify(snap.options, null, 2) : "{}");
         setLoadedRevisionId(historyId);
         announce(`Loaded revision ${rev.revision ?? rev.id} for preview`);
-    }, [history, toast, announce]);
+    }, [history, announce]);
     const handleDismissRevision = useCallback(() => {
         setIsSlugEditing(false);
         if (!savedFormRef.current) {
@@ -940,8 +1110,8 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                     display: "flex",
                     position: "relative",
                     minHeight: "calc(100vh - 64px)",
-                }, children: [!isNew && (_jsx(CmsHistoryDrawer, { open: historyDrawerOpen, onClose: () => setHistoryDrawerOpen(false), history: history, loadedRevisionId: loadedRevisionId, isDirty: isDirty, isSaving: isSaving, includeSoftDeleted: includeSoftDeletedHistory, onIncludeSoftDeletedChange: setIncludeSoftDeletedHistory, onLoadRevision: handleLoadRevision, onRestoreRevision: handleRestoreRevision, onSoftDeleteRevision: handleSoftDeleteRevision, onHardDeleteRevision: handleHardDeleteRevision, onDismissRevision: handleDismissRevision, currentVersionNumber: row?.version_number, currentUpdatedAt: row?.updated_at })), _jsxs(Box, { sx: { flex: 1, minWidth: 0, ml: 1 }, children: [loadedRevisionId && (_jsxs(Alert, { severity: "info", sx: { mb: 2 }, action: _jsxs(Stack, { direction: "row", spacing: 1, children: [_jsx(Button, { size: "small", color: "inherit", onClick: handleDismissRevision, children: "Dismiss" }), _jsx(Button, { size: "small", variant: "outlined", color: "inherit", onClick: () => handleRestoreRevision(loadedRevisionId), disabled: isSaving, children: "Restore this revision" })] }), children: ["Previewing revision", " ", history.find((h) => h.id === loadedRevisionId)?.revision ??
-                                        loadedRevisionId, ". Changes have not been saved."] })), _jsxs(Stack, { direction: { xs: "column", lg: "row" }, spacing: 3, children: [_jsxs(Box, { sx: { flex: 1, minWidth: 0 }, children: [_jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { mb: 2 }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [_jsx(Tooltip, { title: "Back to list", children: _jsx(IconButton, { onClick: () => nav?.goToList?.(), children: _jsx(ArrowBackIcon, {}) }) }), _jsx(Typography, { variant: "h5", children: isNew ? "New CMS Item" : "Edit CMS Item" })] }), _jsxs(Stack, { direction: "row", spacing: 1, children: [!isNew && (_jsx(Tooltip, { title: historyDrawerOpen ? "Close history" : "Open history", children: _jsx(Button, { onClick: () => setHistoryDrawerOpen((o) => !o), color: historyDrawerOpen ? "primary" : "info", size: "small", startIcon: _jsx(HistoryIcon, {}), children: "History" }) })), canPreview && previewUrl && (_jsx(Button, { size: "small", href: previewUrl, target: "_blank", startIcon: _jsx(OpenInNewIcon, {}), children: "Preview" })), _jsx(Button, { variant: "contained", onClick: handleSave, disabled: isSaving || isLoading, children: isSaving ? "Saving..." : "Save" })] })] }), error && (_jsx(Alert, { ref: errorAlertRef, severity: "error", onClose: () => setError(null), sx: { mb: 2 }, tabIndex: -1, children: error })), _jsxs(Paper, { sx: { p: 2, mb: 2 }, children: [_jsx(TextField, { label: "Title", fullWidth: true, value: title, onChange: (e) => setTitle(e.target.value), onBlur: handleTitleBlur, sx: { mb: isSlugEditing ? 2 : "1px" } }), !isSlugEditing ? (_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, sx: {
+                }, children: [!isNew && (_jsx(CmsHistoryDrawer, { open: historyDrawerOpen, onClose: () => setHistoryDrawerOpen(false), history: history, loadedRevisionId: loadedRevisionId, isDirty: isDirty, isSaving: isSaving, includeSoftDeleted: includeSoftDeletedHistory, onIncludeSoftDeletedChange: setIncludeSoftDeletedHistory, onLoadRevision: handleLoadRevision, onRestoreRevision: handleRestoreRevision, onSoftDeleteRevision: handleSoftDeleteRevision, onHardDeleteRevision: handleHardDeleteRevision, onDismissRevision: handleDismissRevision, currentVersionNumber: row?.version_number, currentUpdatedAt: row?.updated_at, currentVersionMeta: metadata?.version ?? null, onUpdateHistoryMeta: handleUpdateHistoryMeta })), _jsxs(Box, { sx: { flex: 1, minWidth: 0, ml: 1 }, children: [loadedRevisionId && (_jsxs(Alert, { severity: "info", sx: { mb: 2 }, action: _jsxs(Stack, { direction: "row", spacing: 1, children: [_jsx(Button, { size: "small", color: "inherit", onClick: handleDismissRevision, children: "Dismiss" }), _jsx(Button, { size: "small", variant: "outlined", color: "inherit", onClick: () => handleRestoreRevision(loadedRevisionId), disabled: isSaving, children: "Restore this revision" })] }), children: ["Previewing revision", " ", history.find((h) => h.id === loadedRevisionId)?.revision ??
+                                        loadedRevisionId, ". Changes have not been saved."] })), _jsxs(Stack, { direction: { xs: "column", lg: "row" }, spacing: 3, children: [_jsxs(Box, { sx: { flex: 1, minWidth: 0 }, children: [_jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1, sx: { mb: 2 }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [_jsx(Tooltip, { title: "Back to list", children: _jsx(IconButton, { onClick: () => nav?.goToList?.(), children: _jsx(ArrowBackIcon, {}) }) }), _jsx(Typography, { variant: "h5", children: isNew ? "New CMS Item" : "Edit CMS Item" })] }), _jsxs(Stack, { direction: "row", spacing: 1, flexShrink: 0, children: [!isNew && (_jsx(Tooltip, { title: historyDrawerOpen ? "Close history" : "Open history", children: _jsx(Button, { onClick: () => setHistoryDrawerOpen((o) => !o), color: historyDrawerOpen ? "primary" : "info", size: "small", startIcon: _jsx(HistoryIcon, {}), children: "History" }) })), canPreview && previewUrl && (_jsx(Button, { size: "small", href: previewUrl, target: "_blank", startIcon: _jsx(OpenInNewIcon, {}), children: "Preview" })), _jsxs(ButtonGroup, { variant: "contained", ref: saveVersionAnchorRef, "aria-label": "Save actions", children: [_jsx(Button, { onClick: () => handleSave(), disabled: isSaving || isLoading || (!isNew && !isDirty), children: isSaving ? "Saving..." : "Save" }), _jsx(Button, { size: "small", onClick: () => setSaveVersionOpen((o) => !o), disabled: isSaving || isLoading || (!isNew && !isDirty), "aria-label": "Save with version label", sx: { px: 0.5 }, children: _jsx(ArrowDropDownIcon, {}) })] }), _jsx(Popper, { open: saveVersionOpen, anchorEl: saveVersionAnchorRef.current, placement: "bottom-end", transition: true, disablePortal: true, sx: { zIndex: 1300 }, children: ({ TransitionProps }) => (_jsx(Grow, { ...TransitionProps, children: _jsx(Paper, { elevation: 8, sx: { p: 2, width: 340, mt: 0.5 }, children: _jsx(ClickAwayListener, { onClickAway: () => setSaveVersionOpen(false), children: _jsx(Box, { children: _jsx(CmsVersionNotesForm, { title: "Save Version", saveLabel: "Save Version", isSaving: isSaving, onSave: handleSaveVersion, onCancel: () => setSaveVersionOpen(false) }) }) }) }) })) })] })] }), error && (_jsx(Alert, { ref: errorAlertRef, severity: "error", onClose: () => setError(null), sx: { mb: 2 }, tabIndex: -1, children: error })), _jsxs(Paper, { sx: { p: 2, mb: 2 }, children: [_jsx(TextField, { label: "Title", fullWidth: true, value: title, onChange: (e) => setTitle(e.target.value), onBlur: handleTitleBlur, sx: { mb: isSlugEditing ? 2 : "1px" } }), !isSlugEditing ? (_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, sx: {
                                                             border: 1,
                                                             borderColor: "divider",
                                                             borderRadius: 1,
@@ -1018,7 +1188,13 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                                                                 }
                                                                 return { ...result, url };
                                                             }
-                                                            : undefined }, `body-${contentType}-${editorMode}-${editorOverride}`)] }), _jsxs(Paper, { sx: { p: 2, mt: 2 }, children: [_jsx(TagsInput, { value: tags, onChange: setTags, label: "Tags", placeholder: "Add tag", size: "small" }), _jsx(Divider, { sx: { my: 2 } }), _jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Password Protection" }), _jsx(TextField, { label: "Password (optional)", type: "password", value: password, onChange: (e) => setPassword(e.target.value), placeholder: isNew ? "" : "(unchanged)", fullWidth: true, size: "small" })] }), _jsxs(Accordion, { sx: { mt: 2 }, children: [_jsxs(AccordionSummary, { expandIcon: _jsx(ExpandMoreIcon, {}), children: [_jsx(Typography, { children: "Advanced Options (JSON)" }), optionsParse.error && (_jsx(Chip, { label: "Invalid JSON", size: "small", color: "error", sx: { ml: 1 } }))] }), _jsx(AccordionDetails, { children: _jsx(CmsBodyEditor, { contentType: "json", value: optionsJson, onChange: setOptionsJson, height: 260 }) })] })] }), _jsxs(Box, { sx: { width: { xs: "100%", lg: 420 }, flexShrink: 0 }, children: [_jsxs(Paper, { sx: { p: 2, mb: 2 }, children: [_jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Status" }), _jsxs(Stack, { direction: "row", spacing: 1, sx: { mb: 1 }, children: [etag && (_jsx(Chip, { label: etag, size: "small", variant: "outlined" })), lockedBy && (_jsx(Chip, { label: `Locked by ${lockedBy}`, size: "small", icon: _jsx(LockIcon, { fontSize: "small" }), color: "warning" }))] }), !isNew && (_jsxs(Stack, { spacing: 0.75, sx: { mb: 1 }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [_jsx(Chip, { label: status === "published"
+                                                            : undefined }, `body-${contentType}-${editorMode}-${editorOverride}`)] }), _jsxs(Paper, { sx: { p: 2, mt: 2 }, children: [_jsx(TagsInput, { value: tags, onChange: setTags, label: "Tags", placeholder: "Add tag", size: "small" }), _jsx(Divider, { sx: { my: 2 } }), _jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Password Protection" }), _jsx(TextField, { label: "Password (optional)", type: "password", value: password, onChange: (e) => setPassword(e.target.value), placeholder: isNew ? "" : "(unchanged)", fullWidth: true, size: "small" })] }), _jsxs(Accordion, { sx: { mt: 2 }, children: [_jsxs(AccordionSummary, { expandIcon: _jsx(ExpandMoreIcon, {}), children: [_jsx(Typography, { children: "Advanced Options (JSON)" }), optionsParse.error && (_jsx(Chip, { label: "Invalid JSON", size: "small", color: "error", sx: { ml: 1 } }))] }), _jsx(AccordionDetails, { children: _jsx(CmsBodyEditor, { contentType: "json", value: optionsJson, onChange: setOptionsJson, height: 260 }) })] })] }), _jsxs(Box, { sx: { width: { xs: "100%", lg: 420 }, flexShrink: 0 }, children: [_jsxs(Paper, { sx: { p: 2, mb: 2 }, children: [_jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Status" }), !isNew && !statusVersionEditing && (_jsxs(Stack, { direction: "row", alignItems: "flex-start", spacing: 0.5, sx: { mb: 1 }, children: [metadata.version?.version && (_jsx(Chip, { label: metadata.version.version, size: "small", color: "info", variant: "outlined", sx: { flexShrink: 0 } })), metadata.version?.notes && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: {
+                                                                    flex: 1,
+                                                                    minWidth: 0,
+                                                                    wordBreak: "break-word",
+                                                                    lineHeight: 1.4,
+                                                                    pt: 0.25,
+                                                                }, children: metadata.version.notes })), _jsx(Tooltip, { title: "Edit version info", children: _jsx(IconButton, { size: "small", onClick: () => setStatusVersionEditing(true), sx: { flexShrink: 0, mt: -0.25 }, children: _jsx(EditIcon, { sx: { fontSize: "1rem" } }) }) })] })), !isNew && statusVersionEditing && (_jsx(Box, { sx: { mb: 1 }, children: _jsx(CmsVersionNotesForm, { title: "Edit Version", saveLabel: "Update", initialVersion: metadata.version?.version ?? "", initialNotes: metadata.version?.notes ?? "", isSaving: isSaving, onSave: handleUpdateVersionMeta, onCancel: () => setStatusVersionEditing(false) }) })), _jsxs(Stack, { direction: "row", spacing: 1, sx: { mb: 1 }, children: [etag && (_jsx(Chip, { label: etag, size: "small", variant: "outlined" })), lockedBy && (_jsx(Chip, { label: `Locked by ${lockedBy}`, size: "small", icon: _jsx(LockIcon, { fontSize: "small" }), color: "warning" }))] }), !isNew && (_jsxs(Stack, { spacing: 0.75, sx: { mb: 1 }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, children: [_jsx(Chip, { label: status === "published"
                                                                             ? "Published"
                                                                             : status === "trash"
                                                                                 ? "Trash"
@@ -1026,7 +1202,7 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                                                                             ? "success"
                                                                             : status === "trash"
                                                                                 ? "error"
-                                                                                : "default", variant: status === "published" ? "filled" : "outlined" }), status === "published" && (_jsx(Typography, { variant: "caption", color: "text.secondary", noWrap: true, children: publishedAtText }))] }), _jsxs(Stack, { direction: "row", alignItems: "center", justifyContent: "space-between", spacing: 1, children: [_jsxs(Typography, { variant: "body2", children: ["Revisions: ", revisionsCount] }), _jsx(Button, { size: "small", variant: "outlined", startIcon: _jsx(HistoryIcon, { fontSize: "small" }), onClick: () => setHistoryDrawerOpen(true), disabled: historyDrawerOpen || revisionsCount === 0, children: "Browse" })] })] })), _jsx(Divider, { sx: { my: 1 } }), _jsxs(Stack, { spacing: 1, children: [!isNew && status !== "published" && status !== "trash" && (_jsx(Button, { variant: "contained", color: "success", fullWidth: true, onClick: handlePublish, disabled: isSaving, children: "Publish" })), !isNew && status !== "trash" && (_jsxs(Stack, { direction: "row", spacing: 1, children: [_jsx(Button, { variant: "outlined", color: "warning", fullWidth: true, onClick: handleTrash, disabled: isSaving, children: "Move to Trash" }), !lockedBy && (_jsx(Button, { variant: "outlined", startIcon: _jsx(LockIcon, {}), fullWidth: true, onClick: handleLock, disabled: isSaving, children: "Lock" })), lockedBy && (_jsx(Button, { variant: "outlined", startIcon: _jsx(LockOpenIcon, {}), fullWidth: true, onClick: handleUnlock, disabled: isSaving, children: "Unlock" }))] })), !isNew && status === "trash" && (_jsxs(_Fragment, { children: [_jsx(Button, { startIcon: _jsx(RestoreIcon, {}), fullWidth: true, onClick: handleRestore, disabled: isSaving, children: "Restore" }), _jsx(Button, { color: "error", startIcon: _jsx(DeleteForeverIcon, {}), fullWidth: true, onClick: handleDeletePermanently, disabled: isSaving, children: "Delete permanently" })] })), !isNew && status === "trash" && _jsx(Divider, {})] })] }), config?.renderMediaPicker && (_jsxs(Paper, { sx: { p: 2, mb: 2 }, children: [_jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Media & SEO" }), _jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, sx: { mb: 1 }, children: [_jsx(Typography, { variant: "caption", sx: { minWidth: 100 }, children: "Featured image:" }), _jsx(Typography, { variant: "caption", color: "text.secondary", noWrap: true, sx: { flex: 1 }, children: featuredImageUid || "—" }), _jsx(Button, { size: "small", variant: "outlined", startIcon: _jsx(AddIcon, { fontSize: "small" }), onClick: chooseFeaturedImage, children: "Choose" }), featuredImageUid && (_jsx(Button, { size: "small", color: "error", onClick: () => updateOptionsJson((o) => {
+                                                                                : "default", variant: status === "published" ? "filled" : "outlined" }), status === "published" && (_jsx(Typography, { variant: "caption", color: "text.secondary", noWrap: true, children: publishedAtText }))] }), _jsxs(Stack, { direction: "row", alignItems: "center", justifyContent: "space-between", spacing: 1, children: [_jsxs(Typography, { variant: "body2", children: ["Revisions: ", revisionsCount] }), _jsx(Button, { size: "small", variant: "outlined", startIcon: _jsx(HistoryIcon, { fontSize: "small" }), onClick: () => setHistoryDrawerOpen(true), disabled: historyDrawerOpen || revisionsCount === 0, children: "Browse" })] })] })), _jsx(Divider, { sx: { my: 1 } }), _jsxs(Stack, { spacing: 1, children: [!isNew && status !== "published" && status !== "trash" && (_jsx(Button, { variant: "contained", color: "success", fullWidth: true, onClick: handlePublish, disabled: isSaving, children: "Publish" })), !isNew && status !== "trash" && (_jsxs(Stack, { direction: "row", spacing: 1, children: [_jsx(Button, { variant: "outlined", color: "warning", fullWidth: true, onClick: handleTrash, disabled: isSaving, children: "Move to Trash" }), !lockedBy && (_jsx(Button, { variant: "outlined", startIcon: _jsx(LockIcon, {}), fullWidth: true, onClick: handleLock, disabled: isSaving, children: "Lock" })), lockedBy && (_jsx(Button, { variant: "outlined", startIcon: _jsx(LockOpenIcon, {}), fullWidth: true, onClick: handleUnlock, disabled: isSaving, children: "Unlock" }))] })), !isNew && status === "trash" && (_jsxs(_Fragment, { children: [_jsx(Button, { startIcon: _jsx(RestoreIcon, {}), fullWidth: true, onClick: handleRestore, disabled: isSaving, children: "Restore" }), _jsx(Button, { color: "error", startIcon: _jsx(DeleteForeverIcon, {}), fullWidth: true, onClick: handleDeletePermanently, disabled: isSaving, children: "Delete permanently" })] })), !isNew && status === "trash" && _jsx(Divider, {})] })] }), !isNew && (_jsx(Paper, { sx: { p: 2, mb: 2 }, children: _jsx(CmsContentNotes, { notes: contentNotes, onAddNote: handleAddContentNote, onRemoveNote: handleRemoveContentNote, disabled: isSaving }) })), config?.renderMediaPicker && (_jsxs(Paper, { sx: { p: 2, mb: 2 }, children: [_jsx(Typography, { variant: "subtitle2", sx: { mb: 1 }, children: "Media & SEO" }), _jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, sx: { mb: 1 }, children: [_jsx(Typography, { variant: "caption", sx: { minWidth: 100 }, children: "Featured image:" }), _jsx(Typography, { variant: "caption", color: "text.secondary", noWrap: true, sx: { flex: 1 }, children: featuredImageUid || "—" }), _jsx(Button, { size: "small", variant: "outlined", startIcon: _jsx(AddIcon, { fontSize: "small" }), onClick: chooseFeaturedImage, children: "Choose" }), featuredImageUid && (_jsx(Button, { size: "small", color: "error", onClick: () => updateOptionsJson((o) => {
                                                                     delete o.featured_image_file_uid;
                                                                 }), children: "Clear" }))] }), _jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, sx: { mb: 1 }, children: [_jsx(Typography, { variant: "caption", sx: { minWidth: 100 }, children: "OG image:" }), _jsx(Typography, { variant: "caption", color: "text.secondary", noWrap: true, sx: { flex: 1 }, children: ogImageUid || "—" }), _jsx(Button, { size: "small", variant: "outlined", startIcon: _jsx(AddIcon, { fontSize: "small" }), onClick: chooseOgImage, children: "Choose" }), ogImageUid && (_jsx(Button, { size: "small", color: "error", onClick: () => updateOptionsJson((o) => {
                                                                     if (o.seo) {

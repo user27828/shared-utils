@@ -122,6 +122,21 @@ export class CmsClient {
     async adminHardDeleteHistory(input) {
         await this.adminRequest(`/${encodeURIComponent(input.uid)}/history/${input.historyId}/hard`, { method: "DELETE" });
     }
+    async adminUpdateHistoryMeta(input) {
+        return this.adminRequest(`/${encodeURIComponent(input.uid)}/history/${input.historyId}/meta`, {
+            method: "PATCH",
+            body: JSON.stringify({
+                version: input.version,
+                notes: input.notes,
+            }),
+        });
+    }
+    async adminUpdateMetadata(input) {
+        return this.adminRequest(`/${encodeURIComponent(input.uid)}/metadata`, {
+            method: "PATCH",
+            body: JSON.stringify({ metadata: input.metadata }),
+        });
+    }
     // ─── Admin lock ─────────────────────────────────────────────────────
     async adminLock(uid) {
         return this.adminRequest(`/${encodeURIComponent(uid)}/lock`, {

@@ -22,8 +22,10 @@ import {
   Alert,
   Box,
   Button,
+  ButtonGroup,
   Checkbox,
   Chip,
+  ClickAwayListener,
   Container,
   Dialog,
   DialogActions,
@@ -33,10 +35,13 @@ import {
   Divider,
   FormControl,
   FormControlLabel,
+  Grow,
   IconButton,
   InputLabel,
   MenuItem,
+  MenuList,
   Paper,
+  Popper,
   Select,
   Stack,
   TextField,
@@ -57,11 +62,14 @@ import LockOpenIcon from "@mui/icons-material/LockOpen";
 import HistoryIcon from "@mui/icons-material/History";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import EditIcon from "@mui/icons-material/Edit";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 
 import { TagsInput } from "../../components/form/TagsInput.js";
 import type {
   CmsHeadRow,
   CmsHistoryRow,
+  CmsMetadata,
+  CmsContentNote,
 } from "../../../../utils/src/cms/types.js";
 import { CmsClient } from "../CmsClient.js";
 import type { CmsApi } from "../CmsApi.js";
@@ -79,6 +87,8 @@ import CmsBodyEditor, {
   mimeToContentType,
 } from "./CmsBodyEditor.js";
 import CmsHistoryDrawer, { HISTORY_DRAWER_WIDTH } from "./CmsHistoryDrawer.js";
+import CmsVersionNotesForm from "./CmsVersionNotesForm.js";
+import CmsContentNotes from "./CmsContentNotes.js";
 import { useFmApi } from "../../fm/FmClientProvider.js";
 import { isDev } from "../../../../utils/index.js";
 import { useDebouncedCallback } from "../../helpers/debounce.js";
@@ -187,6 +197,16 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   const api: CmsApi = config?.api ?? defaultApi;
   const toast = config?.toast ?? defaultToast;
   const nav = config?.navigation;
+
+  // Stable refs so callbacks never depend on api/toast/nav identity.
+  // This prevents parent re-renders (e.g. auth context refresh) from
+  // causing load() to regenerate and re-fire.
+  const apiRef = useRef(api);
+  apiRef.current = api;
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+  const navRef = useRef(nav);
+  navRef.current = nav;
   const localeOptions = useMemo(
     () => config?.localeOptions ?? [{ label: "English", value: "en" }],
     [config?.localeOptions],
@@ -197,6 +217,8 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   // ── Data state ────────────────────────────────────────────────────────
   const [row, setRow] = useState<CmsHeadRow | null>(null);
   const [history, setHistory] = useState<CmsHistoryRow[]>([]);
+  /** History count from the server (lightweight, comes with GET /:uid). */
+  const [historyCount, setHistoryCount] = useState(0);
 
   // ── Form state ────────────────────────────────────────────────────────
   const [title, setTitle] = useState("");
@@ -246,6 +268,13 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   const [pendingContentType, setPendingContentType] =
     useState<CmsEditorContentType | null>(null);
 
+  // ── Metadata / version-notes state ────────────────────────────────────
+  const [metadata, setMetadata] = useState<CmsMetadata>({});
+  const [saveVersionOpen, setSaveVersionOpen] = useState(false);
+  const saveVersionAnchorRef = useRef<HTMLDivElement | null>(null);
+  /** Whether the version/notes editor in the Status card is open. */
+  const [statusVersionEditing, setStatusVersionEditing] = useState(false);
+
   /** Snapshot of live form state before loading a revision, so we
    *  can restore it when the user dismisses the preview. */
   const savedFormRef = useRef<{
@@ -294,7 +323,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     [publishedAtIso],
   );
 
-  const revisionsCount = history.length;
+  const revisionsCount = history.length || historyCount;
 
   const optionsParse = useMemo(() => safeJsonParse(optionsJson), [optionsJson]);
 
@@ -351,6 +380,14 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     { wait: 150, leading: true, trailing: true },
   );
 
+  /**
+   * Tracks the number of programmatic field updates that should NOT mark
+   * the form dirty.  Incremented before load/save populates fields,
+   * decremented by the effect — prevents the isLoading→false transition
+   * from bumping editEpoch.
+   */
+  const suppressDirtyRef = useRef(0);
+
   /** Bump editEpoch when any tracked form field changes after the last
    *  clean epoch.  The guard prevents the effect from firing during the
    *  same tick as load()/save() which also set these fields. */
@@ -362,6 +399,12 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     }
     // Skip during loading — field changes come from the server, not the user
     if (isLoading) {
+      return;
+    }
+    // Consume a suppression token from load()/save() — the effect fires
+    // once when isLoading flips false, but those field values are clean.
+    if (suppressDirtyRef.current > 0) {
+      suppressDirtyRef.current -= 1;
       return;
     }
     bumpEditEpoch();
@@ -480,20 +523,20 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
 
   const handleCopySlug = useCallback(async () => {
     if (!slugPath) {
-      toast.info("No slug to copy");
+      toastRef.current.info("No slug to copy");
       return;
     }
 
     const ok = await copyToClipboard(slugPath);
     if (ok) {
-      toast.success("Slug copied");
+      toastRef.current.success("Slug copied");
       announce("Slug copied to clipboard");
       return;
     }
 
-    toast.error("Copy failed");
+    toastRef.current.error("Copy failed");
     announceErr("Copy failed");
-  }, [announce, announceErr, copyToClipboard, slugPath, toast]);
+  }, [announce, announceErr, copyToClipboard, slugPath]);
 
   const handleStartSlugEdit = useCallback(() => {
     slugBeforeEditRef.current = slug;
@@ -522,71 +565,103 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   );
 
   // ── Load ──────────────────────────────────────────────────────────────
-  const load = useCallback(async () => {
-    if (isNew) {
-      return;
-    }
-    setIsSlugEditing(false);
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const item = await api.adminGet(propUid!);
-      setRow(item);
-      setTitle(item.title || "");
-      setSlug(item.slug || "");
-      setLocale(item.locale || defaultLocale);
-      setPostType(item.post_type || defaultPostType);
-      setContentType(
-        mimeToContentType(
-          item.content_type || "text/html",
-        ) as CmsEditorContentType,
-      );
-      setContent(item.content || "<p></p>");
-      setTags(Array.isArray((item as any).tags) ? (item as any).tags : []);
-      setOptionsJson(
-        (item as any).options
-          ? JSON.stringify((item as any).options, null, 2)
-          : "{}",
-      );
-      setPassword("");
-
-      // Mark form as clean after populating from server data
-      const epoch = Date.now();
-      lastCleanEpochRef.current = epoch;
-      setEditEpoch(epoch);
-
-      // Load history (larger batch for calendar navigation)
-      try {
-        const hist = await api.adminListHistory(propUid!, {
-          limit: 500,
-        });
-        setHistory(hist.items ?? hist ?? []);
-      } catch {
-        /* non-critical */
+  const load = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (isNew) {
+        return;
       }
+      setIsSlugEditing(false);
+      if (!opts?.silent) {
+        setIsLoading(true);
+      }
+      setError(null);
 
-      // Clear any loaded revision when reloading
-      setLoadedRevisionId(null);
-      savedFormRef.current = null;
-      slugManualRef.current = false;
-    } catch (err: any) {
-      setError(err?.message || "Failed to load CMS item");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [
-    api,
-    propUid,
-    isNew,
-    defaultLocale,
-    defaultPostType,
-    includeSoftDeletedHistory,
-  ]);
+      try {
+        const item = await apiRef.current.adminGet(propUid!);
+
+        // Suppress the dirty-tracking effect that fires when isLoading
+        // transitions false — these field changes are from the server.
+        suppressDirtyRef.current += 1;
+
+        setRow(item);
+        setTitle(item.title || "");
+        setSlug(item.slug || "");
+        setLocale(item.locale || defaultLocale);
+        setPostType(item.post_type || defaultPostType);
+        setContentType(
+          mimeToContentType(
+            item.content_type || "text/html",
+          ) as CmsEditorContentType,
+        );
+        setContent(item.content || "<p></p>");
+        setTags(Array.isArray((item as any).tags) ? (item as any).tags : []);
+        setOptionsJson(
+          (item as any).options
+            ? JSON.stringify((item as any).options, null, 2)
+            : "{}",
+        );
+        setPassword("");
+
+        // Populate metadata from server
+        const rawMeta = (item as any).metadata;
+        setMetadata(rawMeta && typeof rawMeta === "object" ? rawMeta : {});
+
+        // Capture history_count from server (lightweight — no history fetch)
+        if (typeof (item as any).history_count === "number") {
+          setHistoryCount((item as any).history_count);
+        }
+
+        // Mark form as clean after populating from server data
+        const epoch = Date.now();
+        lastCleanEpochRef.current = epoch;
+        setEditEpoch(epoch);
+
+        // Clear any loaded revision when reloading
+        setLoadedRevisionId(null);
+        savedFormRef.current = null;
+        slugManualRef.current = false;
+      } catch (err: any) {
+        setError(err?.message || "Failed to load CMS item");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [propUid, isNew, defaultLocale, defaultPostType],
+  );
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  // ── Load history (lazy — only when drawer is open) ────────────────────
+  const loadHistory = useCallback(async () => {
+    if (isNew || !propUid) {
+      return;
+    }
+    try {
+      const hist = await apiRef.current.adminListHistory(propUid, {
+        limit: 500,
+        fields: "summary",
+      });
+      setHistory(hist.items ?? []);
+      setHistoryCount(hist.totalCount ?? hist.items?.length ?? 0);
+    } catch {
+      /* non-critical */
+    }
+  }, [propUid, isNew]);
+
+  // Fetch history when the drawer opens for the first time (or after save)
+  const historyLoadedForRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (historyDrawerOpen && propUid) {
+      // Reload if we haven't loaded yet or if the row changed (after save)
+      const key = `${propUid}:${row?.version_number ?? 0}`;
+      if (historyLoadedForRef.current !== key) {
+        historyLoadedForRef.current = key;
+        void loadHistory();
+      }
+    }
+  }, [historyDrawerOpen, propUid, row?.version_number, loadHistory]);
 
   // ── Focus error alert ─────────────────────────────────────────────────
   useEffect(() => {
@@ -596,32 +671,50 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   }, [error]);
 
   // ── Build patch ───────────────────────────────────────────────────────
-  const buildPatch = useCallback(() => {
-    const patch: Record<string, any> = {
+  const buildPatch = useCallback(
+    (versionMeta?: { version: string; notes: string }) => {
+      const patchMeta: CmsMetadata = { ...metadata };
+      if (versionMeta) {
+        const hasVersion = versionMeta.version.trim().length > 0;
+        const hasNotes = versionMeta.notes.trim().length > 0;
+        patchMeta.version =
+          hasVersion || hasNotes
+            ? {
+                version: hasVersion ? versionMeta.version.trim() : null,
+                notes: hasNotes ? versionMeta.notes.trim() : null,
+                dt_updated: new Date().toISOString(),
+              }
+            : null;
+      }
+      const patch: Record<string, any> = {
+        title,
+        slug,
+        locale,
+        post_type: postType,
+        content_type: contentTypeToMime(contentType),
+        content,
+        tags: [...tags],
+        options: optionsParse.value ?? {},
+        metadata: patchMeta,
+      };
+      if (password) {
+        patch.password = password;
+      }
+      return patch;
+    },
+    [
       title,
       slug,
       locale,
-      post_type: postType,
-      content_type: contentTypeToMime(contentType),
+      postType,
+      contentType,
       content,
-      tags: [...tags],
-      options: optionsParse.value ?? {},
-    };
-    if (password) {
-      patch.password = password;
-    }
-    return patch;
-  }, [
-    title,
-    slug,
-    locale,
-    postType,
-    contentType,
-    content,
-    tags,
-    optionsParse.value,
-    password,
-  ]);
+      tags,
+      optionsParse.value,
+      password,
+      metadata,
+    ],
+  );
 
   // ── Conflict handling ─────────────────────────────────────────────────
   const openConflict = (ctx: ConflictCtx) => {
@@ -639,32 +732,38 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
 
     try {
       // Re-fetch to get the latest etag
-      const latest = await api.adminGet(ctx.uid);
+      const latest = await apiRef.current.adminGet(ctx.uid);
       const latestEtag = (latest as any)?.etag || "*";
 
       switch (ctx.kind) {
         case "save":
-          await api.adminUpdate({
+          await apiRef.current.adminUpdate({
             uid: ctx.uid,
             patch: (ctx.localPatch || buildPatch()) as any,
             ifMatch: latestEtag,
           });
           break;
         case "publish":
-          await api.adminPublish({
+          await apiRef.current.adminPublish({
             uid: ctx.uid,
             ifMatch: latestEtag,
           });
           break;
         case "trash":
-          await api.adminTrash({ uid: ctx.uid, ifMatch: latestEtag });
+          await apiRef.current.adminTrash({
+            uid: ctx.uid,
+            ifMatch: latestEtag,
+          });
           break;
         case "restore":
-          await api.adminRestore({ uid: ctx.uid, ifMatch: latestEtag });
+          await apiRef.current.adminRestore({
+            uid: ctx.uid,
+            ifMatch: latestEtag,
+          });
           break;
         case "restoreRevision":
           if (ctx.historyId) {
-            await api.adminRestoreHistory({
+            await apiRef.current.adminRestoreHistory({
               uid: ctx.uid,
               historyId: ctx.historyId,
               ifMatch: latestEtag,
@@ -673,17 +772,20 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
           break;
       }
 
-      toast.info("Saved (overwrote latest version)");
-      await load();
+      toastRef.current.info("Saved (overwrote latest version)");
+      await load({ silent: true });
     } catch (err: any) {
-      toast.error(err?.message || "Overwrite failed");
+      toastRef.current.error(err?.message || "Overwrite failed");
     } finally {
       setIsSaving(false);
     }
   };
 
   // ── Save ──────────────────────────────────────────────────────────────
-  const handleSave = async () => {
+  const handleSave = async (versionMeta?: {
+    version: string;
+    notes: string;
+  }) => {
     if (optionsParse.error) {
       setError(`Invalid JSON in options: ${optionsParse.error}`);
       return;
@@ -693,38 +795,141 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     setError(null);
 
     try {
+      const patch = buildPatch(versionMeta);
       if (isNew) {
-        const created = await api.adminCreate(buildPatch() as any);
-        toast.success("Created successfully");
+        const created = await apiRef.current.adminCreate(patch as any);
+        toastRef.current.success("Created successfully");
         announce("Item created");
-        nav?.goToEdit?.((created as any).uid);
+        navRef.current?.goToEdit?.((created as any).uid);
       } else {
-        await api.adminUpdate({
+        await apiRef.current.adminUpdate({
           uid: propUid!,
-          patch: buildPatch() as any,
+          patch: patch as any,
           ifMatch: etag || "*",
         });
-        toast.success("Saved");
-        announce("Saved");
-        await load();
+        toastRef.current.success(versionMeta ? "Version saved" : "Saved");
+        announce(versionMeta ? "Version saved" : "Saved");
+        historyLoadedForRef.current = null; // Force history reload on next open
+        await load({ silent: true });
       }
     } catch (err: any) {
       if (!isNew && isPreconditionFailed(err)) {
         openConflict({
           kind: "save",
           uid: propUid!,
-          localPatch: buildPatch(),
+          localPatch: buildPatch(versionMeta),
         });
         return;
       }
       const msg = err?.message || "Save failed";
       setError(msg);
-      toast.error(msg);
+      toastRef.current.error(msg);
       announceErr(msg);
     } finally {
       setIsSaving(false);
+      setSaveVersionOpen(false);
     }
   };
+
+  /** Handle "Save Version" from the split-button popover. */
+  const handleSaveVersion = useCallback(
+    (data: { version: string; notes: string }) => {
+      void handleSave(data);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [buildPatch, propUid, etag, isNew, optionsParse.error],
+  );
+
+  // ── Content notes helpers ─────────────────────────────────────────────
+  const contentNotes: CmsContentNote[] = useMemo(
+    () => (Array.isArray(metadata.notes) ? metadata.notes : []),
+    [metadata.notes],
+  );
+
+  const handleAddContentNote = useCallback(
+    async (note: string) => {
+      if (!propUid) {
+        return;
+      }
+      const newNote: CmsContentNote = {
+        note,
+        dt_updated: new Date().toISOString(),
+      };
+      const updated: CmsMetadata = {
+        ...metadata,
+        notes: [...contentNotes, newNote],
+      };
+      try {
+        const row = await apiRef.current.adminUpdateMetadata({
+          uid: propUid,
+          metadata: updated,
+        });
+        // Refresh metadata from server response
+        const rawMeta = (row as any).metadata;
+        setMetadata(rawMeta && typeof rawMeta === "object" ? rawMeta : updated);
+        toastRef.current.success("Note added");
+      } catch (err: any) {
+        toastRef.current.error(err?.message || "Failed to add note");
+      }
+    },
+    [propUid, metadata, contentNotes],
+  );
+
+  const handleRemoveContentNote = useCallback(
+    async (index: number) => {
+      if (!propUid) {
+        return;
+      }
+      const updatedNotes = contentNotes.filter((_, i) => i !== index);
+      const updated: CmsMetadata = {
+        ...metadata,
+        notes: updatedNotes,
+      };
+      try {
+        const row = await apiRef.current.adminUpdateMetadata({
+          uid: propUid,
+          metadata: updated,
+        });
+        const rawMeta = (row as any).metadata;
+        setMetadata(rawMeta && typeof rawMeta === "object" ? rawMeta : updated);
+        toastRef.current.success("Note removed");
+      } catch (err: any) {
+        toastRef.current.error(err?.message || "Failed to remove note");
+      }
+    },
+    [propUid, metadata, contentNotes],
+  );
+
+  /** Update the current version meta (label + notes) from the Status card. */
+  const handleUpdateVersionMeta = useCallback(
+    async (data: { version: string; notes: string }) => {
+      if (!propUid) {
+        return;
+      }
+      const updated: CmsMetadata = {
+        ...metadata,
+        version: {
+          ...(metadata.version ?? {}),
+          version: data.version || null,
+          notes: data.notes || null,
+          dt_updated: new Date().toISOString(),
+        },
+      };
+      try {
+        const row = await apiRef.current.adminUpdateMetadata({
+          uid: propUid,
+          metadata: updated,
+        });
+        const rawMeta = (row as any).metadata;
+        setMetadata(rawMeta && typeof rawMeta === "object" ? rawMeta : updated);
+        toastRef.current.success("Version info updated");
+        setStatusVersionEditing(false);
+      } catch (err: any) {
+        toastRef.current.error(err?.message || "Failed to update version info");
+      }
+    },
+    [propUid, metadata],
+  );
 
   // ── Publish ───────────────────────────────────────────────────────────
   const handlePublish = async () => {
@@ -733,16 +938,19 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     }
     setIsSaving(true);
     try {
-      await api.adminPublish({ uid: propUid!, ifMatch: etag || "*" });
-      toast.success("Published");
+      await apiRef.current.adminPublish({
+        uid: propUid!,
+        ifMatch: etag || "*",
+      });
+      toastRef.current.success("Published");
       announce("Published");
-      await load();
+      await load({ silent: true });
     } catch (err: any) {
       if (isPreconditionFailed(err)) {
         openConflict({ kind: "publish", uid: propUid! });
         return;
       }
-      toast.error(err?.message || "Publish failed");
+      toastRef.current.error(err?.message || "Publish failed");
     } finally {
       setIsSaving(false);
     }
@@ -755,19 +963,19 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     }
     setIsSaving(true);
     try {
-      const updated = await api.adminTrash({
+      const updated = await apiRef.current.adminTrash({
         uid: propUid!,
         ifMatch: etag || "*",
       });
       setRow(updated as CmsHeadRow);
-      toast.success("Moved to trash");
+      toastRef.current.success("Moved to trash");
       announce("Moved to trash");
     } catch (err: any) {
       if (isPreconditionFailed(err)) {
         openConflict({ kind: "trash", uid: propUid! });
         return;
       }
-      toast.error(err?.message || "Trash failed");
+      toastRef.current.error(err?.message || "Trash failed");
     } finally {
       setIsSaving(false);
     }
@@ -780,19 +988,19 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     }
     setIsSaving(true);
     try {
-      const updated = await api.adminRestore({
+      const updated = await apiRef.current.adminRestore({
         uid: propUid!,
         ifMatch: etag || "*",
       });
       setRow(updated as CmsHeadRow);
-      toast.success("Restored from trash");
+      toastRef.current.success("Restored from trash");
       announce("Restored");
     } catch (err: any) {
       if (isPreconditionFailed(err)) {
         openConflict({ kind: "restore", uid: propUid! });
         return;
       }
-      toast.error(err?.message || "Restore failed");
+      toastRef.current.error(err?.message || "Restore failed");
     } finally {
       setIsSaving(false);
     }
@@ -809,11 +1017,11 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     }
     setIsSaving(true);
     try {
-      await api.adminDeletePermanently(propUid!);
-      toast.success("Deleted permanently");
-      nav?.goToList?.();
+      await apiRef.current.adminDeletePermanently(propUid!);
+      toastRef.current.success("Deleted permanently");
+      navRef.current?.goToList?.();
     } catch (err: any) {
-      toast.error(err?.message || "Delete failed");
+      toastRef.current.error(err?.message || "Delete failed");
     } finally {
       setIsSaving(false);
     }
@@ -825,11 +1033,11 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
       return;
     }
     try {
-      await api.adminLock(propUid!);
-      toast.success("Locked");
-      await load();
+      await apiRef.current.adminLock(propUid!);
+      toastRef.current.success("Locked");
+      await load({ silent: true });
     } catch (err: any) {
-      toast.error(err?.message || "Lock failed");
+      toastRef.current.error(err?.message || "Lock failed");
     }
   };
 
@@ -838,11 +1046,11 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
       return;
     }
     try {
-      await api.adminUnlock(propUid!);
-      toast.success("Unlocked");
-      await load();
+      await apiRef.current.adminUnlock(propUid!);
+      toastRef.current.success("Unlocked");
+      await load({ silent: true });
     } catch (err: any) {
-      toast.error(err?.message || "Unlock failed");
+      toastRef.current.error(err?.message || "Unlock failed");
     }
   };
 
@@ -850,13 +1058,14 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   const handleRestoreRevision = async (historyId: number) => {
     setIsSaving(true);
     try {
-      await api.adminRestoreHistory({
+      await apiRef.current.adminRestoreHistory({
         uid: propUid!,
         historyId,
         ifMatch: etag || "*",
       });
-      toast.success("Revision restored");
-      await load();
+      toastRef.current.success("Revision restored");
+      historyLoadedForRef.current = null; // Force history reload
+      await load({ silent: true });
     } catch (err: any) {
       if (isPreconditionFailed(err)) {
         openConflict({
@@ -866,7 +1075,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
         });
         return;
       }
-      toast.error(err?.message || "Restore revision failed");
+      toastRef.current.error(err?.message || "Restore revision failed");
     } finally {
       setIsSaving(false);
     }
@@ -878,11 +1087,11 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
       return;
     }
     try {
-      await api.adminSoftDeleteHistory({ uid: propUid!, historyId });
-      toast.success("Revision soft-deleted");
-      await load();
+      await apiRef.current.adminSoftDeleteHistory({ uid: propUid!, historyId });
+      toastRef.current.success("Revision soft-deleted");
+      await loadHistory();
     } catch (err: any) {
-      toast.error(err?.message || "Soft-delete failed");
+      toastRef.current.error(err?.message || "Soft-delete failed");
     }
   };
 
@@ -892,11 +1101,28 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
       return;
     }
     try {
-      await api.adminHardDeleteHistory({ uid: propUid!, historyId });
-      toast.success("Revision permanently deleted");
-      await load();
+      await apiRef.current.adminHardDeleteHistory({ uid: propUid!, historyId });
+      toastRef.current.success("Revision permanently deleted");
+      await loadHistory();
     } catch (err: any) {
-      toast.error(err?.message || "Hard-delete failed");
+      toastRef.current.error(err?.message || "Hard-delete failed");
+    }
+  };
+
+  const handleUpdateHistoryMeta = async (
+    historyId: number,
+    data: { version?: string; notes?: string },
+  ) => {
+    try {
+      await apiRef.current.adminUpdateHistoryMeta({
+        uid: propUid!,
+        historyId,
+        ...data,
+      });
+      toastRef.current.success("Version info updated");
+      await loadHistory();
+    } catch (err: any) {
+      toastRef.current.error(err?.message || "Failed to update version info");
     }
   };
 
@@ -930,7 +1156,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     (historyId: number) => {
       const rev = history.find((h) => h.id === historyId);
       if (!rev?.snapshot) {
-        toast.error("Revision snapshot not available");
+        toastRef.current.error("Revision snapshot not available");
         return;
       }
 
@@ -961,7 +1187,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
       setLoadedRevisionId(historyId);
       announce(`Loaded revision ${rev.revision ?? rev.id} for preview`);
     },
-    [history, toast, announce],
+    [history, announce],
   );
 
   const handleDismissRevision = useCallback(() => {
@@ -1244,6 +1470,8 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
             onDismissRevision={handleDismissRevision}
             currentVersionNumber={row?.version_number}
             currentUpdatedAt={row?.updated_at}
+            currentVersionMeta={metadata?.version ?? null}
+            onUpdateHistoryMeta={handleUpdateHistoryMeta}
           />
         )}
 
@@ -1290,6 +1518,8 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                 direction="row"
                 justifyContent="space-between"
                 alignItems="center"
+                flexWrap="wrap"
+                gap={1}
                 sx={{ mb: 2 }}
               >
                 <Stack direction="row" alignItems="center" spacing={1}>
@@ -1303,7 +1533,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                   </Typography>
                 </Stack>
 
-                <Stack direction="row" spacing={1}>
+                <Stack direction="row" spacing={1} flexShrink={0}>
                   {!isNew && (
                     <Tooltip
                       title={
@@ -1330,13 +1560,56 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                       Preview
                     </Button>
                   )}
-                  <Button
+                  {/* Split Save / Save Version button */}
+                  <ButtonGroup
                     variant="contained"
-                    onClick={handleSave}
-                    disabled={isSaving || isLoading}
+                    ref={saveVersionAnchorRef}
+                    aria-label="Save actions"
                   >
-                    {isSaving ? "Saving..." : "Save"}
-                  </Button>
+                    <Button
+                      onClick={() => handleSave()}
+                      disabled={isSaving || isLoading || (!isNew && !isDirty)}
+                    >
+                      {isSaving ? "Saving..." : "Save"}
+                    </Button>
+                    <Button
+                      size="small"
+                      onClick={() => setSaveVersionOpen((o) => !o)}
+                      disabled={isSaving || isLoading || (!isNew && !isDirty)}
+                      aria-label="Save with version label"
+                      sx={{ px: 0.5 }}
+                    >
+                      <ArrowDropDownIcon />
+                    </Button>
+                  </ButtonGroup>
+                  <Popper
+                    open={saveVersionOpen}
+                    anchorEl={saveVersionAnchorRef.current}
+                    placement="bottom-end"
+                    transition
+                    disablePortal
+                    sx={{ zIndex: 1300 }}
+                  >
+                    {({ TransitionProps }) => (
+                      <Grow {...TransitionProps}>
+                        <Paper elevation={8} sx={{ p: 2, width: 340, mt: 0.5 }}>
+                          <ClickAwayListener
+                            onClickAway={() => setSaveVersionOpen(false)}
+                          >
+                            <Box>
+                              <CmsVersionNotesForm
+                                title="Save Version"
+                                saveLabel="Save Version"
+                                isSaving={isSaving}
+                                onSave={handleSaveVersion}
+                                onCancel={() => setSaveVersionOpen(false)}
+                              />
+                            </Box>
+                          </ClickAwayListener>
+                        </Paper>
+                      </Grow>
+                    )}
+                  </Popper>
                 </Stack>
               </Stack>
 
@@ -1695,6 +1968,65 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                   Status
                 </Typography>
 
+                {/* Current version label + notes (above etag row) */}
+                {!isNew && !statusVersionEditing && (
+                  <Stack
+                    direction="row"
+                    alignItems="flex-start"
+                    spacing={0.5}
+                    sx={{ mb: 1 }}
+                  >
+                    {metadata.version?.version && (
+                      <Chip
+                        label={metadata.version.version}
+                        size="small"
+                        color="info"
+                        variant="outlined"
+                        sx={{ flexShrink: 0 }}
+                      />
+                    )}
+                    {metadata.version?.notes && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{
+                          flex: 1,
+                          minWidth: 0,
+                          wordBreak: "break-word",
+                          lineHeight: 1.4,
+                          pt: 0.25,
+                        }}
+                      >
+                        {metadata.version.notes}
+                      </Typography>
+                    )}
+                    <Tooltip title="Edit version info">
+                      <IconButton
+                        size="small"
+                        onClick={() => setStatusVersionEditing(true)}
+                        sx={{ flexShrink: 0, mt: -0.25 }}
+                      >
+                        <EditIcon sx={{ fontSize: "1rem" }} />
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
+                )}
+
+                {/* Inline version editor */}
+                {!isNew && statusVersionEditing && (
+                  <Box sx={{ mb: 1 }}>
+                    <CmsVersionNotesForm
+                      title="Edit Version"
+                      saveLabel="Update"
+                      initialVersion={metadata.version?.version ?? ""}
+                      initialNotes={metadata.version?.notes ?? ""}
+                      isSaving={isSaving}
+                      onSave={handleUpdateVersionMeta}
+                      onCancel={() => setStatusVersionEditing(false)}
+                    />
+                  </Box>
+                )}
+
                 <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
                   {etag && (
                     <Chip label={etag} size="small" variant="outlined" />
@@ -1839,6 +2171,18 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                   {!isNew && status === "trash" && <Divider />}
                 </Stack>
               </Paper>
+
+              {/* Content notes panel */}
+              {!isNew && (
+                <Paper sx={{ p: 2, mb: 2 }}>
+                  <CmsContentNotes
+                    notes={contentNotes}
+                    onAddNote={handleAddContentNote}
+                    onRemoveNote={handleRemoveContentNote}
+                    disabled={isSaving}
+                  />
+                </Paper>
+              )}
 
               {/* Media & SEO panel */}
               {config?.renderMediaPicker && (

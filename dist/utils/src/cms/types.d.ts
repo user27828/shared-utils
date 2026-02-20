@@ -35,6 +35,36 @@ export declare const CmsContentTypeSchema: z.ZodEnum<{
     "text/plain": "text/plain";
 }>;
 export type CmsContentType = z.infer<typeof CmsContentTypeSchema>;
+/** Version annotation attached to a specific save/revision. */
+export declare const CmsVersionMetaSchema: z.ZodObject<{
+    version: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    notes: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    dt_updated: z.ZodOptional<z.ZodString>;
+    user_uid: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+}, z.core.$strip>;
+export type CmsVersionMeta = z.infer<typeof CmsVersionMetaSchema>;
+/** Persistent content note (not tied to a specific version). */
+export declare const CmsContentNoteSchema: z.ZodObject<{
+    note: z.ZodString;
+    dt_updated: z.ZodString;
+    user_uid: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+}, z.core.$strip>;
+export type CmsContentNote = z.infer<typeof CmsContentNoteSchema>;
+/** Top-level metadata bag stored in the `cms.metadata` JSONB column. */
+export declare const CmsMetadataSchema: z.ZodObject<{
+    version: z.ZodOptional<z.ZodNullable<z.ZodObject<{
+        version: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        notes: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        dt_updated: z.ZodOptional<z.ZodString>;
+        user_uid: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    }, z.core.$strip>>>;
+    notes: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        note: z.ZodString;
+        dt_updated: z.ZodString;
+        user_uid: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    }, z.core.$strip>>>;
+}, z.core.$strip>;
+export type CmsMetadata = z.infer<typeof CmsMetadataSchema>;
 export declare const CmsHeadRowSchema: z.ZodObject<{
     uid: z.ZodString;
     userUid: z.ZodOptional<z.ZodNullable<z.ZodString>>;
@@ -61,6 +91,7 @@ export declare const CmsHeadRowSchema: z.ZodObject<{
         other: "other";
     }>>;
     options: z.ZodOptional<z.ZodUnknown>;
+    metadata: z.ZodOptional<z.ZodUnknown>;
     tags: z.ZodOptional<z.ZodNullable<z.ZodArray<z.ZodString>>>;
     password_hash: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     password_version: z.ZodOptional<z.ZodNumber>;
@@ -118,6 +149,7 @@ export declare const CmsCreateRequestSchema: z.ZodObject<{
         other: "other";
     }>;
     options: z.ZodOptional<z.ZodUnknown>;
+    metadata: z.ZodOptional<z.ZodUnknown>;
     tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
     password: z.ZodOptional<z.ZodString>;
 }, z.core.$strict>;
@@ -147,6 +179,7 @@ export declare const CmsUpdateRequestSchema: z.ZodObject<{
         other: "other";
     }>>;
     options: z.ZodOptional<z.ZodOptional<z.ZodUnknown>>;
+    metadata: z.ZodOptional<z.ZodOptional<z.ZodUnknown>>;
     tags: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString>>>;
     password: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     confirmSlugChange: z.ZodOptional<z.ZodBoolean>;

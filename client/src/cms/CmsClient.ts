@@ -13,6 +13,7 @@ import type {
   CmsUpdateRequest,
   CmsPublicPayload,
   CmsCollaboratorRow,
+  CmsMetadata,
 } from "../../../utils/src/cms/types.js";
 import type {
   CmsApi,
@@ -210,7 +211,7 @@ export class CmsClient implements CmsApi {
 
   async adminListHistory(
     uid: string,
-    opts?: { limit?: number; offset?: number },
+    opts?: { limit?: number; offset?: number; fields?: "summary" | "full" },
   ): Promise<{
     items: CmsHistoryRow[];
     totalCount: number;
@@ -254,7 +255,36 @@ export class CmsClient implements CmsApi {
       { method: "DELETE" },
     );
   }
+  async adminUpdateHistoryMeta(input: {
+    uid: string;
+    historyId: number;
+    version?: string | null;
+    notes?: string | null;
+  }): Promise<CmsHistoryRow> {
+    return this.adminRequest<CmsHistoryRow>(
+      `/${encodeURIComponent(input.uid)}/history/${input.historyId}/meta`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          version: input.version,
+          notes: input.notes,
+        }),
+      },
+    );
+  }
 
+  async adminUpdateMetadata(input: {
+    uid: string;
+    metadata: CmsMetadata;
+  }): Promise<CmsHeadRow> {
+    return this.adminRequest<CmsHeadRow>(
+      `/${encodeURIComponent(input.uid)}/metadata`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ metadata: input.metadata }),
+      },
+    );
+  }
   // ─── Admin lock ─────────────────────────────────────────────────────
 
   async adminLock(uid: string): Promise<CmsHeadRow> {

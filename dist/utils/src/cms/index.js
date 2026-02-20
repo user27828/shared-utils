@@ -5,7 +5,7 @@
  * concurrency, and password utilities.
  */
 // Types & Schemas
-export { CMS_POST_TYPES, CmsPostTypeSchema, CMS_STATUS, CmsStatusSchema, CMS_CONTENT_TYPES, CmsContentTypeSchema, CmsHeadRowSchema, CmsHistoryRowSchema, CmsCreateRequestSchema, CmsUpdateRequestSchema, CmsListRequestSchema, CmsPublishRequestSchema, } from "./types.js";
+export { CMS_POST_TYPES, CmsPostTypeSchema, CMS_STATUS, CmsStatusSchema, CMS_CONTENT_TYPES, CmsContentTypeSchema, CmsVersionMetaSchema, CmsContentNoteSchema, CmsMetadataSchema, CmsHeadRowSchema, CmsHistoryRowSchema, CmsCreateRequestSchema, CmsUpdateRequestSchema, CmsListRequestSchema, CmsPublishRequestSchema, } from "./types.js";
 // Errors
 export { CmsError, CmsPreconditionFailedError, CmsConflictError, CmsNotFoundError, CmsValidationError, CmsLockedError, CmsAuthenticationError, CmsAuthorizationError, isCmsError, cmsErrorToResponse, } from "./errors.js";
 // Validation

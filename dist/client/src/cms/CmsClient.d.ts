@@ -5,7 +5,7 @@
  * Covers the full admin + public surface including trash/restore,
  * history, lock/unlock, and collaborators.
  */
-import type { CmsHeadRow, CmsHistoryRow, CmsListResponse, CmsCreateRequest, CmsUpdateRequest, CmsCollaboratorRow } from "../../../utils/src/cms/types.js";
+import type { CmsHeadRow, CmsHistoryRow, CmsListResponse, CmsCreateRequest, CmsUpdateRequest, CmsCollaboratorRow, CmsMetadata } from "../../../utils/src/cms/types.js";
 import type { CmsApi, CmsAdminListParams, CmsPublicGetResult, CmsPublicUnlockResult } from "./CmsApi.js";
 export declare class CmsClientError extends Error {
     readonly statusCode?: number;
@@ -55,6 +55,7 @@ export declare class CmsClient implements CmsApi {
     adminListHistory(uid: string, opts?: {
         limit?: number;
         offset?: number;
+        fields?: "summary" | "full";
     }): Promise<{
         items: CmsHistoryRow[];
         totalCount: number;
@@ -74,6 +75,16 @@ export declare class CmsClient implements CmsApi {
         uid: string;
         historyId: number;
     }): Promise<void>;
+    adminUpdateHistoryMeta(input: {
+        uid: string;
+        historyId: number;
+        version?: string | null;
+        notes?: string | null;
+    }): Promise<CmsHistoryRow>;
+    adminUpdateMetadata(input: {
+        uid: string;
+        metadata: CmsMetadata;
+    }): Promise<CmsHeadRow>;
     adminLock(uid: string): Promise<CmsHeadRow>;
     adminUnlock(uid: string): Promise<CmsHeadRow>;
     adminListCollaborators(uid: string): Promise<CmsCollaboratorRow[]>;

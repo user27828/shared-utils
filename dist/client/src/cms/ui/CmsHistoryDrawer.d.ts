@@ -17,6 +17,7 @@
  */
 import React from "react";
 import type { CmsHistoryRow } from "../../../../utils/src/cms/types.js";
+import type { CmsVersionMeta } from "../../../../utils/src/cms/types.js";
 /** Drawer width in pixels. Exported so the parent can coordinate layout. */
 export declare const HISTORY_DRAWER_WIDTH = 340;
 export interface CmsHistoryDrawerProps {
@@ -50,6 +51,13 @@ export interface CmsHistoryDrawerProps {
     currentVersionNumber?: number;
     /** Head `updated_at` ISO string. */
     currentUpdatedAt?: string;
+    /** Called to update version metadata on a history revision. */
+    onUpdateHistoryMeta?: (historyId: number, data: {
+        version: string;
+        notes: string;
+    }) => Promise<void>;
+    /** Current head version metadata (for the "(Current)" entry label). */
+    currentVersionMeta?: CmsVersionMeta | null;
 }
 declare const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps>;
 export default CmsHistoryDrawer;
