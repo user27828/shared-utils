@@ -527,10 +527,16 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                     });
                     break;
                 case "trash":
-                    await apiRef.current.adminTrash({ uid: ctx.uid, ifMatch: latestEtag });
+                    await apiRef.current.adminTrash({
+                        uid: ctx.uid,
+                        ifMatch: latestEtag,
+                    });
                     break;
                 case "restore":
-                    await apiRef.current.adminRestore({ uid: ctx.uid, ifMatch: latestEtag });
+                    await apiRef.current.adminRestore({
+                        uid: ctx.uid,
+                        ifMatch: latestEtag,
+                    });
                     break;
                 case "restoreRevision":
                     if (ctx.historyId) {
@@ -690,7 +696,10 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         }
         setIsSaving(true);
         try {
-            await apiRef.current.adminPublish({ uid: propUid, ifMatch: etag || "*" });
+            await apiRef.current.adminPublish({
+                uid: propUid,
+                ifMatch: etag || "*",
+            });
             toastRef.current.success("Published");
             announce("Published");
             await load({ silent: true });
@@ -865,7 +874,11 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
     };
     const handleUpdateHistoryMeta = async (historyId, data) => {
         try {
-            await apiRef.current.adminUpdateHistoryMeta({ uid: propUid, historyId, ...data });
+            await apiRef.current.adminUpdateHistoryMeta({
+                uid: propUid,
+                historyId,
+                ...data,
+            });
             toastRef.current.success("Version info updated");
             await loadHistory();
         }
