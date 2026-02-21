@@ -18,6 +18,38 @@ import {
 } from "./src/functions.js";
 import type { IsDevOptions, EnvironmentObject } from "./src/functions.js";
 import { detectFormatFromText } from "./src/detectFormat/index.js";
+import {
+  generateVCard,
+  canGenerateVCard,
+  canScheduleMeeting,
+  downloadVCard,
+  buildCalendarUrl,
+  buildMeetingEvent,
+  generateICS,
+  downloadICS,
+  openCalendarEvent,
+  getNextHalfHour,
+  stripHtml,
+  DEFAULT_CALENDAR_CONFIG,
+} from "./src/contact.js";
+import type {
+  ContactInfo,
+  CalendarProvider,
+  CalendarEvent,
+  CalendarConfig,
+} from "./src/contact.js";
+import {
+  MEETING_PROVIDERS,
+  getMeetingProvider,
+  createMeetingEntry,
+  flattenMeetingEntries,
+} from "./src/meetingProviders.js";
+import type {
+  MeetingProvider,
+  MeetingProviderField,
+  MeetingEntry,
+  MeetingLinkEntry,
+} from "./src/meetingProviders.js";
 
 export {
   // Logging utilities
@@ -47,10 +79,40 @@ export {
   normalizeUrl,
   formatDate,
   detectFormatFromText, // plain text format detection
+
+  // Contact & calendar utilities
+  generateVCard,
+  canGenerateVCard,
+  canScheduleMeeting,
+  downloadVCard,
+  buildCalendarUrl,
+  buildMeetingEvent,
+  generateICS,
+  downloadICS,
+  openCalendarEvent,
+  getNextHalfHour,
+  stripHtml,
+  DEFAULT_CALENDAR_CONFIG,
+
+  // Meeting provider data
+  MEETING_PROVIDERS,
+  getMeetingProvider,
+  createMeetingEntry,
+  flattenMeetingEntries,
 };
 
 export type {
   // Environment utilities
   IsDevOptions,
   EnvironmentObject,
+  // Contact & calendar types
+  ContactInfo,
+  CalendarProvider,
+  CalendarEvent,
+  CalendarConfig,
+  // Meeting provider types
+  MeetingProvider,
+  MeetingProviderField,
+  MeetingEntry,
+  MeetingLinkEntry,
 };

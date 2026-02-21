@@ -1,8 +1,4 @@
-export namespace DEFAULT_CALENDAR_CONFIG {
-    let timezone: string;
-    let timezoneName: string;
-    let defaultDuration: number;
-}
+export { DEFAULT_CALENDAR_CONFIG } from "../../../utils/index.js";
 export default CalendarAdd;
 /**
  * Adding events to various calendar services

@@ -10,6 +10,7 @@ export declare const CMS_POST_TYPES: readonly ["post", "page", "general", "faq",
 export declare const CmsPostTypeSchema: z.ZodEnum<{
     data: "data";
     embed: "embed";
+    other: "other";
     post: "post";
     page: "page";
     general: "general";
@@ -17,7 +18,6 @@ export declare const CmsPostTypeSchema: z.ZodEnum<{
     blog: "blog";
     docs: "docs";
     kb: "kb";
-    other: "other";
 }>;
 export type CmsPostType = z.infer<typeof CmsPostTypeSchema>;
 export declare const CMS_STATUS: readonly ["draft", "published", "trash"];
@@ -81,6 +81,7 @@ export declare const CmsHeadRowSchema: z.ZodObject<{
     post_type: z.ZodOptional<z.ZodEnum<{
         data: "data";
         embed: "embed";
+        other: "other";
         post: "post";
         page: "page";
         general: "general";
@@ -88,7 +89,6 @@ export declare const CmsHeadRowSchema: z.ZodObject<{
         blog: "blog";
         docs: "docs";
         kb: "kb";
-        other: "other";
     }>>;
     options: z.ZodOptional<z.ZodUnknown>;
     metadata: z.ZodOptional<z.ZodUnknown>;
@@ -139,6 +139,7 @@ export declare const CmsCreateRequestSchema: z.ZodObject<{
     post_type: z.ZodEnum<{
         data: "data";
         embed: "embed";
+        other: "other";
         post: "post";
         page: "page";
         general: "general";
@@ -146,7 +147,6 @@ export declare const CmsCreateRequestSchema: z.ZodObject<{
         blog: "blog";
         docs: "docs";
         kb: "kb";
-        other: "other";
     }>;
     options: z.ZodOptional<z.ZodUnknown>;
     metadata: z.ZodOptional<z.ZodUnknown>;
@@ -169,6 +169,7 @@ export declare const CmsUpdateRequestSchema: z.ZodObject<{
     post_type: z.ZodOptional<z.ZodEnum<{
         data: "data";
         embed: "embed";
+        other: "other";
         post: "post";
         page: "page";
         general: "general";
@@ -176,7 +177,6 @@ export declare const CmsUpdateRequestSchema: z.ZodObject<{
         blog: "blog";
         docs: "docs";
         kb: "kb";
-        other: "other";
     }>>;
     options: z.ZodOptional<z.ZodOptional<z.ZodUnknown>>;
     metadata: z.ZodOptional<z.ZodOptional<z.ZodUnknown>>;
@@ -195,6 +195,7 @@ export declare const CmsListRequestSchema: z.ZodObject<{
     post_type: z.ZodOptional<z.ZodEnum<{
         data: "data";
         embed: "embed";
+        other: "other";
         post: "post";
         page: "page";
         general: "general";
@@ -202,7 +203,6 @@ export declare const CmsListRequestSchema: z.ZodObject<{
         blog: "blog";
         docs: "docs";
         kb: "kb";
-        other: "other";
     }>>;
     locale: z.ZodOptional<z.ZodString>;
     tag: z.ZodOptional<z.ZodString>;

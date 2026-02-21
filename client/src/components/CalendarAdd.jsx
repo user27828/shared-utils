@@ -1,5 +1,8 @@
 /**
- * Component for adding calendar items from a menu.  Supports the major calendar platforms
+ * Component for adding calendar items from a menu.  Supports the major calendar platforms.
+ *
+ * Delegates URL/ICS generation to the shared `contact` utility
+ * (`utils/src/contact.ts`) — this component is purely presentational.
  */
 import React, { useState } from "react";
 import {
@@ -23,18 +26,16 @@ import {
   Lock as LockIcon,
   Download as DownloadIcon,
 } from "@mui/icons-material";
-import { formatISO, format } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
-import DOMPurify from "dompurify";
+import {
+  openCalendarEvent,
+  DEFAULT_CALENDAR_CONFIG,
+} from "../../../utils/index.js";
 
 /**
- * Calendar configuration defaults
+ * Re-export DEFAULT_CALENDAR_CONFIG for backwards compatibility.
+ * @deprecated Import from `@user27828/shared-utils` (utils) instead.
  */
-export const DEFAULT_CALENDAR_CONFIG = {
-  timezone: "America/New_York",
-  timezoneName: "Eastern Time",
-  defaultDuration: 60, // minutes
-};
+export { DEFAULT_CALENDAR_CONFIG } from "../../../utils/index.js";
 
 /**
  * Adding events to various calendar services
@@ -71,28 +72,6 @@ const CalendarAdd = ({
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
-  // Clean HTML content for calendar descriptions
-  const cleanHtmlContent = (htmlContent) => {
-    if (!htmlContent) {
-      return "";
-    }
-
-    // Use DOMPurify to sanitize HTML
-    const sanitized = DOMPurify.sanitize(htmlContent);
-
-    // Create a temporary element to extract text
-    const tempElement = document.createElement("div");
-    tempElement.innerHTML = sanitized;
-
-    // Get plain text
-    let plainText = tempElement.textContent || tempElement.innerText || "";
-
-    // Tidy up the text
-    plainText = plainText.replace(/\s+/g, " ").trim();
-
-    return plainText;
-  };
-
   const handleClick = (event) => {
     if (requireAuth && !isAuthenticated) {
       onAuthRequired("calendar feature");
@@ -109,108 +88,8 @@ const CalendarAdd = ({
     if (!event) {
       return;
     }
-
-    // Close the menu
     handleClose();
-
-    // Format clean title and description
-    const title = encodeURIComponent(event.title);
-    const description = encodeURIComponent(
-      cleanHtmlContent(event.description) || event.title,
-    );
-
-    // Parse the session date and convert to timezone
-    const startDate = toZonedTime(
-      new Date(event.startDate),
-      calendarConfig.timezone,
-    );
-    const duration = event.duration || calendarConfig.defaultDuration;
-    const endDate = new Date(startDate.getTime() + duration * 60 * 1000);
-
-    // Location from event URL or default
-    const location = encodeURIComponent(event.location || "Online Event");
-
-    // URL for calendar based on provider
-    let calendarUrl;
-
-    switch (provider) {
-      case "google":
-        // Format dates for Google Calendar
-        const googleStart = formatISO(startDate)
-          .replace(/[-:]/g, "")
-          .replace(/\.\d{3}/g, "");
-        const googleEnd = formatISO(endDate)
-          .replace(/[-:]/g, "")
-          .replace(/\.\d{3}/g, "");
-
-        calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${googleStart}/${googleEnd}&details=${description}&location=${location}`;
-        window.open(calendarUrl, "_blank");
-        break;
-
-      case "outlook":
-        // Format dates for Outlook/Microsoft calendar
-        const outlookStart = formatISO(startDate);
-        const outlookEnd = formatISO(endDate);
-
-        calendarUrl = `https://outlook.office.com/calendar/0/deeplink/compose?subject=${title}&body=${description}&startdt=${outlookStart}&enddt=${outlookEnd}&location=${location}`;
-        window.open(calendarUrl, "_blank");
-        break;
-
-      case "apple":
-      case "ics":
-        // Generate ICS file content
-        const icsContent = [
-          "BEGIN:VCALENDAR",
-          "VERSION:2.0",
-          "BEGIN:VEVENT",
-          `SUMMARY:${event.title}`,
-          `DTSTART:${formatISO(startDate)
-            .replace(/[-:]/g, "")
-            .replace(/\.\d{3}/g, "")}`,
-          `DTEND:${formatISO(endDate)
-            .replace(/[-:]/g, "")
-            .replace(/\.\d{3}/g, "")}`,
-          `DESCRIPTION:${cleanHtmlContent(event.description) || event.title}`,
-          `LOCATION:${event.location || "Online Event"}`,
-          "END:VEVENT",
-          "END:VCALENDAR",
-        ].join("\n");
-
-        // Create Blob and link for download
-        const blob = new Blob([icsContent], {
-          type: "text/calendar;charset=utf-8",
-        });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute(
-          "download",
-          `event-${event.id || new Date().getTime()}.ics`,
-        );
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        break;
-
-      case "yahoo":
-        // Format dates for Yahoo Calendar
-        const yahooStart = format(startDate, "yyyyMMdd'T'HHmmss");
-        const yahooEnd = format(endDate, "yyyyMMdd'T'HHmmss");
-        const yahooTitle = encodeURIComponent(event.title);
-        const yahooDesc = encodeURIComponent(
-          cleanHtmlContent(event.description) || event.title,
-        );
-
-        calendarUrl = `https://calendar.yahoo.com/?v=60&title=${yahooTitle}&st=${yahooStart}&et=${yahooEnd}&desc=${yahooDesc}&in_loc=${location}`;
-        window.open(calendarUrl, "_blank");
-        break;
-
-      default:
-        // Default to ICS download
-        handleAddToCalendar("ics");
-        break;
-    }
+    openCalendarEvent(provider, event, calendarConfig);
   };
 
   // Render an IconButton if iconOnly is true

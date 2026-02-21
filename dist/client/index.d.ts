@@ -7,6 +7,7 @@ export { default as FileUploadList, type FileUploadListProps, type ModeUploadFil
 export { default as CalendarAdd } from "./src/components/CalendarAdd.js";
 export { default as CopyButton } from "./src/components/CopyButton.js";
 export type { CopyButtonProps } from "./src/components/CopyButton.js";
+export { default as ContactActions, type ContactActionsVariant, type ContactActionsProps, } from "./src/components/ContactActions.js";
 export { default as PasteButton } from "./src/components/PasteButton.js";
 export type { PasteButtonProps } from "./src/components/PasteButton.js";
 export { default as FileIcon } from "./src/components/FileIcon.js";
