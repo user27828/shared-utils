@@ -37,21 +37,21 @@
     "test:coverage": "NODE_OPTIONS=\"--experimental-vm-modules\" yarn jest --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.992.0",
-    "@aws-sdk/s3-request-presigner": "^3.992.0",
+    "@aws-sdk/client-s3": "^3.997.0",
+    "@aws-sdk/s3-request-presigner": "^3.997.0",
     "@shared-utils/utils": "workspace:*"
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
     "@babel/preset-env": "^7.29.0",
-    "@cloudflare/workers-types": "^4.20260218.0",
+    "@cloudflare/workers-types": "^4.20260304.0",
     "@jest/globals": "^30.2.0",
-    "@types/node": "^25.2.3",
+    "@types/node": "^25.3.0",
     "babel-jest": "^30.2.0",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "wrangler": "^4.66.0"
+    "wrangler": "^4.68.1"
   }
 }
