@@ -37,7 +37,7 @@
     "@types/ioredis": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/lodash-es": "^4.17.12",
-    "@types/node": "^25.3.0",
+    "@types/node": "^25.3.1",
     "@types/sanitize-html": "^2.16.0",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6",
