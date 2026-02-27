@@ -1,3 +1,4 @@
+import type { ReadStream } from "node:fs";
 import type { FmCopyObjectInput, FmDeleteObjectInput, FmHeadObjectResult, FmObjectRef, FmStorageAdapter, FmStorageCapabilities, FmWriteObjectInput } from "./FmStorageAdapter.js";
 /**
  * Local filesystem storage adapter.
@@ -30,5 +31,20 @@ export declare class FmStorageLocal implements FmStorageAdapter {
     deleteObject(input: FmDeleteObjectInput): Promise<void>;
     /** Copy a file to a new location, creating parent directories as needed. */
     copyObject(input: FmCopyObjectInput): Promise<void>;
+    /** Expose the resolved data root path for consumers that need path mapping. */
+    getDataRootAbsPath(): string;
+    /** Read the entire contents of a file into a Buffer. */
+    readObject(input: {
+        ref: FmObjectRef;
+    }): Promise<Buffer>;
+    /** Return a readable stream for the file on disk. */
+    readStream(input: {
+        ref: FmObjectRef;
+    }): ReadStream;
+    /** Rename (move) a file within the data root, creating parent dirs as needed. */
+    renameObject(input: {
+        from: FmObjectRef;
+        to: FmObjectRef;
+    }): Promise<void>;
 }
 //# sourceMappingURL=FmStorageLocal.d.ts.map

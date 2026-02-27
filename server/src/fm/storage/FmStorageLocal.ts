@@ -12,6 +12,8 @@
  * Extracted from: db-supabase/server/fm/storage/FmStorageLocal.ts
  */
 import fs from "fs/promises";
+import { createReadStream } from "node:fs";
+import type { ReadStream } from "node:fs";
 import path from "path";
 import type {
   FmCopyObjectInput,
@@ -166,5 +168,36 @@ export class FmStorageLocal implements FmStorageAdapter {
 
     await fs.mkdir(path.dirname(absTo), { recursive: true });
     await fs.copyFile(absFrom, absTo);
+  }
+
+  // ── Extended methods (not on FmStorageAdapter interface) ──────────────
+
+  /** Expose the resolved data root path for consumers that need path mapping. */
+  getDataRootAbsPath(): string {
+    return this.dataRootAbsPath;
+  }
+
+  /** Read the entire contents of a file into a Buffer. */
+  async readObject(input: { ref: FmObjectRef }): Promise<Buffer> {
+    assertSafeStorageRef(input.ref);
+    const absPath = resolveUnderRoot(this.dataRootAbsPath, input.ref);
+    return await fs.readFile(absPath);
+  }
+
+  /** Return a readable stream for the file on disk. */
+  readStream(input: { ref: FmObjectRef }): ReadStream {
+    assertSafeStorageRef(input.ref);
+    const absPath = resolveUnderRoot(this.dataRootAbsPath, input.ref);
+    return createReadStream(absPath);
+  }
+
+  /** Rename (move) a file within the data root, creating parent dirs as needed. */
+  async renameObject(input: { from: FmObjectRef; to: FmObjectRef }): Promise<void> {
+    assertSafeStorageRef(input.from);
+    assertSafeStorageRef(input.to);
+    const absFrom = resolveUnderRoot(this.dataRootAbsPath, input.from);
+    const absTo = resolveUnderRoot(this.dataRootAbsPath, input.to);
+    await fs.mkdir(path.dirname(absTo), { recursive: true });
+    await fs.rename(absFrom, absTo);
   }
 }
