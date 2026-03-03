@@ -3,7 +3,9 @@
  * with optional progress indicators (linear or circular) and percentage display.
  */
 import React from "react";
-import { type ChipProps, type LinearProgressProps, type CircularProgressProps } from "@mui/material";
+import type { ChipProps } from "@mui/material/Chip";
+import type { CircularProgressProps } from "@mui/material/CircularProgress";
+import type { LinearProgressProps } from "@mui/material/LinearProgress";
 export interface ProcessStatusChipProps extends Omit<ChipProps, "label"> {
     /** Raw status value (not transformed) */
     status: string;

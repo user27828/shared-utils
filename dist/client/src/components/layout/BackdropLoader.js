@@ -1,5 +1,8 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { Backdrop, CircularProgress, Typography, Box } from "@mui/material";
+import Backdrop from "@mui/material/Backdrop";
+import CircularProgress from "@mui/material/CircularProgress";
+import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
 import { useTheme } from "@mui/material/styles";
 const mergeSx = (base, extra) => {
     if (!extra) {

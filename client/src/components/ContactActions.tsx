@@ -18,38 +18,34 @@
  */
 import React, { useState, useCallback, useMemo, useRef } from "react";
 import type { MouseEvent, ReactNode } from "react";
-import {
-  SpeedDial,
-  SpeedDialAction,
-  SpeedDialIcon,
-  IconButton,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  Divider,
-  Box,
-  Typography,
-  Fade,
-  Tooltip,
-  Popper,
-  Paper,
-  ClickAwayListener,
-  MenuList,
-} from "@mui/material";
-import {
-  ContactPhone as ContactPhoneIcon,
-  CalendarMonth as CalendarIcon,
-  PersonAdd as PersonAddIcon,
-  Google as GoogleIcon,
-  Microsoft as MicrosoftIcon,
-  Apple as AppleIcon,
-  Download as DownloadIcon,
-  MoreHoriz as MoreHorizIcon,
-  ChevronRight as ChevronRightIcon,
-  Link as LinkIcon,
-  VideoCall as VideoCallIcon,
-} from "@mui/icons-material";
+import SpeedDial from "@mui/material/SpeedDial";
+import SpeedDialAction from "@mui/material/SpeedDialAction";
+import SpeedDialIcon from "@mui/material/SpeedDialIcon";
+import IconButton from "@mui/material/IconButton";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import Divider from "@mui/material/Divider";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Fade from "@mui/material/Fade";
+import Tooltip from "@mui/material/Tooltip";
+import Popper from "@mui/material/Popper";
+import Paper from "@mui/material/Paper";
+import ClickAwayListener from "@mui/material/ClickAwayListener";
+import MenuList from "@mui/material/MenuList";
+import ContactPhoneIcon from "@mui/icons-material/ContactPhone";
+import CalendarIcon from "@mui/icons-material/CalendarMonth";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import GoogleIcon from "@mui/icons-material/Google";
+import MicrosoftIcon from "@mui/icons-material/Microsoft";
+import AppleIcon from "@mui/icons-material/Apple";
+import DownloadIcon from "@mui/icons-material/Download";
+import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import LinkIcon from "@mui/icons-material/Link";
+import VideoCallIcon from "@mui/icons-material/VideoCall";
 import {
   canGenerateVCard,
   canScheduleMeeting,

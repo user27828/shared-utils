@@ -1,5 +1,6 @@
 import { jsx as _jsx } from "react/jsx-runtime";
-import { Box, Typography } from "@mui/material";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 /**
  * Pure function that returns a React node for the given CMS payload,
  * dispatching on `content_type`.

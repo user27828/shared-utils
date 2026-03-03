@@ -10,7 +10,12 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  */
 import React from "react";
 import { alpha, useTheme, } from "@mui/material/styles";
-import { Box, Card, CardContent, Paper, Skeleton, Typography, } from "@mui/material";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Paper from "@mui/material/Paper";
+import Skeleton from "@mui/material/Skeleton";
+import Typography from "@mui/material/Typography";
 import SplitChip from "./layout/SplitChip.js";
 // ---------------------------------------------------------------------------
 // Helpers

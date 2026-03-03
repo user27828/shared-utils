@@ -7,7 +7,13 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  * custom `onSubmitPassword` callback for full flexibility.
  */
 import { useId, useMemo, useState } from "react";
-import { Alert, Box, Button, CircularProgress, Paper, TextField, Typography, } from "@mui/material";
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
+import Paper from "@mui/material/Paper";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 const CmsPasswordGate = ({ postType, locale, slug, title, onUnlocked, api, onSubmitPassword, }) => {
     const passwordId = useId();
     const [password, setPassword] = useState("");

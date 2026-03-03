@@ -2,8 +2,12 @@
  * "Disconnected" or network error state component.
  */
 import React from "react";
-import { Box, Typography, Card, CardContent, Button } from "@mui/material";
-import { WifiOff as WifiOffIcon } from "@mui/icons-material";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Button from "@mui/material/Button";
+import WifiOffIcon from "@mui/icons-material/WifiOff";
 import type { SxProps, Theme } from "@mui/material/styles";
 
 const mergeSx = (

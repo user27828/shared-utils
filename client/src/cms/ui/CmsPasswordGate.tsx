@@ -6,15 +6,13 @@
  * custom `onSubmitPassword` callback for full flexibility.
  */
 import React, { useId, useMemo, useState } from "react";
-import {
-  Alert,
-  Box,
-  Button,
-  CircularProgress,
-  Paper,
-  TextField,
-  Typography,
-} from "@mui/material";
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
+import Paper from "@mui/material/Paper";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import type { CmsApi } from "../CmsApi.js";
 
 export interface CmsPasswordGateProps {

@@ -5,27 +5,23 @@
  * (`utils/src/contact.ts`) — this component is purely presentational.
  */
 import React, { useState } from "react";
-import {
-  Button,
-  Box,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  Typography,
-  Fade,
-} from "@mui/material";
-import {
-  EventNote as EventNoteIcon,
-  ExpandMore as ExpandMoreIcon,
-  Apple as AppleIcon,
-  Google as GoogleIcon,
-  Microsoft as MicrosoftIcon,
-  CalendarMonth as CalendarIcon,
-  Info as InfoIcon,
-  Lock as LockIcon,
-  Download as DownloadIcon,
-} from "@mui/icons-material";
+import Button from "@mui/material/Button";
+import Box from "@mui/material/Box";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import Typography from "@mui/material/Typography";
+import Fade from "@mui/material/Fade";
+import EventNoteIcon from "@mui/icons-material/EventNote";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import AppleIcon from "@mui/icons-material/Apple";
+import GoogleIcon from "@mui/icons-material/Google";
+import MicrosoftIcon from "@mui/icons-material/Microsoft";
+import CalendarIcon from "@mui/icons-material/CalendarMonth";
+import InfoIcon from "@mui/icons-material/Info";
+import LockIcon from "@mui/icons-material/Lock";
+import DownloadIcon from "@mui/icons-material/Download";
 import {
   openCalendarEvent,
   DEFAULT_CALENDAR_CONFIG,

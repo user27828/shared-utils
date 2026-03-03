@@ -1,5 +1,9 @@
 import { jsxs as _jsxs, jsx as _jsx, Fragment as _Fragment } from "react/jsx-runtime";
-import { Chip, CircularProgress, LinearProgress, Box, Divider, } from "@mui/material";
+import Chip from "@mui/material/Chip";
+import CircularProgress from "@mui/material/CircularProgress";
+import LinearProgress from "@mui/material/LinearProgress";
+import Box from "@mui/material/Box";
+import Divider from "@mui/material/Divider";
 const mergeSx = (base, extra) => {
     if (!extra) {
         return base;

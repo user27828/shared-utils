@@ -17,7 +17,10 @@ import React, {
   useCallback,
   useEffect,
 } from "react";
-import { Box, LinearProgress, Typography, useColorScheme } from "@mui/material";
+import Box from "@mui/material/Box";
+import LinearProgress from "@mui/material/LinearProgress";
+import Typography from "@mui/material/Typography";
+import { useColorScheme } from "@mui/material/styles";
 import type {
   CmsEditorPreference,
   CmsImageUploadHandler,

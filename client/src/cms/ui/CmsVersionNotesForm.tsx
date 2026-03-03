@@ -11,7 +11,11 @@
  * @module @user27828/shared-utils/client
  */
 import React, { useCallback, useState, useEffect } from "react";
-import { Box, Button, Stack, TextField, Typography } from "@mui/material";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import SaveIcon from "@mui/icons-material/Save";
 
 // ─── Props ────────────────────────────────────────────────────────────────

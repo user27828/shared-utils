@@ -3,16 +3,14 @@
  * with optional progress indicators (linear or circular) and percentage display.
  */
 import React from "react";
-import {
-  Chip,
-  type ChipProps,
-  CircularProgress,
-  LinearProgress,
-  type LinearProgressProps,
-  type CircularProgressProps,
-  Box,
-  Divider,
-} from "@mui/material";
+import Chip from "@mui/material/Chip";
+import type { ChipProps } from "@mui/material/Chip";
+import CircularProgress from "@mui/material/CircularProgress";
+import type { CircularProgressProps } from "@mui/material/CircularProgress";
+import LinearProgress from "@mui/material/LinearProgress";
+import type { LinearProgressProps } from "@mui/material/LinearProgress";
+import Box from "@mui/material/Box";
+import Divider from "@mui/material/Divider";
 import type { SxProps, Theme } from "@mui/material/styles";
 
 const mergeSx = (

@@ -10,7 +10,10 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  * Media picker integration is injectable via callbacks.
  */
 import React, { useMemo, useRef, useState, Suspense, useCallback, useEffect, } from "react";
-import { Box, LinearProgress, Typography, useColorScheme } from "@mui/material";
+import Box from "@mui/material/Box";
+import LinearProgress from "@mui/material/LinearProgress";
+import Typography from "@mui/material/Typography";
+import { useColorScheme } from "@mui/material/styles";
 import { hasEmbeddedBase64Image, normalizeEmbeddedHtmlImages, } from "./normalizeEmbeddedHtmlImages.js";
 // ─── Paste sanitization helpers ───────────────────────────────────────────
 /**

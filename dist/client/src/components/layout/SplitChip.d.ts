@@ -3,7 +3,8 @@
  * Displays multiple chip sections side by side with dividers in a unified chip appearance.
  */
 import React from "react";
-import { type ChipProps, type DividerProps } from "@mui/material";
+import type { ChipProps } from "@mui/material/Chip";
+import type { DividerProps } from "@mui/material/Divider";
 import type { SxProps, Theme } from "@mui/material/styles";
 export interface SplitChipItem extends Omit<ChipProps, "variant"> {
     label: React.ReactNode;

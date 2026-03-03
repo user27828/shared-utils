@@ -11,7 +11,11 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  * @module @user27828/shared-utils/client
  */
 import { useCallback, useState } from "react";
-import { Chip, IconButton, Stack, TextField, Tooltip } from "@mui/material";
+import Chip from "@mui/material/Chip";
+import IconButton from "@mui/material/IconButton";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+import Tooltip from "@mui/material/Tooltip";
 import AddIcon from "@mui/icons-material/Add";
 /**
  * Chip-based tag input with add (Enter / button) and delete support.

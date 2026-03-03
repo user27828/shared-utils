@@ -1,5 +1,10 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { Dialog, DialogContent, DialogTitle, IconButton, Stack, Typography, } from "@mui/material";
+import Dialog from "@mui/material/Dialog";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
+import IconButton from "@mui/material/IconButton";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
 import CloseIcon from "@mui/icons-material/Close";
 import { FmMediaLibrary } from "./FmMediaLibrary.js";
 /** Dialog wrapper around {@link FmMediaLibrary} for file selection. */

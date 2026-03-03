@@ -1,6 +1,10 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { Box, Typography, Card, CardContent, Button } from "@mui/material";
-import { WifiOff as WifiOffIcon } from "@mui/icons-material";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Button from "@mui/material/Button";
+import WifiOffIcon from "@mui/icons-material/WifiOff";
 const mergeSx = (base, extra) => {
     if (!extra) {
         return base;

@@ -3,13 +3,11 @@
  * Displays multiple chip sections side by side with dividers in a unified chip appearance.
  */
 import React from "react";
-import {
-  Chip,
-  type ChipProps,
-  Box,
-  Divider,
-  type DividerProps,
-} from "@mui/material";
+import Chip from "@mui/material/Chip";
+import type { ChipProps } from "@mui/material/Chip";
+import Box from "@mui/material/Box";
+import Divider from "@mui/material/Divider";
+import type { DividerProps } from "@mui/material/Divider";
 import type { SxProps, Theme } from "@mui/material/styles";
 
 const mergeSx = (

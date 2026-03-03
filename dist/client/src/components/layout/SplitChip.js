@@ -4,7 +4,9 @@ import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-run
  * Displays multiple chip sections side by side with dividers in a unified chip appearance.
  */
 import React from "react";
-import { Chip, Box, Divider, } from "@mui/material";
+import Chip from "@mui/material/Chip";
+import Box from "@mui/material/Box";
+import Divider from "@mui/material/Divider";
 const mergeSx = (base, extra) => {
     if (!extra) {
         return base;

@@ -2,21 +2,19 @@
  * SelectChip Component - Multi-select or single-select dropdown using Chip + Popper.
  */
 import React, { useCallback, useRef } from "react";
-import {
-  Box,
-  Button,
-  Chip,
-  Divider,
-  Paper,
-  Popper,
-  FormControlLabel,
-  Checkbox,
-  Radio,
-  RadioGroup,
-  CircularProgress,
-  Stack,
-  Tooltip,
-} from "@mui/material";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import Divider from "@mui/material/Divider";
+import Paper from "@mui/material/Paper";
+import Popper from "@mui/material/Popper";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Checkbox from "@mui/material/Checkbox";
+import Radio from "@mui/material/Radio";
+import RadioGroup from "@mui/material/RadioGroup";
+import CircularProgress from "@mui/material/CircularProgress";
+import Stack from "@mui/material/Stack";
+import Tooltip from "@mui/material/Tooltip";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import type { SxProps, Theme } from "@mui/material/styles";
 

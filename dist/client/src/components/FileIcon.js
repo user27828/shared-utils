@@ -1,31 +1,29 @@
 import { jsx as _jsx } from "react/jsx-runtime";
-import { 
-// Image icons
-ImageOutlined, PhotoCameraOutlined, 
-// Document icons
-DescriptionOutlined, PictureAsPdfOutlined, TableChartOutlined, SlideshowOutlined, 
-// Code icons
-CodeOutlined, IntegrationInstructionsOutlined, DataObjectOutlined, 
-// Audio/Video icons
-AudioFileOutlined, VideoFileOutlined, MusicNoteOutlined, MovieOutlined, 
-// Archive icons
-FolderZipOutlined, 
-// App/Program icons
-AppsOutlined, MemoryOutlined, 
-// Text icons
-TextSnippetOutlined, 
-// Generic icons
-InsertDriveFileOutlined, HelpOutlineOutlined, 
-// Web icons
-LanguageOutlined, 
-// Font icons
-FontDownloadOutlined, 
-// Database icons
-StorageOutlined, 
-// Settings/Config icons
-SettingsOutlined, 
-// Certificate/Security icons
-SecurityOutlined, CloudOutlined, } from "@mui/icons-material";
+import ImageOutlined from "@mui/icons-material/ImageOutlined";
+import PhotoCameraOutlined from "@mui/icons-material/PhotoCameraOutlined";
+import DescriptionOutlined from "@mui/icons-material/DescriptionOutlined";
+import PictureAsPdfOutlined from "@mui/icons-material/PictureAsPdfOutlined";
+import TableChartOutlined from "@mui/icons-material/TableChartOutlined";
+import SlideshowOutlined from "@mui/icons-material/SlideshowOutlined";
+import CodeOutlined from "@mui/icons-material/CodeOutlined";
+import IntegrationInstructionsOutlined from "@mui/icons-material/IntegrationInstructionsOutlined";
+import DataObjectOutlined from "@mui/icons-material/DataObjectOutlined";
+import AudioFileOutlined from "@mui/icons-material/AudioFileOutlined";
+import VideoFileOutlined from "@mui/icons-material/VideoFileOutlined";
+import MusicNoteOutlined from "@mui/icons-material/MusicNoteOutlined";
+import MovieOutlined from "@mui/icons-material/MovieOutlined";
+import FolderZipOutlined from "@mui/icons-material/FolderZipOutlined";
+import AppsOutlined from "@mui/icons-material/AppsOutlined";
+import MemoryOutlined from "@mui/icons-material/MemoryOutlined";
+import TextSnippetOutlined from "@mui/icons-material/TextSnippetOutlined";
+import InsertDriveFileOutlined from "@mui/icons-material/InsertDriveFileOutlined";
+import HelpOutlineOutlined from "@mui/icons-material/HelpOutlineOutlined";
+import LanguageOutlined from "@mui/icons-material/LanguageOutlined";
+import FontDownloadOutlined from "@mui/icons-material/FontDownloadOutlined";
+import StorageOutlined from "@mui/icons-material/StorageOutlined";
+import SettingsOutlined from "@mui/icons-material/SettingsOutlined";
+import SecurityOutlined from "@mui/icons-material/SecurityOutlined";
+import CloudOutlined from "@mui/icons-material/CloudOutlined";
 const FileIcon = ({ type, filename, ...iconProps }) => {
     // Extract extension from filename if provided
     const getExtensionFromFilename = (fileName) => {

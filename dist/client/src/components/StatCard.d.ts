@@ -8,7 +8,7 @@
  * - recruiter: Card-based compact metric card with optional trend indicator
  */
 import React from "react";
-import { type TypographyProps } from "@mui/material";
+import type { TypographyProps } from "@mui/material/Typography";
 /** Numeric breakdown mirroring the API shape */
 export interface StatBreakdownValue {
     total: number;

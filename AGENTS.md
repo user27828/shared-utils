@@ -186,6 +186,32 @@ const [debouncedSave, { cancel, flush }] = useDebouncedCallback(save, {
 - Preserve ES module configurations in test/TypeScript/package.json files
 - Follow monorepo patterns: individual workspace builds, centralized root scripts
 
+### Strategic Import Optimization
+
+**Objective:** Prioritize **Deep (Path) Imports** for performance (HMR speed and tree-shaking) unless specific optimizations make **Barrel (Named) Imports** equally efficient. This applies to all large libraries, not only MUI.
+
+#### 1. The Default: Use Deep Imports
+
+Always use deep imports for large UI libraries, icon sets, and heavy utility packages to prevent Vite dev-server bloat and improve tree-shaking.
+
+- **UI components:** `import Button from '@mui/material/Button';`
+- **Icons:** `import SaveIcon from '@mui/icons-material/Save';`
+- **Large utility libs:** `import debounce from 'lodash-es/debounce';`
+- **Internal:** Avoid `index.ts` barrels in `src/` to prevent circular dependencies.
+
+#### 2. The Exception: Use Barrel (Named) Imports ONLY IF:
+
+- **Pre-Bundled (Vite):** The library is small/utility-based and pre-bundled by Vite (e.g., `clsx`, `date-fns`, lightweight helpers).
+- **Next.js 13.5+:** The project uses `optimizePackageImports` (automatically transforms named to deep).
+- **Micro-Libs:** The library has < 5 total exports and is marked `"sideEffects": false`.
+
+#### 3. Heuristic Logic
+
+1.  **Is it a large UI library (MUI, Ant Design, etc.) or icon set?** -> **Deep Import** (unless the bundler auto-optimizes).
+2.  **Is it a heavy utility library (e.g., `lodash-es`) in Vite?** -> **Deep Import** for individual functions; **Named Import** only if Vite pre-bundles it.
+3.  **Is it a small, focused library (<5 exports)?** -> **Named Import** is fine.
+4.  **Is it an internal project file?** -> **Deep Import** (avoid `index.ts` barrels).
+
 ## Utility Function Patterns
 
 - All shared utility functions (e.g., formatFileSize, formatDate) should read global options from optionsManager using a category key (e.g., files, dates), and allow per-call overrides via function parameters.

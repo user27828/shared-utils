@@ -14,15 +14,13 @@ import {
   type SxProps,
   type Theme,
 } from "@mui/material/styles";
-import {
-  Box,
-  Card,
-  CardContent,
-  Paper,
-  Skeleton,
-  Typography,
-  type TypographyProps,
-} from "@mui/material";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Paper from "@mui/material/Paper";
+import Skeleton from "@mui/material/Skeleton";
+import Typography from "@mui/material/Typography";
+import type { TypographyProps } from "@mui/material/Typography";
 
 import SplitChip, {
   type SplitChipItem,
