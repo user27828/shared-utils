@@ -15,8 +15,10 @@ import {
   isValidEmail,
   normalizeUrl,
   formatDate,
+  mergeJson,
+  mergeJsonActions,
 } from "./src/functions.js";
-import type { IsDevOptions, EnvironmentObject } from "./src/functions.js";
+import type { IsDevOptions, EnvironmentObject, MergeJsonProps } from "./src/functions.js";
 import { detectFormatFromText } from "./src/detectFormat/index.js";
 import {
   generateVCard,
@@ -78,6 +80,8 @@ export {
   isValidEmail,
   normalizeUrl,
   formatDate,
+  mergeJson,
+  mergeJsonActions,
   detectFormatFromText, // plain text format detection
 
   // Contact & calendar utilities
@@ -105,6 +109,7 @@ export type {
   // Environment utilities
   IsDevOptions,
   EnvironmentObject,
+  MergeJsonProps,
   // Contact & calendar types
   ContactInfo,
   CalendarProvider,
