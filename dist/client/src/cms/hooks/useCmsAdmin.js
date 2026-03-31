@@ -5,9 +5,15 @@
  */
 import { useState, useEffect, useCallback, useRef } from "react";
 import { CmsClient } from "../CmsClient.js";
-const defaultClient = new CmsClient();
+let _defaultClient = null;
+const getDefaultClient = () => {
+    if (!_defaultClient) {
+        _defaultClient = new CmsClient();
+    }
+    return _defaultClient;
+};
 export const useCmsAdmin = (params) => {
-    const api = params?.api ?? defaultClient;
+    const api = params?.api ?? getDefaultClient();
     const enabled = params?.enabled !== false;
     const [items, setItems] = useState([]);
     const [totalCount, setTotalCount] = useState(0);
@@ -22,6 +28,10 @@ export const useCmsAdmin = (params) => {
     }, []);
     useEffect(() => {
         if (!enabled) {
+            if (abortRef.current) {
+                abortRef.current.abort();
+                abortRef.current = null;
+            }
             return;
         }
         // Cancel any in-flight request

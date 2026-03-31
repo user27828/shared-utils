@@ -15,13 +15,21 @@ export const verifyTurnstileToken = async (token, secretKey, remoteip, idempoten
     if (idempotencyKey) {
         formData.append("idempotency_key", idempotencyKey);
     }
-    const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-        method: "POST",
-        body: formData,
-    });
-    if (!response.ok) {
-        throw new Error(`Turnstile API error: ${response.status}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    try {
+        const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+            method: "POST",
+            body: formData,
+            signal: controller.signal,
+        });
+        if (!response.ok) {
+            throw new Error(`Turnstile API error: ${response.status}`);
+        }
+        return await response.json();
     }
-    return await response.json();
+    finally {
+        clearTimeout(timeoutId);
+    }
 };
 //# sourceMappingURL=verification.js.map

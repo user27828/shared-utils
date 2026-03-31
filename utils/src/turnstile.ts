@@ -77,6 +77,7 @@ class Turnstile {
   private widgetIds: Set<string> = new Set();
   private scriptLoaded = false;
   private scriptLoading = false;
+  private scriptLoadError = false;
 
   constructor() {
     const defaultOptions = {
@@ -149,10 +150,15 @@ class Turnstile {
     }
 
     if (this.scriptLoading) {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
+        const startTime = Date.now();
         const checkLoaded = () => {
           if (this.scriptLoaded) {
             resolve();
+          } else if (this.scriptLoadError) {
+            reject(new Error("Failed to load Turnstile script"));
+          } else if (Date.now() - startTime > 15000) {
+            reject(new Error("Turnstile script loading timeout"));
           } else {
             setTimeout(checkLoaded, 50);
           }
@@ -178,6 +184,7 @@ class Turnstile {
 
       script.onerror = () => {
         this.scriptLoading = false;
+        this.scriptLoadError = true;
         reject(new Error("Failed to load Turnstile script"));
       };
 
@@ -344,6 +351,9 @@ class Turnstile {
       formData.append("remoteip", remoteip);
     }
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     try {
       const response = await fetch(options.apiUrl, {
         method: "POST",
@@ -351,6 +361,7 @@ class Turnstile {
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: formData,
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -363,6 +374,8 @@ class Turnstile {
     } catch (error) {
       this.callInterceptor("verify-error", { token, remoteip, error });
       throw error;
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 

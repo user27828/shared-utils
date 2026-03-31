@@ -28,12 +28,18 @@ export interface UseCmsAdminResult {
   reload: () => void;
 }
 
-const defaultClient = new CmsClient();
+let _defaultClient: CmsClient | null = null;
+const getDefaultClient = (): CmsClient => {
+  if (!_defaultClient) {
+    _defaultClient = new CmsClient();
+  }
+  return _defaultClient;
+};
 
 export const useCmsAdmin = (
   params?: UseCmsAdminOptions,
 ): UseCmsAdminResult => {
-  const api = params?.api ?? defaultClient;
+  const api = params?.api ?? getDefaultClient();
   const enabled = params?.enabled !== false;
 
   const [items, setItems] = useState<CmsHeadRow[]>([]);
@@ -52,6 +58,10 @@ export const useCmsAdmin = (
 
   useEffect(() => {
     if (!enabled) {
+      if (abortRef.current) {
+        abortRef.current.abort();
+        abortRef.current = null;
+      }
       return;
     }
 

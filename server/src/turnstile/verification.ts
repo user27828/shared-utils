@@ -26,17 +26,25 @@ export const verifyTurnstileToken = async (
     formData.append("idempotency_key", idempotencyKey);
   }
 
-  const response = await fetch(
-    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-    {
-      method: "POST",
-      body: formData,
-    },
-  );
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-  if (!response.ok) {
-    throw new Error(`Turnstile API error: ${response.status}`);
+  try {
+    const response = await fetch(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      {
+        method: "POST",
+        body: formData,
+        signal: controller.signal,
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`Turnstile API error: ${response.status}`);
+    }
+
+    return await response.json();
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return await response.json();
 };

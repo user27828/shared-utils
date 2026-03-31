@@ -61,6 +61,7 @@ export declare class CmsServiceCore {
         actorUserUid?: string | null;
     }): Promise<{
         deletedCount: number;
+        failedCount: number;
     }>;
     lockByUid(input: {
         uid: string;

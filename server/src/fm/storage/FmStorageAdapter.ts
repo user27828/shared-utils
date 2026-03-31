@@ -139,4 +139,10 @@ export interface FmStorageAdapter {
    * prefer canonical app-controlled URLs (e.g. /media/:uid).
    */
   getPublicUrl?(input: { ref: FmObjectRef }): string | null;
+
+  /**
+   * Optional: release underlying resources (connection pools, etc.).
+   * Should be called during application shutdown.
+   */
+  destroy?(): void;
 }

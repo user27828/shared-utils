@@ -161,9 +161,13 @@ export const downloadVCard = (contact, filename) => {
     link.href = url;
     link.setAttribute("download", `${sanitizedName}.vcf`);
     document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    try {
+        link.click();
+    }
+    finally {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
 };
 // ============================================================================
 // Calendar URL Building
@@ -335,9 +339,13 @@ export const downloadICS = (event, config = DEFAULT_CALENDAR_CONFIG) => {
     link.href = url;
     link.setAttribute("download", `event-${event.id || Date.now()}.ics`);
     document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    try {
+        link.click();
+    }
+    finally {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
 };
 /**
  * Open a calendar event for the given provider.

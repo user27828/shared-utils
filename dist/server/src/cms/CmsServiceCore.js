@@ -299,6 +299,7 @@ export class CmsServiceCore {
             offset: 0,
         });
         let deletedCount = 0;
+        let failedCount = 0;
         for (const item of result.items) {
             try {
                 await this.connector.deleteByUid(item.uid);
@@ -310,10 +311,10 @@ export class CmsServiceCore {
                 });
             }
             catch {
-                // Best-effort: continue with remaining items
+                failedCount++;
             }
         }
-        return { deletedCount };
+        return { deletedCount, failedCount };
     }
     // ─── Lock ─────────────────────────────────────────────────────────────
     async lockByUid(input) {

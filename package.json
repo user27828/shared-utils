@@ -166,8 +166,8 @@
     "@types/jest": "^30.0.0",
     "@types/nanoid": "^3.0.0",
     "@types/supertest": "^7.2.0",
-    "@vitest/coverage-v8": "^4.1.0",
-    "@vitest/ui": "^4.1.0",
+    "@vitest/coverage-v8": "^4.1.2",
+    "@vitest/ui": "^4.1.2",
     "jest": "^30.3.0",
     "jest-environment-node": "^30.3.0",
     "jsdom": "^29.0.1",
@@ -177,7 +177,7 @@
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.6",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.2"
   },
   "dependencies": {
     "@tinymce/tinymce-react": "^6.3.0",

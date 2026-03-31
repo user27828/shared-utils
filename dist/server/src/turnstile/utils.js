@@ -38,7 +38,7 @@ export const isLocalhostRequest = (request, remoteip) => {
             remoteip === "::1" ||
             remoteip.startsWith("192.168.") ||
             remoteip.startsWith("10.") ||
-            remoteip.startsWith("172.")) {
+            /^172\.(1[6-9]|2[0-9]|3[01])\./.test(remoteip)) {
             return true;
         }
     }

@@ -18,6 +18,8 @@ export declare class FmStorageS3 implements FmStorageAdapter {
     });
     /** @returns `"s3"` provider identifier. */
     getProvider(): "s3";
+    /** Release the underlying S3Client connection pool. */
+    destroy(): void;
     /** @returns Capability flags for S3 storage (all capabilities supported). */
     getCapabilities(): FmStorageCapabilities;
     /** Read a byte range from an S3 object via the Range header. */

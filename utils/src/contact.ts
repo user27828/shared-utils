@@ -249,9 +249,12 @@ export const downloadVCard = (
   link.href = url;
   link.setAttribute("download", `${sanitizedName}.vcf`);
   document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  try {
+    link.click();
+  } finally {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
 };
 
 // ============================================================================
@@ -471,9 +474,12 @@ export const downloadICS = (
     `event-${event.id || Date.now()}.ics`,
   );
   document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  try {
+    link.click();
+  } finally {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
 };
 
 /**

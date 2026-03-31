@@ -35,12 +35,18 @@ export interface UseCmsPublicResult {
   reload: () => void;
 }
 
-const defaultClient = new CmsClient();
+let _defaultPublicClient: CmsClient | null = null;
+const getDefaultClient = (): CmsClient => {
+  if (!_defaultPublicClient) {
+    _defaultPublicClient = new CmsClient();
+  }
+  return _defaultPublicClient;
+};
 
 export const useCmsPublic = (
   params: UseCmsPublicOptions,
 ): UseCmsPublicResult => {
-  const api = params.api ?? defaultClient;
+  const api = params.api ?? getDefaultClient();
   const enabled = params.enabled !== false;
 
   // NOTE: do not memoize with [] — in SSR environments `window` is undefined
@@ -100,6 +106,10 @@ export const useCmsPublic = (
       !memoParams.locale ||
       !memoParams.slug
     ) {
+      if (abortRef.current) {
+        abortRef.current.abort();
+        abortRef.current = null;
+      }
       return;
     }
 

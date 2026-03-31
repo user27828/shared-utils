@@ -200,11 +200,16 @@ export class CmsClient implements CmsApi {
     });
   }
 
-  async adminEmptyTrash(limit?: number): Promise<{ deletedCount: number }> {
-    return this.adminRequest<{ deletedCount: number }>("/trash/empty", {
-      method: "POST",
-      body: JSON.stringify({ limit }),
-    });
+  async adminEmptyTrash(
+    limit?: number,
+  ): Promise<{ deletedCount: number; failedCount: number }> {
+    return this.adminRequest<{ deletedCount: number; failedCount: number }>(
+      "/trash/empty",
+      {
+        method: "POST",
+        body: JSON.stringify({ limit }),
+      },
+    );
   }
 
   // ─── Admin history ──────────────────────────────────────────────────

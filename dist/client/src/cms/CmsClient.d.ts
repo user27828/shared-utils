@@ -51,6 +51,7 @@ export declare class CmsClient implements CmsApi {
     adminDeletePermanently(uid: string): Promise<void>;
     adminEmptyTrash(limit?: number): Promise<{
         deletedCount: number;
+        failedCount: number;
     }>;
     adminListHistory(uid: string, opts?: {
         limit?: number;

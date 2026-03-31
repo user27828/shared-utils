@@ -489,7 +489,7 @@ class Log {
    * @param {Function} interceptor - Function that receives (level, args) parameters
    */
   addInterceptor(interceptor: (level: LogLevel, args: any[]) => void): void {
-    if (typeof interceptor === "function") {
+    if (typeof interceptor === "function" && !this.interceptors.includes(interceptor)) {
       this.interceptors.push(interceptor);
     }
   }

@@ -104,6 +104,11 @@ export class FmStorageS3 implements FmStorageAdapter {
     return "s3";
   }
 
+  /** Release the underlying S3Client connection pool. */
+  destroy(): void {
+    this.client.destroy();
+  }
+
   /** @returns Capability flags for S3 storage (all capabilities supported). */
   getCapabilities(): FmStorageCapabilities {
     return {

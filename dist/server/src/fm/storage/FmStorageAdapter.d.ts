@@ -120,5 +120,10 @@ export interface FmStorageAdapter {
     getPublicUrl?(input: {
         ref: FmObjectRef;
     }): string | null;
+    /**
+     * Optional: release underlying resources (connection pools, etc.).
+     * Should be called during application shutdown.
+     */
+    destroy?(): void;
 }
 //# sourceMappingURL=FmStorageAdapter.d.ts.map

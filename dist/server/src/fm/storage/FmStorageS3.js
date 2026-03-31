@@ -68,6 +68,10 @@ export class FmStorageS3 {
     getProvider() {
         return "s3";
     }
+    /** Release the underlying S3Client connection pool. */
+    destroy() {
+        this.client.destroy();
+    }
     /** @returns Capability flags for S3 storage (all capabilities supported). */
     getCapabilities() {
         return {

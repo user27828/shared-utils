@@ -97,6 +97,9 @@ export const formatFileSize = (bytes, options) => {
     if (bytes === 0) {
         return "0 Bytes";
     }
+    if (!Number.isFinite(bytes) || bytes < 0) {
+        return "0 Bytes";
+    }
     // Read from optionsManager if available, then apply overrides from options param
     const globalOptions = optionsManager.getAllOptions()?.files || {};
     const useBinary = options?.useBinary ?? globalOptions.size?.useBinary ?? false;

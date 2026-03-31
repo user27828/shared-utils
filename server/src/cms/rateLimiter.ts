@@ -103,6 +103,10 @@ export class CmsRateLimiter {
         }
       }
     }, 60_000);
+    // Allow process to exit even if interval is active
+    if (this.cleanupInterval && typeof this.cleanupInterval === "object" && "unref" in this.cleanupInterval) {
+      this.cleanupInterval.unref();
+    }
   }
 
   private async ensureInitialized(): Promise<void> {

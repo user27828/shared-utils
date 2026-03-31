@@ -57,6 +57,7 @@ declare class Turnstile {
     private widgetIds;
     private scriptLoaded;
     private scriptLoading;
+    private scriptLoadError;
     constructor();
     private get options();
     private detectEnvironment;

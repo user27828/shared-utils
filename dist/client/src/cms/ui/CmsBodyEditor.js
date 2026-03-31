@@ -90,15 +90,19 @@ const CmsBodyEditor = React.memo(({ contentType, value, onChange, height = 500, 
     const [editorLoading, setEditorLoading] = useState(true);
     const latestHtmlRef = useRef(value);
     const htmlNormalizationRunRef = useRef(0);
+    const mountedRef = useRef(true);
     const normTimerRef = useRef(undefined);
     React.useEffect(() => {
         latestHtmlRef.current = value;
     }, [value]);
     // Cleanup normalization timer on unmount.
     useEffect(() => {
+        mountedRef.current = true;
         return () => {
+            mountedRef.current = false;
             if (normTimerRef.current !== undefined) {
                 clearTimeout(normTimerRef.current);
+                normTimerRef.current = undefined;
             }
         };
     }, []);
@@ -109,11 +113,17 @@ const CmsBodyEditor = React.memo(({ contentType, value, onChange, height = 500, 
      * protects against stale results from earlier runs.
      */
     const scheduleNormalization = useCallback((nextValue) => {
+        if (!mountedRef.current) {
+            return;
+        }
         if (normTimerRef.current !== undefined) {
             clearTimeout(normTimerRef.current);
         }
         normTimerRef.current = setTimeout(() => {
             normTimerRef.current = undefined;
+            if (!mountedRef.current) {
+                return;
+            }
             const runId = htmlNormalizationRunRef.current + 1;
             htmlNormalizationRunRef.current = runId;
             void normalizeEmbeddedHtmlImages({
@@ -123,6 +133,9 @@ const CmsBodyEditor = React.memo(({ contentType, value, onChange, height = 500, 
                 },
             })
                 .then((normalizedValue) => {
+                if (!mountedRef.current) {
+                    return;
+                }
                 if (htmlNormalizationRunRef.current !== runId) {
                     return;
                 }

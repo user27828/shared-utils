@@ -111,12 +111,19 @@ export class FmClient {
             if (contentType) {
                 xhr.setRequestHeader("Content-Type", contentType);
             }
-            xhr.upload.addEventListener("progress", (evt) => {
+            const progressHandler = (evt) => {
                 if (evt.lengthComputable && onProgress) {
                     onProgress({ loaded: evt.loaded, total: evt.total });
                 }
-            });
-            xhr.addEventListener("load", () => {
+            };
+            const cleanup = () => {
+                xhr.upload.removeEventListener("progress", progressHandler);
+                xhr.removeEventListener("load", loadHandler);
+                xhr.removeEventListener("error", errorHandler);
+                xhr.removeEventListener("abort", abortHandler);
+            };
+            const loadHandler = () => {
+                cleanup();
                 let json;
                 try {
                     json = JSON.parse(xhr.responseText);
@@ -130,13 +137,19 @@ export class FmClient {
                     return;
                 }
                 resolve(json.data);
-            });
-            xhr.addEventListener("error", () => {
+            };
+            const errorHandler = () => {
+                cleanup();
                 reject(new FmClientError("Network error during upload", 0));
-            });
-            xhr.addEventListener("abort", () => {
+            };
+            const abortHandler = () => {
+                cleanup();
                 reject(new FmClientError("Upload aborted", 0));
-            });
+            };
+            xhr.upload.addEventListener("progress", progressHandler);
+            xhr.addEventListener("load", loadHandler);
+            xhr.addEventListener("error", errorHandler);
+            xhr.addEventListener("abort", abortHandler);
             const xhrBody = body instanceof Uint8Array ? Uint8Array.from(body).buffer : body;
             xhr.send(xhrBody);
         });

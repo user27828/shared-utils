@@ -162,6 +162,7 @@ const CmsBodyEditor: React.FC<CmsBodyEditorProps> = React.memo(
     const [editorLoading, setEditorLoading] = useState(true);
     const latestHtmlRef = useRef(value);
     const htmlNormalizationRunRef = useRef(0);
+    const mountedRef = useRef(true);
     const normTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
       undefined,
     );
@@ -172,9 +173,12 @@ const CmsBodyEditor: React.FC<CmsBodyEditorProps> = React.memo(
 
     // Cleanup normalization timer on unmount.
     useEffect(() => {
+      mountedRef.current = true;
       return () => {
+        mountedRef.current = false;
         if (normTimerRef.current !== undefined) {
           clearTimeout(normTimerRef.current);
+          normTimerRef.current = undefined;
         }
       };
     }, []);
@@ -187,12 +191,18 @@ const CmsBodyEditor: React.FC<CmsBodyEditorProps> = React.memo(
      */
     const scheduleNormalization = useCallback(
       (nextValue: string) => {
+        if (!mountedRef.current) {
+          return;
+        }
         if (normTimerRef.current !== undefined) {
           clearTimeout(normTimerRef.current);
         }
 
         normTimerRef.current = setTimeout(() => {
           normTimerRef.current = undefined;
+          if (!mountedRef.current) {
+            return;
+          }
 
           const runId = htmlNormalizationRunRef.current + 1;
           htmlNormalizationRunRef.current = runId;
@@ -204,6 +214,9 @@ const CmsBodyEditor: React.FC<CmsBodyEditorProps> = React.memo(
             },
           })
             .then((normalizedValue) => {
+              if (!mountedRef.current) {
+                return;
+              }
               if (htmlNormalizationRunRef.current !== runId) {
                 return;
               }

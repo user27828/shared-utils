@@ -51,7 +51,9 @@ export interface CmsApi {
   adminTrash(input: { uid: string; ifMatch: string }): Promise<CmsHeadRow>;
   adminRestore(input: { uid: string; ifMatch: string }): Promise<CmsHeadRow>;
   adminDeletePermanently(uid: string): Promise<void>;
-  adminEmptyTrash(limit?: number): Promise<{ deletedCount: number }>;
+  adminEmptyTrash(
+    limit?: number,
+  ): Promise<{ deletedCount: number; failedCount: number }>;
 
   // ── Admin history ───────────────────────────────────────────────────
 

@@ -224,13 +224,21 @@ export class FmClient implements FmApi {
         xhr.setRequestHeader("Content-Type", contentType);
       }
 
-      xhr.upload.addEventListener("progress", (evt) => {
+      const progressHandler = (evt: ProgressEvent) => {
         if (evt.lengthComputable && onProgress) {
           onProgress({ loaded: evt.loaded, total: evt.total });
         }
-      });
+      };
 
-      xhr.addEventListener("load", () => {
+      const cleanup = () => {
+        xhr.upload.removeEventListener("progress", progressHandler);
+        xhr.removeEventListener("load", loadHandler);
+        xhr.removeEventListener("error", errorHandler);
+        xhr.removeEventListener("abort", abortHandler);
+      };
+
+      const loadHandler = () => {
+        cleanup();
         let json: ApiEnvelope<T>;
         try {
           json = JSON.parse(xhr.responseText);
@@ -251,15 +259,22 @@ export class FmClient implements FmApi {
           return;
         }
         resolve(json.data as T);
-      });
+      };
 
-      xhr.addEventListener("error", () => {
+      const errorHandler = () => {
+        cleanup();
         reject(new FmClientError("Network error during upload", 0));
-      });
+      };
 
-      xhr.addEventListener("abort", () => {
+      const abortHandler = () => {
+        cleanup();
         reject(new FmClientError("Upload aborted", 0));
-      });
+      };
+
+      xhr.upload.addEventListener("progress", progressHandler);
+      xhr.addEventListener("load", loadHandler);
+      xhr.addEventListener("error", errorHandler);
+      xhr.addEventListener("abort", abortHandler);
 
       const xhrBody: Blob | ArrayBuffer =
         body instanceof Uint8Array ? Uint8Array.from(body).buffer : body;

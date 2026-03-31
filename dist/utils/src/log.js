@@ -387,7 +387,7 @@ class Log {
      * @param {Function} interceptor - Function that receives (level, args) parameters
      */
     addInterceptor(interceptor) {
-        if (typeof interceptor === "function") {
+        if (typeof interceptor === "function" && !this.interceptors.includes(interceptor)) {
             this.interceptors.push(interceptor);
         }
     }

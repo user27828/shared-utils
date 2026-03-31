@@ -7,9 +7,15 @@
  */
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { CmsClient } from "../CmsClient.js";
-const defaultClient = new CmsClient();
+let _defaultPublicClient = null;
+const getDefaultClient = () => {
+    if (!_defaultPublicClient) {
+        _defaultPublicClient = new CmsClient();
+    }
+    return _defaultPublicClient;
+};
 export const useCmsPublic = (params) => {
-    const api = params.api ?? defaultClient;
+    const api = params.api ?? getDefaultClient();
     const enabled = params.enabled !== false;
     // NOTE: do not memoize with [] — in SSR environments `window` is undefined
     // during the initial render, and we'd incorrectly freeze `preview=false`.
@@ -56,6 +62,10 @@ export const useCmsPublic = (params) => {
             !memoParams.postType ||
             !memoParams.locale ||
             !memoParams.slug) {
+            if (abortRef.current) {
+                abortRef.current.abort();
+                abortRef.current = null;
+            }
             return;
         }
         if (abortRef.current) {

@@ -513,7 +513,7 @@ const loadEnvironmentVariables = (): Record<string, any> => {
       // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
       const dotenv = req("dotenv");
       const dotenvExpand = req("dotenv-expand");
-      const { parsed, error } = dotenv.config({ path: envPath });
+      const { parsed, error } = dotenv.config({ path: envPath, quiet: true });
       dotenvExpand.expand({ parsed });
       if (error) {
         console.warn(`Error loading ${envPath}:`, error);

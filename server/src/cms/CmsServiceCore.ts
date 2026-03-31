@@ -447,7 +447,7 @@ export class CmsServiceCore {
   async emptyTrash(input?: {
     limit?: number;
     actorUserUid?: string | null;
-  }): Promise<{ deletedCount: number }> {
+  }): Promise<{ deletedCount: number; failedCount: number }> {
     const limit = Math.min(Math.max(input?.limit ?? 100, 1), 500);
 
     const result = await this.connector.list({
@@ -457,6 +457,7 @@ export class CmsServiceCore {
     });
 
     let deletedCount = 0;
+    let failedCount = 0;
     for (const item of result.items) {
       try {
         await this.connector.deleteByUid(item.uid);
@@ -468,11 +469,11 @@ export class CmsServiceCore {
           actorUserUid: input?.actorUserUid,
         });
       } catch {
-        // Best-effort: continue with remaining items
+        failedCount++;
       }
     }
 
-    return { deletedCount };
+    return { deletedCount, failedCount };
   }
 
   // ─── Lock ─────────────────────────────────────────────────────────────
