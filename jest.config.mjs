@@ -1,6 +1,5 @@
 export default {
   testEnvironment: "node",
-  preset: "ts-jest/presets/default-esm",
   extensionsToTreatAsEsm: [".ts"],
   roots: ["<rootDir>"],
   projects: [
@@ -53,18 +52,12 @@ export default {
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   transform: {
     "^.+\\.(t|j)sx?$": [
-      "ts-jest",
+      "babel-jest",
       {
-        useESM: true,
-        tsconfig: {
-          module: "es2020",
-          moduleResolution: "node",
-          allowSyntheticDefaultImports: true,
-          esModuleInterop: true,
-          resolveJsonModule: true,
-          declaration: false,
-          skipLibCheck: true,
-        },
+        presets: [
+          ["@babel/preset-env", { targets: { node: "current" } }],
+          ["@babel/preset-typescript", { allowDeclareFields: true }],
+        ],
       },
     ],
   },

@@ -8,6 +8,8 @@ declare var log: {
   error: (...args: any[]) => void;
 };
 
+declare module "*.css";
+
 interface Window {
   log: typeof log;
 }

@@ -5,7 +5,6 @@
 
 export default {
   testEnvironment: "node",
-  preset: "ts-jest/presets/default-esm",
   extensionsToTreatAsEsm: [".ts"],
   setupFilesAfterEnv: ["<rootDir>/jest.setup.mjs"],
   testMatch: ["**/__tests__/**/*.{js,ts}", "**/*.test.{js,ts}"],
@@ -25,13 +24,15 @@ export default {
     "^../../../utils/(.*)$": "<rootDir>/../dist/utils/$1",
   },
   transform: {
-    "^.+\\.(ts|tsx)$": [
-      "ts-jest",
+    "^.+\\.(ts|tsx|js|jsx)$": [
+      "babel-jest",
       {
-        useESM: true,
+        presets: [
+          ["@babel/preset-env", { targets: { node: "current" } }],
+          ["@babel/preset-typescript", { allowDeclareFields: true }],
+        ],
       },
     ],
-    "^.+\\.(js|jsx)$": "babel-jest",
   },
   transformIgnorePatterns: [
     "node_modules/(?!(@shared-utils/utils|@user27828/shared-utils|lodash-es)/)",

@@ -1,6 +1,8 @@
 // Custom type declarations for @user27828/shared-utils
 // This file provides explicit type declarations for all subpath exports
 
+declare module "*.css";
+
 declare module "@user27828/shared-utils" {
   export * from "@user27828/shared-utils/dist/utils";
 }

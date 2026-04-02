@@ -1,6 +1,5 @@
 export default {
   testEnvironment: "node",
-  preset: "ts-jest/presets/default-esm",
   extensionsToTreatAsEsm: [".ts"],
   setupFilesAfterEnv: ["<rootDir>/jest.setup.mjs"],
   testMatch: ["**/__tests__/**/*.{js,ts}", "**/*.test.{js,ts}"],
@@ -12,13 +11,15 @@ export default {
   ],
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   transform: {
-    "^.+\\.(ts|tsx)$": [
-      "ts-jest",
+    "^.+\\.(ts|tsx|js|jsx)$": [
+      "babel-jest",
       {
-        useESM: true,
+        presets: [
+          ["@babel/preset-env", { targets: { node: "current" } }],
+          ["@babel/preset-typescript", { allowDeclareFields: true }],
+        ],
       },
     ],
-    "^.+\\.(js|jsx)$": "babel-jest",
   },
   moduleNameMapper: {
     "^@shared-utils/utils$": "<rootDir>/../dist/utils/index.js",
