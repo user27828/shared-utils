@@ -59,6 +59,7 @@ client/src/{fm,cms}/    — API client classes, React providers/hooks/components
 @user27828/shared-utils/cms      → CMS shared types/errors/validation
 @user27828/shared-utils/cms/server → CMS service core, connectors, Express routers
 @user27828/shared-utils/cms/client → CMS client API, hooks, UI components
+@user27828/shared-utils/cms/client/public → public CMS client API, hook, and render/password-gate components without admin/editor UI
 @user27828/shared-utils/fm       → FM shared types/errors/validation
 @user27828/shared-utils/fm/server → FM service core, connectors, Express routers
 @user27828/shared-utils/fm/client → FM client API, hooks, components

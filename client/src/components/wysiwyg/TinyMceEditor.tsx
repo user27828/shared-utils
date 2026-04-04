@@ -3,6 +3,7 @@
  * @module TinyMceEditor
  */
 import React, { useRef, useEffect } from "react";
+import "./ensurePrismGlobal.js";
 import { Editor } from "@tinymce/tinymce-react";
 import { merge } from "lodash-es";
 // TinyMCE so the global var exists

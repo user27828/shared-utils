@@ -31,6 +31,8 @@ yarn add easymde
 yarn add @mdxeditor/editor
 ```
 
+`shared-utils` initializes Prism internally for TinyMCE and MDXEditor. You do not need to install `prismjs` separately or wire `window.Prism` yourself.
+
 ## Basic usage (unified)
 
 ```tsx

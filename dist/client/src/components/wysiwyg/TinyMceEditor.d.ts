@@ -3,6 +3,7 @@
  * @module TinyMceEditor
  */
 import React from "react";
+import "./ensurePrismGlobal.js";
 import "tinymce/tinymce";
 import "tinymce/models/dom/model";
 import "tinymce/themes/silver";

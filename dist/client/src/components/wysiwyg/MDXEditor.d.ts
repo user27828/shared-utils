@@ -3,6 +3,7 @@
  * @module MDXEditor
  */
 import React from "react";
+import "./ensurePrismGlobal.js";
 import { type MDXEditorMethods, type MDXEditorProps as BaseMDXEditorProps } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
 /**

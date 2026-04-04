@@ -22,8 +22,13 @@ import React, { Suspense, lazy } from "react";
 const SuspenseNull = ({ children }) => {
     return React.createElement(Suspense, { fallback: null }, children);
 };
+const importWithPrism = async (importer) => {
+    const prismModule = await import("./src/components/wysiwyg/ensurePrismGlobal.js");
+    await prismModule.ensurePrismGlobal();
+    return await importer();
+};
 // Lazy editor exports: keep the wysiwyg entrypoint importable without installing all editor peer deps.
-const LazyTinyMceEditor = lazy(async () => await import("./src/components/wysiwyg/TinyMceEditor.js"));
+const LazyTinyMceEditor = lazy(async () => await importWithPrism(async () => await import("./src/components/wysiwyg/TinyMceEditor.js")));
 export const TinyMceEditor = (props) => {
     return React.createElement(SuspenseNull, null, React.createElement(LazyTinyMceEditor, props));
 };
@@ -35,7 +40,7 @@ const LazyCKEditor5Classic = lazy(async () => await import("./src/components/wys
 export const CKEditor5Classic = (props) => {
     return React.createElement(SuspenseNull, null, React.createElement(LazyCKEditor5Classic, props));
 };
-const LazyMDXEditor = lazy(async () => await import("./src/components/wysiwyg/MDXEditor.js"));
+const LazyMDXEditor = lazy(async () => await importWithPrism(async () => await import("./src/components/wysiwyg/MDXEditor.js")));
 export const MDXEditor = (props) => {
     return React.createElement(SuspenseNull, null, React.createElement(LazyMDXEditor, props));
 };

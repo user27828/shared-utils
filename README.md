@@ -114,6 +114,13 @@ import {
   CmsListPage,
 } from "@user27828/shared-utils/cms/client";
 
+// ✅ CMS — public-facing hook + render helpers without admin/editor UI deps
+import {
+  useCmsPublic,
+  CmsBodyRenderer,
+  CmsPasswordGate,
+} from "@user27828/shared-utils/cms/client/public";
+
 // ✅ FM — types, error classes
 import { FmFileRow, FmContext } from "@user27828/shared-utils/fm";
 
@@ -248,6 +255,7 @@ import WysiwygEditor from "@user27828/shared-utils/client/wysiwyg";
 - `value` stays in each editor's native format: HTML for TinyMCE/CKEditor, Markdown for EasyMDE.
 - Use `onPickAsset` for inserting images/files/media with a single hook.
 - Use `onUploadImage` for paste/drag-drop uploads.
+- TinyMCE and MDXEditor initialize Prism internally; no separate `prismjs` setup is required.
 
 **TinyMCE Editor** (Rich HTML editor):
 
@@ -423,11 +431,12 @@ A portable, full-featured CMS with pluggable DB connectors. The CMS core is DB-a
 
 **Import paths:**
 
-| Path                                 | Contents                                                                                                                                                     |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `@user27828/shared-utils/cms`        | Shared types, Zod schemas, validation, sanitization, concurrency, password utils, error classes                                                              |
-| `@user27828/shared-utils/cms/server` | `CmsServiceCore`, `CmsConnector` interface, Express router factories, rate limiter, authz, cache-control, unlock tokens, conformance test harness            |
-| `@user27828/shared-utils/cms/client` | `CmsClient` SDK, `useCmsAdmin`/`useCmsPublic` hooks, admin UI pages (`CmsListPage`, `CmsEditPage`, `CmsHistoryDrawer`, `CmsBodyEditor`, `CmsConflictDialog`) |
+| Path                                        | Contents                                                                                                                                                                |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@user27828/shared-utils/cms`               | Shared types, Zod schemas, validation, sanitization, concurrency, password utils, error classes                                                                         |
+| `@user27828/shared-utils/cms/server`        | `CmsServiceCore`, `CmsConnector` interface, Express router factories, rate limiter, authz, cache-control, unlock tokens, conformance test harness                       |
+| `@user27828/shared-utils/cms/client`        | Full client surface: `CmsClient`, `useCmsAdmin`/`useCmsPublic`, admin UI pages (`CmsListPage`, `CmsEditPage`, `CmsHistoryDrawer`, `CmsBodyEditor`, `CmsConflictDialog`) |
+| `@user27828/shared-utils/cms/client/public` | Public-only client surface: `useCmsPublic`, `CmsBodyRenderer`, `CmsPasswordGate`, `CmsContentNotes`, and related types without admin/editor UI dependencies             |
 
 **Key features:**
 

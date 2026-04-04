@@ -6,11 +6,12 @@ How to use the shared-utils CMS module in a consuming application. Covers the cl
 
 The CMS is split across three export paths:
 
-| Export path                          | Contents                                                                              | Used by                |
-| ------------------------------------ | ------------------------------------------------------------------------------------- | ---------------------- |
-| `@user27828/shared-utils/cms`        | Zod schemas, TypeScript types, error classes                                          | Both client and server |
-| `@user27828/shared-utils/cms/server` | `CmsServiceCore`, connector interface, Express router factories, middleware factories | Server only            |
-| `@user27828/shared-utils/cms/client` | `CmsClient`, React hooks, portable admin UI pages/components                          | Client only            |
+| Export path                                 | Contents                                                                              | Used by                |
+| ------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------- |
+| `@user27828/shared-utils/cms`               | Zod schemas, TypeScript types, error classes                                          | Both client and server |
+| `@user27828/shared-utils/cms/server`        | `CmsServiceCore`, connector interface, Express router factories, middleware factories | Server only            |
+| `@user27828/shared-utils/cms/client`        | `CmsClient`, React hooks, full admin + public client UI surface                       | Client only            |
+| `@user27828/shared-utils/cms/client/public` | `CmsClient`, `useCmsPublic`, `CmsBodyRenderer`, `CmsPasswordGate`, `CmsContentNotes`  | Client only            |
 
 ## 1. Server Composition
 
@@ -276,6 +277,8 @@ const updated = await client.adminUpdate({
 
 Errors throw `CmsClientError` with `statusCode` and `code` properties.
 
+If a route only needs published-content reads/unlock plus public rendering or password-gate UI, prefer `@user27828/shared-utils/cms/client/public`. It keeps the admin editor/page surface out of the module graph.
+
 ### 2.2 React hooks
 
 **`useCmsAdmin`** -- reactive list with filtering and pagination:
@@ -308,7 +311,7 @@ const MyList: React.FC = () => {
 **`useCmsPublic`** -- fetch a single published page:
 
 ```tsx
-import { useCmsPublic } from "@user27828/shared-utils/cms/client";
+import { useCmsPublic } from "@user27828/shared-utils/cms/client/public";
 
 const PageContent: React.FC<{ slug: string }> = ({ slug }) => {
   const { data, isLoading, error } = useCmsPublic({
@@ -327,6 +330,22 @@ const PageContent: React.FC<{ slug: string }> = ({ slug }) => {
 ```
 
 Both hooks accept an optional `api` prop to override the default `CmsClient`. Both support `enabled: false` to disable auto-fetching.
+
+### 2.3 Public-only client surface
+
+For consumer-facing routes, import the lightweight public barrel:
+
+```tsx
+import {
+  CmsClient,
+  useCmsPublic,
+  CmsBodyRenderer,
+  CmsPasswordGate,
+  CmsContentNotes,
+} from "@user27828/shared-utils/cms/client/public";
+```
+
+It re-exports the published-content client pieces without pulling the admin editor/page surface into the bundle, which is the better default for public pages and lean production container builds.
 
 ## 3. Admin UI
 

@@ -4,6 +4,7 @@ import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-run
  * @module MDXEditor
  */
 import { useRef, useEffect, useImperativeHandle, forwardRef, } from "react";
+import "./ensurePrismGlobal.js";
 import { MDXEditor as BaseMDXEditor, headingsPlugin, listsPlugin, quotePlugin, thematicBreakPlugin, linkPlugin, linkDialogPlugin, imagePlugin, tablePlugin, toolbarPlugin, markdownShortcutPlugin, UndoRedo, BoldItalicUnderlineToggles, BlockTypeSelect, CreateLink, InsertImage, InsertTable, InsertThematicBreak, ListsToggle, } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
 /**
