@@ -21,6 +21,16 @@ const textFormatChecks = [
     "tex",
 ];
 /**
+ * Load Node's fs/promises lazily at runtime.
+ *
+ * This avoids browser bundlers statically analyzing the Node-only module when
+ * the utility is imported into client code for content-based detection only.
+ */
+const importFsPromises = async () => {
+    const dynamicImport = new Function('return import("fs/promises")');
+    return dynamicImport();
+};
+/**
  * Detect the file format from the given text.
  * @param {string} [content] - Text format for analysis - this or filePath is required
  * @param {string} [filePath] - Get content from filesystem path - this or content is required
@@ -40,7 +50,7 @@ export const detectFormatFromText = async ({ content, filePath, formats = [], })
         if (!isNode) {
             throw new Error("Reading from filePath is only supported in Node.js environments.");
         }
-        const fs = await import("fs/promises");
+        const fs = await importFsPromises();
         content = await fs.readFile(filePath, "utf8");
     }
     const checkFormats = formats.length ? formats : textFormatChecks;
