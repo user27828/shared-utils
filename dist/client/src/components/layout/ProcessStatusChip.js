@@ -85,7 +85,7 @@ const ProcessStatusChip = ({ status, label, color = "default", finalStatuses, pe
                             : theme.palette.grey[200],
                         color: theme.palette.text.primary,
                         border: "1px solid",
-                        borderColor: "divider",
+                        borderColor: theme.palette.divider,
                     }),
                 }), sx), icon: placement === "left" ? renderCircularProgress() || undefined : undefined, deleteIcon: placement === "right"
                     ? renderCircularProgress() || undefined

@@ -20,6 +20,7 @@ import {
   Typography,
 } from "@mui/material";
 import { TestProgress, type TestItem } from "./TestProgress";
+import TestSuiteLayout from "./TestSuiteLayout";
 
 interface EasyMDETestsProps {
   darkMode: boolean;
@@ -112,6 +113,11 @@ const EasyMDETests: React.FC<EasyMDETestsProps> = ({ darkMode }) => {
           status,
           message,
           duration,
+          startTime: status === "running" ? new Date() : item.startTime,
+          endTime:
+            status === "pass" || status === "fail" || status === "skipped"
+              ? new Date()
+              : undefined,
         };
       }),
     );
@@ -211,8 +217,29 @@ const EasyMDETests: React.FC<EasyMDETestsProps> = ({ darkMode }) => {
         status: "pending",
         message: undefined,
         duration: undefined,
+        startTime: undefined,
+        endTime: undefined,
       })),
     );
+  };
+
+  const runIndividualTest = async (testName: string) => {
+    switch (testName) {
+      case "Editor Status":
+        await runEditorStatusTest();
+        break;
+      case "Save Content":
+        await runSaveContentTest();
+        break;
+      case "Load Content":
+        await runLoadContentTest();
+        break;
+      case "Programmatic Insert":
+        await runProgrammaticInsertTest();
+        break;
+      default:
+        updateTestStatus(testName, "fail", "Unknown test");
+    }
   };
 
   const runAllTests = async () => {
@@ -299,147 +326,172 @@ const EasyMDETests: React.FC<EasyMDETestsProps> = ({ darkMode }) => {
   };
 
   return (
-    <div>
-      <h2>EasyMDE Integration Tests</h2>
-
-      <Box sx={{ mb: 2 }}>
-        <Stack direction="row" spacing={1} flexWrap="wrap">
-          <Chip
-            label={darkMode ? "Dark" : "Light"}
-            color={darkMode ? "info" : "default"}
-            variant="outlined"
-          />
-          <Chip
-            label={editor ? "EasyMDE Ready" : "EasyMDE Initializing"}
-            color={editor ? "primary" : "warning"}
-            size="small"
-          />
-          <Chip
-            label={`${content.length} Characters`}
-            color="secondary"
-            size="small"
-          />
-          {savedContent && (
-            <Chip
-              label={`${savedContent.length} Saved`}
-              color="info"
-              size="small"
-            />
-          )}
-        </Stack>
-      </Box>
-
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            EasyMDE Markdown Editor
-          </Typography>
-
-          <WysiwygEditor
-            editor="easymde"
-            value={content}
-            height={520}
-            onEditorInstance={(instance: any) => {
-              setEditor(instance);
-            }}
-            onChange={(nextValue: string) => {
-              setContent(nextValue);
-            }}
-            onPickAsset={onPickAsset}
-            onUploadImage={onUploadImage}
-            easymde={{
-              options: {
-                status: false,
-                spellChecker: false,
-              },
-            }}
-          />
-
-          <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-            <Button
-              variant="contained"
-              onClick={runAllTests}
-              disabled={isRunningTestSuite}
-            >
-              {isRunningTestSuite ? "Running…" : "Run Test Suite"}
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                savedContentRef.current = "";
-                setSavedContent("");
-              }}
-              disabled={isRunningTestSuite}
-            >
-              Clear Saved
-            </Button>
-          </Stack>
-        </CardContent>
-      </Card>
-
-      <TestProgress
-        title="EasyMDE Test Progress"
-        tests={testItems}
-        isRunning={isRunningTestSuite}
-      />
-
-      <Dialog open={pickerState.open} onClose={handlePickerCancel} fullWidth>
-        <DialogTitle>Custom Asset Picker</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            This dialog simulates an asset picker UI. It resolves the
-            `onPickAsset()` promise back to the editor.
-          </Typography>
-
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={2}
-            sx={{ mb: 2 }}
+    <TestSuiteLayout
+      title="EasyMDE Integration Tests"
+      description="Markdown editor integration tests for shared-utils via the unified WysiwygEditor export."
+      headerContent={
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <Button
+            variant="contained"
+            onClick={runAllTests}
+            disabled={isRunningTestSuite}
+            size="large"
           >
-            <Button
-              variant={pickerKind === "image" ? "contained" : "outlined"}
-              onClick={() => {
-                setPickerKind("image");
-              }}
-            >
-              Image
-            </Button>
-            <Button
-              variant={pickerKind === "file" ? "contained" : "outlined"}
-              onClick={() => {
-                setPickerKind("file");
-              }}
-            >
-              File
-            </Button>
-            <Button
-              variant={pickerKind === "media" ? "contained" : "outlined"}
-              onClick={() => {
-                setPickerKind("media");
-              }}
-            >
-              Media
-            </Button>
-          </Stack>
-
-          <TextField
-            label="URL"
-            value={pickerUrl}
-            onChange={(e) => {
-              setPickerUrl(e.target.value);
-            }}
-            fullWidth
-            placeholder="https://..."
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handlePickerCancel}>Cancel</Button>
-          <Button variant="contained" onClick={handlePickerInsert}>
-            Insert
+            {isRunningTestSuite ? "Running Tests..." : "Run All EasyMDE Tests"}
           </Button>
-        </DialogActions>
-      </Dialog>
-    </div>
+          <Button
+            variant="outlined"
+            onClick={clearResults}
+            disabled={isRunningTestSuite}
+            size="large"
+          >
+            Clear Results
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              savedContentRef.current = "";
+              setSavedContent("");
+            }}
+            disabled={isRunningTestSuite}
+            size="large"
+          >
+            Clear Saved Content
+          </Button>
+        </Stack>
+      }
+      progressContent={
+        <TestProgress
+          title="EasyMDE Tests"
+          tests={testItems}
+          isRunning={isRunningTestSuite}
+          onRunIndividual={runIndividualTest}
+          showIndividualButtons={true}
+        />
+      }
+      contentTitle="Live EasyMDE Demo"
+    >
+      <>
+        <Box sx={{ display: "grid", gap: 3 }}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Session Status
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                <Chip
+                  label={darkMode ? "Dark" : "Light"}
+                  color={darkMode ? "info" : "default"}
+                  variant="outlined"
+                />
+                <Chip
+                  label={editor ? "EasyMDE Ready" : "EasyMDE Initializing"}
+                  color={editor ? "primary" : "warning"}
+                  size="small"
+                />
+                <Chip
+                  label={`${content.length} Characters`}
+                  color="secondary"
+                  size="small"
+                />
+                {savedContent && (
+                  <Chip
+                    label={`${savedContent.length} Saved`}
+                    color="info"
+                    size="small"
+                  />
+                )}
+              </Stack>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                EasyMDE Markdown Editor
+              </Typography>
+
+              <WysiwygEditor
+                editor="easymde"
+                value={content}
+                height={520}
+                onEditorInstance={(instance: any) => {
+                  setEditor(instance);
+                }}
+                onChange={(nextValue: string) => {
+                  setContent(nextValue);
+                }}
+                onPickAsset={onPickAsset}
+                onUploadImage={onUploadImage}
+                easymde={{
+                  options: {
+                    status: false,
+                    spellChecker: false,
+                  },
+                }}
+              />
+            </CardContent>
+          </Card>
+        </Box>
+
+        <Dialog open={pickerState.open} onClose={handlePickerCancel} fullWidth>
+          <DialogTitle>Custom Asset Picker</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              This dialog simulates an asset picker UI. It resolves the
+              `onPickAsset()` promise back to the editor.
+            </Typography>
+
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={2}
+              sx={{ mb: 2 }}
+            >
+              <Button
+                variant={pickerKind === "image" ? "contained" : "outlined"}
+                onClick={() => {
+                  setPickerKind("image");
+                }}
+              >
+                Image
+              </Button>
+              <Button
+                variant={pickerKind === "file" ? "contained" : "outlined"}
+                onClick={() => {
+                  setPickerKind("file");
+                }}
+              >
+                File
+              </Button>
+              <Button
+                variant={pickerKind === "media" ? "contained" : "outlined"}
+                onClick={() => {
+                  setPickerKind("media");
+                }}
+              >
+                Media
+              </Button>
+            </Stack>
+
+            <TextField
+              label="URL"
+              value={pickerUrl}
+              onChange={(e) => {
+                setPickerUrl(e.target.value);
+              }}
+              fullWidth
+              placeholder="https://..."
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handlePickerCancel}>Cancel</Button>
+            <Button variant="contained" onClick={handlePickerInsert}>
+              Insert
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </>
+    </TestSuiteLayout>
   );
 };
 

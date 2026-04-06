@@ -1,5 +1,14 @@
 import React from "react";
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Stack,
+  Typography,
+} from "@mui/material";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
+import TestSuiteLayout from "./TestSuiteLayout";
 
 // Import the log utility from shared-utils
 let log: any = null;
@@ -811,56 +820,83 @@ const LogTests: React.FC = () => {
   };
 
   return (
-    <div>
-      <h2>Log Utility Integration Tests</h2>
-      <TestProgress
-        title="Log Utilities"
-        tests={testItems}
-        isRunning={isLoading}
-        onRunAll={runAllTests}
-        onRunIndividual={runIndividualTest}
-        onClear={clearResults}
-        showIndividualButtons={true}
-      />
+    <TestSuiteLayout
+      title="Log Utility Integration Tests"
+      description="This suite validates browser-side integration for the shared-utils logging utilities, including imports, interceptors, caller metadata, and production filtering behavior."
+      headerContent={
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <Button
+            variant="contained"
+            onClick={runAllTests}
+            disabled={isLoading}
+            size="large"
+          >
+            {isLoading ? "Running Tests..." : "Run All Log Tests"}
+          </Button>
 
-      <div className="card" style={{ marginTop: "2rem" }}>
-        <h3>About Log Utility Tests</h3>
-        <ul style={{ textAlign: "left" }}>
-          <li>
-            <strong>Basic Logging:</strong> Tests core log function calls and
-            output capture
-          </li>
-          <li>
-            <strong>Logging with Interceptor:</strong> Verifies interceptor
-            functionality for capturing logs
-          </li>
-          <li>
-            <strong>Environment Detection:</strong> Tests client-side
-            environment detection logic
-          </li>
-          <li>
-            <strong>Caller Information:</strong> Verifies caller information
-            extraction and display
-          </li>
-          <li>
-            <strong>LocalStorage Override:</strong> Tests localStorage-based
-            debug configuration
-          </li>
-          <li>
-            <strong>Production Filtering:</strong> Verifies production
-            environment log filtering
-          </li>
-          <li>
-            <strong>Interceptors:</strong> Tests custom log interceptor
-            management
-          </li>
-          <li>
-            <strong>Method Binding:</strong> Ensures destructured methods work
-            correctly
-          </li>
-        </ul>
-      </div>
-    </div>
+          <Button
+            variant="outlined"
+            onClick={clearResults}
+            disabled={isLoading}
+            size="large"
+          >
+            Clear Results
+          </Button>
+        </Stack>
+      }
+      progressContent={
+        <TestProgress
+          title="Log Utilities"
+          tests={testItems}
+          isRunning={isLoading}
+          onRunIndividual={runIndividualTest}
+          showIndividualButtons={true}
+        />
+      }
+      contentTitle="About Log Utility Tests"
+    >
+      <Card
+        variant="outlined"
+        sx={{ backgroundColor: "rgba(255, 255, 255, 0.02)" }}
+      >
+        <CardContent>
+          <Box component="ul" sx={{ textAlign: "left", pl: 3, m: 0 }}>
+            <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+              <strong>Basic Logging:</strong> Tests core log function calls and
+              output capture.
+            </Typography>
+            <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+              <strong>Logging with Interceptor:</strong> Verifies interceptor
+              functionality for capturing logs.
+            </Typography>
+            <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+              <strong>Environment Detection:</strong> Tests client-side
+              environment detection logic.
+            </Typography>
+            <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+              <strong>Caller Information:</strong> Verifies caller information
+              extraction and display.
+            </Typography>
+            <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+              <strong>LocalStorage Override:</strong> Tests localStorage-based
+              debug configuration.
+            </Typography>
+            <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+              <strong>Production Filtering:</strong> Verifies production
+              environment log filtering.
+            </Typography>
+            <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+              <strong>Interceptors:</strong> Tests custom log interceptor
+              management.
+            </Typography>
+            <Typography component="li" variant="body2">
+              <strong>Method Binding:</strong> Ensures destructured methods work
+              correctly.
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    </TestSuiteLayout>
   );
 };
 

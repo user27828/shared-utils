@@ -16,6 +16,7 @@ import {
   type CmsEditorPreference,
 } from "@user27828/shared-utils/cms/client";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
+import TestSuiteLayout from "./TestSuiteLayout";
 
 interface CmsTestsProps {
   darkMode: boolean;
@@ -277,26 +278,40 @@ const CmsTests: React.FC<CmsTestsProps> = ({ darkMode }) => {
   };
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: "auto", px: 2, py: 3 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        CMS Tests
-      </Typography>
-
-      <Typography variant="body1" sx={{ mb: 2 }}>
-        Client-side CMS UI tests for shared-utils. This page focuses on the CMS
-        body editor + preview renderer.
-      </Typography>
-
-      <TestProgress
-        title="CMS Tests"
-        tests={testItems}
-        isRunning={isRunningTestSuite}
-        onRunAll={runAllTests}
-        onRunIndividual={runIndividualTest}
-        onClear={clearResults}
-        showIndividualButtons={true}
-      />
-
+    <TestSuiteLayout
+      title="CMS Tests"
+      description="Client-side CMS UI tests for shared-utils. This page focuses on the CMS body editor and preview renderer."
+      headerContent={
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <Button
+            variant="contained"
+            onClick={runAllTests}
+            disabled={isRunningTestSuite}
+            size="large"
+          >
+            {isRunningTestSuite ? "Running Tests..." : "Run All CMS Tests"}
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={clearResults}
+            disabled={isRunningTestSuite}
+            size="large"
+          >
+            Clear Results
+          </Button>
+        </Stack>
+      }
+      progressContent={
+        <TestProgress
+          title="CMS Tests"
+          tests={testItems}
+          isRunning={isRunningTestSuite}
+          onRunIndividual={runIndividualTest}
+          showIndividualButtons={true}
+        />
+      }
+      contentTitle="Live CMS Demo"
+    >
       <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ mb: 2 }}>
         <Card sx={{ flex: 1 }}>
           <CardContent>
@@ -439,7 +454,7 @@ const CmsTests: React.FC<CmsTestsProps> = ({ darkMode }) => {
           </CardContent>
         </Card>
       </Stack>
-    </Box>
+    </TestSuiteLayout>
   );
 };
 

@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from "react";
-import {
-  Button,
-  Box,
-  Typography,
-  Container,
-  Alert,
-  Chip,
-  Divider,
-} from "@mui/material";
+import { Button, Box, Typography, Alert, Chip, Stack } from "@mui/material";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
+import TestSuiteLayout from "./TestSuiteLayout";
 
 export const ServerIntegrationTests: React.FC = () => {
   const [isRunningTestSuite, setIsRunningTestSuite] = useState<boolean>(false);
@@ -515,89 +508,97 @@ export const ServerIntegrationTests: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Server Integration Tests
-      </Typography>
+    <TestSuiteLayout
+      title="Server Integration Tests"
+      description="This test suite validates the server-side functionality of the @user27828/shared-utils library by communicating with the dedicated server test consumer running in a Node.js environment using the timeline progress interface."
+      headerContent={
+        <>
+          <Alert severity="info" sx={{ mb: 3 }}>
+            <strong>Architecture:</strong> Server tests run in a dedicated
+            Node.js environment at <code>test-consumer/server</code> where
+            server-side code can be properly executed and tested. This
+            browser-based interface communicates with that server to fetch and
+            display results.
+          </Alert>
 
-      <Typography variant="body1" sx={{ mb: 3 }}>
-        This test suite validates the server-side functionality of the
-        @user27828/shared-utils library by communicating with the dedicated
-        server test consumer running in a Node.js environment using the new
-        Timeline progress interface.
-      </Typography>
-
-      <Alert severity="info" sx={{ mb: 3 }}>
-        <strong>Architecture:</strong> Server tests run in a dedicated Node.js
-        environment at <code>test-consumer/server</code> where server-side code
-        can be properly executed and tested. This browser-based interface
-        communicates with that server to fetch and display results.
-      </Alert>
-
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Server Test Consumer Status
-        </Typography>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-          <Chip
-            label={serverTestsAvailable ? "✅ Running" : "❌ Not Running"}
-            color={serverTestsAvailable ? "success" : "error"}
-            variant="outlined"
-          />
-          <Typography variant="body2" color="text.secondary">
-            {serverTestsAvailable
-              ? "Server test consumer is accessible at http://localhost:8030"
-              : "Start server test consumer: cd test-consumer/server && node index.js"}
+          <Typography variant="h6" gutterBottom>
+            Server Test Consumer Status
           </Typography>
-        </Box>
 
-        <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
-          <Button
-            variant="contained"
-            onClick={runAllTests}
-            disabled={isRunningTestSuite}
-            size="large"
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              mb: 2,
+              flexWrap: "wrap",
+            }}
           >
-            {isRunningTestSuite
-              ? "Running Integration Tests..."
-              : "Run All Server Integration Tests"}
-          </Button>
-
-          <Button
-            variant="outlined"
-            onClick={checkServerTestConsumer}
-            disabled={isRunningTestSuite}
-            size="large"
-          >
-            Check Server Status
-          </Button>
-
-          {serverTestsAvailable && (
-            <Button
+            <Chip
+              label={serverTestsAvailable ? "Running" : "Not Running"}
+              color={serverTestsAvailable ? "success" : "error"}
               variant="outlined"
-              onClick={openServerTestConsumer}
+            />
+            <Typography variant="body2" color="text.secondary">
+              {serverTestsAvailable
+                ? "Server test consumer is accessible at http://localhost:8030"
+                : "Start server test consumer: cd test-consumer/server && node index.js"}
+            </Typography>
+          </Box>
+
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <Button
+              variant="contained"
+              onClick={runAllTests}
+              disabled={isRunningTestSuite}
               size="large"
             >
-              Open Server Console
+              {isRunningTestSuite
+                ? "Running Integration Tests..."
+                : "Run All Server Integration Tests"}
             </Button>
-          )}
-        </Box>
-      </Box>
 
-      <Divider sx={{ mb: 3 }} />
+            <Button
+              variant="outlined"
+              onClick={checkServerTestConsumer}
+              disabled={isRunningTestSuite}
+              size="large"
+            >
+              Check Server Status
+            </Button>
 
-      {/* TestProgress Timeline Component */}
-      <TestProgress
-        title="Server Integration Tests"
-        tests={testItems}
-        onRunIndividual={runIndividualTest}
-        isRunning={isRunningTestSuite}
-        showIndividualButtons={true}
-      />
+            {serverTestsAvailable && (
+              <Button
+                variant="outlined"
+                onClick={openServerTestConsumer}
+                size="large"
+              >
+                Open Server Console
+              </Button>
+            )}
 
-      <Divider sx={{ mb: 3 }} />
-
-      {/* Information Section */}
+            <Button
+              variant="outlined"
+              onClick={clearResults}
+              disabled={isRunningTestSuite}
+              size="large"
+            >
+              Clear Results
+            </Button>
+          </Stack>
+        </>
+      }
+      progressContent={
+        <TestProgress
+          title="Server Integration Tests"
+          tests={testItems}
+          onRunIndividual={runIndividualTest}
+          isRunning={isRunningTestSuite}
+          showIndividualButtons={true}
+        />
+      }
+      contentTitle="About Server Integration Tests"
+    >
       <Box
         sx={{
           p: 3,
@@ -607,9 +608,6 @@ export const ServerIntegrationTests: React.FC = () => {
           borderColor: "rgba(255, 255, 255, 0.08)",
         }}
       >
-        <Typography variant="h6" gutterBottom>
-          About Server Integration Tests
-        </Typography>
         <Box component="ul" sx={{ textAlign: "left", pl: 3 }}>
           <Typography component="li" variant="body2" sx={{ mb: 1 }}>
             <strong>Proper Environment:</strong> Server tests run in Node.js
@@ -637,7 +635,7 @@ export const ServerIntegrationTests: React.FC = () => {
           comprehensive coverage across both client and server contexts.
         </Alert>
       </Box>
-    </Container>
+    </TestSuiteLayout>
   );
 };
 

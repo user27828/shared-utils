@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Container, Typography, Box, Button, Divider } from "@mui/material";
+import { Typography, Box, Button, Stack } from "@mui/material";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
+import TestSuiteLayout from "./TestSuiteLayout";
 
 // Import the turnstile utility from shared-utils
 // Note: This will test the actual integration
@@ -536,111 +537,127 @@ export const TurnstileTests: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Turnstile Integration Tests
-      </Typography>
-
-      <Typography variant="body1" sx={{ mb: 3 }}>
-        This test suite validates the integration of the Turnstile utility from
-        @user27828/shared-utils in a real React environment. Tests cover
-        rendering, configuration, events, and cleanup using the new Timeline
-        progress interface.
-      </Typography>
-
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="body1" sx={{ mb: 2 }}>
-          <strong>Turnstile Status:</strong>{" "}
-          {turnstileLoaded ? "✅ Loaded" : "❌ Not Loaded"}
-        </Typography>
-
-        <Button
-          variant="contained"
-          onClick={runAllTests}
-          disabled={isRunningTestSuite || !turnstileLoaded}
-          size="large"
-        >
-          {isRunningTestSuite ? "Running Tests..." : "Run All Turnstile Tests"}
-        </Button>
-      </Box>
-
-      <Divider sx={{ mb: 3 }} />
-
-      {/* TestProgress Timeline Component */}
-      <TestProgress
-        title="Turnstile Tests"
-        tests={testItems}
-        onRunIndividual={runIndividualTest}
-        isRunning={isRunningTestSuite}
-        showIndividualButtons={true}
-      />
-
-      <Divider sx={{ mb: 3 }} />
-
-      {/* Test Widget Areas */}
-      <Typography variant="h5" component="h2" gutterBottom>
-        Test Widget Areas
-      </Typography>
-
-      <Box sx={{ mb: 3, display: "grid", gap: 3 }}>
-        <Box
-          sx={{
-            p: 3,
-            backgroundColor: "rgba(255, 255, 255, 0.02)",
-            borderRadius: 2,
-            border: 1,
-            borderColor: "rgba(255, 255, 255, 0.08)",
-            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
-          }}
-        >
-          <Typography variant="h6" gutterBottom>
-            Basic Widget
+    <TestSuiteLayout
+      title="Turnstile Integration Tests"
+      description="This test suite validates the integration of the Turnstile utility from @user27828/shared-utils in a real React environment. Tests cover rendering, configuration, events, and cleanup using the timeline progress interface."
+      headerContent={
+        <>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            <strong>Turnstile Status:</strong>{" "}
+            {turnstileLoaded ? "Loaded" : "Not Loaded"}
           </Typography>
-          <div ref={basicWidgetRef} id="basic-turnstile"></div>
-        </Box>
 
-        <Box
-          sx={{
-            p: 3,
-            backgroundColor: "rgba(255, 255, 255, 0.02)",
-            borderRadius: 2,
-            border: 1,
-            borderColor: "rgba(255, 255, 255, 0.08)",
-            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
-          }}
-        >
-          <Typography variant="h6" gutterBottom>
-            Custom Configuration Widget
-          </Typography>
-          <div ref={customWidgetRef} id="custom-turnstile"></div>
-        </Box>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <Button
+              variant="contained"
+              onClick={runAllTests}
+              disabled={isRunningTestSuite || !turnstileLoaded}
+              size="large"
+            >
+              {isRunningTestSuite
+                ? "Running Tests..."
+                : "Run All Turnstile Tests"}
+            </Button>
 
-        <Box
-          sx={{
-            p: 3,
-            backgroundColor: "rgba(255, 255, 255, 0.02)",
-            borderRadius: 2,
-            border: 1,
-            borderColor: "rgba(255, 255, 255, 0.08)",
-            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
-          }}
-        >
-          <Typography variant="h6" gutterBottom>
-            Multiple Widgets
-          </Typography>
-          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Widget 1 (Light):
-              </Typography>
-              <div ref={multipleWidget1Ref} id="multiple-turnstile-1"></div>
+            <Button
+              variant="outlined"
+              onClick={clearResults}
+              disabled={isRunningTestSuite}
+              size="large"
+            >
+              Clear Results
+            </Button>
+          </Stack>
+        </>
+      }
+      progressContent={
+        <TestProgress
+          title="Turnstile Tests"
+          tests={testItems}
+          onRunIndividual={runIndividualTest}
+          isRunning={isRunningTestSuite}
+          showIndividualButtons={true}
+        />
+      }
+      contentTitle="Test Widget Areas"
+    >
+      <>
+        <Box sx={{ mb: 3, display: "grid", gap: 3 }}>
+          <Box
+            sx={{
+              p: 3,
+              backgroundColor: "rgba(255, 255, 255, 0.02)",
+              borderRadius: 2,
+              border: 1,
+              borderColor: "rgba(255, 255, 255, 0.08)",
+              boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              Basic Widget
+            </Typography>
+            <div ref={basicWidgetRef} id="basic-turnstile"></div>
+          </Box>
+
+          <Box
+            sx={{
+              p: 3,
+              backgroundColor: "rgba(255, 255, 255, 0.02)",
+              borderRadius: 2,
+              border: 1,
+              borderColor: "rgba(255, 255, 255, 0.08)",
+              boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              Custom Configuration Widget
+            </Typography>
+            <div ref={customWidgetRef} id="custom-turnstile"></div>
+          </Box>
+
+          <Box
+            sx={{
+              p: 3,
+              backgroundColor: "rgba(255, 255, 255, 0.02)",
+              borderRadius: 2,
+              border: 1,
+              borderColor: "rgba(255, 255, 255, 0.08)",
+              boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              Multiple Widgets
+            </Typography>
+            <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+              <Box>
+                <Typography variant="subtitle2" gutterBottom>
+                  Widget 1 (Light):
+                </Typography>
+                <div ref={multipleWidget1Ref} id="multiple-turnstile-1"></div>
+              </Box>
+              <Box>
+                <Typography variant="subtitle2" gutterBottom>
+                  Widget 2 (Dark):
+                </Typography>
+                <div ref={multipleWidget2Ref} id="multiple-turnstile-2"></div>
+              </Box>
             </Box>
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Widget 2 (Dark):
-              </Typography>
-              <div ref={multipleWidget2Ref} id="multiple-turnstile-2"></div>
-            </Box>
+          </Box>
+
+          <Box
+            sx={{
+              p: 3,
+              backgroundColor: "rgba(255, 255, 255, 0.02)",
+              borderRadius: 2,
+              border: 1,
+              borderColor: "rgba(255, 255, 255, 0.08)",
+              boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              Event Handling Widget
+            </Typography>
+            <div ref={eventWidgetRef} id="event-turnstile"></div>
           </Box>
         </Box>
 
@@ -651,49 +668,31 @@ export const TurnstileTests: React.FC = () => {
             borderRadius: 2,
             border: 1,
             borderColor: "rgba(255, 255, 255, 0.08)",
-            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
           }}
         >
           <Typography variant="h6" gutterBottom>
-            Event Handling Widget
+            Notes
           </Typography>
-          <div ref={eventWidgetRef} id="event-turnstile"></div>
+          <Box component="ul" sx={{ textAlign: "left", pl: 3 }}>
+            <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+              This test uses Cloudflare's test site key:{" "}
+              <code>1x00000000000000000000AA</code>
+            </Typography>
+            <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+              Actual CAPTCHA verification will require a real site key and
+              domain
+            </Typography>
+            <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+              Event callbacks may not trigger in test environment but their
+              setup is validated
+            </Typography>
+            <Typography component="li" variant="body2">
+              Tests focus on API integration rather than visual verification
+            </Typography>
+          </Box>
         </Box>
-      </Box>
-
-      <Divider sx={{ mb: 3 }} />
-
-      {/* Notes Section */}
-      <Box
-        sx={{
-          p: 3,
-          backgroundColor: "rgba(255, 255, 255, 0.02)",
-          borderRadius: 2,
-          border: 1,
-          borderColor: "rgba(255, 255, 255, 0.08)",
-        }}
-      >
-        <Typography variant="h6" gutterBottom>
-          Notes
-        </Typography>
-        <Box component="ul" sx={{ textAlign: "left", pl: 3 }}>
-          <Typography component="li" variant="body2" sx={{ mb: 1 }}>
-            This test uses Cloudflare's test site key:{" "}
-            <code>1x00000000000000000000AA</code>
-          </Typography>
-          <Typography component="li" variant="body2" sx={{ mb: 1 }}>
-            Actual CAPTCHA verification will require a real site key and domain
-          </Typography>
-          <Typography component="li" variant="body2" sx={{ mb: 1 }}>
-            Event callbacks may not trigger in test environment but their setup
-            is validated
-          </Typography>
-          <Typography component="li" variant="body2">
-            Tests focus on API integration rather than visual verification
-          </Typography>
-        </Box>
-      </Box>
-    </Container>
+      </>
+    </TestSuiteLayout>
   );
 };
 

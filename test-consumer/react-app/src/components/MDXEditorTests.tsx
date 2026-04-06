@@ -3,8 +3,17 @@ import {
   MDXEditor,
   type MDXEditorMethods,
 } from "@user27828/shared-utils/client/wysiwyg";
-import { Box, Card, CardContent, Typography, Stack, Chip } from "@mui/material";
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Stack,
+  Typography,
+} from "@mui/material";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
+import TestSuiteLayout from "./TestSuiteLayout";
 
 interface MDXEditorTestsProps {
   darkMode: boolean;
@@ -477,21 +486,53 @@ const MDXEditorTests: React.FC<MDXEditorTestsProps> = ({ darkMode }) => {
   };
 
   return (
-    <div>
-      <h2>MDXEditor Integration Tests</h2>
-
-      <TestProgress
-        title="MDXEditor"
-        tests={testItems}
-        isRunning={isRunningTestSuite}
-        onRunAll={testAllOptions}
-        onRunIndividual={runIndividualTest}
-        onClear={clearResults}
-        showIndividualButtons={true}
-      />
-
-      {/* MDXEditor */}
-      <Box sx={{ mb: 3, mt: 3 }}>
+    <TestSuiteLayout
+      title="MDXEditor Integration Tests"
+      description="Markdown editor integration tests for shared-utils using MDXEditor in the browser."
+      headerContent={
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <Button
+            variant="contained"
+            onClick={testAllOptions}
+            disabled={isRunningTestSuite}
+            size="large"
+          >
+            {isRunningTestSuite
+              ? "Running Tests..."
+              : "Run All MDXEditor Tests"}
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={clearResults}
+            disabled={isRunningTestSuite}
+            size="large"
+          >
+            Clear Results
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              setSavedContent("");
+            }}
+            disabled={isRunningTestSuite}
+            size="large"
+          >
+            Clear Saved Content
+          </Button>
+        </Stack>
+      }
+      progressContent={
+        <TestProgress
+          title="MDXEditor Tests"
+          tests={testItems}
+          isRunning={isRunningTestSuite}
+          onRunIndividual={runIndividualTest}
+          showIndividualButtons={true}
+        />
+      }
+      contentTitle="Live MDXEditor Demo"
+    >
+      <Box sx={{ display: "grid", gap: 3 }}>
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom>
@@ -510,10 +551,7 @@ const MDXEditorTests: React.FC<MDXEditorTestsProps> = ({ darkMode }) => {
             />
           </CardContent>
         </Card>
-      </Box>
 
-      {/* Integration Statistics */}
-      <Box sx={{ mt: 3 }}>
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom>
@@ -538,46 +576,50 @@ const MDXEditorTests: React.FC<MDXEditorTestsProps> = ({ darkMode }) => {
                 size="small"
               />
               {isRunningTestSuite && (
-                <Chip label="🧪 Test Suite Running" color="info" size="small" />
+                <Chip label="Test Suite Running" color="info" size="small" />
               )}
             </Stack>
           </CardContent>
         </Card>
-      </Box>
 
-      <div className="card" style={{ marginTop: "2rem" }}>
-        <h3>About MDXEditor Tests</h3>
-        <ul style={{ textAlign: "left" }}>
-          <li>
-            <strong>Editor Status:</strong> Verifies that the MDXEditor is
-            properly initialized
-          </li>
-          <li>
-            <strong>Save Content:</strong> Tests saving current editor content
-            to memory
-          </li>
-          <li>
-            <strong>Load Content:</strong> Tests loading saved content back to
-            the editor
-          </li>
-          <li>
-            <strong>Insert Sample Data:</strong> Tests inserting markdown
-            content into the editor
-          </li>
-          <li>
-            <strong>Editor API Test:</strong> Tests core editor API methods and
-            content retrieval
-          </li>
-          <li>
-            <strong>Markdown Formatting Test:</strong> Tests markdown formatting
-            capabilities
-          </li>
-          <li>
-            <strong>Focus Test:</strong> Tests editor focus functionality
-          </li>
-        </ul>
-      </div>
-    </div>
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              About MDXEditor Tests
+            </Typography>
+            <Box component="ul" sx={{ textAlign: "left", pl: 3, mb: 0 }}>
+              <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                <strong>Editor Status:</strong> Verifies that the MDXEditor is
+                properly initialized.
+              </Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                <strong>Save Content:</strong> Tests saving current editor
+                content to memory.
+              </Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                <strong>Load Content:</strong> Tests loading saved content back
+                to the editor.
+              </Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                <strong>Insert Sample Data:</strong> Tests inserting markdown
+                content into the editor.
+              </Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                <strong>Editor API Test:</strong> Tests core editor API methods
+                and content retrieval.
+              </Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                <strong>Markdown Formatting Test:</strong> Tests markdown
+                formatting capabilities.
+              </Typography>
+              <Typography component="li" variant="body2">
+                <strong>Focus Test:</strong> Tests editor focus functionality.
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
+    </TestSuiteLayout>
   );
 };
 

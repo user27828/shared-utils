@@ -1,7 +1,16 @@
 import React, { useState } from "react";
 import WysiwygEditor from "@user27828/shared-utils/client/wysiwyg";
-import { Box, Card, CardContent, Typography, Stack, Chip } from "@mui/material";
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Stack,
+  Typography,
+} from "@mui/material";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
+import TestSuiteLayout from "./TestSuiteLayout";
 
 interface TinyMCETestsProps {
   darkMode: boolean;
@@ -597,21 +606,51 @@ const TinyMCETests: React.FC<TinyMCETestsProps> = ({ darkMode }) => {
   };
 
   return (
-    <div>
-      <h2>TinyMCE Integration Tests</h2>
-
-      <TestProgress
-        title="TinyMCE Editor"
-        tests={testItems}
-        isRunning={isRunningTestSuite}
-        onRunAll={testAllOptions}
-        onRunIndividual={runIndividualTest}
-        onClear={clearResults}
-        showIndividualButtons={true}
-      />
-
-      {/* TinyMCE Editor */}
-      <Box sx={{ mb: 3, mt: 3 }}>
+    <TestSuiteLayout
+      title="TinyMCE Integration Tests"
+      description="Rich text editor integration tests for shared-utils using TinyMCE in the browser."
+      headerContent={
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <Button
+            variant="contained"
+            onClick={testAllOptions}
+            disabled={isRunningTestSuite}
+            size="large"
+          >
+            {isRunningTestSuite ? "Running Tests..." : "Run All TinyMCE Tests"}
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={clearResults}
+            disabled={isRunningTestSuite}
+            size="large"
+          >
+            Clear Results
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              setSavedContent("");
+            }}
+            disabled={isRunningTestSuite}
+            size="large"
+          >
+            Clear Saved Content
+          </Button>
+        </Stack>
+      }
+      progressContent={
+        <TestProgress
+          title="TinyMCE Tests"
+          tests={testItems}
+          isRunning={isRunningTestSuite}
+          onRunIndividual={runIndividualTest}
+          showIndividualButtons={true}
+        />
+      }
+      contentTitle="Live TinyMCE Demo"
+    >
+      <Box sx={{ display: "grid", gap: 3 }}>
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom>
@@ -635,7 +674,6 @@ const TinyMCETests: React.FC<TinyMCETestsProps> = ({ darkMode }) => {
                     "undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist outdent indent | removeformat | help",
                   branding: false,
                   promotion: false,
-                  // Use the proper dark mode configuration
                   skin: darkMode ? "oxide-dark" : "oxide",
                   content_css: darkMode ? "dark" : "default",
                   content_style: `body { 
@@ -667,10 +705,7 @@ const TinyMCETests: React.FC<TinyMCETestsProps> = ({ darkMode }) => {
             />
           </CardContent>
         </Card>
-      </Box>
 
-      {/* Integration Statistics */}
-      <Box sx={{ mt: 3 }}>
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom>
@@ -695,50 +730,55 @@ const TinyMCETests: React.FC<TinyMCETestsProps> = ({ darkMode }) => {
                 size="small"
               />
               {isRunningTestSuite && (
-                <Chip label="🧪 Test Suite Running" color="info" size="small" />
+                <Chip label="Test Suite Running" color="info" size="small" />
               )}
             </Stack>
           </CardContent>
         </Card>
-      </Box>
 
-      <div className="card" style={{ marginTop: "2rem" }}>
-        <h3>About TinyMCE Tests</h3>
-        <ul style={{ textAlign: "left" }}>
-          <li>
-            <strong>Editor Status:</strong> Verifies that the TinyMCE editor is
-            properly initialized
-          </li>
-          <li>
-            <strong>Save Content:</strong> Tests saving current editor content
-            to memory
-          </li>
-          <li>
-            <strong>Load Content:</strong> Tests loading saved content back to
-            the editor (requires saved content)
-          </li>
-          <li>
-            <strong>Insert Sample Data:</strong> Tests inserting HTML content
-            into the editor
-          </li>
-          <li>
-            <strong>Editor API Test:</strong> Tests core editor API methods and
-            content retrieval
-          </li>
-          <li>
-            <strong>Undo/Redo Test:</strong> Tests undo and redo functionality
-          </li>
-          <li>
-            <strong>Plugin Test:</strong> Checks for available plugins and their
-            functionality
-          </li>
-          <li>
-            <strong>Event Handling Test:</strong> Tests editor event handling
-            mechanisms
-          </li>
-        </ul>
-      </div>
-    </div>
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              About TinyMCE Tests
+            </Typography>
+            <Box component="ul" sx={{ textAlign: "left", pl: 3, mb: 0 }}>
+              <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                <strong>Editor Status:</strong> Verifies that the TinyMCE editor
+                is properly initialized.
+              </Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                <strong>Save Content:</strong> Tests saving current editor
+                content to memory.
+              </Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                <strong>Load Content:</strong> Tests loading saved content back
+                to the editor.
+              </Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                <strong>Insert Sample Data:</strong> Tests inserting HTML
+                content into the editor.
+              </Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                <strong>Editor API Test:</strong> Tests core editor API methods
+                and content retrieval.
+              </Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                <strong>Undo/Redo Test:</strong> Tests undo and redo
+                functionality.
+              </Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+                <strong>Plugin Test:</strong> Checks for available plugins and
+                their functionality.
+              </Typography>
+              <Typography component="li" variant="body2">
+                <strong>Event Handling Test:</strong> Tests editor event
+                handling mechanisms.
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
+    </TestSuiteLayout>
   );
 };
 

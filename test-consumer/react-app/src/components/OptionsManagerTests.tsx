@@ -1,5 +1,14 @@
 import React from "react";
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Stack,
+  Typography,
+} from "@mui/material";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
+import TestSuiteLayout from "./TestSuiteLayout";
 
 // Import the options manager utilities from shared-utils
 let OptionsManager: any = null;
@@ -514,46 +523,72 @@ const OptionsManagerTests: React.FC = () => {
   };
 
   return (
-    <div>
-      <h2>Options Manager Integration Tests</h2>
-      <TestProgress
-        title="Options Manager"
-        tests={testItems}
-        isRunning={isLoading}
-        onRunAll={runAllTests}
-        onRunIndividual={runIndividualTest}
-        onClear={clearResults}
-        showIndividualButtons={true}
-      />
+    <TestSuiteLayout
+      title="Options Manager Integration Tests"
+      description="This suite validates OptionsManager behavior in the React consumer, including nested updates, merge strategy rules, the global optionsManager registry, and backward-compatible APIs."
+      headerContent={
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <Button
+            variant="contained"
+            onClick={runAllTests}
+            disabled={isLoading}
+            size="large"
+          >
+            {isLoading ? "Running Tests..." : "Run All Options Manager Tests"}
+          </Button>
 
-      <div className="card" style={{ marginTop: "2rem" }}>
-        <h3>About Options Manager Tests</h3>
-        <ul style={{ textAlign: "left" }}>
-          <li>
-            <strong>Basic Manager:</strong> Tests individual OptionsManager
-            instance functionality including getOption(), setOption(), nested
-            access, and reset
-          </li>
-          <li>
-            <strong>Merge Strategy:</strong> Verifies that arrays are replaced
-            (not merged) while objects are deep merged, preserving existing
-            properties
-          </li>
-          <li>
-            <strong>Global Manager:</strong> Tests cross-utility configuration
-            via the global optionsManager singleton
-          </li>
-          <li>
-            <strong>Compatibility:</strong> Ensures deprecated setOptions() and
-            getOptions() methods work for backward compatibility
-          </li>
-          <li>
-            <strong>Undefined Handling:</strong> Verifies that undefined values
-            are properly skipped during option setting
-          </li>
-        </ul>
-      </div>
-    </div>
+          <Button
+            variant="outlined"
+            onClick={clearResults}
+            disabled={isLoading}
+            size="large"
+          >
+            Clear Results
+          </Button>
+        </Stack>
+      }
+      progressContent={
+        <TestProgress
+          title="Options Manager"
+          tests={testItems}
+          isRunning={isLoading}
+          onRunIndividual={runIndividualTest}
+          showIndividualButtons={true}
+        />
+      }
+      contentTitle="About Options Manager Tests"
+    >
+      <Card
+        variant="outlined"
+        sx={{ backgroundColor: "rgba(255, 255, 255, 0.02)" }}
+      >
+        <CardContent>
+          <Box component="ul" sx={{ textAlign: "left", pl: 3, m: 0 }}>
+            <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+              <strong>Basic Manager:</strong> Tests individual OptionsManager
+              instance functionality including getOption(), setOption(), nested
+              access, and reset.
+            </Typography>
+            <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+              <strong>Merge Strategy:</strong> Verifies that arrays are replaced
+              while objects are deep merged, preserving existing properties.
+            </Typography>
+            <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+              <strong>Global Manager:</strong> Tests cross-utility configuration
+              via the global optionsManager singleton.
+            </Typography>
+            <Typography component="li" variant="body2" sx={{ mb: 1 }}>
+              <strong>Compatibility:</strong> Ensures deprecated setOptions()
+              and getOptions() methods work for backward compatibility.
+            </Typography>
+            <Typography component="li" variant="body2">
+              <strong>Undefined Handling:</strong> Verifies that undefined
+              values are properly skipped during option setting.
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    </TestSuiteLayout>
   );
 };
 

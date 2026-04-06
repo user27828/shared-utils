@@ -23,7 +23,8 @@ import {
   type ModeUploadFileProps,
 } from "@user27828/shared-utils/client";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
-import { Container, Typography, Box, Button, Divider } from "@mui/material";
+import { Typography, Box, Button, Stack } from "@mui/material";
+import TestSuiteLayout from "./TestSuiteLayout";
 
 interface Country {
   name: string;
@@ -1366,49 +1367,43 @@ export const ClientComponentTests: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Client Components Integration Tests
-      </Typography>
+    <TestSuiteLayout
+      title="Client Components Integration Tests"
+      description="Integration tests for CountrySelect, LanguageSelect, FileUploadList, CSV import/export functionality, date utilities, and helper functions. These tests verify component rendering, state management, data handling, and utility behavior using the timeline progress interface."
+      headerContent={
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <Button
+            variant="contained"
+            onClick={runAllTests}
+            disabled={isRunningTestSuite}
+            size="large"
+          >
+            {isRunningTestSuite
+              ? "Running Tests..."
+              : "Run All Client Component Tests"}
+          </Button>
 
-      <Typography variant="body1" sx={{ mb: 3 }}>
-        Integration tests for CountrySelect, LanguageSelect, FileUploadList, CSV
-        Import/Export functionality, Date Utilities, and helper functions. These
-        tests verify component rendering, state management, data handling, and
-        utility functions using the new Timeline progress interface.
-      </Typography>
-
-      <Box sx={{ mb: 4 }}>
-        <Button
-          variant="contained"
-          onClick={runAllTests}
-          disabled={isRunningTestSuite}
-          size="large"
-        >
-          {isRunningTestSuite
-            ? "Running Tests..."
-            : "Run All Client Component Tests"}
-        </Button>
-      </Box>
-
-      <Divider sx={{ mb: 3 }} />
-
-      {/* TestProgress Timeline Component */}
-      <TestProgress
-        title="Client Component Tests"
-        tests={testItems}
-        onRunIndividual={runIndividualTest}
-        isRunning={isRunningTestSuite}
-        showIndividualButtons={true}
-      />
-
-      <Divider sx={{ mb: 3 }} />
-
-      {/* Demo Components for Manual Testing */}
-      <Typography variant="h5" component="h2" gutterBottom>
-        Live Component Demos
-      </Typography>
-
+          <Button
+            variant="outlined"
+            onClick={clearResults}
+            disabled={isRunningTestSuite}
+            size="large"
+          >
+            Clear Results
+          </Button>
+        </Stack>
+      }
+      progressContent={
+        <TestProgress
+          title="Client Component Tests"
+          tests={testItems}
+          onRunIndividual={runIndividualTest}
+          isRunning={isRunningTestSuite}
+          showIndividualButtons={true}
+        />
+      }
+      contentTitle="Live Component Demos"
+    >
       <Box sx={{ mb: 3, display: "grid", gap: 3 }}>
         <Box
           sx={{
@@ -1738,7 +1733,7 @@ export const ClientComponentTests: React.FC = () => {
           )}
         </Box>
       </Box>
-    </Container>
+    </TestSuiteLayout>
   );
 };
 

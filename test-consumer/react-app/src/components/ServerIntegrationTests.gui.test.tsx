@@ -1,6 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
 import { ServerIntegrationTests } from "./ServerIntegrationTests";
+
+const expectBefore = (first: HTMLElement, second: HTMLElement) => {
+  expect(
+    first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+};
 
 describe("ServerIntegrationTests GUI", () => {
   beforeEach(() => {
@@ -13,6 +19,10 @@ describe("ServerIntegrationTests GUI", () => {
     }) as any;
   });
 
+  afterEach(() => {
+    cleanup();
+  });
+
   it("lists CMS and FM conformance timeline items", () => {
     render(<ServerIntegrationTests />);
 
@@ -20,5 +30,20 @@ describe("ServerIntegrationTests GUI", () => {
     screen.getByText("FM Connector Conformance");
 
     expect(true).toBe(true);
+  });
+
+  it("keeps server controls before results before the about section", () => {
+    render(<ServerIntegrationTests />);
+
+    const runAllButton = screen.getAllByRole("button", {
+      name: "Run All Server Integration Tests",
+    })[0];
+    const results = screen.getByText(
+      "Server Integration Tests - Test Progress",
+    );
+    const content = screen.getByText("About Server Integration Tests");
+
+    expectBefore(runAllButton, results);
+    expectBefore(results, content);
   });
 });

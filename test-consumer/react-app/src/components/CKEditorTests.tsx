@@ -20,6 +20,7 @@ import {
   Typography,
 } from "@mui/material";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
+import TestSuiteLayout from "./TestSuiteLayout";
 
 interface CKEditorTestsProps {
   darkMode: boolean;
@@ -125,9 +126,27 @@ const CKEditorTests: React.FC<CKEditorTestsProps> = ({ darkMode }) => {
               status,
               message,
               duration,
+              startTime: status === "running" ? new Date() : item.startTime,
+              endTime:
+                status === "pass" || status === "fail" || status === "skipped"
+                  ? new Date()
+                  : undefined,
             }
           : item,
       ),
+    );
+  };
+
+  const clearResults = () => {
+    setTestItems((prev) =>
+      prev.map((item) => ({
+        ...item,
+        status: "pending",
+        message: undefined,
+        duration: undefined,
+        startTime: undefined,
+        endTime: undefined,
+      })),
     );
   };
 
@@ -404,8 +423,34 @@ const CKEditorTests: React.FC<CKEditorTestsProps> = ({ darkMode }) => {
     );
   };
 
+  const runIndividualTest = async (testName: string) => {
+    switch (testName) {
+      case "Editor Status":
+        await runEditorStatusTest();
+        break;
+      case "Save Content":
+        await runSaveContentTest();
+        break;
+      case "Load Content":
+        await runLoadContentTest();
+        break;
+      case "Insert Media Embed":
+        await runMediaEmbedTest();
+        break;
+      case "Paste Markdown":
+        await runPasteMarkdownTest();
+        break;
+      case "Custom File Picker UI":
+        await runCustomPickerTest();
+        break;
+      default:
+        updateTestStatus(testName, "fail", "Unknown test");
+    }
+  };
+
   const runAllTests = async () => {
     setIsRunningTestSuite(true);
+    clearResults();
 
     try {
       await runEditorStatusTest();
@@ -420,157 +465,176 @@ const CKEditorTests: React.FC<CKEditorTestsProps> = ({ darkMode }) => {
   };
 
   return (
-    <Box sx={{ p: 2 }}>
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Typography variant="h5" gutterBottom>
-            CKEditor 5 Integration Tests
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            CKEditor 5 (self-hosted, GPL) running via @user27828/shared-utils
-            with no cloud components.
-          </Typography>
-
-          <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-            <Chip
-              label={editor ? "CKEditor Ready" : "CKEditor Initializing"}
-              color={editor ? "success" : "warning"}
-              variant="outlined"
-            />
-            <Chip
-              label={darkMode ? "Dark" : "Light"}
-              color={darkMode ? "info" : "default"}
-              variant="outlined"
-            />
-          </Stack>
-
-          <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-            <Button
-              variant="contained"
-              onClick={runAllTests}
-              disabled={isRunningTestSuite}
-            >
-              {isRunningTestSuite ? "Running…" : "Run Test Suite"}
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() => setSavedContent("")}
-              disabled={isRunningTestSuite}
-            >
-              Clear Saved
-            </Button>
-          </Stack>
-        </CardContent>
-      </Card>
-
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            CKEditor 5 Editor
-          </Typography>
-
-          <WysiwygEditor
-            editor="ckeditor"
-            value={content}
-            height={520}
-            onEditorInstance={(instance: any) => {
-              setEditor(instance);
-            }}
-            onChange={(nextValue: string) => {
-              setContent(nextValue);
-            }}
-            onPickAsset={onPickAsset}
-            onUploadImage={onUploadImage}
-            ckeditor={{
-              darkMode,
-            }}
-          />
-        </CardContent>
-      </Card>
-
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Markdown Paste Sample
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            The editor includes PasteFromMarkdownExperimental. Copy the sample
-            below and paste into the editor to verify conversion.
-          </Typography>
-          <TextField
-            value={markdownSample}
-            fullWidth
-            multiline
-            minRows={6}
-            maxRows={12}
-            InputProps={{ readOnly: true }}
-          />
-        </CardContent>
-      </Card>
-
-      <TestProgress
-        title="CKEditor Test Progress"
-        tests={testItems}
-        isRunning={isRunningTestSuite}
-      />
-
-      <Dialog open={pickerState.open} onClose={handlePickerCancel} fullWidth>
-        <DialogTitle>Custom File Picker</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            This dialog simulates an asset picker UI. It resolves the
-            `onPickAsset()` promise back to the editor.
-          </Typography>
-
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={2}
-            sx={{ mb: 2 }}
+    <TestSuiteLayout
+      title="CKEditor 5 Integration Tests"
+      description="CKEditor 5 (self-hosted, GPL) running via @user27828/shared-utils with no cloud components."
+      headerContent={
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <Button
+            variant="contained"
+            onClick={runAllTests}
+            disabled={isRunningTestSuite}
+            size="large"
           >
-            <Button
-              variant={pickerKind === "image" ? "contained" : "outlined"}
-              onClick={() => {
-                setPickerKind("image");
-              }}
-            >
-              Image
-            </Button>
-            <Button
-              variant={pickerKind === "file" ? "contained" : "outlined"}
-              onClick={() => {
-                setPickerKind("file");
-              }}
-            >
-              File
-            </Button>
-            <Button
-              variant={pickerKind === "media" ? "contained" : "outlined"}
-              onClick={() => {
-                setPickerKind("media");
-              }}
-            >
-              Media
-            </Button>
-          </Stack>
-
-          <TextField
-            label="URL"
-            value={pickerUrl}
-            onChange={(e) => {
-              setPickerUrl(e.target.value);
-            }}
-            fullWidth
-            placeholder="https://..."
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handlePickerCancel}>Cancel</Button>
-          <Button onClick={handlePickerInsert} variant="contained">
-            Insert
+            {isRunningTestSuite ? "Running Tests..." : "Run All CKEditor Tests"}
           </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+          <Button
+            variant="outlined"
+            onClick={clearResults}
+            disabled={isRunningTestSuite}
+            size="large"
+          >
+            Clear Results
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              setSavedContent("");
+            }}
+            disabled={isRunningTestSuite}
+            size="large"
+          >
+            Clear Saved Content
+          </Button>
+        </Stack>
+      }
+      progressContent={
+        <TestProgress
+          title="CKEditor Tests"
+          tests={testItems}
+          isRunning={isRunningTestSuite}
+          onRunIndividual={runIndividualTest}
+          showIndividualButtons={true}
+        />
+      }
+      contentTitle="Live CKEditor Demo"
+    >
+      <>
+        <Box sx={{ display: "grid", gap: 3 }}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Session Status
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                <Chip
+                  label={editor ? "CKEditor Ready" : "CKEditor Initializing"}
+                  color={editor ? "success" : "warning"}
+                  variant="outlined"
+                />
+                <Chip
+                  label={darkMode ? "Dark" : "Light"}
+                  color={darkMode ? "info" : "default"}
+                  variant="outlined"
+                />
+              </Stack>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                CKEditor 5 Editor
+              </Typography>
+
+              <WysiwygEditor
+                editor="ckeditor"
+                value={content}
+                height={520}
+                onEditorInstance={(instance: any) => {
+                  setEditor(instance);
+                }}
+                onChange={(nextValue: string) => {
+                  setContent(nextValue);
+                }}
+                onPickAsset={onPickAsset}
+                onUploadImage={onUploadImage}
+                ckeditor={{
+                  darkMode,
+                }}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Markdown Paste Sample
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                The editor includes PasteFromMarkdownExperimental. Copy the
+                sample below and paste into the editor to verify conversion.
+              </Typography>
+              <TextField
+                value={markdownSample}
+                fullWidth
+                multiline
+                minRows={6}
+                maxRows={12}
+                InputProps={{ readOnly: true }}
+              />
+            </CardContent>
+          </Card>
+        </Box>
+
+        <Dialog open={pickerState.open} onClose={handlePickerCancel} fullWidth>
+          <DialogTitle>Custom File Picker</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              This dialog simulates an asset picker UI. It resolves the
+              `onPickAsset()` promise back to the editor.
+            </Typography>
+
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={2}
+              sx={{ mb: 2 }}
+            >
+              <Button
+                variant={pickerKind === "image" ? "contained" : "outlined"}
+                onClick={() => {
+                  setPickerKind("image");
+                }}
+              >
+                Image
+              </Button>
+              <Button
+                variant={pickerKind === "file" ? "contained" : "outlined"}
+                onClick={() => {
+                  setPickerKind("file");
+                }}
+              >
+                File
+              </Button>
+              <Button
+                variant={pickerKind === "media" ? "contained" : "outlined"}
+                onClick={() => {
+                  setPickerKind("media");
+                }}
+              >
+                Media
+              </Button>
+            </Stack>
+
+            <TextField
+              label="URL"
+              value={pickerUrl}
+              onChange={(e) => {
+                setPickerUrl(e.target.value);
+              }}
+              fullWidth
+              placeholder="https://..."
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handlePickerCancel}>Cancel</Button>
+            <Button onClick={handlePickerInsert} variant="contained">
+              Insert
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </>
+    </TestSuiteLayout>
   );
 };
 

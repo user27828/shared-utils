@@ -21,6 +21,7 @@ import {
   type FmDeleteResult,
 } from "@user27828/shared-utils/fm/client";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
+import TestSuiteLayout from "./TestSuiteLayout";
 
 type FmMoveFileInput = {
   fileUid: string;
@@ -440,26 +441,40 @@ const FmTests: React.FC = () => {
   };
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: "auto", px: 2, py: 3 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        FM Tests
-      </Typography>
-
-      <Typography variant="body1" sx={{ mb: 2 }}>
-        Client-side File Manager UI tests for shared-utils. This page renders
-        the Media Library and File Picker using an in-memory mock API.
-      </Typography>
-
-      <TestProgress
-        title="FM Tests"
-        tests={testItems}
-        isRunning={isRunningTestSuite}
-        onRunAll={runAllTests}
-        onRunIndividual={runIndividualTest}
-        onClear={clearResults}
-        showIndividualButtons={true}
-      />
-
+    <TestSuiteLayout
+      title="FM Tests"
+      description="Client-side File Manager UI tests for shared-utils. This page renders the Media Library and File Picker using an in-memory mock API."
+      headerContent={
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <Button
+            variant="contained"
+            onClick={runAllTests}
+            disabled={isRunningTestSuite}
+            size="large"
+          >
+            {isRunningTestSuite ? "Running Tests..." : "Run All FM Tests"}
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={clearResults}
+            disabled={isRunningTestSuite}
+            size="large"
+          >
+            Clear Results
+          </Button>
+        </Stack>
+      }
+      progressContent={
+        <TestProgress
+          title="FM Tests"
+          tests={testItems}
+          isRunning={isRunningTestSuite}
+          onRunIndividual={runIndividualTest}
+          showIndividualButtons={true}
+        />
+      }
+      contentTitle="Live FM Demo"
+    >
       <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
         <Card sx={{ flex: 1 }}>
           <CardContent>
@@ -536,7 +551,7 @@ const FmTests: React.FC = () => {
         }}
         api={api}
       />
-    </Box>
+    </TestSuiteLayout>
   );
 };
 
