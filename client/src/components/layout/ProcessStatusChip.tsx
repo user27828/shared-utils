@@ -207,15 +207,20 @@ const ProcessStatusChip: React.FC<ProcessStatusChipProps> = ({
         color={color}
         size={size}
         sx={mergeSx(
-          {
+          (theme: Theme) => ({
             position: "relative",
             overflow: "hidden",
+            boxShadow: theme.shadows[1],
             ...(color === "default" && {
-              backgroundColor: "background.paper",
+              backgroundColor:
+                theme.palette.mode === "dark"
+                  ? theme.palette.grey[800]
+                  : theme.palette.grey[200],
+              color: theme.palette.text.primary,
               border: "1px solid",
-              borderColor: "divider",
+              borderColor: theme.palette.divider,
             }),
-          } satisfies SxProps<Theme>,
+          }),
           sx,
         )}
         icon={

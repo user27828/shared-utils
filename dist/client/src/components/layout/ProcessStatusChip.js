@@ -75,15 +75,19 @@ const ProcessStatusChip = ({ status, label, color = "default", finalStatuses, pe
             position: "relative",
             display: "inline-block",
             overflow: "hidden",
-        }, children: [_jsx(Chip, { label: chipLabel, color: color, size: size, sx: mergeSx({
+        }, children: [_jsx(Chip, { label: chipLabel, color: color, size: size, sx: mergeSx((theme) => ({
                     position: "relative",
                     overflow: "hidden",
+                    boxShadow: theme.shadows[1],
                     ...(color === "default" && {
-                        backgroundColor: "background.paper",
+                        backgroundColor: theme.palette.mode === "dark"
+                            ? theme.palette.grey[800]
+                            : theme.palette.grey[200],
+                        color: theme.palette.text.primary,
                         border: "1px solid",
                         borderColor: "divider",
                     }),
-                }, sx), icon: placement === "left" ? renderCircularProgress() || undefined : undefined, deleteIcon: placement === "right"
+                }), sx), icon: placement === "left" ? renderCircularProgress() || undefined : undefined, deleteIcon: placement === "right"
                     ? renderCircularProgress() || undefined
                     : undefined, onDelete: placement === "right" && !isFinalStatus && isCircularProgress
                     ? () => { }

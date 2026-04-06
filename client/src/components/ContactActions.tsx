@@ -282,6 +282,7 @@ const ContactActions: React.FC<ContactActionsProps> = ({
 
   const calendarSubMenu = (
     <Menu
+      key="contact-actions-calendar-submenu"
       anchorEl={calMenuAnchor}
       open={Boolean(calMenuAnchor)}
       onClose={handleCalMenuClose}
@@ -335,6 +336,7 @@ const ContactActions: React.FC<ContactActionsProps> = ({
 
   const linkSubMenu = linkMenuProvider && hasLinks && linkMenuAnchorRef.current ? (
     <Popper
+      key={`contact-actions-link-submenu-${linkMenuProvider}`}
       open
       anchorEl={linkMenuAnchorRef.current}
       placement="right-start"
@@ -409,39 +411,42 @@ const ContactActions: React.FC<ContactActionsProps> = ({
   // ====================================================================
 
   if (variant === "menuItems") {
-    return (
-      <>
-        <Divider />
-        <Tooltip title={vcardTooltip} placement="right" arrow>
-          <span>
-            <MenuItem
-              onClick={handleDownloadVCard}
-              disabled={!vcardEnabled}
-            >
-              <ListItemIcon>
-                <PersonAddIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Add to Contacts</ListItemText>
-            </MenuItem>
-          </span>
-        </Tooltip>
-        <Tooltip title={meetingTooltip} placement="right" arrow>
-          <span>
-            <MenuItem
-              onClick={handleOpenCalendarMenu}
-              disabled={!meetingEnabled}
-            >
-              <ListItemIcon>
-                <CalendarIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Schedule Meeting</ListItemText>
-            </MenuItem>
-          </span>
-        </Tooltip>
-        {calendarSubMenu}
-        {linkSubMenu}
-      </>
-    );
+    return [
+      <Divider key="contact-actions-divider" />,
+      <Tooltip key="contact-actions-vcard" title={vcardTooltip} placement="right" arrow>
+        <span>
+          <MenuItem
+            onClick={handleDownloadVCard}
+            disabled={!vcardEnabled}
+          >
+            <ListItemIcon>
+              <PersonAddIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Add to Contacts</ListItemText>
+          </MenuItem>
+        </span>
+      </Tooltip>,
+      <Tooltip
+        key="contact-actions-calendar"
+        title={meetingTooltip}
+        placement="right"
+        arrow
+      >
+        <span>
+          <MenuItem
+            onClick={handleOpenCalendarMenu}
+            disabled={!meetingEnabled}
+          >
+            <ListItemIcon>
+              <CalendarIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Schedule Meeting</ListItemText>
+          </MenuItem>
+        </span>
+      </Tooltip>,
+      calendarSubMenu,
+      linkSubMenu,
+    ];
   }
 
   // ====================================================================

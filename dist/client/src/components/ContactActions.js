@@ -166,7 +166,7 @@ const ContactActions = ({ contact, variant = "speedDial", iconSize = "small", di
         }, 200);
     }, []);
     // ------ Calendar provider sub-menu (shared) ------
-    const calendarSubMenu = (_jsxs(Menu, { anchorEl: calMenuAnchor, open: Boolean(calMenuAnchor), onClose: handleCalMenuClose, TransitionComponent: Fade, slotProps: {
+    const calendarSubMenu = (_jsxs(Menu, { key: "contact-actions-calendar-submenu", anchorEl: calMenuAnchor, open: Boolean(calMenuAnchor), onClose: handleCalMenuClose, TransitionComponent: Fade, slotProps: {
             paper: {
                 elevation: 4,
                 sx: { minWidth: 200 },
@@ -180,7 +180,7 @@ const ContactActions = ({ contact, variant = "speedDial", iconSize = "small", di
                     ? (e) => handleProviderMouseEnter(p.key, e.currentTarget)
                     : undefined, onMouseLeave: hasLinks ? handleProviderMouseLeave : undefined, sx: hasLinks ? { display: "flex", justifyContent: "space-between" } : undefined, children: [_jsx(ListItemIcon, { children: p.icon }), _jsx(ListItemText, { children: p.label }), hasLinks && (_jsx(ChevronRightIcon, { fontSize: "small", sx: { ml: 1, opacity: 0.5 }, onClick: (e) => e.stopPropagation() }))] }, p.key)))] }));
     // ------ Cascading meeting-link Popper ------
-    const linkSubMenu = linkMenuProvider && hasLinks && linkMenuAnchorRef.current ? (_jsx(Popper, { open: true, anchorEl: linkMenuAnchorRef.current, placement: "right-start", style: { zIndex: 1500 }, modifiers: [
+    const linkSubMenu = linkMenuProvider && hasLinks && linkMenuAnchorRef.current ? (_jsx(Popper, { key: `contact-actions-link-submenu-${linkMenuProvider}`, open: true, anchorEl: linkMenuAnchorRef.current, placement: "right-start", style: { zIndex: 1500 }, modifiers: [
             { name: "offset", options: { offset: [0, -4] } },
             { name: "flip", enabled: true },
             { name: "preventOverflow", enabled: true, options: { boundary: "viewport" } },
@@ -198,7 +198,7 @@ const ContactActions = ({ contact, variant = "speedDial", iconSize = "small", di
     // Variant: menuItems — returns raw MenuItems for a parent Menu
     // ====================================================================
     if (variant === "menuItems") {
-        return (_jsxs(_Fragment, { children: [_jsx(Divider, {}), _jsx(Tooltip, { title: vcardTooltip, placement: "right", arrow: true, children: _jsx("span", { children: _jsxs(MenuItem, { onClick: handleDownloadVCard, disabled: !vcardEnabled, children: [_jsx(ListItemIcon, { children: _jsx(PersonAddIcon, { fontSize: "small" }) }), _jsx(ListItemText, { children: "Add to Contacts" })] }) }) }), _jsx(Tooltip, { title: meetingTooltip, placement: "right", arrow: true, children: _jsx("span", { children: _jsxs(MenuItem, { onClick: handleOpenCalendarMenu, disabled: !meetingEnabled, children: [_jsx(ListItemIcon, { children: _jsx(CalendarIcon, { fontSize: "small" }) }), _jsx(ListItemText, { children: "Schedule Meeting" })] }) }) }), calendarSubMenu, linkSubMenu] }));
+        return [_jsx(Divider, {}, "contact-actions-divider"), _jsx(Tooltip, { title: vcardTooltip, placement: "right", arrow: true, children: _jsx("span", { children: _jsxs(MenuItem, { onClick: handleDownloadVCard, disabled: !vcardEnabled, children: [_jsx(ListItemIcon, { children: _jsx(PersonAddIcon, { fontSize: "small" }) }), _jsx(ListItemText, { children: "Add to Contacts" })] }) }) }, "contact-actions-vcard"), _jsx(Tooltip, { title: meetingTooltip, placement: "right", arrow: true, children: _jsx("span", { children: _jsxs(MenuItem, { onClick: handleOpenCalendarMenu, disabled: !meetingEnabled, children: [_jsx(ListItemIcon, { children: _jsx(CalendarIcon, { fontSize: "small" }) }), _jsx(ListItemText, { children: "Schedule Meeting" })] }) }) }, "contact-actions-calendar"), calendarSubMenu, linkSubMenu];
     }
     // ====================================================================
     // Variant: iconButton — small icon with dropdown actions
