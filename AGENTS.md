@@ -13,6 +13,7 @@ Every change — no matter how small — must follow first-principles logic and 
 
 - **Monorepo Structure**: TypeScript-compiled utilities distributed from `dist/`. Source in `utils/src/`, `client/src/`, `server/src/` with individual `package.json` configs and TypeScript project references.
 - **ES Module Native**: Everything uses `.js` extensions in imports (TypeScript ES module pattern). Critical: imports must end with `.js` even for `.ts` files (e.g., `"./options-manager.js"`).
+- **Tree-Shaking**: The root `package.json` declares `"sideEffects"` so bundlers can eliminate unused code. The client barrel (`client/index.ts`) is side-effect-free — all `export *` wildcards have been replaced with explicit named re-exports. `window.log` initialization lives in a separate `client/src/init.ts` module.
 - **Centralized Configuration**: `OptionsManager` is the architectural centerpiece. Each utility registers with the global `optionsManager` singleton, enabling cross-utility configuration via `setGlobalOptions()`.
 - **Environment Auto-Detection**: Use the consolidated `isDev()` function for development environment detection. Log and Turnstile utilities auto-detect client vs server context. Never hardcode environment checks — use `isDev()` or the provided detection patterns from existing utilities.
 
@@ -53,7 +54,8 @@ client/src/{fm,cms}/    — API client classes, React providers/hooks/components
 ```
 @user27828/shared-utils          → utils (log, optionsManager, turnstile, etc.)
 @user27828/shared-utils/utils    → same as above
-@user27828/shared-utils/client   → client (components, data, helpers)
+@user27828/shared-utils/client   → client (components, data, helpers) — side-effect-free, fully tree-shakeable
+@user27828/shared-utils/client/init → client-side window.log initialization (side-effectful — import once in app entry)
 @user27828/shared-utils/client/wysiwyg → WYSIWYG editors (CKEditor5, TinyMCE, EasyMDE, MDXEditor)
 @user27828/shared-utils/server   → server (env loader, middleware, turnstile worker)
 @user27828/shared-utils/cms      → CMS shared types/errors/validation
@@ -223,6 +225,7 @@ Always use deep imports for large UI libraries, icon sets, and heavy utility pac
 
 - selectDefaultAction: Always ensure this prop triggers the onClick/onSelect action for the default selection, even if the value is already selected.
 - Use the global log (window.log) for debug output in client code. Do not import log directly in consumer code; rely on the global.
+- Consumer apps must explicitly import `@user27828/shared-utils/client/init` once in their entry point (e.g., `index.tsx` or `main.tsx`) to set up `window.log`. This is no longer a side effect of importing the client barrel.
 
 ## Patterns & Examples
 

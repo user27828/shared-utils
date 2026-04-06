@@ -60,10 +60,26 @@ export {
 } from "./src/components/layout/SplitChip.js";
 
 // Helpers
-export * from "./src/helpers/functions.js";
-export * from "./src/helpers/countries.js";
-export * from "./src/helpers/languages.js";
-export * from "./src/helpers/csv.js";
+export {
+  isDev,
+  pathJoinUrl,
+  isValidUrl,
+  formatDateYYMMDD,
+} from "./src/helpers/functions.js";
+export type { UrlValidationOptions } from "./src/helpers/functions.js";
+export {
+  getCountryByCode,
+  getCountryOptions,
+} from "./src/helpers/countries.js";
+export {
+  getLanguageByCode,
+  getLanguageOptions,
+} from "./src/helpers/languages.js";
+export {
+  exportDataToCsv,
+  importCsvData,
+  validateCsvFile,
+} from "./src/helpers/csv.js";
 export {
   useDebouncedValue,
   useDebouncedCallback,
@@ -87,16 +103,10 @@ export {
 } from "./src/helpers/date-utils.js";
 
 // Data
-export * from "./src/data/countries.js";
-export * from "./src/data/languages.js";
-export * from "./src/data/demographic-options.js";
-
-// Attach log to window if in browser and not already set
-if (
-  typeof window !== "undefined" &&
-  typeof (window as any).log === "undefined"
-) {
-  import("../utils/index.js").then(({ log }) => {
-    (window as any).log = log;
-  });
-}
+export {
+  genderOptions,
+  ethnicityOptions,
+  raceOptions,
+  pronounOptions,
+  sexualOrientationOptions,
+} from "./src/data/demographic-options.js";

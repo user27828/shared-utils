@@ -1,8 +1,15 @@
 {
   "name": "@user27828/shared-utils",
   "description": "Collection of common utilities I use for various projects",
-  "version": "0.69.7",
+  "version": "0.70.69",
   "type": "module",
+  "sideEffects": [
+    "dist/utils/src/log.js",
+    "dist/utils/src/options-manager.js",
+    "dist/utils/src/turnstile.js",
+    "dist/utils/index.js",
+    "dist/client/src/init.js"
+  ],
   "packageManager": "yarn@4.12.0",
   "engines": {
     "node": ">=18"
@@ -36,6 +43,18 @@
       "import": "./dist/client/index.js",
       "require": "./dist/client/index.js",
       "default": "./dist/client/index.js"
+    },
+    "./client/components/CopyButton": {
+      "types": "./dist/client/src/components/CopyButton.d.ts",
+      "import": "./dist/client/src/components/CopyButton.js",
+      "require": "./dist/client/src/components/CopyButton.js",
+      "default": "./dist/client/src/components/CopyButton.js"
+    },
+    "./client/components/layout/SelectChip": {
+      "types": "./dist/client/src/components/layout/SelectChip.d.ts",
+      "import": "./dist/client/src/components/layout/SelectChip.js",
+      "require": "./dist/client/src/components/layout/SelectChip.js",
+      "default": "./dist/client/src/components/layout/SelectChip.js"
     },
     "./client/wysiwyg": {
       "types": "./dist/client/wysiwyg.d.ts",
@@ -103,12 +122,24 @@
       "require": "./dist/server/src/fm/storage/FmStorageS3.js",
       "default": "./dist/server/src/fm/storage/FmStorageS3.js"
     },
+    "./client/init": {
+      "types": "./dist/client/src/init.d.ts",
+      "import": "./dist/client/src/init.js",
+      "require": "./dist/client/src/init.js",
+      "default": "./dist/client/src/init.js"
+    },
     "./utils/*": "./dist/utils/*"
   },
   "typesVersions": {
     "*": {
       "client": [
         "dist/client/index.d.ts"
+      ],
+      "client/components/CopyButton": [
+        "dist/client/src/components/CopyButton.d.ts"
+      ],
+      "client/components/layout/SelectChip": [
+        "dist/client/src/components/layout/SelectChip.d.ts"
       ],
       "client/wysiwyg": [
         "dist/client/wysiwyg.d.ts"
@@ -139,6 +170,9 @@
       ],
       "fm/server/s3": [
         "dist/server/src/fm/storage/FmStorageS3.d.ts"
+      ],
+      "client/init": [
+        "dist/client/src/init.d.ts"
       ]
     }
   },

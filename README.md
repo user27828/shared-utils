@@ -77,6 +77,9 @@ import {
   PasteButton,
 } from "@user27828/shared-utils/client";
 
+// ✅ Client logger initialization (import once in your app entry point)
+import "@user27828/shared-utils/client/init";
+
 // ✅ WYSIWYG Editors (requires peer dependencies)
 // TinyMCE: yarn add @tinymce/tinymce-react tinymce
 // CKEditor 5: yarn add ckeditor5 @ckeditor/ckeditor5-react

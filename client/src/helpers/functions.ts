@@ -2,7 +2,7 @@
  * Shared functions
  */
 
-import { isDev as utilsIsDev } from "../../../utils/index.js";
+import { isDev as utilsIsDev } from "../../../utils/src/functions.js";
 
 /**
  * @deprecated Use the consolidated `isDev` from '@shared-utils/utils' instead.

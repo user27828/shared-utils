@@ -162,6 +162,15 @@ module.exports = log;
 
 #### Global Assignment (Browser)
 
+The client barrel (`@user27828/shared-utils/client`) is side-effect-free and does **not** auto-set `window.log`. To set up the global logger, import the init module once in your app entry point:
+
+```javascript
+// In your main entry point (e.g., index.tsx or main.tsx)
+import "@user27828/shared-utils/client/init";
+```
+
+If you need to customize the logger before assigning it globally:
+
 ```javascript
 // In your main entry point
 import log from "@shared-utils/utils/src/log";

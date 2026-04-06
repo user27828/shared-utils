@@ -81,6 +81,27 @@ lerna-debug.log*
 *.sln
 *.sw?
 
+# VS Code settings (ignore workspace configs, keep non-sensitive files)
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+/models/*
+#.userdata
+.userdata/cache/
+
+.playwright-mcp/*
+.github/plan/*
+.data/*
+.data/log/
+.data/optimized/
+.data/uploads/
+.data/user-files/
+.data/tests/
+.data/tmp/
+
 # Local package builds
 /test-consumer/packages/*.tgz
 
