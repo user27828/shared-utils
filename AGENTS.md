@@ -44,6 +44,18 @@ client/src/{fm,cms}/    — API client classes, React providers/hooks/components
 - **Typed error hierarchies**: `FmError` / `CmsError` base classes with specific subclasses (`FmNotFoundError`, `FmValidationError`, `FmPolicyError`, `CmsConflictError`, `CmsLockedError`, etc.). Use `sendFmError()` / `sendCmsError()` in Express handlers — never throw raw `Error`.
 - **Link tracker**: `createCmsFmLinkTracker()` automatically maintains `fm_file_links` rows when CMS content is written — wires into `CmsServiceCore.onAfterWrite`.
 
+## Critical Agent Guidelines
+
+**⚠️ AGENTS MUST NOT COMMIT CODE**: AI agents must never execute `git commit`, `git push`, or any other git write operations. All code changes should be left staged or unstaged for the user to commit manually.
+
+If you need to record work, ask the user to commit or use task tracking instead.
+
+## Documentation Guidelines
+
+**Never use smart quotes for documentation or code unless the user requests it**
+
+**Never use box-drawing dash characters such as `─` in code comments, documentation, or visual separators. In contexts like divider lines, always use the standard ASCII dash character `-`. If dash-divider comment lines are used, make the full line exactly 80 characters wide.**
+
 ### FM storage adapters
 
 - `FmStorageLocal` — local filesystem

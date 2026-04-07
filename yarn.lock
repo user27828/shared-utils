@@ -150,9 +150,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-s3@npm:^3.1024.0":
-  version: 3.1024.0
-  resolution: "@aws-sdk/client-s3@npm:3.1024.0"
+"@aws-sdk/client-s3@npm:^3.1025.0":
+  version: 3.1025.0
+  resolution: "@aws-sdk/client-s3@npm:3.1025.0"
   dependencies:
     "@aws-crypto/sha1-browser": "npm:5.2.0"
     "@aws-crypto/sha256-browser": "npm:5.2.0"
@@ -209,7 +209,7 @@ __metadata:
     "@smithy/util-utf8": "npm:^4.2.2"
     "@smithy/util-waiter": "npm:^4.2.14"
     tslib: "npm:^2.6.2"
-  checksum: 10/e4a30124680c6b6e50c870e1c8b4797e6ed76a210132f7a3b33d481a41b3c198174c251d96479559f7a74dbd9fa94d0bf15bad4cc94dd99bf0fe04a652fc2a2b
+  checksum: 10/62ff74476c84d41969f06d4c922741efb20fc8dcb5565422f486fbcec46035856079473abb852026a71d9f0f50b6947e863decef119043e8c945a4196df76360
   languageName: node
   linkType: hard
 
@@ -582,9 +582,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/s3-request-presigner@npm:^3.1024.0":
-  version: 3.1024.0
-  resolution: "@aws-sdk/s3-request-presigner@npm:3.1024.0"
+"@aws-sdk/s3-request-presigner@npm:^3.1025.0":
+  version: 3.1025.0
+  resolution: "@aws-sdk/s3-request-presigner@npm:3.1025.0"
   dependencies:
     "@aws-sdk/signature-v4-multi-region": "npm:^3.996.15"
     "@aws-sdk/types": "npm:^3.973.6"
@@ -594,7 +594,7 @@ __metadata:
     "@smithy/smithy-client": "npm:^4.12.8"
     "@smithy/types": "npm:^4.13.1"
     tslib: "npm:^2.6.2"
-  checksum: 10/96409c7a489acfff4545cb38aaa812d3b494d7bb1c5bb18d34f2c55759443ba4c346661c5363c32f1913d4bfef072b57d6af144df4f2b7380af151b234a1ec9d
+  checksum: 10/28755d1b567a0fa8355cb61ba1ce29a79c58115a6da39c19ef5d9bd341f51360fea177fa8c65c1161b4db07839146bfb943dd04f747f39ccb1033b0e2fa27fd6
   languageName: node
   linkType: hard
 
@@ -7449,8 +7449,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@shared-utils/server@workspace:server"
   dependencies:
-    "@aws-sdk/client-s3": "npm:^3.1024.0"
-    "@aws-sdk/s3-request-presigner": "npm:^3.1024.0"
+    "@aws-sdk/client-s3": "npm:^3.1025.0"
+    "@aws-sdk/s3-request-presigner": "npm:^3.1025.0"
     "@babel/core": "npm:^7.29.0"
     "@babel/preset-env": "npm:^7.29.2"
     "@babel/preset-typescript": "npm:^7.28.5"
@@ -8206,7 +8206,7 @@ __metadata:
     react-dom: "npm:^19.2.4"
     tinymce: "npm:^8.4.0"
     typescript: "npm:^6.0.2"
-    vite: "npm:^8.0.3"
+    vite: "npm:^8.0.5"
     vitest: "npm:^4.1.2"
     yjs: "npm:^13.6.30"
   languageName: unknown
@@ -17253,7 +17253,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:^6.0.0 || ^7.0.0 || ^8.0.0, vite@npm:^8.0.3":
+"vite@npm:^6.0.0 || ^7.0.0 || ^8.0.0":
   version: 8.0.3
   resolution: "vite@npm:8.0.3"
   dependencies:
@@ -17307,6 +17307,63 @@ __metadata:
   bin:
     vite: bin/vite.js
   checksum: 10/745b791cb71297ac3877af061da44751d93f198413426bbb76a1f8384d76d4162a6ad739b2bcdf5fb966cd1295db59412614aee60738e40e1c99cee561e682f0
+  languageName: node
+  linkType: hard
+
+"vite@npm:^8.0.5":
+  version: 8.0.5
+  resolution: "vite@npm:8.0.5"
+  dependencies:
+    fsevents: "npm:~2.3.3"
+    lightningcss: "npm:^1.32.0"
+    picomatch: "npm:^4.0.4"
+    postcss: "npm:^8.5.8"
+    rolldown: "npm:1.0.0-rc.12"
+    tinyglobby: "npm:^0.2.15"
+  peerDependencies:
+    "@types/node": ^20.19.0 || >=22.12.0
+    "@vitejs/devtools": ^0.1.0
+    esbuild: ^0.27.0 || ^0.28.0
+    jiti: ">=1.21.0"
+    less: ^4.0.0
+    sass: ^1.70.0
+    sass-embedded: ^1.70.0
+    stylus: ">=0.54.8"
+    sugarss: ^5.0.0
+    terser: ^5.16.0
+    tsx: ^4.8.1
+    yaml: ^2.4.2
+  dependenciesMeta:
+    fsevents:
+      optional: true
+  peerDependenciesMeta:
+    "@types/node":
+      optional: true
+    "@vitejs/devtools":
+      optional: true
+    esbuild:
+      optional: true
+    jiti:
+      optional: true
+    less:
+      optional: true
+    sass:
+      optional: true
+    sass-embedded:
+      optional: true
+    stylus:
+      optional: true
+    sugarss:
+      optional: true
+    terser:
+      optional: true
+    tsx:
+      optional: true
+    yaml:
+      optional: true
+  bin:
+    vite: bin/vite.js
+  checksum: 10/eca1ddd6309193a80a8c82607e672df3fecff88d3639382c6eaaf4c3094accd0412c16e2f1cc4a25c835f055133325eaa0355e484d4c253ffb015a7d83d68250
   languageName: node
   linkType: hard
 
