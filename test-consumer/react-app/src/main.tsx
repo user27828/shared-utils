@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import "@user27828/shared-utils/client/init";
 import App from "./App.tsx";
 import "./index.css";
 

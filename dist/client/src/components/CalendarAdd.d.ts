@@ -6,14 +6,14 @@ export default CalendarAdd;
  * @param {Object} props - Component props
  * @param {Object} props.event - Event details object
  * @param {string} props.event.title - Event title
- * @param {string} props.event.description - Event description (can be HTML)
+ * @param {string} [props.event.description] - Event description (can be HTML)
  * @param {string|Date} props.event.startDate - Event start date
  * @param {string} [props.event.location] - Event location or URL
  * @param {number} [props.event.duration] - Event duration in minutes
  * @param {string} [props.event.id] - Unique identifier for the event
  * @param {boolean} [props.requireAuth] - Whether authentication is required for calendar access
- * @param {boolean} props.isAuthenticated - Whether the user is authenticated
- * @param {Function} props.onAuthRequired - Callback when authentication is required
+ * @param {boolean} [props.isAuthenticated] - Whether the user is authenticated
+ * @param {Function} [props.onAuthRequired] - Callback when authentication is required
  * @param {Object} [props.calendarConfig] - Calendar configuration options
  * @param {string} [props.calendarConfig.timezone] - Timezone for the event
  * @param {string} [props.calendarConfig.timezoneName] - Human-readable timezone name
@@ -26,15 +26,15 @@ export default CalendarAdd;
 declare function CalendarAdd({ event, requireAuth, isAuthenticated, onAuthRequired, calendarConfig, buttonProps, iconOnly, }: {
     event: {
         title: string;
-        description: string;
+        description?: string | undefined;
         startDate: string | Date;
         location?: string | undefined;
         duration?: number | undefined;
         id?: string | undefined;
     };
     requireAuth?: boolean | undefined;
-    isAuthenticated: boolean;
-    onAuthRequired: Function;
+    isAuthenticated?: boolean | undefined;
+    onAuthRequired?: Function | undefined;
     calendarConfig?: {
         timezone?: string | undefined;
         timezoneName?: string | undefined;

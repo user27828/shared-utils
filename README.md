@@ -77,7 +77,8 @@ import {
   PasteButton,
 } from "@user27828/shared-utils/client";
 
-// ✅ Client logger initialization (import once in your app entry point)
+// ✅ Client initialization (import once in your app entry point)
+// Sets up window.log and disables MUI X telemetry.
 import "@user27828/shared-utils/client/init";
 
 // ✅ WYSIWYG Editors (requires peer dependencies)

@@ -1,0 +1,2 @@
+var e=e=>{if(e==null)return;if(typeof e==`number`)return`${e}px`;let t=String(e).trim();if(t)return t},t=async e=>{let{accept:t}=e;return await new Promise(e=>{let n=document.createElement(`input`);n.type=`file`,t&&(n.accept=t);let r=()=>{n.value=``,n.remove()};n.addEventListener(`change`,()=>{let t=n.files&&n.files.length>0?n.files[0]:null;r(),e(t)},{once:!0}),n.addEventListener(`cancel`,()=>{r(),e(null)},{once:!0}),document.body.appendChild(n),n.click()})};export{t as n,e as t};
+//# sourceMappingURL=wysiwyg-common-DWp6C-rc.js.map

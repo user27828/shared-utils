@@ -4,15 +4,17 @@
  * Delegates URL/ICS generation to the shared `contact` utility
  * (`utils/src/contact.ts`) — this component is purely presentational.
  */
-import React, { useState } from "react";
+import React, { useId, useState } from "react";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
+import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Typography from "@mui/material/Typography";
 import Fade from "@mui/material/Fade";
+import Tooltip from "@mui/material/Tooltip";
 import EventNoteIcon from "@mui/icons-material/EventNote";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AppleIcon from "@mui/icons-material/Apple";
@@ -39,14 +41,14 @@ export { DEFAULT_CALENDAR_CONFIG } from "../../../utils/index.js";
  * @param {Object} props - Component props
  * @param {Object} props.event - Event details object
  * @param {string} props.event.title - Event title
- * @param {string} props.event.description - Event description (can be HTML)
+ * @param {string} [props.event.description] - Event description (can be HTML)
  * @param {string|Date} props.event.startDate - Event start date
  * @param {string} [props.event.location] - Event location or URL
  * @param {number} [props.event.duration] - Event duration in minutes
  * @param {string} [props.event.id] - Unique identifier for the event
  * @param {boolean} [props.requireAuth] - Whether authentication is required for calendar access
- * @param {boolean} props.isAuthenticated - Whether the user is authenticated
- * @param {Function} props.onAuthRequired - Callback when authentication is required
+ * @param {boolean} [props.isAuthenticated] - Whether the user is authenticated
+ * @param {Function} [props.onAuthRequired] - Callback when authentication is required
  * @param {Object} [props.calendarConfig] - Calendar configuration options
  * @param {string} [props.calendarConfig.timezone] - Timezone for the event
  * @param {string} [props.calendarConfig.timezoneName] - Human-readable timezone name
@@ -66,7 +68,9 @@ const CalendarAdd = ({
   iconOnly = false,
 }) => {
   const [anchorEl, setAnchorEl] = useState(null);
+  const triggerId = useId();
   const open = Boolean(anchorEl);
+  const menuTriggerId = buttonProps.id || `calendar-button-${triggerId}`;
 
   const handleClick = (event) => {
     if (requireAuth && !isAuthenticated) {
@@ -92,13 +96,60 @@ const CalendarAdd = ({
   if (iconOnly) {
     return (
       <>
-        <EventNoteIcon onClick={handleClick} />
+        <Box
+          sx={{
+            position: "relative",
+            display: "inline-flex",
+            alignItems: "center",
+          }}
+        >
+          <Tooltip
+            title={
+              requireAuth && !isAuthenticated
+                ? "Sign in to use calendar features"
+                : "Add to calendar"
+            }
+          >
+            <span>
+              <IconButton
+                {...buttonProps}
+                id={menuTriggerId}
+                type={buttonProps.type || "button"}
+                size={buttonProps.size || "small"}
+                color={buttonProps.color || "primary"}
+                onClick={handleClick}
+                disabled={Boolean(buttonProps.disabled) || (requireAuth && !isAuthenticated)}
+                aria-label={buttonProps["aria-label"] || event?.title || "Add to calendar"}
+              >
+                <EventNoteIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+
+          {requireAuth && !isAuthenticated && (
+            <LockIcon
+              color="action"
+              fontSize="small"
+              sx={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                backgroundColor: "background.paper",
+                borderRadius: "50%",
+                padding: "2px",
+                cursor: "pointer",
+              }}
+              onClick={() => onAuthRequired("calendar feature")}
+            />
+          )}
+        </Box>
         <Menu
           anchorEl={anchorEl}
           open={open}
           onClose={handleClose}
           MenuListProps={{
-            "aria-labelledby": "calendar-button",
+            "aria-labelledby": menuTriggerId,
           }}
           PaperProps={{
             elevation: 3,
@@ -183,6 +234,7 @@ const CalendarAdd = ({
   return (
     <Box sx={{ position: "relative", display: "inline-block" }}>
       <Button
+        id={menuTriggerId}
         variant="outlined"
         size="small"
         color="primary"
@@ -226,7 +278,7 @@ const CalendarAdd = ({
         open={open}
         onClose={handleClose}
         MenuListProps={{
-          "aria-labelledby": "calendar-button",
+          "aria-labelledby": menuTriggerId,
         }}
         PaperProps={{
           elevation: 3,

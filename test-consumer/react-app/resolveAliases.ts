@@ -4,6 +4,10 @@ export const createReactAppResolveAliases = (dirname: string) => {
   return [
     { find: "@", replacement: "/src" },
     {
+      find: "@user27828/shared-utils/client/init",
+      replacement: path.resolve(dirname, "../../dist/client/src/init.js"),
+    },
+    {
       find: "@user27828/shared-utils/cms/client",
       replacement: path.resolve(dirname, "../../dist/client/src/cms/index.js"),
     },

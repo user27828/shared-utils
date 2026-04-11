@@ -26,6 +26,9 @@
     /* Path mapping */
     "paths": {
       "@/*": ["./src/*"],
+      "@user27828/shared-utils/client/init": [
+        "../../dist/client/src/init.d.ts"
+      ],
       "@user27828/shared-utils/cms/client": [
         "../../dist/client/src/cms/index.d.ts"
       ],
