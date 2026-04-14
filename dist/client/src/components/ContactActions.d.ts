@@ -48,6 +48,8 @@ export interface ContactActionsProps {
     meetingLinks?: MeetingLinkEntry[];
     /** Callback fired after any action is executed */
     onAction?: (action: "vcard" | "calendar", provider?: CalendarProvider) => void;
+    /** Whether to show the vCard / Add to Contacts action */
+    showVCardAction?: boolean;
     /**
      * For "menuItems" variant: called after an action to let the parent close
      * its own Menu.

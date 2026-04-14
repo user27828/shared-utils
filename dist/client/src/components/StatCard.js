@@ -109,9 +109,19 @@ const CornerActionEl = ({ action }) => {
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
-const StatCard = ({ title, value, icon, color = "primary.main", loading, formatValue, subtitle, preset = "admin", titlePlacement = "below", titleVariant, valueVariant, badgeVariant = "solid", topRowAlign = "center", cornerAction, dense = false, previousValue, currentValue, trend: trendOverride, }) => {
+const StatCard = ({ title, value, icon, color = "primary.main", loading, formatValue, subtitle, preset = "admin", titlePlacement = "below", titleVariant, valueVariant, badgeVariant = "solid", topRowAlign = "center", cornerAction, dense = false, previousValue, currentValue, trend: trendOverride, iconPlacement, recruiterIconPlacement, }) => {
     const theme = useTheme();
     const mainColor = resolveColorToken(theme, color);
+    const resolvedIconPlacement = iconPlacement ?? recruiterIconPlacement ?? "inline";
+    const resolvedCornerAction = preset === "admin" &&
+        resolvedIconPlacement === "corner" &&
+        cornerAction &&
+        !cornerAction.placement
+        ? {
+            ...cornerAction,
+            placement: "bottom-right",
+        }
+        : cornerAction;
     // Resolve display values
     const isBreakdown = typeof value === "object" && value !== null && "total" in value;
     const displayTotal = isBreakdown
@@ -151,8 +161,8 @@ const StatCard = ({ title, value, icon, color = "primary.main", loading, formatV
         : {
             p: 3,
         };
-    if (dense && cornerAction) {
-        const placement = cornerAction.placement ?? "top-right";
+    if (dense && resolvedCornerAction) {
+        const placement = resolvedCornerAction.placement ?? "top-right";
         const denseOppositePadding = 1.5;
         if (placement.startsWith("top")) {
             paddingSx.pt = 3;
@@ -161,6 +171,12 @@ const StatCard = ({ title, value, icon, color = "primary.main", loading, formatV
         if (placement.startsWith("bottom")) {
             paddingSx.pb = 3;
             paddingSx.pt = denseOppositePadding;
+        }
+    }
+    if (resolvedCornerAction) {
+        const placement = resolvedCornerAction.placement ?? "top-right";
+        if (placement.endsWith("right")) {
+            paddingSx.pr = Math.max(paddingSx.pr ?? 0, dense ? 5 : 6);
         }
     }
     if (preset === "recruiter") {
@@ -192,7 +208,8 @@ const StatCard = ({ title, value, icon, color = "primary.main", loading, formatV
             }
             return (_jsx(Box, { component: "span", sx: { ...sx, color: theme.palette.text.secondary }, children: "\u25AC" }));
         })();
-        const iconNode = icon ? (_jsx(Box, { sx: {
+        const iconContent = icon ?? null;
+        const inlineIconNode = iconContent ? (_jsx(Box, { sx: {
                 backgroundColor: alpha(mainColor, 0.1),
                 borderRadius: 1,
                 p: 0.75,
@@ -200,37 +217,123 @@ const StatCard = ({ title, value, icon, color = "primary.main", loading, formatV
                 alignItems: "center",
                 justifyContent: "center",
                 color: mainColor,
-            }, children: icon })) : null;
+            }, children: iconContent })) : null;
+        const cornerIconNode = iconContent ? (_jsx(Box, { "data-slot": "recruiter-corner-icon", sx: {
+                position: "absolute",
+                top: 0,
+                right: 0,
+                backgroundColor: alpha(mainColor, 0.12),
+                borderTopRightRadius: `${theme.shape.borderRadius}px`,
+                borderBottomLeftRadius: theme.spacing(1.5),
+                borderTopLeftRadius: 0,
+                borderBottomRightRadius: 0,
+                px: 1.25,
+                py: 1,
+                minWidth: 44,
+                minHeight: 40,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: mainColor,
+                boxShadow: `inset 0 0 0 1px ${alpha(mainColor, 0.08)}`,
+                zIndex: 1,
+            }, children: iconContent })) : null;
+        const recruiterUsesCornerIcon = resolvedIconPlacement === "corner";
+        const cornerTrendNode = trendNode ? (_jsx(Box, { "data-slot": "recruiter-corner-trend", sx: {
+                position: "absolute",
+                top: cornerIconNode ? 46 : 8,
+                right: 8,
+                lineHeight: 1,
+                zIndex: 1,
+            }, children: trendNode })) : null;
+        let recruiterContentPaddingRight = 2.5;
+        if (recruiterUsesCornerIcon) {
+            if (cornerIconNode && cornerTrendNode) {
+                recruiterContentPaddingRight = 8;
+            }
+            else if (cornerIconNode) {
+                recruiterContentPaddingRight = 7;
+            }
+            else if (cornerTrendNode) {
+                recruiterContentPaddingRight = 4.5;
+            }
+        }
         return (_jsxs(Card, { sx: {
                 height: "100%",
                 position: "relative",
                 overflow: "visible",
                 borderTop: 3,
                 borderTopColor: mainColor,
-            }, children: [cornerAction && _jsx(CornerActionEl, { action: cornerAction }), _jsx(CardContent, { sx: { py: 2, px: 2.5, "&:last-child": { pb: 2 } }, children: _jsxs(Box, { sx: {
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "flex-start",
-                        }, children: [_jsxs(Box, { sx: { flex: 1, minWidth: 0 }, children: [_jsx(Typography, { variant: "overline", color: "text.secondary", sx: {
-                                            fontSize: "0.7rem",
-                                            letterSpacing: 0.5,
-                                            lineHeight: 1.2,
-                                            display: "block",
-                                            mb: 0.5,
-                                        }, noWrap: true, children: title }), _jsx(Typography, { variant: "h4", fontWeight: "bold", sx: {
-                                            lineHeight: 1.1,
-                                            opacity: loading ? 0.5 : 1,
-                                        }, noWrap: true, children: loading ? "—" : formattedTotal }), subtitle && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: { display: "block", mt: 0.5 }, noWrap: true, children: subtitle }))] }), _jsxs(Box, { sx: {
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    alignItems: "flex-end",
-                                    gap: 0.5,
-                                    pl: 1,
-                                }, children: [iconNode, trendNode] })] }) })] }));
+            }, children: [resolvedCornerAction && _jsx(CornerActionEl, { action: resolvedCornerAction }), _jsxs(CardContent, { sx: {
+                        py: 2,
+                        pl: 2.5,
+                        pr: recruiterContentPaddingRight,
+                        position: "relative",
+                        "&:last-child": { pb: 2 },
+                    }, children: [recruiterUsesCornerIcon && cornerIconNode, recruiterUsesCornerIcon && cornerTrendNode, _jsxs(Box, { sx: {
+                                display: "flex",
+                                justifyContent: recruiterUsesCornerIcon
+                                    ? "flex-start"
+                                    : "space-between",
+                                alignItems: "flex-start",
+                            }, children: [_jsxs(Box, { sx: { flex: 1, minWidth: 0 }, children: [_jsx(Typography, { variant: "overline", color: "text.secondary", sx: {
+                                                fontSize: "0.7rem",
+                                                letterSpacing: 0.5,
+                                                lineHeight: 1.2,
+                                                display: "block",
+                                                mb: 0.5,
+                                            }, noWrap: true, children: title }), _jsx(Typography, { variant: "h4", fontWeight: "bold", sx: {
+                                                lineHeight: 1.1,
+                                                opacity: loading ? 0.5 : 1,
+                                            }, noWrap: true, children: loading ? "—" : formattedTotal }), subtitle && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: { display: "block", mt: 0.5 }, noWrap: true, children: subtitle }))] }), !recruiterUsesCornerIcon && (_jsxs(Box, { sx: {
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        alignItems: "flex-end",
+                                        gap: 0.5,
+                                        pl: 1,
+                                    }, children: [inlineIconNode, trendNode] }))] })] })] }));
     }
     // admin preset
     const badgeBg = badgeVariant === "soft" ? alpha(mainColor, 0.12) : mainColor;
     const badgeFg = badgeVariant === "soft" ? mainColor : theme.palette.common.white;
+    const adminUsesCornerIcon = resolvedIconPlacement === "corner";
+    const adminInlineIconNode = icon && !adminUsesCornerIcon ? (_jsx(Box, { sx: {
+            bgcolor: badgeBg,
+            color: badgeFg,
+            borderRadius: 2,
+            p: iconBadgePadding,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+        }, children: icon })) : null;
+    const adminCornerIconNode = icon && adminUsesCornerIcon ? (_jsx(Box, { "data-slot": "admin-corner-icon", sx: {
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bgcolor: badgeBg,
+            color: badgeFg,
+            borderTopRightRadius: `${theme.shape.borderRadius}px`,
+            borderBottomLeftRadius: theme.spacing(1.75),
+            borderTopLeftRadius: 0,
+            borderBottomRightRadius: 0,
+            px: dense ? 1.5 : 1.75,
+            py: dense ? 1.25 : 1.5,
+            minWidth: dense ? 48 : 56,
+            minHeight: dense ? 48 : 56,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            boxShadow: badgeVariant === "soft"
+                ? `inset 0 0 0 1px ${alpha(mainColor, 0.08)}`
+                : undefined,
+        }, children: icon })) : null;
+    const adminTopRowGap = adminUsesCornerIcon ? 0 : topRowGap;
+    const adminTopRowMinHeight = adminUsesCornerIcon ? (dense ? 48 : 56) : undefined;
+    if (adminUsesCornerIcon) {
+        paddingSx.pr = Math.max(paddingSx.pr ?? 0, dense ? 7 : 8);
+    }
     const resolvedTitleVariant = titleVariant || "body2";
     const resolvedValueVariant = valueVariant || "h4";
     return (_jsxs(Paper, { sx: {
@@ -240,15 +343,11 @@ const StatCard = ({ title, value, icon, color = "primary.main", loading, formatV
             justifyContent: dense && Boolean(splitItems) ? "space-between" : "flex-start",
             height: "100%",
             position: "relative",
-        }, children: [cornerAction && _jsx(CornerActionEl, { action: cornerAction }), _jsxs(Box, { sx: { display: "flex", alignItems: topRowAlign, gap: topRowGap }, children: [icon && (_jsx(Box, { sx: {
-                            bgcolor: badgeBg,
-                            color: badgeFg,
-                            borderRadius: 2,
-                            p: iconBadgePadding,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0,
-                        }, children: icon })), _jsxs(Box, { sx: { minWidth: 0 }, children: [titlePlacement === "above" && (_jsx(Typography, { variant: resolvedTitleVariant, color: "text.secondary", noWrap: true, children: title })), loading ? (_jsx(Skeleton, { variant: "text", width: 60, height: 40 })) : (_jsx(Typography, { variant: resolvedValueVariant, fontWeight: "bold", noWrap: true, children: formattedTotal })), !loading && subtitle && (_jsx(Box, { sx: { mt: subtitleMarginTop }, children: subtitle })), titlePlacement === "below" && (_jsx(Typography, { variant: resolvedTitleVariant, color: "text.secondary", noWrap: true, children: title }))] })] }), !loading && splitItems && (_jsx(Box, { sx: { mt: dense ? 0 : splitChipMarginTop }, children: _jsx(SplitChip, { items: splitItems, variant: "outlined", size: "small" }) }))] }));
+        }, children: [resolvedCornerAction && _jsx(CornerActionEl, { action: resolvedCornerAction }), adminCornerIconNode, _jsxs(Box, { sx: {
+                    display: "flex",
+                    alignItems: topRowAlign,
+                    gap: adminTopRowGap,
+                    minHeight: adminTopRowMinHeight,
+                }, children: [adminInlineIconNode, _jsxs(Box, { sx: { minWidth: 0 }, children: [titlePlacement === "above" && (_jsx(Typography, { variant: resolvedTitleVariant, color: "text.secondary", noWrap: true, children: title })), loading ? (_jsx(Skeleton, { variant: "text", width: 60, height: 40 })) : (_jsx(Typography, { variant: resolvedValueVariant, fontWeight: "bold", noWrap: true, children: formattedTotal })), !loading && subtitle && (_jsx(Box, { sx: { mt: subtitleMarginTop }, children: subtitle })), titlePlacement === "below" && (_jsx(Typography, { variant: resolvedTitleVariant, color: "text.secondary", noWrap: true, children: title }))] })] }), !loading && splitItems && (_jsx(Box, { sx: { mt: dense ? 0 : splitChipMarginTop }, children: _jsx(SplitChip, { items: splitItems, variant: "outlined", size: "small" }) }))] }));
 };
 export default StatCard;

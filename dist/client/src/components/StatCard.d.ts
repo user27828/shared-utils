@@ -36,6 +36,8 @@ export interface CornerAction {
 }
 export type StatCardPreset = "admin" | "recruiter";
 export type TrendDirection = "up" | "down" | "flat";
+export type StatCardIconPlacement = "inline" | "corner";
+export type RecruiterIconPlacement = StatCardIconPlacement;
 export interface StatCardProps {
     /** Card title/label */
     title: string;
@@ -72,6 +74,10 @@ export interface StatCardProps {
     currentValue?: number;
     /** Trend direction override (auto-calculated if previous/current provided) */
     trend?: TrendDirection;
+    /** Icon placement override for any preset */
+    iconPlacement?: StatCardIconPlacement;
+    /** Backward-compatible alias for recruiter preset icon placement */
+    recruiterIconPlacement?: RecruiterIconPlacement;
 }
 declare const StatCard: React.FC<StatCardProps>;
 export default StatCard;

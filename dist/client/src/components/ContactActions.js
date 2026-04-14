@@ -57,7 +57,7 @@ const CALENDAR_PROVIDERS = [
 // ============================================================================
 // Component
 // ============================================================================
-const ContactActions = ({ contact, variant = "speedDial", iconSize = "small", direction = "up", sx, meetingDescriptionSuffix, speedDialInline = false, meetingLinks, onAction, onMenuClose, }) => {
+const ContactActions = ({ contact, variant = "speedDial", iconSize = "small", direction = "up", sx, meetingDescriptionSuffix, speedDialInline = false, meetingLinks, onAction, showVCardAction = true, onMenuClose, }) => {
     // Sub-menu state (for calendar provider picker)
     const [calMenuAnchor, setCalMenuAnchor] = useState(null);
     // SpeedDial open state
@@ -70,7 +70,7 @@ const ContactActions = ({ contact, variant = "speedDial", iconSize = "small", di
     const linkMenuTimerRef = useRef(null);
     const vcardEnabled = useMemo(() => canGenerateVCard(contact), [contact]);
     const meetingEnabled = useMemo(() => canScheduleMeeting(contact), [contact]);
-    const anyEnabled = vcardEnabled || meetingEnabled;
+    const anyEnabled = (showVCardAction && vcardEnabled) || meetingEnabled;
     const hasLinks = Boolean(meetingLinks && meetingLinks.length > 0);
     // ------ Close all menus helper ------
     const closeAll = useCallback(() => {
@@ -200,7 +200,11 @@ const ContactActions = ({ contact, variant = "speedDial", iconSize = "small", di
     if (variant === "menuItems") {
         return [
             _jsx(Divider, {}, "contact-actions-divider"),
-            _jsx(Tooltip, { title: vcardTooltip, placement: "right", arrow: true, children: _jsx("span", { children: _jsxs(MenuItem, { onClick: handleDownloadVCard, disabled: !vcardEnabled, children: [_jsx(ListItemIcon, { children: _jsx(PersonAddIcon, { fontSize: "small" }) }), _jsx(ListItemText, { children: "Add to Contacts" })] }) }) }, "contact-actions-vcard"),
+            ...(showVCardAction
+                ? [
+                    _jsx(Tooltip, { title: vcardTooltip, placement: "right", arrow: true, children: _jsx("span", { children: _jsxs(MenuItem, { onClick: handleDownloadVCard, disabled: !vcardEnabled, children: [_jsx(ListItemIcon, { children: _jsx(PersonAddIcon, { fontSize: "small" }) }), _jsx(ListItemText, { children: "Add to Contacts" })] }) }) }, "contact-actions-vcard"),
+                ]
+                : []),
             _jsx(Tooltip, { title: meetingTooltip, placement: "right", arrow: true, children: _jsx("span", { children: _jsxs(MenuItem, { onClick: handleOpenCalendarMenu, disabled: !meetingEnabled, children: [_jsx(ListItemIcon, { children: _jsx(CalendarIcon, { fontSize: "small" }) }), _jsx(ListItemText, { children: "Schedule Meeting" })] }) }) }, "contact-actions-calendar"),
             calendarSubMenu,
             linkSubMenu,
@@ -215,7 +219,7 @@ const ContactActions = ({ contact, variant = "speedDial", iconSize = "small", di
                             elevation: 3,
                             sx: { minWidth: 200 },
                         },
-                    }, children: [_jsx(Tooltip, { title: vcardTooltip, placement: "right", arrow: true, children: _jsx("span", { children: _jsxs(MenuItem, { onClick: handleDownloadVCard, disabled: !vcardEnabled, children: [_jsx(ListItemIcon, { children: _jsx(PersonAddIcon, { fontSize: "small" }) }), _jsx(ListItemText, { children: "Add to Contacts" })] }) }) }), _jsx(Tooltip, { title: meetingTooltip, placement: "right", arrow: true, children: _jsx("span", { children: _jsxs(MenuItem, { onClick: handleOpenCalendarMenu, disabled: !meetingEnabled, children: [_jsx(ListItemIcon, { children: _jsx(CalendarIcon, { fontSize: "small" }) }), _jsx(ListItemText, { children: "Schedule Meeting" })] }) }) })] }), calendarSubMenu, linkSubMenu] }));
+                    }, children: [showVCardAction ? (_jsx(Tooltip, { title: vcardTooltip, placement: "right", arrow: true, children: _jsx("span", { children: _jsxs(MenuItem, { onClick: handleDownloadVCard, disabled: !vcardEnabled, children: [_jsx(ListItemIcon, { children: _jsx(PersonAddIcon, { fontSize: "small" }) }), _jsx(ListItemText, { children: "Add to Contacts" })] }) }) })) : null, _jsx(Tooltip, { title: meetingTooltip, placement: "right", arrow: true, children: _jsx("span", { children: _jsxs(MenuItem, { onClick: handleOpenCalendarMenu, disabled: !meetingEnabled, children: [_jsx(ListItemIcon, { children: _jsx(CalendarIcon, { fontSize: "small" }) }), _jsx(ListItemText, { children: "Schedule Meeting" })] }) }) })] }), calendarSubMenu, linkSubMenu] }));
     }
     // ====================================================================
     // Variant: speedDial (default)
@@ -256,6 +260,6 @@ const ContactActions = ({ contact, variant = "speedDial", iconSize = "small", di
                     disabled: !anyEnabled,
                     color: "primary",
                     sx: { width: 40, height: 40 },
-                }, children: [_jsx(SpeedDialAction, { icon: _jsx(PersonAddIcon, {}), tooltipTitle: vcardTooltip, onClick: handleDownloadVCard, FabProps: { disabled: !vcardEnabled, size: "small" } }), _jsx(SpeedDialAction, { icon: _jsx(CalendarIcon, {}), tooltipTitle: meetingTooltip, onClick: handleOpenCalendarMenu, FabProps: { disabled: !meetingEnabled, size: "small" } })] }), calendarSubMenu, linkSubMenu] }));
+                }, children: [showVCardAction ? (_jsx(SpeedDialAction, { icon: _jsx(PersonAddIcon, {}), tooltipTitle: vcardTooltip, onClick: handleDownloadVCard, FabProps: { disabled: !vcardEnabled, size: "small" } })) : null, _jsx(SpeedDialAction, { icon: _jsx(CalendarIcon, {}), tooltipTitle: meetingTooltip, onClick: handleOpenCalendarMenu, FabProps: { disabled: !meetingEnabled, size: "small" } })] }), calendarSubMenu, linkSubMenu] }));
 };
 export default ContactActions;

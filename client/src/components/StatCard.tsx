@@ -64,6 +64,8 @@ export interface CornerAction {
 
 export type StatCardPreset = "admin" | "recruiter";
 export type TrendDirection = "up" | "down" | "flat";
+export type StatCardIconPlacement = "inline" | "corner";
+export type RecruiterIconPlacement = StatCardIconPlacement;
 
 export interface StatCardProps {
   /** Card title/label */
@@ -106,6 +108,12 @@ export interface StatCardProps {
   currentValue?: number;
   /** Trend direction override (auto-calculated if previous/current provided) */
   trend?: TrendDirection;
+
+  /** Icon placement override for any preset */
+  iconPlacement?: StatCardIconPlacement;
+
+  /** Backward-compatible alias for recruiter preset icon placement */
+  recruiterIconPlacement?: RecruiterIconPlacement;
 }
 
 // ---------------------------------------------------------------------------
@@ -289,9 +297,23 @@ const StatCard: React.FC<StatCardProps> = ({
   previousValue,
   currentValue,
   trend: trendOverride,
+  iconPlacement,
+  recruiterIconPlacement,
 }) => {
   const theme = useTheme();
   const mainColor = resolveColorToken(theme, color);
+  const resolvedIconPlacement =
+    iconPlacement ?? recruiterIconPlacement ?? "inline";
+  const resolvedCornerAction =
+    preset === "admin" &&
+    resolvedIconPlacement === "corner" &&
+    cornerAction &&
+    !cornerAction.placement
+      ? {
+          ...cornerAction,
+          placement: "bottom-right" as CornerPlacement,
+        }
+      : cornerAction;
 
   // Resolve display values
   const isBreakdown =
@@ -337,8 +359,8 @@ const StatCard: React.FC<StatCardProps> = ({
         p: 3,
       };
 
-  if (dense && cornerAction) {
-    const placement = cornerAction.placement ?? "top-right";
+  if (dense && resolvedCornerAction) {
+    const placement = resolvedCornerAction.placement ?? "top-right";
     const denseOppositePadding = 1.5;
 
     if (placement.startsWith("top")) {
@@ -349,6 +371,14 @@ const StatCard: React.FC<StatCardProps> = ({
     if (placement.startsWith("bottom")) {
       paddingSx.pb = 3;
       paddingSx.pt = denseOppositePadding;
+    }
+  }
+
+  if (resolvedCornerAction) {
+    const placement = resolvedCornerAction.placement ?? "top-right";
+
+    if (placement.endsWith("right")) {
+      paddingSx.pr = Math.max(paddingSx.pr ?? 0, dense ? 5 : 6);
     }
   }
 
@@ -398,7 +428,9 @@ const StatCard: React.FC<StatCardProps> = ({
       );
     })();
 
-    const iconNode = icon ? (
+    const iconContent = icon ?? null;
+
+    const inlineIconNode = iconContent ? (
       <Box
         sx={{
           backgroundColor: alpha(mainColor, 0.1),
@@ -410,9 +442,66 @@ const StatCard: React.FC<StatCardProps> = ({
           color: mainColor,
         }}
       >
-        {icon}
+        {iconContent}
       </Box>
     ) : null;
+
+    const cornerIconNode = iconContent ? (
+      <Box
+        data-slot="recruiter-corner-icon"
+        sx={{
+          position: "absolute",
+          top: 0,
+          right: 0,
+          backgroundColor: alpha(mainColor, 0.12),
+          borderTopRightRadius: `${theme.shape.borderRadius}px`,
+          borderBottomLeftRadius: theme.spacing(1.5),
+          borderTopLeftRadius: 0,
+          borderBottomRightRadius: 0,
+          px: 1.25,
+          py: 1,
+          minWidth: 44,
+          minHeight: 40,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: mainColor,
+          boxShadow: `inset 0 0 0 1px ${alpha(mainColor, 0.08)}`,
+          zIndex: 1,
+        }}
+      >
+        {iconContent}
+      </Box>
+    ) : null;
+
+    const recruiterUsesCornerIcon = resolvedIconPlacement === "corner";
+
+    const cornerTrendNode = trendNode ? (
+      <Box
+        data-slot="recruiter-corner-trend"
+        sx={{
+          position: "absolute",
+          top: cornerIconNode ? 46 : 8,
+          right: 8,
+          lineHeight: 1,
+          zIndex: 1,
+        }}
+      >
+        {trendNode}
+      </Box>
+    ) : null;
+
+    let recruiterContentPaddingRight = 2.5;
+
+    if (recruiterUsesCornerIcon) {
+      if (cornerIconNode && cornerTrendNode) {
+        recruiterContentPaddingRight = 8;
+      } else if (cornerIconNode) {
+        recruiterContentPaddingRight = 7;
+      } else if (cornerTrendNode) {
+        recruiterContentPaddingRight = 4.5;
+      }
+    }
 
     return (
       <Card
@@ -424,12 +513,24 @@ const StatCard: React.FC<StatCardProps> = ({
           borderTopColor: mainColor,
         }}
       >
-        {cornerAction && <CornerActionEl action={cornerAction} />}
-        <CardContent sx={{ py: 2, px: 2.5, "&:last-child": { pb: 2 } }}>
+        {resolvedCornerAction && <CornerActionEl action={resolvedCornerAction} />}
+        <CardContent
+          sx={{
+            py: 2,
+            pl: 2.5,
+            pr: recruiterContentPaddingRight,
+            position: "relative",
+            "&:last-child": { pb: 2 },
+          }}
+        >
+          {recruiterUsesCornerIcon && cornerIconNode}
+          {recruiterUsesCornerIcon && cornerTrendNode}
           <Box
             sx={{
               display: "flex",
-              justifyContent: "space-between",
+              justifyContent: recruiterUsesCornerIcon
+                ? "flex-start"
+                : "space-between",
               alignItems: "flex-start",
             }}
           >
@@ -470,18 +571,20 @@ const StatCard: React.FC<StatCardProps> = ({
                 </Typography>
               )}
             </Box>
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-end",
-                gap: 0.5,
-                pl: 1,
-              }}
-            >
-              {iconNode}
-              {trendNode}
-            </Box>
+            {!recruiterUsesCornerIcon && (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                  gap: 0.5,
+                  pl: 1,
+                }}
+              >
+                {inlineIconNode}
+                {trendNode}
+              </Box>
+            )}
           </Box>
         </CardContent>
       </Card>
@@ -492,6 +595,59 @@ const StatCard: React.FC<StatCardProps> = ({
   const badgeBg = badgeVariant === "soft" ? alpha(mainColor, 0.12) : mainColor;
   const badgeFg =
     badgeVariant === "soft" ? mainColor : theme.palette.common.white;
+  const adminUsesCornerIcon = resolvedIconPlacement === "corner";
+  const adminInlineIconNode = icon && !adminUsesCornerIcon ? (
+    <Box
+      sx={{
+        bgcolor: badgeBg,
+        color: badgeFg,
+        borderRadius: 2,
+        p: iconBadgePadding,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+      }}
+    >
+      {icon}
+    </Box>
+  ) : null;
+  const adminCornerIconNode = icon && adminUsesCornerIcon ? (
+    <Box
+      data-slot="admin-corner-icon"
+      sx={{
+        position: "absolute",
+        top: 0,
+        right: 0,
+        bgcolor: badgeBg,
+        color: badgeFg,
+        borderTopRightRadius: `${theme.shape.borderRadius}px`,
+        borderBottomLeftRadius: theme.spacing(1.75),
+        borderTopLeftRadius: 0,
+        borderBottomRightRadius: 0,
+        px: dense ? 1.5 : 1.75,
+        py: dense ? 1.25 : 1.5,
+        minWidth: dense ? 48 : 56,
+        minHeight: dense ? 48 : 56,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+        boxShadow:
+          badgeVariant === "soft"
+            ? `inset 0 0 0 1px ${alpha(mainColor, 0.08)}`
+            : undefined,
+      }}
+    >
+      {icon}
+    </Box>
+  ) : null;
+  const adminTopRowGap = adminUsesCornerIcon ? 0 : topRowGap;
+  const adminTopRowMinHeight = adminUsesCornerIcon ? (dense ? 48 : 56) : undefined;
+
+  if (adminUsesCornerIcon) {
+    paddingSx.pr = Math.max(paddingSx.pr ?? 0, dense ? 7 : 8);
+  }
 
   const resolvedTitleVariant = titleVariant || "body2";
   const resolvedValueVariant = valueVariant || "h4";
@@ -508,26 +664,19 @@ const StatCard: React.FC<StatCardProps> = ({
         position: "relative",
       }}
     >
-      {cornerAction && <CornerActionEl action={cornerAction} />}
+      {resolvedCornerAction && <CornerActionEl action={resolvedCornerAction} />}
+      {adminCornerIconNode}
       {/* Top row: icon + value */}
-      <Box sx={{ display: "flex", alignItems: topRowAlign, gap: topRowGap }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: topRowAlign,
+          gap: adminTopRowGap,
+          minHeight: adminTopRowMinHeight,
+        }}
+      >
         {/* Icon badge */}
-        {icon && (
-          <Box
-            sx={{
-              bgcolor: badgeBg,
-              color: badgeFg,
-              borderRadius: 2,
-              p: iconBadgePadding,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            {icon}
-          </Box>
-        )}
+        {adminInlineIconNode}
 
         {/* Primary value */}
         <Box sx={{ minWidth: 0 }}>

@@ -23,6 +23,7 @@
     "editor.defaultFormatter": "foxundermoon.shell-format"
   },
   "chat.tools.terminal.autoApprove": {
-    "yarn npm": true
+    "yarn npm": true,
+    "yarn lint": true
   }
 }

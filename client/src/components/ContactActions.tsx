@@ -94,6 +94,8 @@ export interface ContactActionsProps {
   meetingLinks?: MeetingLinkEntry[];
   /** Callback fired after any action is executed */
   onAction?: (action: "vcard" | "calendar", provider?: CalendarProvider) => void;
+  /** Whether to show the vCard / Add to Contacts action */
+  showVCardAction?: boolean;
   /**
    * For "menuItems" variant: called after an action to let the parent close
    * its own Menu.
@@ -133,6 +135,7 @@ const ContactActions: React.FC<ContactActionsProps> = ({
   speedDialInline = false,
   meetingLinks,
   onAction,
+  showVCardAction = true,
   onMenuClose,
 }) => {
   // Sub-menu state (for calendar provider picker)
@@ -149,7 +152,7 @@ const ContactActions: React.FC<ContactActionsProps> = ({
 
   const vcardEnabled = useMemo(() => canGenerateVCard(contact), [contact]);
   const meetingEnabled = useMemo(() => canScheduleMeeting(contact), [contact]);
-  const anyEnabled = vcardEnabled || meetingEnabled;
+  const anyEnabled = (showVCardAction && vcardEnabled) || meetingEnabled;
 
   const hasLinks = Boolean(meetingLinks && meetingLinks.length > 0);
 
@@ -413,19 +416,23 @@ const ContactActions: React.FC<ContactActionsProps> = ({
   if (variant === "menuItems") {
     return [
       <Divider key="contact-actions-divider" />,
-      <Tooltip key="contact-actions-vcard" title={vcardTooltip} placement="right" arrow>
-        <span>
-          <MenuItem
-            onClick={handleDownloadVCard}
-            disabled={!vcardEnabled}
-          >
-            <ListItemIcon>
-              <PersonAddIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Add to Contacts</ListItemText>
-          </MenuItem>
-        </span>
-      </Tooltip>,
+      ...(showVCardAction
+        ? [
+            <Tooltip key="contact-actions-vcard" title={vcardTooltip} placement="right" arrow>
+              <span>
+                <MenuItem
+                  onClick={handleDownloadVCard}
+                  disabled={!vcardEnabled}
+                >
+                  <ListItemIcon>
+                    <PersonAddIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Add to Contacts</ListItemText>
+                </MenuItem>
+              </span>
+            </Tooltip>,
+          ]
+        : []),
       <Tooltip
         key="contact-actions-calendar"
         title={meetingTooltip}
@@ -479,19 +486,21 @@ const ContactActions: React.FC<ContactActionsProps> = ({
             },
           }}
         >
-          <Tooltip title={vcardTooltip} placement="right" arrow>
-            <span>
-              <MenuItem
-                onClick={handleDownloadVCard}
-                disabled={!vcardEnabled}
-              >
-                <ListItemIcon>
-                  <PersonAddIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Add to Contacts</ListItemText>
-              </MenuItem>
-            </span>
-          </Tooltip>
+          {showVCardAction ? (
+            <Tooltip title={vcardTooltip} placement="right" arrow>
+              <span>
+                <MenuItem
+                  onClick={handleDownloadVCard}
+                  disabled={!vcardEnabled}
+                >
+                  <ListItemIcon>
+                    <PersonAddIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Add to Contacts</ListItemText>
+                </MenuItem>
+              </span>
+            </Tooltip>
+          ) : null}
           <Tooltip title={meetingTooltip} placement="right" arrow>
             <span>
               <MenuItem
@@ -568,12 +577,14 @@ const ContactActions: React.FC<ContactActionsProps> = ({
           sx: { width: 40, height: 40 },
         }}
       >
-        <SpeedDialAction
-          icon={<PersonAddIcon />}
-          tooltipTitle={vcardTooltip}
-          onClick={handleDownloadVCard}
-          FabProps={{ disabled: !vcardEnabled, size: "small" }}
-        />
+        {showVCardAction ? (
+          <SpeedDialAction
+            icon={<PersonAddIcon />}
+            tooltipTitle={vcardTooltip}
+            onClick={handleDownloadVCard}
+            FabProps={{ disabled: !vcardEnabled, size: "small" }}
+          />
+        ) : null}
         <SpeedDialAction
           icon={<CalendarIcon />}
           tooltipTitle={meetingTooltip}
