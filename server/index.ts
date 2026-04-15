@@ -36,6 +36,7 @@ export { default as env, getClientUrl } from "./src/env.js";
 import "./src/env.js";
 
 // Middleware
+export { apiResponseSecurityHeaders } from "./src/express/apiSecurityHeaders.js";
 export { createTurnstileMiddleware } from "./src/turnstile/index.js";
 
 // Worker factory

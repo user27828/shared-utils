@@ -27,6 +27,7 @@ export { default as env, getClientUrl } from "./src/env.js";
 // Force env module evaluation for side-effects (ensure dotenv/load runs)
 import "./src/env.js";
 // Middleware
+export { apiResponseSecurityHeaders } from "./src/express/apiSecurityHeaders.js";
 export { createTurnstileMiddleware } from "./src/turnstile/index.js";
 // Worker factory
 export { createTurnstileWorker } from "./src/turnstile/index.js";
