@@ -121,6 +121,46 @@ const CALENDAR_PROVIDERS: CalendarProviderItem[] = [
   { key: "ics", label: "Download .ics", icon: <DownloadIcon fontSize="small" color="action" /> },
 ];
 
+const toDisplayLabel = (value?: string): string => {
+  if (!value) {
+    return "";
+  }
+
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const buildContactMethodDescriptionLines = (contact: ContactInfo): string[] => {
+  const lines: string[] = [];
+
+  (contact.emails || []).forEach((email) => {
+    if (email?.trim()) {
+      lines.push(`Email: ${email}`);
+    }
+  });
+
+  (contact.phones || []).forEach((phone) => {
+    if (!phone?.value?.trim()) {
+      return;
+    }
+
+    const label = phone.type?.trim() ? toDisplayLabel(phone.type) : "Phone";
+    lines.push(`${label}: ${phone.value}`);
+  });
+
+  (contact.urls || []).forEach((url) => {
+    if (!url?.url?.trim()) {
+      return;
+    }
+
+    const label = url.label?.trim() ? toDisplayLabel(url.label) : "Link";
+    lines.push(`${label}: ${url.url}`);
+  });
+
+  return lines;
+};
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -193,9 +233,16 @@ const ContactActions: React.FC<ContactActionsProps> = ({
     (provider: CalendarProvider, link?: MeetingLinkEntry) => {
       const suffix = meetingDescriptionSuffix?.trim();
       const suffixPart = suffix ? ` ${suffix}` : "";
+      const descriptionLines = [
+        `Scheduled meeting with ${contact.name}${suffixPart}`,
+      ];
+      const contactMethodLines = buildContactMethodDescriptionLines(contact);
 
-      let description = `Scheduled meeting with ${contact.name}${suffixPart}`;
       let location = "";
+
+      if (contactMethodLines.length > 0) {
+        descriptionLines.push("", "Contact methods:", ...contactMethodLines);
+      }
 
       if (link) {
         // If the value looks like a URL, use it as the location field
@@ -205,9 +252,10 @@ const ContactActions: React.FC<ContactActionsProps> = ({
         if (isUrl) {
           location = link.value;
         }
-        description += `\n\nMeeting link (${link.label}): ${link.value}`;
+        descriptionLines.push("", `Meeting link (${link.label}): ${link.value}`);
       }
 
+      const description = descriptionLines.join("\n");
       const event = buildMeetingEvent(contact, { description, location });
       openCalendarEvent(provider, event);
       onAction?.("calendar", provider);
