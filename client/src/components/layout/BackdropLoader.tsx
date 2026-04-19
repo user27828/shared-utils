@@ -67,7 +67,7 @@ const BackdropLoader: React.FC<BackdropLoaderProps> = ({
       justifyContent: "center",
       backgroundColor:
         mode === "dark" ? "rgba(0, 0, 0, 0.8)" : "rgba(255, 255, 255, 0.8)",
-      zIndex: 1,
+      zIndex: theme.zIndex.drawer + 1,
       borderRadius: 1,
       flexDirection: "column",
       gap: 1,
