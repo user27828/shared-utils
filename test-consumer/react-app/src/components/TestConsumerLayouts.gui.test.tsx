@@ -30,9 +30,15 @@ vi.mock("@user27828/shared-utils/client/wysiwyg", () => {
 
 vi.mock("@user27828/shared-utils/client", () => {
   return {
+    BackdropLoader: () => <div>Mock BackdropLoader</div>,
+    CheckChip: () => <div>Mock CheckChip</div>,
     CountrySelect: () => <div>Mock CountrySelect</div>,
+    Disconnected: () => <div>Mock Disconnected</div>,
     LanguageSelect: () => <div>Mock LanguageSelect</div>,
     FileUploadList: () => <div>Mock FileUploadList</div>,
+    ProcessStatusChip: () => <div>Mock ProcessStatusChip</div>,
+    SelectChip: () => <div>Mock SelectChip</div>,
+    SplitChip: () => <div>Mock SplitChip</div>,
     getCountryByCode: () => ({ name: "United States" }),
     getLanguageByCode: () => ({ name: "English" }),
     pathJoinUrl: (...parts: string[]) => parts.join("/"),

@@ -180,7 +180,8 @@ Core utilities with environment detection and centralized configuration:
 
 React components and client-side helpers:
 
-- **Form Components**: `CountrySelect`, `LanguageSelect`
+- **Form Components**: `CountrySelect`, `LanguageSelect`, `FileUploadList`, `TagsInput`
+- **Layout Components**: `BackdropLoader`, `CheckChip`, `Disconnected`, `ProcessStatusChip`, `SelectChip`, `SplitChip`
 - **File Icons**: `FileIcon` - MUI icons for 70+ file types and MIME types
 - **Clipboard Buttons**: `CopyButton`, `PasteButton` - IconButtons with visual feedback
 - **Helper Functions**: Country/language utilities, CSV helpers
@@ -225,6 +226,22 @@ import { CopyButton, PasteButton } from "@user27828/shared-utils/client";
 **CopyButton props**: `value`, `tooltip`, `copiedTooltip`, `successDuration`, `size`, `sx`, `iconFontSize`, `onCopy`, `onError`, `disabled`, `snackbar`, `snackbarMessage`, `snackbarDuration`, `color`
 
 **PasteButton props**: `onPaste`, `tooltip`, `pastedTooltip`, `successDuration`, `size`, `sx`, `iconFontSize`, `onError`, `disabled`, `snackbar`, `snackbarMessage`, `snackbarDuration`, `color`
+
+**CheckChip** renders a real checkbox input inside a chip-styled control, so it keeps native checkbox semantics while fitting chip-based UIs. It supports controlled or uncontrolled usage plus the native indeterminate state.
+
+```tsx
+import { CheckChip } from "@user27828/shared-utils/client";
+
+const [enabled, setEnabled] = useState(false);
+
+<CheckChip
+  label="Email notifications"
+  checked={enabled}
+  onChange={(_event, nextChecked) => {
+    setEnabled(nextChecked);
+  }}
+/>;
+```
 
 #### 📝 WYSIWYG Editor Components
 

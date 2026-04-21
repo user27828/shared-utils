@@ -93,9 +93,137 @@ declare module "@user27828/shared-utils/client" {
     onError?: (error: string | Error) => void;
   }
 
+  export interface BackdropLoaderProps {
+    open: boolean;
+    message?: string;
+    localized?: boolean;
+    containerSx?: any;
+    size?: number;
+  }
+
+  export interface CheckChipProps {
+    label: React.ReactNode;
+    checked?: boolean;
+    defaultChecked?: boolean;
+    indeterminate?: boolean;
+    onChange?: (
+      event: React.ChangeEvent<HTMLInputElement>,
+      checked: boolean,
+    ) => void;
+    inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
+    icon?: React.ReactElement;
+    checkedIcon?: React.ReactElement;
+    indeterminateIcon?: React.ReactElement;
+    disabled?: boolean;
+    size?: "small" | "medium";
+    color?:
+      | "default"
+      | "primary"
+      | "secondary"
+      | "error"
+      | "warning"
+      | "info"
+      | "success";
+    sx?: any;
+  }
+
+  export interface DisconnectedProps {
+    message?: string;
+    onRetry?: () => void;
+    sx?: any;
+  }
+
+  export interface ProcessStatusChipProps {
+    status: string;
+    label: string;
+    color?:
+      | "default"
+      | "primary"
+      | "secondary"
+      | "error"
+      | "warning"
+      | "info"
+      | "success";
+    finalStatuses: string[];
+    percentage?: number | null;
+    showPercentage?: boolean;
+    linearPercentagePlacement?: "left" | "right";
+    placement?: "top" | "bottom" | "left" | "right";
+    progressProps?: any;
+    size?: "small" | "medium";
+    sx?: any;
+  }
+
+  export interface SelectChipOption {
+    value: string;
+    label: string;
+    icon?: React.ReactNode;
+    endIcon?: React.ReactNode;
+    tooltip?: React.ReactNode;
+    rowSx?: any;
+    color?: string;
+    disabled?: boolean;
+  }
+
+  export interface SelectChipProps {
+    selectedValues: string[];
+    options: SelectChipOption[];
+    onChange: (selectedValues: string[]) => void;
+    onOptionReselect?: (value: string) => void;
+    isLoading?: boolean;
+    emptyLabel?: string;
+    getDisplayText?: (
+      selectedValues: string[],
+      options: SelectChipOption[],
+    ) => string;
+    placement?: "bottom-start" | "bottom-end" | "top-start" | "top-end";
+    minMenuWidth?: number;
+    disabled?: boolean;
+    showApplyButton?: boolean;
+    onMenuOpen?: () => void;
+    onMenuClose?: () => void;
+    error?: boolean;
+    size?: "small" | "medium";
+    color?:
+      | "default"
+      | "primary"
+      | "secondary"
+      | "error"
+      | "warning"
+      | "info"
+      | "success";
+    sx?: any;
+    multiple?: boolean;
+  }
+
+  export interface SplitChipItem {
+    label: React.ReactNode;
+    color?: string;
+    icon?: React.ReactNode;
+    dividerColor?: string;
+    customDivider?: React.ReactNode;
+    onClick?: () => void;
+    sx?: any;
+  }
+
+  export interface SplitChipProps {
+    items: SplitChipItem[];
+    variant?: "filled" | "outlined";
+    size?: "small" | "medium";
+    dividerColor?: string;
+    dividerProps?: any;
+    sx?: any;
+  }
+
+  export const BackdropLoader: React.FC<BackdropLoaderProps>;
+  export const CheckChip: React.FC<CheckChipProps>;
   export const CountrySelect: React.FC<CountrySelectProps>;
+  export const Disconnected: React.FC<DisconnectedProps>;
   export const LanguageSelect: React.FC<LanguageSelectProps>;
   export const FileUploadList: React.FC<FileUploadListProps>;
+  export const ProcessStatusChip: React.FC<ProcessStatusChipProps>;
+  export const SelectChip: React.FC<SelectChipProps>;
+  export const SplitChip: React.FC<SplitChipProps>;
 
   // Helper functions
   export function getCountryByCode(code: string): any;

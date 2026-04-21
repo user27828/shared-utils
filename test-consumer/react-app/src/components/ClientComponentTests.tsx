@@ -1,8 +1,14 @@
 import React, { useState } from "react";
 import {
+  BackdropLoader,
+  CheckChip,
   CountrySelect,
+  Disconnected,
   LanguageSelect,
   FileUploadList, // Now properly exported and importable
+  ProcessStatusChip,
+  SelectChip,
+  SplitChip,
   // CalendarAdd temporarily disabled due to @mui/icons-material dependency issues
   getCountryByCode,
   getLanguageByCode,
@@ -60,6 +66,16 @@ export const ClientComponentTests: React.FC = () => {
   const [multiCountryValue, setMultiCountryValue] = useState<string[]>([]);
   const [languageValue, setLanguageValue] = useState<string>("");
   const [multiLanguageValue, setMultiLanguageValue] = useState<string[]>([]);
+  const [layoutLoaderOpen, setLayoutLoaderOpen] = useState<boolean>(true);
+  const [checkChipChecked, setCheckChipChecked] = useState<boolean>(true);
+  const [disconnectedRetryCount, setDisconnectedRetryCount] =
+    useState<number>(0);
+  const [processPercentage, setProcessPercentage] = useState<number>(68);
+  const [selectChipValues, setSelectChipValues] = useState<string[]>(["email"]);
+  const [singleSelectChipValue, setSingleSelectChipValue] = useState<string[]>([
+    "medium",
+  ]);
+  const [lastReselectedOption, setLastReselectedOption] = useState<string>("");
 
   // FileUploadList test states
   const [selectedFile, setSelectedFile] = useState<any>(null);
@@ -238,7 +254,24 @@ export const ClientComponentTests: React.FC = () => {
       description: "Test component props validation",
       status: "pending",
     },
+    {
+      name: "Layout Components - availability",
+      description: "Test layout components are exported and available",
+      status: "pending",
+    },
   ]);
+
+  const notificationOptions = [
+    { value: "email", label: "Email" },
+    { value: "sms", label: "SMS" },
+    { value: "push", label: "Push" },
+  ];
+
+  const priorityOptions = [
+    { value: "low", label: "Low" },
+    { value: "medium", label: "Medium" },
+    { value: "high", label: "High" },
+  ];
 
   const updateTestStatus = (
     testName: string,
@@ -1194,6 +1227,49 @@ export const ClientComponentTests: React.FC = () => {
     }
   };
 
+  const runLayoutComponentsAvailabilityTest = async () => {
+    const testName = "Layout Components - availability";
+    const startTime = Date.now();
+
+    updateTestStatus(
+      testName,
+      "running",
+      "Verifying layout component exports...",
+    );
+
+    try {
+      const missingComponents = [
+        ["BackdropLoader", BackdropLoader],
+        ["CheckChip", CheckChip],
+        ["Disconnected", Disconnected],
+        ["ProcessStatusChip", ProcessStatusChip],
+        ["SelectChip", SelectChip],
+        ["SplitChip", SplitChip],
+      ]
+        .filter(
+          ([, component]) => component === undefined || component === null,
+        )
+        .map(([name]) => name);
+
+      if (missingComponents.length > 0) {
+        throw new Error(
+          `Missing layout components: ${missingComponents.join(", ")}`,
+        );
+      }
+
+      const duration = Date.now() - startTime;
+      updateTestStatus(
+        testName,
+        "pass",
+        "Layout components are exported and available",
+        duration,
+      );
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      updateTestStatus(testName, "fail", (error as Error).message, duration);
+    }
+  };
+
   const runIndividualTest = async (testName: string) => {
     switch (testName) {
       case "CountrySelect - Basic rendering":
@@ -1280,6 +1356,9 @@ export const ClientComponentTests: React.FC = () => {
       case "FileUploadList - Props validation":
         await runFileUploadListPropsValidationTest();
         break;
+      case "Layout Components - availability":
+        await runLayoutComponentsAvailabilityTest();
+        break;
       default:
         updateTestStatus(testName, "fail", "Test not implemented yet");
     }
@@ -1359,6 +1438,10 @@ export const ClientComponentTests: React.FC = () => {
       await delay(300);
       await runFileUploadListPropsValidationTest();
       await delay(300);
+
+      // Layout Components Tests
+      await runLayoutComponentsAvailabilityTest();
+      await delay(300);
     } catch (error) {
       console.error("Error during test execution:", error);
     }
@@ -1369,7 +1452,7 @@ export const ClientComponentTests: React.FC = () => {
   return (
     <TestSuiteLayout
       title="Client Components Integration Tests"
-      description="Integration tests for CountrySelect, LanguageSelect, FileUploadList, CSV import/export functionality, date utilities, and helper functions. These tests verify component rendering, state management, data handling, and utility behavior using the timeline progress interface."
+      description="Integration tests for CountrySelect, LanguageSelect, FileUploadList, and layout components, alongside CSV import/export functionality, date utilities, and helper functions. These tests verify component rendering, state management, data handling, and utility behavior using the timeline progress interface."
       headerContent={
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <Button
@@ -1731,6 +1814,300 @@ export const ClientComponentTests: React.FC = () => {
               Error: {fileUploadError}
             </Typography>
           )}
+        </Box>
+
+        <Box sx={{ mt: 1 }}>
+          <Typography variant="h5" gutterBottom>
+            Layout Components
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Selection, status, fallback, and loading helpers exported from the
+            client barrel.
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            p: 3,
+            backgroundColor: "rgba(255, 255, 255, 0.02)",
+            borderRadius: 2,
+            border: 1,
+            borderColor: "rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            CheckChip
+          </Typography>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <CheckChip
+              label="Email notifications"
+              checked={checkChipChecked}
+              onChange={(_event, nextChecked) => {
+                setCheckChipChecked(nextChecked);
+              }}
+              color={checkChipChecked ? "primary" : "default"}
+            />
+            <CheckChip label="Partial rollout" indeterminate={true} disabled />
+            <CheckChip label="Read only" defaultChecked={true} disabled />
+          </Stack>
+          <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => {
+                setCheckChipChecked((prev) => !prev);
+              }}
+            >
+              Toggle primary chip
+            </Button>
+            <Button
+              size="small"
+              variant="text"
+              onClick={() => {
+                setCheckChipChecked(true);
+              }}
+            >
+              Reset
+            </Button>
+          </Stack>
+          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+            Email notifications: {checkChipChecked ? "Enabled" : "Disabled"}
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            p: 3,
+            backgroundColor: "rgba(255, 255, 255, 0.02)",
+            borderRadius: 2,
+            border: 1,
+            borderColor: "rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            SelectChip
+          </Typography>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, minmax(0, 1fr))",
+              },
+              gap: 2,
+              alignItems: "start",
+            }}
+          >
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Multi-select channels
+              </Typography>
+              <SelectChip
+                selectedValues={selectChipValues}
+                options={notificationOptions}
+                onChange={setSelectChipValues}
+                emptyLabel="Choose channels"
+                showApplyButton={true}
+              />
+              <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                Selected: {selectChipValues.join(", ") || "None"}
+              </Typography>
+            </Box>
+
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Single-select priority
+              </Typography>
+              <SelectChip
+                selectedValues={singleSelectChipValue}
+                options={priorityOptions}
+                onChange={setSingleSelectChipValue}
+                emptyLabel="Choose priority"
+                multiple={false}
+                onOptionReselect={(value) => {
+                  setLastReselectedOption(value);
+                }}
+              />
+              <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                Selected: {singleSelectChipValue[0] || "None"}
+              </Typography>
+              <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                Last reselected: {lastReselectedOption || "None"}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        <Box
+          sx={{
+            p: 3,
+            backgroundColor: "rgba(255, 255, 255, 0.02)",
+            borderRadius: 2,
+            border: 1,
+            borderColor: "rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            SplitChip
+          </Typography>
+          <SplitChip
+            items={[
+              { label: "Queued", color: "default" },
+              { label: "12 files", color: "primary" },
+              { label: "2 warnings", color: "warning" },
+            ]}
+            variant="outlined"
+            size="small"
+          />
+          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+            Useful for showing compact grouped status summaries.
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            p: 3,
+            backgroundColor: "rgba(255, 255, 255, 0.02)",
+            borderRadius: 2,
+            border: 1,
+            borderColor: "rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            ProcessStatusChip
+          </Typography>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <ProcessStatusChip
+              status="syncing"
+              label="Syncing"
+              color="info"
+              finalStatuses={["completed", "failed"]}
+              percentage={processPercentage}
+              showPercentage={true}
+              placement="bottom"
+            />
+            <ProcessStatusChip
+              status="indexing"
+              label="Indexing"
+              color="warning"
+              finalStatuses={["completed", "failed"]}
+              percentage={null}
+              placement="left"
+            />
+            <ProcessStatusChip
+              status="completed"
+              label="Completed"
+              color="success"
+              finalStatuses={["completed", "failed"]}
+              percentage={100}
+            />
+          </Stack>
+          <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => {
+                setProcessPercentage((prev) => Math.max(0, prev - 10));
+              }}
+            >
+              -10%
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => {
+                setProcessPercentage((prev) => Math.min(100, prev + 10));
+              }}
+            >
+              +10%
+            </Button>
+          </Stack>
+        </Box>
+
+        <Box
+          sx={{
+            p: 3,
+            backgroundColor: "rgba(255, 255, 255, 0.02)",
+            borderRadius: 2,
+            border: 1,
+            borderColor: "rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            BackdropLoader
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Localized mode keeps the loading overlay constrained to a single
+            container instead of covering the full page.
+          </Typography>
+          <Box
+            sx={{
+              position: "relative",
+              mt: 2,
+              minHeight: 140,
+              border: "1px dashed",
+              borderColor: "divider",
+              borderRadius: 2,
+              p: 2,
+              overflow: "hidden",
+            }}
+          >
+            <Typography variant="body2">Simulated panel content</Typography>
+            <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+              Toggle the loader to preview localized behavior.
+            </Typography>
+            <Button
+              size="small"
+              variant="outlined"
+              sx={{ mt: 2 }}
+              onClick={() => {
+                setLayoutLoaderOpen((prev) => !prev);
+              }}
+            >
+              {layoutLoaderOpen ? "Hide" : "Show"} loader
+            </Button>
+            <BackdropLoader
+              open={layoutLoaderOpen}
+              localized={true}
+              message="Syncing demo data"
+            />
+          </Box>
+        </Box>
+
+        <Box
+          sx={{
+            p: 3,
+            backgroundColor: "rgba(255, 255, 255, 0.02)",
+            borderRadius: 2,
+            border: 1,
+            borderColor: "rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            Disconnected
+          </Typography>
+          <Typography variant="caption" display="block" sx={{ mb: 1.5 }}>
+            Retry count: {disconnectedRetryCount}
+          </Typography>
+          <Box sx={{ minHeight: 220 }}>
+            <Disconnected
+              message={
+                disconnectedRetryCount === 0
+                  ? "Preview of the network error state with retry support."
+                  : `Retry attempted ${disconnectedRetryCount} time(s).`
+              }
+              onRetry={() => {
+                setDisconnectedRetryCount((prev) => prev + 1);
+              }}
+              sx={{ minHeight: 220 }}
+            />
+          </Box>
         </Box>
       </Box>
     </TestSuiteLayout>

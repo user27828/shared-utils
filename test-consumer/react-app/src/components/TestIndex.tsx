@@ -137,7 +137,8 @@ const TestIndex: React.FC<TestIndexProps> = ({ onNavigate }) => {
     },
     {
       name: "Client Component Tests",
-      description: "React client components integration tests",
+      description:
+        "React client components integration tests for form, upload, and layout components",
       tests: [
         {
           name: "CountrySelect Component",
@@ -153,8 +154,16 @@ const TestIndex: React.FC<TestIndexProps> = ({ onNavigate }) => {
           category: "client",
         },
         {
-          name: "CalendarAdd Component",
-          description: "Test calendar event creation component (logic tests)",
+          name: "FileUploadList Component",
+          description:
+            "Test upload, existing-file selection, and server integration flows",
+          status: "implemented" as const,
+          category: "client",
+        },
+        {
+          name: "Layout Components",
+          description:
+            "Test CheckChip, SelectChip, SplitChip, ProcessStatusChip, Disconnected, and BackdropLoader demos",
           status: "implemented" as const,
           category: "client",
         },
@@ -553,8 +562,8 @@ const TestIndex: React.FC<TestIndexProps> = ({ onNavigate }) => {
         <p>
           <span className="implemented">✅ Client Component Tests</span> -
           Complete integration testing for CountrySelect, LanguageSelect,
-          CalendarAdd, helpers, data validation, CSV Import/Export, and Date
-          Utilities
+          FileUploadList, layout components, helpers, data validation, CSV
+          Import/Export, and Date Utilities
         </p>
         <p>
           <span className="implemented">✅ TinyMCE Integration Tests</span> -

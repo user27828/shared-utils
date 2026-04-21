@@ -15,6 +15,7 @@ export { default as StatCard } from "./src/components/StatCard.js";
 export type { StatCardProps, StatBreakdownValue, CornerAction, CornerPlacement, StatCardPreset, TrendDirection, } from "./src/components/StatCard.js";
 export { TagsInput, type TagsInputProps, } from "./src/components/form/TagsInput.js";
 export { default as BackdropLoader, type BackdropLoaderProps, } from "./src/components/layout/BackdropLoader.js";
+export { default as CheckChip, type CheckChipInputProps, type CheckChipProps, } from "./src/components/layout/CheckChip.js";
 export { default as Disconnected, type DisconnectedProps, } from "./src/components/layout/Disconnected.js";
 export { default as ProcessStatusChip, type ProcessStatusChipProps, } from "./src/components/layout/ProcessStatusChip.js";
 export { default as SelectChip, type SelectChipOption, type SelectChipProps, } from "./src/components/layout/SelectChip.js";

@@ -41,6 +41,11 @@ export {
   type BackdropLoaderProps,
 } from "./src/components/layout/BackdropLoader.js";
 export {
+  default as CheckChip,
+  type CheckChipInputProps,
+  type CheckChipProps,
+} from "./src/components/layout/CheckChip.js";
+export {
   default as Disconnected,
   type DisconnectedProps,
 } from "./src/components/layout/Disconnected.js";
