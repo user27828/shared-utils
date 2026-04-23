@@ -1,0 +1,1 @@
+{"version":3,"file":"EmailTextPreviewPanel.d.ts","sourceRoot":"","sources":["../../../../../client/src/email/ui/EmailTextPreviewPanel.tsx"],"names":[],"mappings":"AAGA,MAAM,WAAW,0BAA0B;IACzC,IAAI,EAAE,MAAM,CAAC;IACb,SAAS,CAAC,EAAE,MAAM,CAAC;CACpB;AAED,QAAA,MAAM,qBAAqB,EAAE,KAAK,CAAC,EAAE,CAAC,0BAA0B,CAwB/D,CAAC;AAEF,eAAe,qBAAqB,CAAC"}

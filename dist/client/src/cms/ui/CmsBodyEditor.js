@@ -207,14 +207,12 @@ const HtmlEditor = ({ value, onChange, height, editor, onPickAsset, onUploadImag
         }
         loadedRef.current = editor;
         setEditorComponent(null);
-        import("../../../wysiwyg")
+        const editorImport = editor === "tinymce"
+            ? import("../../components/wysiwyg/TinyMceEditor.js")
+            : import("../../components/wysiwyg/CKEditor5Classic.js");
+        editorImport
             .then((mod) => {
-            if (editor === "tinymce") {
-                setEditorComponent(() => mod.TinyMceEditor);
-            }
-            else {
-                setEditorComponent(() => mod.CKEditor5Classic);
-            }
+            setEditorComponent(() => mod.default);
             onReady?.();
         })
             .catch(() => {
@@ -351,9 +349,9 @@ const MarkdownEditor = ({ value, onChange, onPickAsset, onUploadImage }) => {
             return;
         }
         loadedRef.current = true;
-        import("../../../wysiwyg")
+        import("../../components/wysiwyg/MDXEditor.js")
             .then((mod) => {
-            setMdEditor(() => mod.MDXEditor);
+            setMdEditor(() => mod.default);
         })
             .catch(() => {
             // Fallback
