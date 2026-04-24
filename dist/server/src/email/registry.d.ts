@@ -1,4 +1,8 @@
 import type { EmailPreviewFixture, EmailTemplateCategory, EmailTemplateDetail, EmailTemplateSummary } from "../../../utils/src/email/types.js";
+export type EmailTemplateDeliveryAddress = string | {
+    email: string;
+    name?: string;
+};
 export interface EmailTemplateDescriptor<TProps = Record<string, unknown>> {
     uid: string;
     name: string;
@@ -6,14 +10,8 @@ export interface EmailTemplateDescriptor<TProps = Record<string, unknown>> {
     description: string;
     sendScenarios: string[];
     tags?: string[];
-    from?: {
-        email: string;
-        name?: string;
-    } | null;
-    replyTo?: {
-        email: string;
-        name?: string;
-    } | null;
+    from?: EmailTemplateDeliveryAddress | null;
+    replyTo?: EmailTemplateDeliveryAddress | null;
     previewFixtures: EmailPreviewFixture<TProps>[];
     buildSubject(props: TProps): string;
     buildText?(props: TProps): string;

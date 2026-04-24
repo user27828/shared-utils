@@ -320,6 +320,28 @@ const isResendAlreadyExistsError = (error: unknown): boolean => {
   );
 };
 
+const isMailerliteAlreadyExistsError = (error: unknown): boolean => {
+  if (!(error instanceof MailerliteApiError)) {
+    return false;
+  }
+
+  if (error.status === 409) {
+    return true;
+  }
+
+  const data = error.data as MailerliteApiErrorData | undefined;
+  const combinedMessage =
+    `${error.message} ${data?.message || ""} ${data?.error || ""}`.toLowerCase();
+
+  return (
+    combinedMessage.includes("already") && combinedMessage.includes("exist")
+  );
+};
+
+const isSesAlreadyExistsError = (error: unknown): boolean => {
+  return (error as { name?: string } | undefined)?.name === "AlreadyExistsException";
+};
+
 const parseApiResponse = async (response: Response): Promise<unknown> => {
   const raw = await response.text();
 
@@ -453,6 +475,14 @@ const listAllResendTopics = async (
   }
 };
 
+const findResendTopicByName = async (
+  config: ResendMarketingProviderConfig,
+  topicName: string,
+): Promise<ResendTopicRecord | undefined> => {
+  const topics = await listAllResendTopics(config);
+  return topics.find((topic) => topic.name === topicName);
+};
+
 const ensureResendTopics = async (
   config: ResendMarketingProviderConfig,
   settings: ResolvedMarketingSettings,
@@ -469,22 +499,35 @@ const ensureResendTopics = async (
       continue;
     }
 
-    const created = await resendRequest<{ id: string }>(config, "/topics", {
-      method: "POST",
-      body: JSON.stringify({
-        name: topicName,
-        defaultSubscription: "opt_out",
-        visibility: "private",
-        description: `${buildAudienceDisplayName(audienceKey)} managed by AgentM.Resume`,
-      }),
-    });
+    try {
+      const created = await resendRequest<{ id: string }>(config, "/topics", {
+        method: "POST",
+        body: JSON.stringify({
+          name: topicName,
+          defaultSubscription: "opt_out",
+          visibility: "private",
+          description: `${buildAudienceDisplayName(audienceKey)} managed by AgentM.Resume`,
+        }),
+      });
 
-    topicsByName.set(topicName, {
-      id: created.id,
-      name: topicName,
-      default_subscription: "opt_out",
-      visibility: "private",
-    });
+      topicsByName.set(topicName, {
+        id: created.id,
+        name: topicName,
+        default_subscription: "opt_out",
+        visibility: "private",
+      });
+    } catch (error) {
+      if (!isResendAlreadyExistsError(error)) {
+        throw error;
+      }
+
+      const existingTopic = await findResendTopicByName(config, topicName);
+      if (!existingTopic) {
+        throw error;
+      }
+
+      topicsByName.set(existingTopic.name, existingTopic);
+    }
   }
 
   return Array.from(topicsByName.values());
@@ -599,6 +642,15 @@ const listManagedMailerliteGroups = async (
   }
 };
 
+const findMailerliteGroupByName = async (
+  config: MailerliteMarketingProviderConfig,
+  settings: ResolvedMarketingSettings,
+  groupName: string,
+): Promise<{ id: string; name: string } | undefined> => {
+  const groups = await listManagedMailerliteGroups(config, settings);
+  return groups.find((group) => group.name === groupName);
+};
+
 const ensureMailerliteGroups = async (
   config: MailerliteMarketingProviderConfig,
   settings: ResolvedMarketingSettings,
@@ -615,20 +667,37 @@ const ensureMailerliteGroups = async (
       continue;
     }
 
-    const response = await mailerliteRequest<MailerliteCreateGroupResponse>(
-      config,
-      "/api/groups",
-      {
-        method: "POST",
-        body: JSON.stringify({ name: groupName }),
-      },
-    );
-    const createdGroup = response.data;
-    if (createdGroup?.id && createdGroup.name) {
-      groupsByName.set(createdGroup.name, {
-        id: createdGroup.id,
-        name: createdGroup.name,
-      });
+    try {
+      const response = await mailerliteRequest<MailerliteCreateGroupResponse>(
+        config,
+        "/api/groups",
+        {
+          method: "POST",
+          body: JSON.stringify({ name: groupName }),
+        },
+      );
+      const createdGroup = response.data;
+      if (createdGroup?.id && createdGroup.name) {
+        groupsByName.set(createdGroup.name, {
+          id: createdGroup.id,
+          name: createdGroup.name,
+        });
+      }
+    } catch (error) {
+      if (!isMailerliteAlreadyExistsError(error)) {
+        throw error;
+      }
+
+      const existingGroup = await findMailerliteGroupByName(
+        config,
+        settings,
+        groupName,
+      );
+      if (!existingGroup) {
+        throw error;
+      }
+
+      groupsByName.set(existingGroup.name, existingGroup);
     }
   }
 
@@ -783,18 +852,31 @@ const ensureSesContactList = async (
     }
 
     const topics = requestedTopicNames.map(buildSesTopicDefinition);
-    await client.send(
-      new CreateContactListCommand({
-        ContactListName: settings.sesContactListName,
-        Description: "Managed by AgentM.Resume marketing sync",
-        Topics: topics,
-      }),
-    );
+    try {
+      await client.send(
+        new CreateContactListCommand({
+          ContactListName: settings.sesContactListName,
+          Description: "Managed by AgentM.Resume marketing sync",
+          Topics: topics,
+        }),
+      );
 
-    return {
-      exists: true,
-      topics,
-    };
+      return {
+        exists: true,
+        topics,
+      };
+    } catch (createError) {
+      if (!isSesAlreadyExistsError(createError)) {
+        throw createError;
+      }
+
+      const existingState = await client.send(
+        new GetContactListCommand({
+          ContactListName: settings.sesContactListName,
+        }),
+      );
+      existingTopics = existingState.Topics || [];
+    }
   }
 
   const topicsByName = new Map(

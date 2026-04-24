@@ -31,6 +31,8 @@ export {
   resolveMarketingSettings,
   resolveManagedAudienceKeys,
   syncMarketingSubscriptions,
+  setMarketingRuntimeOverrides,
+  resetMarketingRuntimeOverrides,
 } from "./marketing.js";
 
 export type {

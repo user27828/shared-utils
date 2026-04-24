@@ -96,6 +96,24 @@ import {
 // ✅ Server functionality
 import { verifyTurnstileTokenEnhanced } from "@user27828/shared-utils/server";
 
+// ✅ Server email utilities
+import {
+  syncMarketingSubscriptions,
+  createWebhookRouter,
+} from "@user27828/shared-utils/email/server";
+
+// ✅ Server email provider errors and built-in providers
+import {
+  EmailProviderError,
+  isEmailError,
+} from "@user27828/shared-utils/email/server/errors";
+import {
+  GmailEmailProvider,
+  ResendEmailProvider,
+  SesEmailProvider,
+  TestEmailProvider,
+} from "@user27828/shared-utils/email/server/providers";
+
 // ✅ CMS — types, validation, sanitization, concurrency, password
 import {
   CmsHeadRow,
@@ -431,8 +449,22 @@ Both hooks return `[result, { cancel, flush, isPending }]` controls.
 Server-side functionality and Cloudflare Workers:
 
 - **Turnstile Verification**: Token validation service
+- **Email Utilities**: Marketing sync, webhook handlers, provider abstractions, and typed provider errors
 - **Deployment Scripts**: Automated Cloudflare Worker deployment
 - **Configuration Templates**: Ready-to-use examples
+
+**Import paths:**
+
+| Path                                                    | Contents                                                                                                             |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `@user27828/shared-utils/server`                        | Turnstile verification, Express middleware, env loader, IP helpers, and general server utilities                     |
+| `@user27828/shared-utils/email/server`                  | Email template registry, attachment helpers, marketing sync, webhook router factories, and shared email server types |
+| `@user27828/shared-utils/email/server/errors`           | `EmailError`, `EmailProviderError`, and `isEmailError`                                                               |
+| `@user27828/shared-utils/email/server/providers`        | Provider contracts plus built-in Gmail, Resend, SES, and `_test_` providers                                          |
+| `@user27828/shared-utils/email/server/providers/_test_` | Deep import for the file-backed `_test_` provider                                                                    |
+| `@user27828/shared-utils/email/server/providers/gmail`  | Deep import for the Gmail provider                                                                                   |
+| `@user27828/shared-utils/email/server/providers/resend` | Deep import for the Resend provider                                                                                  |
+| `@user27828/shared-utils/email/server/providers/ses`    | Deep import for the Amazon SES provider                                                                              |
 
 Server utilities
 

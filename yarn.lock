@@ -7647,9 +7647,11 @@ __metadata:
     "@shared-utils/utils": "workspace:*"
     "@types/express": "npm:^5.0.6"
     "@types/node": "npm:^25.6.0"
+    "@types/nodemailer": "npm:^8.0.0"
     babel-jest: "npm:^30.3.0"
     express: "npm:^5.2.1"
     jest: "npm:^30.3.0"
+    nodemailer: "npm:^8.0.5"
     tsx: "npm:^4.21.0"
     typescript: "npm:^6.0.3"
     wrangler: "npm:^4.84.1"
@@ -8852,6 +8854,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/nodemailer@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "@types/nodemailer@npm:8.0.0"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10/d1178b557e8c547018e708459af06fdf2e9cfd6d65fed109517cddfe6b5add6201d941882a2e4eeede529de08ae71a68fb2a1d8f1c41cb3761d3a6c2458025fe
+  languageName: node
+  linkType: hard
+
 "@types/papaparse@npm:^5.5.2":
   version: 5.5.2
   resolution: "@types/papaparse@npm:5.5.2"
@@ -9331,6 +9342,7 @@ __metadata:
     "@tinymce/tinymce-react": "npm:^6.3.0"
     "@types/jest": "npm:^30.0.0"
     "@types/nanoid": "npm:^3.0.0"
+    "@types/nodemailer": "npm:^8.0.0"
     "@types/supertest": "npm:^7.2.0"
     "@vitest/coverage-v8": "npm:^4.1.5"
     "@vitest/ui": "npm:^4.1.5"
@@ -9347,6 +9359,7 @@ __metadata:
     lodash-es: "npm:^4.18.1"
     marked: "npm:^18.0.2"
     nanoid: "npm:^5.1.9"
+    nodemailer: "npm:^8.0.5"
     papaparse: "npm:^5.5.3"
     prettier: "npm:^3.8.3"
     prismjs: "npm:^1.30.0"
@@ -14992,6 +15005,13 @@ __metadata:
   version: 2.0.27
   resolution: "node-releases@npm:2.0.27"
   checksum: 10/f6c78ddb392ae500719644afcbe68a9ea533242c02312eb6a34e8478506eb7482a3fb709c70235b01c32fe65625b68dfa9665113f816d87f163bc3819b62b106
+  languageName: node
+  linkType: hard
+
+"nodemailer@npm:^8.0.5":
+  version: 8.0.5
+  resolution: "nodemailer@npm:8.0.5"
+  checksum: 10/84d44afb0cd20ce02d5e4f0f8465b02aa0af0e11c1b0d40a4e9658d07321655a8ea528533840a38f213a45ca7865ec85f0aed6dc3ac3038d7b2c9405db6cd353
   languageName: node
   linkType: hard
 

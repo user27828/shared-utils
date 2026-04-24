@@ -123,6 +123,20 @@ const isResendAlreadyExistsError = (error) => {
     const combinedMessage = `${error.message} ${data?.message || ""}`.toLowerCase();
     return (combinedMessage.includes("already") && combinedMessage.includes("exist"));
 };
+const isMailerliteAlreadyExistsError = (error) => {
+    if (!(error instanceof MailerliteApiError)) {
+        return false;
+    }
+    if (error.status === 409) {
+        return true;
+    }
+    const data = error.data;
+    const combinedMessage = `${error.message} ${data?.message || ""} ${data?.error || ""}`.toLowerCase();
+    return (combinedMessage.includes("already") && combinedMessage.includes("exist"));
+};
+const isSesAlreadyExistsError = (error) => {
+    return error?.name === "AlreadyExistsException";
+};
 const parseApiResponse = async (response) => {
     const raw = await response.text();
     if (!raw) {
@@ -218,6 +232,10 @@ const listAllResendTopics = async (config) => {
         }
     }
 };
+const findResendTopicByName = async (config, topicName) => {
+    const topics = await listAllResendTopics(config);
+    return topics.find((topic) => topic.name === topicName);
+};
 const ensureResendTopics = async (config, settings, audienceKeys) => {
     const existingTopics = await listAllResendTopics(config);
     const topicsByName = new Map(existingTopics.map((topic) => [topic.name, topic]));
@@ -226,21 +244,33 @@ const ensureResendTopics = async (config, settings, audienceKeys) => {
         if (topicsByName.has(topicName)) {
             continue;
         }
-        const created = await resendRequest(config, "/topics", {
-            method: "POST",
-            body: JSON.stringify({
+        try {
+            const created = await resendRequest(config, "/topics", {
+                method: "POST",
+                body: JSON.stringify({
+                    name: topicName,
+                    defaultSubscription: "opt_out",
+                    visibility: "private",
+                    description: `${buildAudienceDisplayName(audienceKey)} managed by AgentM.Resume`,
+                }),
+            });
+            topicsByName.set(topicName, {
+                id: created.id,
                 name: topicName,
-                defaultSubscription: "opt_out",
+                default_subscription: "opt_out",
                 visibility: "private",
-                description: `${buildAudienceDisplayName(audienceKey)} managed by AgentM.Resume`,
-            }),
-        });
-        topicsByName.set(topicName, {
-            id: created.id,
-            name: topicName,
-            default_subscription: "opt_out",
-            visibility: "private",
-        });
+            });
+        }
+        catch (error) {
+            if (!isResendAlreadyExistsError(error)) {
+                throw error;
+            }
+            const existingTopic = await findResendTopicByName(config, topicName);
+            if (!existingTopic) {
+                throw error;
+            }
+            topicsByName.set(existingTopic.name, existingTopic);
+        }
     }
     return Array.from(topicsByName.values());
 };
@@ -314,6 +344,10 @@ const listManagedMailerliteGroups = async (config, settings) => {
         page += 1;
     }
 };
+const findMailerliteGroupByName = async (config, settings, groupName) => {
+    const groups = await listManagedMailerliteGroups(config, settings);
+    return groups.find((group) => group.name === groupName);
+};
 const ensureMailerliteGroups = async (config, settings, audienceKeys) => {
     const managedGroups = await listManagedMailerliteGroups(config, settings);
     const groupsByName = new Map(managedGroups.map((group) => [group.name, group]));
@@ -322,16 +356,28 @@ const ensureMailerliteGroups = async (config, settings, audienceKeys) => {
         if (groupsByName.has(groupName)) {
             continue;
         }
-        const response = await mailerliteRequest(config, "/api/groups", {
-            method: "POST",
-            body: JSON.stringify({ name: groupName }),
-        });
-        const createdGroup = response.data;
-        if (createdGroup?.id && createdGroup.name) {
-            groupsByName.set(createdGroup.name, {
-                id: createdGroup.id,
-                name: createdGroup.name,
+        try {
+            const response = await mailerliteRequest(config, "/api/groups", {
+                method: "POST",
+                body: JSON.stringify({ name: groupName }),
             });
+            const createdGroup = response.data;
+            if (createdGroup?.id && createdGroup.name) {
+                groupsByName.set(createdGroup.name, {
+                    id: createdGroup.id,
+                    name: createdGroup.name,
+                });
+            }
+        }
+        catch (error) {
+            if (!isMailerliteAlreadyExistsError(error)) {
+                throw error;
+            }
+            const existingGroup = await findMailerliteGroupByName(config, settings, groupName);
+            if (!existingGroup) {
+                throw error;
+            }
+            groupsByName.set(existingGroup.name, existingGroup);
         }
     }
     return Array.from(groupsByName.values());
@@ -443,15 +489,26 @@ const ensureSesContactList = async (client, settings, requestedAudienceKeys) => 
             };
         }
         const topics = requestedTopicNames.map(buildSesTopicDefinition);
-        await client.send(new CreateContactListCommand({
-            ContactListName: settings.sesContactListName,
-            Description: "Managed by AgentM.Resume marketing sync",
-            Topics: topics,
-        }));
-        return {
-            exists: true,
-            topics,
-        };
+        try {
+            await client.send(new CreateContactListCommand({
+                ContactListName: settings.sesContactListName,
+                Description: "Managed by AgentM.Resume marketing sync",
+                Topics: topics,
+            }));
+            return {
+                exists: true,
+                topics,
+            };
+        }
+        catch (createError) {
+            if (!isSesAlreadyExistsError(createError)) {
+                throw createError;
+            }
+            const existingState = await client.send(new GetContactListCommand({
+                ContactListName: settings.sesContactListName,
+            }));
+            existingTopics = existingState.Topics || [];
+        }
     }
     const topicsByName = new Map(existingTopics.map((topic) => [topic.TopicName || "", topic]));
     let changed = false;

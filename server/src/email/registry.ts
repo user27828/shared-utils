@@ -5,6 +5,10 @@ import type {
   EmailTemplateSummary,
 } from "../../../utils/src/email/types.js";
 
+export type EmailTemplateDeliveryAddress =
+  | string
+  | { email: string; name?: string };
+
 export interface EmailTemplateDescriptor<TProps = Record<string, unknown>> {
   uid: string;
   name: string;
@@ -12,8 +16,8 @@ export interface EmailTemplateDescriptor<TProps = Record<string, unknown>> {
   description: string;
   sendScenarios: string[];
   tags?: string[];
-  from?: { email: string; name?: string } | null;
-  replyTo?: { email: string; name?: string } | null;
+  from?: EmailTemplateDeliveryAddress | null;
+  replyTo?: EmailTemplateDeliveryAddress | null;
   previewFixtures: EmailPreviewFixture<TProps>[];
   buildSubject(props: TProps): string;
   buildText?(props: TProps): string;
@@ -42,7 +46,10 @@ const toSummary = (
 export const createEmailTemplateRegistry = (
   descriptors: EmailTemplateDescriptor[],
 ): EmailTemplateRegistry => {
-  const byUid = new Map<string, EmailTemplateDescriptor<Record<string, unknown>>>();
+  const byUid = new Map<
+    string,
+    EmailTemplateDescriptor<Record<string, unknown>>
+  >();
 
   for (const descriptor of descriptors) {
     if (byUid.has(descriptor.uid)) {
@@ -57,7 +64,9 @@ export const createEmailTemplateRegistry = (
 
   return {
     list() {
-      return Array.from(byUid.values()).map((descriptor) => toSummary(descriptor));
+      return Array.from(byUid.values()).map((descriptor) =>
+        toSummary(descriptor),
+      );
     },
 
     get(uid: string) {
