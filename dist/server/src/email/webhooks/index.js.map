@@ -1,0 +1,1 @@
+{"version":3,"file":"index.js","sourceRoot":"","sources":["../../../../../server/src/email/webhooks/index.ts"],"names":[],"mappings":"AAgBA,OAAO,EACL,mBAAmB,EACnB,uBAAuB,GACxB,MAAM,aAAa,CAAC;AACrB,OAAO,EACL,wBAAwB,EACxB,8BAA8B,GAC/B,MAAM,iBAAiB,CAAC;AACzB,OAAO,EAAE,oBAAoB,EAAE,0BAA0B,EAAE,MAAM,aAAa,CAAC;AAC/E,OAAO,EAAE,iBAAiB,EAAE,uBAAuB,EAAE,MAAM,UAAU,CAAC"}
