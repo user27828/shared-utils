@@ -71,7 +71,7 @@ Configure server-side Turnstile using the global optionsManager for consistency 
 [🔝 Back to Top](#server-side-turnstile-integration)
 
 ```javascript
-import { optionsManager } from "@shared-utils/utils";
+import { optionsManager } from "@user27828/shared-utils/utils";
 
 optionsManager.setGlobalOptions({
   "turnstile-server": {
@@ -200,7 +200,7 @@ The system automatically detects localhost requests by checking:
 
 ```javascript
 import express from "express";
-import { createTurnstileMiddleware } from "@shared-utils/server/turnstile-worker";
+import { createTurnstileMiddleware } from "@user27828/shared-utils/server";
 
 const app = express();
 const verifyTurnstile = createTurnstileMiddleware({
@@ -216,7 +216,7 @@ app.post("/protected", verifyTurnstile, (req, res) => {
 
 ```javascript
 import Fastify from "fastify";
-import { verifyTurnstileSimple } from "@shared-utils/server/turnstile-worker";
+import { verifyTurnstileSimple } from "@user27828/shared-utils/server";
 
 const fastify = Fastify();
 
@@ -241,7 +241,7 @@ fastify.addHook("preHandler", async (request, reply) => {
 
 ```javascript
 import Koa from "koa";
-import { verifyTurnstileSimple } from "@shared-utils/server/turnstile-worker";
+import { verifyTurnstileSimple } from "@user27828/shared-utils/server";
 
 const app = new Koa();
 
@@ -272,8 +272,8 @@ app.use(async (ctx, next) => {
 The server-side Turnstile worker integrates seamlessly with the existing shared-utils package:
 
 ```javascript
-import { log, optionsManager } from "@shared-utils/utils";
-import { createTurnstileMiddleware } from "@shared-utils/server";
+import { log, optionsManager } from "@user27828/shared-utils/utils";
+import { createTurnstileMiddleware } from "@user27828/shared-utils/server";
 
 // Unified configuration approach
 optionsManager.setGlobalOptions({
@@ -307,7 +307,7 @@ This repository includes a server-side environment loader that builds a safe, re
 
 - The loader discovers and parses environment values from the running environment and from a `.env` file when present. It does not mutate `process.env`; instead it builds an internal `envCache` view and exposes that computed environment to consumers with:
 
-  optionsManager.setGlobalOptions({ ENV: { /_ computed env _/ }, **READONLY**: true })
+  `optionsManager.setGlobalOptions({ ENV: { ... }, __READONLY__: true })`
 
 - The loader reads `ENV_JSON_KEYS` only from the parsed dotenv file. When present it must be a CSV string, for example:
 
@@ -329,14 +329,17 @@ Note: The loader no longer attempts to discover `ENV_JSON_KEYS` by inspecting or
 
 The same code can be deployed as a Cloudflare Worker:
 
-```javascript
-// wrangler.toml
-name = "turnstile-worker";
-main = "turnstile-worker.ts";
-compatibility_date = "2024-01-01"[vars];
-DEV_MODE = "false";
-ALLOWED_ORIGINS = "https://yourapp.com,https://staging.yourapp.com"[secrets];
-TURNSTILE_SECRET_KEY = "your-secret-key";
+```toml
+# wrangler.toml
+name = "turnstile-worker"
+main = "turnstile-worker.ts"
+compatibility_date = "2024-01-01"
+
+[vars]
+DEV_MODE = "false"
+ALLOWED_ORIGINS = "https://yourapp.com,https://staging.yourapp.com"
+
+# Set with: wrangler secret put TURNSTILE_SECRET_KEY
 ```
 
 Deploy with:
@@ -400,7 +403,7 @@ app.use((error, req, res, next) => {
 Use the unified optionsManager for configuration:
 
 ```javascript
-import { optionsManager } from "@shared-utils/utils";
+import { optionsManager } from "@user27828/shared-utils/utils";
 
 optionsManager.setGlobalOptions({
   "turnstile-server": {

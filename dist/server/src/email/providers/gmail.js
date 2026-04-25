@@ -3,6 +3,7 @@ import { log } from "../../../../utils/index.js";
 import { getAttachmentContentBuffer, getAttachmentContentType, } from "../attachments.js";
 import { extractEmailAddress, formatEmailAddress, normalizeEmailAddressValue, } from "../address.js";
 import { EmailProviderError } from "../errors.js";
+import { formatCompactLogLine, formatHierarchicalLog, formatCompactLogText, formatCompactLogValue, } from "../logFormat.js";
 const PROVIDER_NAME = "gmail";
 const GMAIL_SMTP = {
     host: "smtp.gmail.com",
@@ -47,9 +48,11 @@ export class GmailEmailProvider {
                 await this.initializeSMTP();
             }
             await this.transporter.verify();
-            log.info?.("GmailProvider: Initialized", {
-                authMode: this.config.authMode,
-            });
+            log.info?.(formatHierarchicalLog("GmailProvider: Initialized", [
+                formatCompactLogLine([
+                    ["authMode", formatCompactLogText(this.config.authMode)],
+                ]),
+            ]));
             this.initialized = true;
         }
         catch (err) {
@@ -115,11 +118,12 @@ export class GmailEmailProvider {
         const mailOptions = this.buildMailOptions(message);
         try {
             const info = await this.transporter.sendMail(mailOptions);
-            log.info?.("GmailProvider: Email sent", {
-                messageId: info.messageId,
-                to: message.to.map((address) => address.email),
-                subject: message.subject,
-            });
+            log.info?.(formatHierarchicalLog("GmailProvider: Email sent", [
+                formatCompactLogLine([
+                    ["messageId", formatCompactLogValue(info.messageId)],
+                    ["subject", formatCompactLogText(message.subject)],
+                ]),
+            ]));
             return {
                 success: true,
                 messageId: info.messageId,
@@ -133,11 +137,19 @@ export class GmailEmailProvider {
             };
         }
         catch (err) {
-            log.error?.("GmailProvider: Send failed", {
-                error: err.message,
-                code: err.code,
-                to: message.to.map((address) => address.email),
-            });
+            log.error?.(formatHierarchicalLog("GmailProvider: Send failed", [
+                formatCompactLogLine([
+                    [
+                        "code",
+                        formatCompactLogValue(err.code ? String(err.code) : undefined),
+                    ],
+                    [
+                        "to",
+                        `[ ${message.to.map((address) => formatCompactLogText(address.email)).join(", ")} ]`,
+                    ],
+                ]),
+                formatCompactLogLine([["error", formatCompactLogText(err.message)]]),
+            ]));
             throw new EmailProviderError(`Gmail send failed: ${err.message}`, PROVIDER_NAME, {
                 retryable: this.isRetryableError(err),
                 providerCode: err.code,

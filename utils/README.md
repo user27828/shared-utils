@@ -133,7 +133,7 @@ localStorage.setItem("debugLogs", '["log", "error"]'); // Enable specific levels
 
 ```javascript
 // utils/logger.js - Re-export configured logger
-import log from "@shared-utils/utils/src/log";
+import { log } from "@user27828/shared-utils/utils";
 
 // Configure once
 log.setOptions({
@@ -151,7 +151,7 @@ log("Hello world");
 
 ```javascript
 // utils/logger.js
-const log = require("@shared-utils/utils/src/log").default;
+const { log } = require("@user27828/shared-utils/utils");
 
 log.setOptions({
   server: { namespace: "API" },
@@ -173,7 +173,7 @@ If you need to customize the logger before assigning it globally:
 
 ```javascript
 // In your main entry point
-import log from "@shared-utils/utils/src/log";
+import { log } from "@user27828/shared-utils/utils";
 
 log.setOptions({
   client: { namespace: "MyApp" },
@@ -268,7 +268,7 @@ For TypeScript projects, you can also add a global type declaration in a `.d.ts`
 
 ```typescript
 // globals.d.ts
-import { Log } from "@shared-utils/utils";
+import { Log } from "@user27828/shared-utils/utils";
 
 declare global {
   var log: Log;
@@ -281,7 +281,7 @@ declare global {
 
 ```javascript
 // src/index.js
-import log from "@shared-utils/utils/src/log";
+import { log } from "@user27828/shared-utils/utils";
 
 log.setOptions({
   client: {
@@ -291,7 +291,7 @@ log.setOptions({
 });
 
 // src/components/App.js
-import log from "@shared-utils/utils/src/log";
+import { log } from "@user27828/shared-utils/utils";
 
 function App() {
   useEffect(() => {
@@ -306,7 +306,7 @@ function App() {
 
 ```javascript
 // server.js
-import log from "@shared-utils/utils/src/log";
+import { log } from "@user27828/shared-utils/utils";
 
 log.setOptions({
   server: {
@@ -329,7 +329,7 @@ app.use((req, res, next) => {
 
 ```javascript
 // pages/_app.js (client-side)
-import log from "@shared-utils/utils/src/log";
+import { log } from "@user27828/shared-utils/utils";
 
 if (typeof window !== "undefined") {
   log.setOptions({
@@ -338,7 +338,7 @@ if (typeof window !== "undefined") {
 }
 
 // pages/api/users.js (server-side)
-import log from "@shared-utils/utils/src/log";
+import { log } from "@user27828/shared-utils/utils";
 
 log.setOptions({
   server: { namespace: "NextAPI" },
@@ -519,7 +519,7 @@ turnstile.setOptions({
 
 ```jsx
 import React, { useEffect, useRef, useState } from "react";
-import { turnstile } from "@shared-utils/utils";
+import { turnstile } from "@user27828/shared-utils/utils";
 
 function TurnstileWidget({ onSuccess, onError }) {
   const containerRef = useRef();
@@ -592,8 +592,7 @@ turnstile.setOptions({
 
 ## Setup Guide
 
-For complete setup instructions including Cloudflare configuration, see:
-`/server/TURNSTILE_SETUP.md`
+For complete setup instructions including Cloudflare configuration, see [doc/TURNSTILE_SETUP.md](../doc/TURNSTILE_SETUP.md).
 
 ## Test Keys
 
@@ -619,7 +618,7 @@ These keys always return successful verification.
 ```
 
 ```javascript
-import { turnstile } from "@shared-utils/utils";
+import { turnstile } from "@user27828/shared-utils/utils";
 
 turnstile.setOptions({ siteKey: "YOUR_SITE_KEY" });
 
@@ -734,7 +733,7 @@ The OptionsManager provides a unified configuration system for all utilities whi
 ### Basic Usage
 
 ````javascript
-import { optionsManager } from "@shared-utils/utils";
+import { optionsManager } from "@user27828/shared-utils/utils";
 
 // Configure multiple utilities at once
 optionsManager.setGlobalOptions({
@@ -883,7 +882,7 @@ optionsManager.setGlobalOptions({
 // app/providers.tsx
 "use client";
 
-import { optionsManager } from "@shared-utils/utils";
+import { optionsManager } from "@user27828/shared-utils/utils";
 import { useEffect } from "react";
 
 export function UtilsProvider({ children }) {
@@ -914,7 +913,7 @@ export function UtilsProvider({ children }) {
 
 ```javascript
 // server.js
-import { optionsManager } from "@shared-utils/utils";
+import { optionsManager } from "@user27828/shared-utils/utils";
 
 // Configure utilities at server startup
 optionsManager.setGlobalOptions({
@@ -940,7 +939,7 @@ app.listen(3000, () => {
 ### TypeScript Support
 
 ```typescript
-import { OptionsManager, optionsManager } from "@shared-utils/utils";
+import { OptionsManager, optionsManager } from "@user27828/shared-utils/utils";
 
 // Type-safe configuration
 optionsManager.setGlobalOptions({
@@ -1140,5 +1139,5 @@ if (isDev({ devMode: true })) console.log("Force dev mode");
 ## FileUploadList Component (Client)
 
 - `selectDefaultAction`: When true, triggers the onClick/onSelect action for the default selection, even if the value is already selected.
-- Uses global `log` (set up in client/index.ts) for debug output. Do not import log directly in consumer code; use the global.
+- Uses global `log` (set up via `@user27828/shared-utils/client/init`) for debug output. Do not import log directly in consumer code; use the global.
 - Follows strict code style: never use single-line conditional execution (always use curly braces for conditionals).

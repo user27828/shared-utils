@@ -26,14 +26,14 @@ This guide will help you set up Cloudflare Turnstile with the shared-utils libra
 
 ```javascript
 // In your main client entry point (e.g., src/main.js)
-import { turnstile } from '@shared-utils/utils';
+import { turnstile } from "@user27828/shared-utils/utils";
 
 turnstile.setOptions({
-  siteKey: 'YOUR_SITE_KEY_HERE', // From Cloudflare Dashboard
+  siteKey: "YOUR_SITE_KEY_HERE", // From Cloudflare Dashboard
   widget: {
-    theme: 'auto',
-    size: 'normal',
-  }
+    theme: "auto",
+    size: "normal",
+  },
 });
 ```
 
@@ -41,21 +41,21 @@ turnstile.setOptions({
 
 ```javascript
 // In your server code
-import { turnstile } from '@shared-utils/utils';
+import { turnstile } from "@user27828/shared-utils/utils";
 
 turnstile.setOptions({
   secretKey: process.env.TURNSTILE_SECRET_KEY, // Set as environment variable
 });
 
 // Use in your routes
-app.post('/api/form', async (req, res) => {
-  const token = req.body['cf-turnstile-response'];
+app.post("/api/form", async (req, res) => {
+  const token = req.body["cf-turnstile-response"];
   const result = await turnstile.verify(token, req.ip);
-  
+
   if (!result.success) {
-    return res.status(400).json({ error: 'Verification failed' });
+    return res.status(400).json({ error: "Verification failed" });
   }
-  
+
   // Process form...
 });
 ```
@@ -63,13 +63,16 @@ app.post('/api/form', async (req, res) => {
 ### Server-Side Setup (Option B: Cloudflare Worker)
 
 For better security and performance, deploy the included Cloudflare Worker:
+If you're deploying from a consuming project rather than a repo checkout, use the reference-worker flow in [WORKER_DEPLOYMENT_GUIDE.md](./WORKER_DEPLOYMENT_GUIDE.md).
 
 1. **Install Wrangler CLI**:
+
    ```bash
    npm install -g wrangler
    ```
 
 2. **Configure the Worker**:
+
    ```bash
    cd /path/to/shared-utils/server
    cp wrangler.toml wrangler.local.toml
@@ -77,12 +80,14 @@ For better security and performance, deploy the included Cloudflare Worker:
    ```
 
 3. **Set Secret Key**:
+
    ```bash
    wrangler secret put TURNSTILE_SECRET_KEY
    # Enter your secret key when prompted
    ```
 
 4. **Deploy Worker**:
+
    ```bash
    wrangler deploy
    ```
@@ -90,7 +95,7 @@ For better security and performance, deploy the included Cloudflare Worker:
 5. **Update Client Config**:
    ```javascript
    turnstile.setOptions({
-     apiUrl: 'https://your-worker.your-subdomain.workers.dev',
+     apiUrl: "https://your-worker.your-subdomain.workers.dev",
    });
    ```
 
@@ -101,106 +106,108 @@ For better security and performance, deploy the included Cloudflare Worker:
 ```html
 <!-- In your HTML form -->
 <form id="contact-form">
-  <input type="text" name="name" required>
-  <input type="email" name="email" required>
+  <input type="text" name="name" required />
+  <input type="email" name="email" required />
   <textarea name="message" required></textarea>
-  
+
   <!-- Turnstile widget will be rendered here -->
   <div id="turnstile-container"></div>
-  
+
   <button type="submit" id="submit-btn" disabled>Submit</button>
 </form>
 ```
 
 ```javascript
 // JavaScript
-import { turnstile } from '@shared-utils/utils';
+import { turnstile } from "@user27828/shared-utils/utils";
 
 // Render Turnstile widget
-turnstile.render('#turnstile-container', {
+turnstile.render("#turnstile-container", {
   callback: (token) => {
-    document.getElementById('submit-btn').disabled = false;
+    document.getElementById("submit-btn").disabled = false;
   },
-  'expired-callback': () => {
-    document.getElementById('submit-btn').disabled = true;
-  }
+  "expired-callback": () => {
+    document.getElementById("submit-btn").disabled = true;
+  },
 });
 
 // Handle form submission
-document.getElementById('contact-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  
-  const token = turnstile.getResponse();
-  if (!token) {
-    alert('Please complete the security check');
-    return;
-  }
+document
+  .getElementById("contact-form")
+  .addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-  const formData = new FormData(e.target);
-  formData.append('cf-turnstile-response', token);
+    const token = turnstile.getResponse();
+    if (!token) {
+      alert("Please complete the security check");
+      return;
+    }
 
-  try {
-    const response = await fetch('/api/contact', {
-      method: 'POST',
-      body: formData
-    });
-    
-    if (response.ok) {
-      alert('Form submitted successfully!');
-      e.target.reset();
-      turnstile.reset();
-    } else {
-      alert('Submission failed. Please try again.');
+    const formData = new FormData(e.target);
+    formData.append("cf-turnstile-response", token);
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        alert("Form submitted successfully!");
+        e.target.reset();
+        turnstile.reset();
+      } else {
+        alert("Submission failed. Please try again.");
+        turnstile.reset();
+      }
+    } catch (error) {
+      console.error("Submission error:", error);
       turnstile.reset();
     }
-  } catch (error) {
-    console.error('Submission error:', error);
-    turnstile.reset();
-  }
-});
+  });
 ```
 
 ### React Integration
 
 ```jsx
-import React, { useState } from 'react';
-import TurnstileComponent from './turnstile-react-component';
+import React, { useState } from "react";
+import TurnstileComponent from "./turnstile-react-component";
 
 function ContactForm() {
-  const [token, setToken] = useState('');
+  const [token, setToken] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!token) {
-      alert('Please complete the security verification');
+      alert("Please complete the security verification");
       return;
     }
 
     setIsSubmitting(true);
-    
+
     try {
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: e.target.name.value,
           email: e.target.email.value,
           message: e.target.message.value,
-          turnstileToken: token
-        })
+          turnstileToken: token,
+        }),
       });
 
       if (response.ok) {
-        alert('Message sent successfully!');
+        alert("Message sent successfully!");
         e.target.reset();
-        setToken('');
+        setToken("");
       } else {
-        alert('Failed to send message');
+        alert("Failed to send message");
       }
     } catch (error) {
-      console.error('Submit error:', error);
-      alert('Network error occurred');
+      console.error("Submit error:", error);
+      alert("Network error occurred");
     } finally {
       setIsSubmitting(false);
     }
@@ -211,15 +218,15 @@ function ContactForm() {
       <input type="text" name="name" required />
       <input type="email" name="email" required />
       <textarea name="message" required></textarea>
-      
+
       <TurnstileComponent
         siteKey="YOUR_SITE_KEY"
         onSuccess={setToken}
-        onExpired={() => setToken('')}
+        onExpired={() => setToken("")}
       />
-      
+
       <button type="submit" disabled={!token || isSubmitting}>
-        {isSubmitting ? 'Submitting...' : 'Submit'}
+        {isSubmitting ? "Submitting..." : "Submit"}
       </button>
     </form>
   );
@@ -231,6 +238,7 @@ function ContactForm() {
 Set these environment variables in your deployment:
 
 ### Client-Side (Build-time)
+
 ```bash
 VITE_TURNSTILE_SITE_KEY=your_site_key_here
 # or
@@ -240,17 +248,20 @@ NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_site_key_here
 ```
 
 ### Server-Side (Runtime)
+
 ```bash
 TURNSTILE_SECRET_KEY=your_secret_key_here
 ```
 
 ### Cloudflare Worker
+
 - `TURNSTILE_SECRET_KEY`: Your secret key (set via `wrangler secret put`)
 - `ALLOWED_ORIGINS`: Comma-separated allowed origins (optional)
 
 ## Step 5: Testing
 
 ### Test Mode
+
 Cloudflare provides test keys for development:
 
 - **Site Key**: `1x00000000000000000000AA`
@@ -259,6 +270,7 @@ Cloudflare provides test keys for development:
 These always return successful verification.
 
 ### Production Testing
+
 1. Test with your actual keys on a staging environment
 2. Verify that failed challenges are handled properly
 3. Test token expiration scenarios
@@ -303,13 +315,14 @@ Enable debug logging:
 turnstile.setOptions({
   interceptor: (action, data) => {
     console.log(`Turnstile ${action}:`, data);
-  }
+  },
 });
 ```
 
 ## API Reference
 
 See the main Turnstile utility file for complete API documentation:
+
 - `turnstile.render()` - Render widget
 - `turnstile.verify()` - Verify token server-side
 - `turnstile.getResponse()` - Get current token

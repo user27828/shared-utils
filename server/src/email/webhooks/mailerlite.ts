@@ -1,6 +1,11 @@
 import crypto from "node:crypto";
 import { log, optionsManager } from "../../../../utils/index.js";
 import env from "../../env.js";
+import {
+  formatCompactLogLine,
+  formatHierarchicalLog,
+  formatCompactLogText,
+} from "../logFormat.js";
 import type {
   BounceEvent,
   BounceType,
@@ -49,10 +54,9 @@ export class MailerliteWebhookHandler implements IWebhookHandler {
 
   constructor() {
     const configuredSecret =
-      (optionsManager.getOption(
-        "ENV",
-        "EMAIL_MAILERLITE_WEBHOOK_SECRET",
-      ) as string | undefined) || env.EMAIL_MAILERLITE_WEBHOOK_SECRET;
+      (optionsManager.getOption("ENV", "EMAIL_MAILERLITE_WEBHOOK_SECRET") as
+        | string
+        | undefined) || env.EMAIL_MAILERLITE_WEBHOOK_SECRET;
 
     this.webhookSecret = configuredSecret || null;
   }
@@ -92,9 +96,21 @@ export class MailerliteWebhookHandler implements IWebhookHandler {
 
       return isValid;
     } catch (error) {
-      log.error?.("MailerliteWebhook: Signature verification failed", {
-        error: error instanceof Error ? error.message : String(error),
-      });
+      log.error?.(
+        formatHierarchicalLog(
+          "MailerliteWebhook: Signature verification failed",
+          [
+            formatCompactLogLine([
+              [
+                "error",
+                formatCompactLogText(
+                  error instanceof Error ? error.message : String(error),
+                ),
+              ],
+            ]),
+          ],
+        ),
+      );
       return false;
     }
   }
@@ -120,7 +136,13 @@ export class MailerliteWebhookHandler implements IWebhookHandler {
 
     if (!normalizedType) {
       if (eventType) {
-        log.debug?.("MailerliteWebhook: Unknown event type", { eventType });
+        log.debug?.(
+          formatHierarchicalLog("MailerliteWebhook: Unknown event type", [
+            formatCompactLogLine([
+              ["eventType", formatCompactLogText(eventType)],
+            ]),
+          ]),
+        );
       }
       return null;
     }
@@ -151,7 +173,12 @@ export class MailerliteWebhookHandler implements IWebhookHandler {
         return this.parseBounceEvent(baseEvent, data, nestedData);
       case "complaint":
       case "spam_report":
-        return this.parseComplaintEvent(baseEvent, data, nestedData, normalizedType);
+        return this.parseComplaintEvent(
+          baseEvent,
+          data,
+          nestedData,
+          normalizedType,
+        );
       case "unsubscribe":
         return this.parseUnsubscribeEvent(baseEvent, data);
       case "delivered":
@@ -181,8 +208,7 @@ export class MailerliteWebhookHandler implements IWebhookHandler {
         getString(data.reason) ||
         getString(data.bounce_reason) ||
         getString(nestedData.reason),
-      errorCode:
-        getString(data.error_code) || getString(nestedData.error_code),
+      errorCode: getString(data.error_code) || getString(nestedData.error_code),
     };
   }
 
@@ -208,9 +234,7 @@ export class MailerliteWebhookHandler implements IWebhookHandler {
       ...baseEvent,
       type: "unsubscribe",
       method:
-        getString(data.method) ||
-        getString(data.unsubscribe_type) ||
-        "link",
+        getString(data.method) || getString(data.unsubscribe_type) || "link",
     };
   }
 
@@ -235,8 +259,7 @@ export class MailerliteWebhookHandler implements IWebhookHandler {
     return {
       ...baseEvent,
       type: "opened",
-      userAgent:
-        getString(data.user_agent) || getString(nestedData.user_agent),
+      userAgent: getString(data.user_agent) || getString(nestedData.user_agent),
       ipAddress:
         getString(data.ip) ||
         getString(data.ip_address) ||
@@ -256,8 +279,7 @@ export class MailerliteWebhookHandler implements IWebhookHandler {
         getString(data.url) ||
         getString(data.link) ||
         getString(nestedData.url),
-      userAgent:
-        getString(data.user_agent) || getString(nestedData.user_agent),
+      userAgent: getString(data.user_agent) || getString(nestedData.user_agent),
       ipAddress:
         getString(data.ip) ||
         getString(data.ip_address) ||

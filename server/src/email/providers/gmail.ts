@@ -10,6 +10,12 @@ import {
   normalizeEmailAddressValue,
 } from "../address.js";
 import { EmailProviderError } from "../errors.js";
+import {
+  formatCompactLogLine,
+  formatHierarchicalLog,
+  formatCompactLogText,
+  formatCompactLogValue,
+} from "../logFormat.js";
 import type {
   EmailMessage,
   EmailSendResult,
@@ -77,9 +83,13 @@ export class GmailEmailProvider implements IEmailProvider {
 
       await this.transporter!.verify();
 
-      log.info?.("GmailProvider: Initialized", {
-        authMode: this.config.authMode,
-      });
+      log.info?.(
+        formatHierarchicalLog("GmailProvider: Initialized", [
+          formatCompactLogLine([
+            ["authMode", formatCompactLogText(this.config.authMode)],
+          ]),
+        ]),
+      );
 
       this.initialized = true;
     } catch (err: unknown) {
@@ -181,11 +191,14 @@ export class GmailEmailProvider implements IEmailProvider {
     try {
       const info = await this.transporter!.sendMail(mailOptions);
 
-      log.info?.("GmailProvider: Email sent", {
-        messageId: info.messageId,
-        to: message.to.map((address) => address.email),
-        subject: message.subject,
-      });
+      log.info?.(
+        formatHierarchicalLog("GmailProvider: Email sent", [
+          formatCompactLogLine([
+            ["messageId", formatCompactLogValue(info.messageId)],
+            ["subject", formatCompactLogText(message.subject)],
+          ]),
+        ]),
+      );
 
       return {
         success: true,
@@ -199,11 +212,21 @@ export class GmailEmailProvider implements IEmailProvider {
         },
       };
     } catch (err: any) {
-      log.error?.("GmailProvider: Send failed", {
-        error: err.message,
-        code: err.code,
-        to: message.to.map((address) => address.email),
-      });
+      log.error?.(
+        formatHierarchicalLog("GmailProvider: Send failed", [
+          formatCompactLogLine([
+            [
+              "code",
+              formatCompactLogValue(err.code ? String(err.code) : undefined),
+            ],
+            [
+              "to",
+              `[ ${message.to.map((address) => formatCompactLogText(address.email)).join(", ")} ]`,
+            ],
+          ]),
+          formatCompactLogLine([["error", formatCompactLogText(err.message)]]),
+        ]),
+      );
 
       throw new EmailProviderError(
         `Gmail send failed: ${err.message}`,

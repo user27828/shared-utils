@@ -1,10 +1,11 @@
 import crypto from "node:crypto";
 import { log, optionsManager } from "../../../../utils/index.js";
 import env from "../../env.js";
+import { formatCompactLogLine, formatHierarchicalLog, formatCompactLogText, } from "../logFormat.js";
 const PROVIDER_NAME = "resend";
 const TIMESTAMP_TOLERANCE_SECONDS = 300;
 const getHeaderValue = (headers, key) => {
-    return headers[key] || headers[key.toLowerCase()] || headers[key.toUpperCase()];
+    return (headers[key] || headers[key.toLowerCase()] || headers[key.toUpperCase()]);
 };
 const timingSafeEquals = (left, right) => {
     const leftBuffer = Buffer.from(left);
@@ -73,9 +74,11 @@ export class ResendWebhookHandler {
         }
         const nowSeconds = Math.floor(Date.now() / 1000);
         if (Math.abs(nowSeconds - timestampSeconds) > TIMESTAMP_TOLERANCE_SECONDS) {
-            log.warn?.("ResendWebhook: Timestamp outside tolerance", {
-                timestamp,
-            });
+            log.warn?.(formatHierarchicalLog("ResendWebhook: Timestamp outside tolerance", [
+                formatCompactLogLine([
+                    ["timestamp", formatCompactLogText(timestamp)],
+                ]),
+            ]));
             return false;
         }
         const payloadString = typeof payload === "string" ? payload : payload.toString("utf8");

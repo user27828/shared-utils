@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { log, optionsManager } from "../../../../utils/index.js";
 import env from "../../env.js";
+import { formatCompactLogLine, formatHierarchicalLog, formatCompactLogText, } from "../logFormat.js";
 import { requestWithTimeout } from "../requestTimeout.js";
 const PROVIDER_NAME = "ses";
 const getOptionalEnv = (key) => {
@@ -104,9 +105,11 @@ export class SesWebhookHandler {
             return false;
         }
         if (this.allowedTopicArn && envelope.TopicArn !== this.allowedTopicArn) {
-            log.warn?.("SesWebhook: Unexpected SNS topic ARN", {
-                received: envelope.TopicArn,
-            });
+            log.warn?.(formatHierarchicalLog("SesWebhook: Unexpected SNS topic ARN", [
+                formatCompactLogLine([
+                    ["received", formatCompactLogText(envelope.TopicArn)],
+                ]),
+            ]));
             return false;
         }
         if (!isAllowedCertUrl(envelope.SigningCertURL)) {
@@ -115,18 +118,18 @@ export class SesWebhookHandler {
         }
         const algorithm = getSigningAlgorithm(envelope.SignatureVersion);
         if (!algorithm) {
-            log.warn?.("SesWebhook: Unsupported SNS signature version", {
-                version: envelope.SignatureVersion,
-            });
+            log.warn?.(formatHierarchicalLog("SesWebhook: Unsupported SNS signature version", [
+                formatCompactLogLine([
+                    ["version", formatCompactLogText(envelope.SignatureVersion)],
+                ]),
+            ]));
             return false;
         }
         const certResponse = await requestWithTimeout("SES webhook certificate fetch", async (signal) => {
             return fetch(envelope.SigningCertURL, { signal });
         });
         if (!certResponse.ok) {
-            log.warn?.("SesWebhook: Failed to fetch signing certificate", {
-                status: certResponse.status,
-            });
+            log.warn?.(formatHierarchicalLog("SesWebhook: Failed to fetch signing certificate", [formatCompactLogLine([["status", String(certResponse.status)]])]));
             return false;
         }
         const certificate = await certResponse.text();
@@ -137,9 +140,14 @@ export class SesWebhookHandler {
             return verifier.verify(certificate, envelope.Signature, "base64");
         }
         catch (error) {
-            log.error?.("SesWebhook: Signature verification failed", {
-                error: error instanceof Error ? error.message : String(error),
-            });
+            log.error?.(formatHierarchicalLog("SesWebhook: Signature verification failed", [
+                formatCompactLogLine([
+                    [
+                        "error",
+                        formatCompactLogText(error instanceof Error ? error.message : String(error)),
+                    ],
+                ]),
+            ]));
             return false;
         }
     }
@@ -152,15 +160,19 @@ export class SesWebhookHandler {
                     signal,
                 });
             });
-            log.info?.("SesWebhook: SNS subscription confirmed", {
-                topicArn: envelope.TopicArn,
-            });
+            log.info?.(formatHierarchicalLog("SesWebhook: SNS subscription confirmed", [
+                formatCompactLogLine([
+                    ["topicArn", formatCompactLogText(envelope.TopicArn)],
+                ]),
+            ]));
             return null;
         }
         if (envelope.Type === "UnsubscribeConfirmation") {
-            log.warn?.("SesWebhook: Received SNS unsubscribe confirmation", {
-                topicArn: envelope.TopicArn,
-            });
+            log.warn?.(formatHierarchicalLog("SesWebhook: Received SNS unsubscribe confirmation", [
+                formatCompactLogLine([
+                    ["topicArn", formatCompactLogText(envelope.TopicArn)],
+                ]),
+            ]));
             return null;
         }
         return envelope;

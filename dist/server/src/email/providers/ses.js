@@ -3,6 +3,7 @@ import { log } from "../../../../utils/index.js";
 import { getAttachmentContentBuffer, getAttachmentContentType, } from "../attachments.js";
 import { formatEmailAddress, normalizeEmailAddress } from "../address.js";
 import { EmailProviderError } from "../errors.js";
+import { formatCompactLogLine, formatCompactLogList, formatHierarchicalLog, formatCompactLogText, formatCompactLogValue, } from "../logFormat.js";
 const PROVIDER_NAME = "ses";
 const TAG_INVALID_CHARS = /[^A-Za-z0-9_-]+/g;
 const TAG_EDGE_SEPARATORS = /^[-_]+|[-_]+$/g;
@@ -136,10 +137,12 @@ export class SesEmailProvider {
             }
             this.client = new this.runtime.SESv2Client(clientConfig);
             this.initialized = true;
-            log.info?.("SesProvider: Initialized", {
-                region: this.config.region,
-                endpoint: this.config.endpoint,
-            });
+            log.info?.(formatHierarchicalLog("SesProvider: Initialized", [
+                formatCompactLogLine([
+                    ["region", formatCompactLogText(this.config.region)],
+                    ["endpoint", formatCompactLogText(this.config.endpoint)],
+                ]),
+            ]));
         }
         catch (err) {
             const message = err instanceof Error ? err.message : String(err);
@@ -247,11 +250,18 @@ export class SesEmailProvider {
         try {
             const response = await this.client.send(new this.runtime.SendEmailCommand(input));
             const messageId = response.MessageId || message.messageId;
-            log.info?.("SesProvider: Email sent", {
-                messageId,
-                to: normalizedTo.map((address) => address.email),
-                subject: message.subject,
-            });
+            log.info?.(formatHierarchicalLog("SesProvider: Email sent", [
+                formatCompactLogLine([
+                    ["messageId", formatCompactLogValue(messageId)],
+                    ["subject", formatCompactLogText(message.subject)],
+                ]),
+                formatCompactLogLine([
+                    [
+                        "to",
+                        formatCompactLogList(normalizedTo.map((address) => address.email)),
+                    ],
+                ]),
+            ]));
             return {
                 success: true,
                 messageId,

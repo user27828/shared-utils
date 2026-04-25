@@ -16,6 +16,13 @@ import {
 } from "../attachments.js";
 import { formatEmailAddress, normalizeEmailAddress } from "../address.js";
 import { EmailProviderError } from "../errors.js";
+import {
+  formatCompactLogLine,
+  formatCompactLogList,
+  formatHierarchicalLog,
+  formatCompactLogText,
+  formatCompactLogValue,
+} from "../logFormat.js";
 import type {
   EmailMessage,
   EmailSendResult,
@@ -246,10 +253,14 @@ export class SesEmailProvider implements IEmailProvider {
       this.client = new this.runtime.SESv2Client(clientConfig);
       this.initialized = true;
 
-      log.info?.("SesProvider: Initialized", {
-        region: this.config.region,
-        endpoint: this.config.endpoint,
-      });
+      log.info?.(
+        formatHierarchicalLog("SesProvider: Initialized", [
+          formatCompactLogLine([
+            ["region", formatCompactLogText(this.config.region)],
+            ["endpoint", formatCompactLogText(this.config.endpoint)],
+          ]),
+        ]),
+      );
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       throw new EmailProviderError(
@@ -397,11 +408,22 @@ export class SesEmailProvider implements IEmailProvider {
       );
       const messageId = response.MessageId || message.messageId;
 
-      log.info?.("SesProvider: Email sent", {
-        messageId,
-        to: normalizedTo.map((address) => address.email),
-        subject: message.subject,
-      });
+      log.info?.(
+        formatHierarchicalLog("SesProvider: Email sent", [
+          formatCompactLogLine([
+            ["messageId", formatCompactLogValue(messageId)],
+            ["subject", formatCompactLogText(message.subject)],
+          ]),
+          formatCompactLogLine([
+            [
+              "to",
+              formatCompactLogList(
+                normalizedTo.map((address) => address.email),
+              ),
+            ],
+          ]),
+        ]),
+      );
 
       return {
         success: true,

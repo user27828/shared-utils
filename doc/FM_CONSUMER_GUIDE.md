@@ -104,7 +104,7 @@ The returned object has two members:
 
 ### 1.5 Mount Express routers
 
-FM provides four router factories for different access patterns:
+FM uses three router factories to cover four common access patterns:
 
 ```ts
 import express from "express";

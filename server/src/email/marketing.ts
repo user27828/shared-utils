@@ -11,6 +11,12 @@ import {
 } from "@aws-sdk/client-sesv2";
 import { log, optionsManager } from "../../../utils/index.js";
 import env from "../env.js";
+import {
+  formatCompactLogLine,
+  formatHierarchicalLog,
+  formatCompactLogText,
+  formatCompactLogValue,
+} from "./logFormat.js";
 import { requestWithTimeout } from "./requestTimeout.js";
 
 export type MarketingProviderName = "mailerlite" | "resend" | "ses";
@@ -339,7 +345,9 @@ const isMailerliteAlreadyExistsError = (error: unknown): boolean => {
 };
 
 const isSesAlreadyExistsError = (error: unknown): boolean => {
-  return (error as { name?: string } | undefined)?.name === "AlreadyExistsException";
+  return (
+    (error as { name?: string } | undefined)?.name === "AlreadyExistsException"
+  );
 };
 
 const parseApiResponse = async (response: Response): Promise<unknown> => {
@@ -759,11 +767,20 @@ const syncMailerliteMarketing = async (
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         groupSyncErrors.push(`assign ${groupId}: ${errorMessage}`);
-        log.warn?.("MailerliteMarketing: assign subscriber failed", {
-          email: input.email,
-          groupId,
-          error: errorMessage,
-        });
+        log.warn?.(
+          formatHierarchicalLog(
+            "MailerliteMarketing: Assign subscriber failed",
+            [
+              formatCompactLogLine([
+                ["email", formatCompactLogText(input.email)],
+                ["groupId", formatCompactLogValue(groupId)],
+              ]),
+              formatCompactLogLine([
+                ["error", formatCompactLogText(errorMessage)],
+              ]),
+            ],
+          ),
+        );
       }
     }
 
@@ -782,11 +799,20 @@ const syncMailerliteMarketing = async (
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         groupSyncErrors.push(`unassign ${group.id}: ${errorMessage}`);
-        log.warn?.("MailerliteMarketing: unassign subscriber failed", {
-          email: input.email,
-          groupId: group.id,
-          error: errorMessage,
-        });
+        log.warn?.(
+          formatHierarchicalLog(
+            "MailerliteMarketing: Unassign subscriber failed",
+            [
+              formatCompactLogLine([
+                ["email", formatCompactLogText(input.email)],
+                ["groupId", formatCompactLogValue(group.id)],
+              ]),
+              formatCompactLogLine([
+                ["error", formatCompactLogText(errorMessage)],
+              ]),
+            ],
+          ),
+        );
       }
     }
   } else if (managedGroups.length > 0) {
@@ -1087,12 +1113,16 @@ export const syncMarketingSubscriptions = async (
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      log.error?.("EmailMarketing: Provider sync failed", {
-        provider,
-        email: input.email,
-        userUid: input.userUid,
-        error: message,
-      });
+      log.error?.(
+        formatHierarchicalLog("EmailMarketing: Provider sync failed", [
+          formatCompactLogLine([
+            ["provider", formatCompactLogValue(provider)],
+            ["email", formatCompactLogText(input.email)],
+            ["userUid", formatCompactLogValue(input.userUid)],
+          ]),
+          formatCompactLogLine([["error", formatCompactLogText(message)]]),
+        ]),
+      );
       results.push(toFailureResult(provider, message, audiences));
     }
   }

@@ -70,6 +70,11 @@ If you need to record work, ask the user to commit or use task tracking instead.
 @user27828/shared-utils/client/init → client-side window.log initialization (side-effectful — import once in app entry)
 @user27828/shared-utils/client/wysiwyg → WYSIWYG editors (CKEditor5, TinyMCE, EasyMDE, MDXEditor)
 @user27828/shared-utils/server   → server (env loader, middleware, turnstile worker)
+@user27828/shared-utils/email    → shared email preview/request/response types and validation helpers
+@user27828/shared-utils/email/server → email template registry, attachment helpers, marketing sync, and webhook router factories
+@user27828/shared-utils/email/server/errors → email/provider error helpers
+@user27828/shared-utils/email/server/providers → provider contracts plus built-in Gmail, Resend, SES, and _test_ providers (deep provider subpaths also exported)
+@user27828/shared-utils/email/client → email template preview client, hooks, and preview/admin UI
 @user27828/shared-utils/cms      → CMS shared types/errors/validation
 @user27828/shared-utils/cms/server → CMS service core, connectors, Express routers
 @user27828/shared-utils/cms/client → CMS client API, hooks, UI components

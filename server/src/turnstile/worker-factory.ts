@@ -35,8 +35,8 @@ export interface TurnstileWorkerConfig {
  * // With custom configuration
  * export default createTurnstileWorker({
  *   allowedOrigins: ["https://myapp.com", "https://www.myapp.com"],
- *   devMode: process.env.NODE_ENV === "development",
  *   bypassLocalhost: true,
+ *   // DEV_MODE / NODE_ENV can also be supplied via Wrangler env vars.
  * });
  * ```
  */

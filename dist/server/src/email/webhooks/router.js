@@ -1,5 +1,6 @@
 import { Router, raw } from "express";
 import { log } from "../../../../utils/index.js";
+import { formatCompactLogLine, formatCompactLogList, formatHierarchicalLog, formatCompactLogText, formatCompactLogValue, } from "../logFormat.js";
 import { createMailerliteWebhookHandler } from "./mailerlite.js";
 import { createResendWebhookHandler } from "./resend.js";
 import { createSesWebhookHandler } from "./ses.js";
@@ -23,46 +24,56 @@ const initializeHandlers = () => {
     webhookHandlers.set("resend", resendHandler);
     const sesHandler = createSesWebhookHandler();
     webhookHandlers.set("ses", sesHandler);
-    log.debug?.("EmailWebhooks: Handlers initialized", {
-        providers: Array.from(webhookHandlers.keys()),
-    });
+    log.debug?.(formatHierarchicalLog("EmailWebhooks: Handlers initialized", [
+        formatCompactLogLine([
+            ["providers", formatCompactLogList(Array.from(webhookHandlers.keys()))],
+        ]),
+    ]));
 };
 export const registerWebhookHandlers = (handlers) => {
     eventHandlers = { ...eventHandlers, ...handlers };
-    log.debug?.("EmailWebhooks: Event handlers registered", {
-        events: Object.keys(handlers),
-    });
+    log.debug?.(formatHierarchicalLog("EmailWebhooks: Event handlers registered", [
+        formatCompactLogLine([
+            ["events", formatCompactLogList(Object.keys(handlers))],
+        ]),
+    ]));
 };
 const processEvent = async (event) => {
-    log.info?.("EmailWebhooks: Processing event", {
-        type: event.type,
-        provider: event.provider,
-        email: event.email,
-        messageId: event.messageId,
-    });
+    log.info?.(formatHierarchicalLog("EmailWebhooks: Processing event", [
+        formatCompactLogLine([
+            ["type", formatCompactLogText(event.type)],
+            ["provider", formatCompactLogValue(event.provider)],
+            ["email", formatCompactLogText(event.email)],
+            ["messageId", formatCompactLogValue(event.messageId)],
+        ]),
+    ]));
     const handler = eventHandlers[event.type];
     if (handler) {
         try {
             await handler(event);
-            log.debug?.("EmailWebhooks: Event handled", {
-                type: event.type,
-                email: event.email,
-            });
+            log.debug?.(formatHierarchicalLog("EmailWebhooks: Event handled", [
+                formatCompactLogLine([
+                    ["type", formatCompactLogText(event.type)],
+                    ["email", formatCompactLogText(event.email)],
+                ]),
+            ]));
         }
         catch (error) {
             const err = error;
-            log.error?.("EmailWebhooks: Event handler failed", {
-                type: event.type,
-                email: event.email,
-                error: err.message,
-            });
+            log.error?.(formatHierarchicalLog("EmailWebhooks: Event handler failed", [
+                formatCompactLogLine([
+                    ["type", formatCompactLogText(event.type)],
+                    ["email", formatCompactLogText(event.email)],
+                ]),
+                formatCompactLogLine([["error", formatCompactLogText(err.message)]]),
+            ]));
             throw err;
         }
         return;
     }
-    log.debug?.("EmailWebhooks: No handler for event type", {
-        type: event.type,
-    });
+    log.debug?.(formatHierarchicalLog("EmailWebhooks: No handler for event type", [
+        formatCompactLogLine([["type", formatCompactLogText(event.type)]]),
+    ]));
 };
 export const createWebhookRouter = () => {
     initializeHandlers();
@@ -71,21 +82,34 @@ export const createWebhookRouter = () => {
         const provider = Array.isArray(req.params.provider)
             ? req.params.provider[0] || ""
             : req.params.provider || "";
-        log.debug?.("EmailWebhooks: Received webhook", {
-            provider,
-            contentType: req.headers["content-type"],
-        });
+        log.debug?.(formatHierarchicalLog("EmailWebhooks: Received webhook", [
+            formatCompactLogLine([
+                ["provider", formatCompactLogValue(provider)],
+                [
+                    "contentType",
+                    formatCompactLogText(Array.isArray(req.headers["content-type"])
+                        ? req.headers["content-type"].join(",")
+                        : req.headers["content-type"]),
+                ],
+            ]),
+        ]));
         const handler = webhookHandlers.get(provider.toLowerCase());
         if (!handler) {
-            log.warn?.("EmailWebhooks: Unknown provider", { provider });
+            log.warn?.(formatHierarchicalLog("EmailWebhooks: Unknown provider", [
+                formatCompactLogLine([
+                    ["provider", formatCompactLogValue(provider)],
+                ]),
+            ]));
             return res.status(404).json({ error: "Unknown provider" });
         }
         if (!Buffer.isBuffer(req.body)) {
             const error = "Webhook raw body unavailable. Mount createWebhookRouter() before JSON/body parsers.";
-            log.error?.("EmailWebhooks: Raw body unavailable for verification", {
-                provider,
-                bodyType: typeof req.body,
-            });
+            log.error?.(formatHierarchicalLog("EmailWebhooks: Raw body unavailable for verification", [
+                formatCompactLogLine([
+                    ["provider", formatCompactLogValue(provider)],
+                    ["bodyType", formatCompactLogText(typeof req.body)],
+                ]),
+            ]));
             return res.status(500).json({ received: false, error });
         }
         const rawBody = req.body;
@@ -96,14 +120,20 @@ export const createWebhookRouter = () => {
         }
         catch (error) {
             const err = error;
-            log.error?.("EmailWebhooks: Verification threw an error", {
-                provider,
-                error: err.message,
-            });
+            log.error?.(formatHierarchicalLog("EmailWebhooks: Verification threw an error", [
+                formatCompactLogLine([
+                    ["provider", formatCompactLogValue(provider)],
+                    ["error", formatCompactLogText(err.message)],
+                ]),
+            ]));
             return res.status(500).json({ received: false, error: err.message });
         }
         if (!verified) {
-            log.warn?.("EmailWebhooks: Verification failed", { provider });
+            log.warn?.(formatHierarchicalLog("EmailWebhooks: Verification failed", [
+                formatCompactLogLine([
+                    ["provider", formatCompactLogValue(provider)],
+                ]),
+            ]));
             return res.status(401).json({ error: "Invalid signature" });
         }
         try {
@@ -127,10 +157,12 @@ export const createWebhookRouter = () => {
                 return res.status(200).json({ received: true, count: 0 });
             }
             const events = handler.parse(payload);
-            log.debug?.("EmailWebhooks: Parsed events", {
-                provider,
-                count: events.length,
-            });
+            log.debug?.(formatHierarchicalLog("EmailWebhooks: Parsed events", [
+                formatCompactLogLine([
+                    ["provider", formatCompactLogValue(provider)],
+                    ["count", String(events.length)],
+                ]),
+            ]));
             for (const event of events) {
                 await processEvent(event);
             }
@@ -138,10 +170,12 @@ export const createWebhookRouter = () => {
         }
         catch (error) {
             const err = error;
-            log.error?.("EmailWebhooks: Processing failed", {
-                provider,
-                error: err.message,
-            });
+            log.error?.(formatHierarchicalLog("EmailWebhooks: Processing failed", [
+                formatCompactLogLine([
+                    ["provider", formatCompactLogValue(provider)],
+                    ["error", formatCompactLogText(err.message)],
+                ]),
+            ]));
             return res.status(500).json({ received: false, error: err.message });
         }
     });

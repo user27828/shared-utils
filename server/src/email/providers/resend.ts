@@ -5,6 +5,13 @@ import {
 } from "../attachments.js";
 import { formatEmailAddress } from "../address.js";
 import { EmailProviderError } from "../errors.js";
+import {
+  formatCompactLogLine,
+  formatCompactLogList,
+  formatHierarchicalLog,
+  formatCompactLogText,
+  formatCompactLogValue,
+} from "../logFormat.js";
 import { requestWithTimeout } from "../requestTimeout.js";
 import type {
   EmailMessage,
@@ -174,7 +181,11 @@ export class ResendEmailProvider implements IEmailProvider {
       const baseUrl = this.getBaseUrl();
       new URL(baseUrl);
       this.initialized = true;
-      log.info?.("ResendProvider: Initialized", { baseUrl });
+      log.info?.(
+        formatHierarchicalLog("ResendProvider: Initialized", [
+          formatCompactLogLine([["baseUrl", formatCompactLogText(baseUrl)]]),
+        ]),
+      );
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       throw new EmailProviderError(
@@ -312,11 +323,20 @@ export class ResendEmailProvider implements IEmailProvider {
         ? responseBody.id
         : message.messageId;
 
-    log.info?.("ResendProvider: Email sent", {
-      messageId,
-      to: message.to.map((address) => address.email),
-      subject: message.subject,
-    });
+    log.info?.(
+      formatHierarchicalLog("ResendProvider: Email sent", [
+        formatCompactLogLine([
+          ["messageId", formatCompactLogValue(messageId)],
+          ["subject", formatCompactLogText(message.subject)],
+        ]),
+        formatCompactLogLine([
+          [
+            "to",
+            formatCompactLogList(message.to.map((address) => address.email)),
+          ],
+        ]),
+      ]),
+    );
 
     return {
       success: true,

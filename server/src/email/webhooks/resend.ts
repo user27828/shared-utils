@@ -1,6 +1,11 @@
 import crypto from "node:crypto";
 import { log, optionsManager } from "../../../../utils/index.js";
 import env from "../../env.js";
+import {
+  formatCompactLogLine,
+  formatHierarchicalLog,
+  formatCompactLogText,
+} from "../logFormat.js";
 import type {
   BounceEvent,
   BounceType,
@@ -26,7 +31,9 @@ const getHeaderValue = (
   headers: Record<string, string>,
   key: string,
 ): string | undefined => {
-  return headers[key] || headers[key.toLowerCase()] || headers[key.toUpperCase()];
+  return (
+    headers[key] || headers[key.toLowerCase()] || headers[key.toUpperCase()]
+  );
 };
 
 const timingSafeEquals = (left: string, right: string): boolean => {
@@ -84,10 +91,9 @@ export class ResendWebhookHandler implements IWebhookHandler {
 
   constructor() {
     const configuredSecret =
-      (optionsManager.getOption(
-        "ENV",
-        "EMAIL_RESEND_WEBHOOK_SECRET",
-      ) as string | undefined) || env.EMAIL_RESEND_WEBHOOK_SECRET;
+      (optionsManager.getOption("ENV", "EMAIL_RESEND_WEBHOOK_SECRET") as
+        | string
+        | undefined) || env.EMAIL_RESEND_WEBHOOK_SECRET;
 
     this.webhookSecret = configuredSecret || null;
   }
@@ -97,7 +103,9 @@ export class ResendWebhookHandler implements IWebhookHandler {
     headers: Record<string, string>,
   ): Promise<boolean> {
     if (!this.webhookSecret) {
-      log.warn?.("ResendWebhook: No webhook secret configured, rejecting request");
+      log.warn?.(
+        "ResendWebhook: No webhook secret configured, rejecting request",
+      );
       return false;
     }
 
@@ -124,9 +132,13 @@ export class ResendWebhookHandler implements IWebhookHandler {
 
     const nowSeconds = Math.floor(Date.now() / 1000);
     if (Math.abs(nowSeconds - timestampSeconds) > TIMESTAMP_TOLERANCE_SECONDS) {
-      log.warn?.("ResendWebhook: Timestamp outside tolerance", {
-        timestamp,
-      });
+      log.warn?.(
+        formatHierarchicalLog("ResendWebhook: Timestamp outside tolerance", [
+          formatCompactLogLine([
+            ["timestamp", formatCompactLogText(timestamp)],
+          ]),
+        ]),
+      );
       return false;
     }
 
@@ -179,7 +191,8 @@ export class ResendWebhookHandler implements IWebhookHandler {
             email,
             messageId: getString(data.email_id),
             bounceType: getBounceType(bounce.type),
-            reason: getString(bounce.message) || getString(bounce.diagnosticCode),
+            reason:
+              getString(bounce.message) || getString(bounce.diagnosticCode),
             errorCode: getString(bounce.subType),
             raw: envelope,
           };

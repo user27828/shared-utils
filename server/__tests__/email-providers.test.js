@@ -3,8 +3,10 @@ import os from "node:os";
 import path from "node:path";
 import { jest } from "@jest/globals";
 
+import { log } from "../../dist/utils/index.js";
 import { EmailError, EmailProviderError } from "../src/email/errors.js";
 import { formatEmailAddress } from "../src/email/address.js";
+import { formatHierarchicalLog } from "../src/email/logFormat.js";
 import {
   GmailEmailProvider,
   isConfigured as isGmailProviderConfigured,
@@ -54,14 +56,43 @@ const restoreEnv = (snapshot) => {
 
 describe("Email providers", () => {
   let envSnapshot;
+  let originalShowCaller;
+  let originalType;
+  let originalServerProduction;
+  let logInterceptor;
 
   beforeEach(() => {
     envSnapshot = Object.fromEntries(
       GMAIL_ENV_KEYS.map((key) => [key, process.env[key]]),
     );
+
+    originalShowCaller = log.getOptions().showCaller;
+    originalType = log.getOptions().type;
+    originalServerProduction = [...(log.getOptions().server.production || [])];
+
+    log.setOptions({
+      type: "server",
+      showCaller: true,
+      server: {
+        production: ["log", "info", "warn", "error", "debug"],
+      },
+    });
   });
 
   afterEach(() => {
+    if (logInterceptor) {
+      log.removeInterceptor(logInterceptor);
+      logInterceptor = undefined;
+    }
+
+    log.setOptions({
+      type: originalType,
+      showCaller: originalShowCaller,
+      server: {
+        production: originalServerProduction,
+      },
+    });
+
     restoreEnv(envSnapshot);
     jest.restoreAllMocks();
   });
@@ -138,6 +169,61 @@ describe("Email providers", () => {
       }),
     );
     expect(verify).toHaveBeenCalledTimes(1);
+  });
+
+  test("formatHierarchicalLog produces a single multiline logger event", () => {
+    const interceptor = jest.fn();
+    const expectedMessage =
+      "EmailProviders: Formatted event\n  + messageId: gmail-message-id, subject: 'Provider regression test'";
+
+    logInterceptor = interceptor;
+    log.addInterceptor(interceptor);
+
+    const message = formatHierarchicalLog("EmailProviders: Formatted event", [
+      "messageId: gmail-message-id, subject: 'Provider regression test'",
+    ]);
+
+    log.info(message);
+
+    expect(message).toBe(expectedMessage);
+    expect(interceptor).toHaveBeenCalledTimes(1);
+    expect(interceptor).toHaveBeenCalledWith("info", [expectedMessage]);
+  });
+
+  test("Gmail send logging stays on the provider call site", async () => {
+    const infoSpy = jest.spyOn(console, "info").mockImplementation(() => {});
+    const sendMail = jest.fn().mockResolvedValue({
+      messageId: "gmail-message-id",
+      accepted: ["recipient@example.com"],
+      rejected: [],
+      response: "250 OK",
+    });
+
+    const provider = new GmailEmailProvider(
+      {
+        enabled: true,
+        authMode: "smtp",
+        smtp: {
+          user: "smtp-user@example.com",
+          appPassword: "app-password",
+        },
+      },
+      { createTransport: jest.fn() },
+    );
+
+    provider.initialized = true;
+    provider.transporter = { sendMail };
+
+    await provider.send(createMessage());
+
+    const expectedMessage =
+      "GmailProvider: Email sent\n  + messageId: gmail-message-id, subject: 'Provider regression test'";
+
+    expect(sendMail).toHaveBeenCalledTimes(1);
+    expect(infoSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[gmail.ts]"),
+      expectedMessage,
+    );
   });
 
   test("TestEmailProvider fails when persistence fails", async () => {

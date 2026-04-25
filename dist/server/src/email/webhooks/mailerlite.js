@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { log, optionsManager } from "../../../../utils/index.js";
 import env from "../../env.js";
+import { formatCompactLogLine, formatHierarchicalLog, formatCompactLogText, } from "../logFormat.js";
 const PROVIDER_NAME = "mailerlite";
 const EVENT_TYPE_MAP = {
     "subscriber.bounced": "bounce",
@@ -54,9 +55,14 @@ export class MailerliteWebhookHandler {
             return isValid;
         }
         catch (error) {
-            log.error?.("MailerliteWebhook: Signature verification failed", {
-                error: error instanceof Error ? error.message : String(error),
-            });
+            log.error?.(formatHierarchicalLog("MailerliteWebhook: Signature verification failed", [
+                formatCompactLogLine([
+                    [
+                        "error",
+                        formatCompactLogText(error instanceof Error ? error.message : String(error)),
+                    ],
+                ]),
+            ]));
             return false;
         }
     }
@@ -77,7 +83,11 @@ export class MailerliteWebhookHandler {
         const normalizedType = eventType ? EVENT_TYPE_MAP[eventType] : undefined;
         if (!normalizedType) {
             if (eventType) {
-                log.debug?.("MailerliteWebhook: Unknown event type", { eventType });
+                log.debug?.(formatHierarchicalLog("MailerliteWebhook: Unknown event type", [
+                    formatCompactLogLine([
+                        ["eventType", formatCompactLogText(eventType)],
+                    ]),
+                ]));
             }
             return null;
         }
@@ -137,9 +147,7 @@ export class MailerliteWebhookHandler {
         return {
             ...baseEvent,
             type: "unsubscribe",
-            method: getString(data.method) ||
-                getString(data.unsubscribe_type) ||
-                "link",
+            method: getString(data.method) || getString(data.unsubscribe_type) || "link",
         };
     }
     parseDeliveryEvent(baseEvent, data, nestedData) {

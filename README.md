@@ -96,6 +96,10 @@ import {
 // ✅ Server functionality
 import { verifyTurnstileTokenEnhanced } from "@user27828/shared-utils/server";
 
+// ✅ Shared email types + validation helpers
+import { assertEmailRenderResult } from "@user27828/shared-utils/email";
+import type { EmailTemplatePreviewResponse } from "@user27828/shared-utils/email";
+
 // ✅ Server email utilities
 import {
   syncMarketingSubscriptions,
@@ -113,6 +117,13 @@ import {
   SesEmailProvider,
   TestEmailProvider,
 } from "@user27828/shared-utils/email/server/providers";
+
+// ✅ Client email preview SDK, hooks, and UI
+import {
+  EmailTemplateClient,
+  useEmailTemplates,
+  EmailTemplateListPage,
+} from "@user27828/shared-utils/email/client";
 
 // ✅ CMS — types, validation, sanitization, concurrency, password
 import {
@@ -185,7 +196,7 @@ optionsManager.setGlobalOptions({
 
 ## Available Modules
 
-### 📋 [Utils](/utils/README.md)
+### 📋 [Utils](./utils/README.md)
 
 Core utilities with environment detection and centralized configuration:
 
@@ -194,7 +205,7 @@ Core utilities with environment detection and centralized configuration:
 - **OptionsManager**: Unified configuration system
 - **isDev**: Development environment detection utility
 
-### 🎨 [Client Components](/client)
+### 🎨 [Client Components](./client)
 
 React components and client-side helpers:
 
@@ -444,7 +455,7 @@ const [debouncedSave, { cancel, flush, isPending }] = useDebouncedCallback(
 
 Both hooks return `[result, { cancel, flush, isPending }]` controls.
 
-### 🚀 [Server](/server/README-SERVER.md)
+### 🚀 [Server](./server/README-SERVER.md)
 
 Server-side functionality and Cloudflare Workers:
 
@@ -458,6 +469,8 @@ Server-side functionality and Cloudflare Workers:
 | Path                                                    | Contents                                                                                                             |
 | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | `@user27828/shared-utils/server`                        | Turnstile verification, Express middleware, env loader, IP helpers, and general server utilities                     |
+| `@user27828/shared-utils/email`                         | Shared email preview/request/response types and validation helpers                                                   |
+| `@user27828/shared-utils/email/client`                  | Email template preview client, hooks, and preview/admin UI components                                                |
 | `@user27828/shared-utils/email/server`                  | Email template registry, attachment helpers, marketing sync, webhook router factories, and shared email server types |
 | `@user27828/shared-utils/email/server/errors`           | `EmailError`, `EmailProviderError`, and `isEmailError`                                                               |
 | `@user27828/shared-utils/email/server/providers`        | Provider contracts plus built-in Gmail, Resend, SES, and `_test_` providers                                          |
@@ -465,6 +478,8 @@ Server-side functionality and Cloudflare Workers:
 | `@user27828/shared-utils/email/server/providers/gmail`  | Deep import for the Gmail provider                                                                                   |
 | `@user27828/shared-utils/email/server/providers/resend` | Deep import for the Resend provider                                                                                  |
 | `@user27828/shared-utils/email/server/providers/ses`    | Deep import for the Amazon SES provider                                                                              |
+
+Note: email template descriptors may emit `from` / `replyTo` setting refs such as `{ setting: "noReplyEmail" }` and `{ setting: "supportEmail" }`. Those refs are consumer-resolved metadata; the consuming server must map them to concrete addresses before composing or sending provider messages.
 
 Server utilities
 
@@ -524,7 +539,7 @@ A portable file manager with pluggable DB connectors and storage adapters (local
 
 - Two-phase upload: presigned URL (direct to S3) or proxy upload through Express
 - Variant management: thumb, preview, web variants with client-side generation
-- Four router factories: admin CRUD, content delivery (short URLs), public media, with pluggable authz
+- Three router factories: admin CRUD, authenticated content delivery (short URLs), and public media, with pluggable authz
 - Owner-or-admin access control model
 - Content URL decoupling: separate content delivery from admin CRUD (`contentBaseUrl`)
 - Local + S3 storage adapters with async factory
@@ -675,7 +690,7 @@ Add useful scripts to your `package.json`:
 
 ## Usage Examples
 
-Complete examples are available in the [`/utils/examples/`](/utils/examples/) directory:
+Complete examples are available in the [`utils/examples/`](./utils/examples/) directory:
 
 - **`client-init.js`** - Client-side setup
 - **`server-init.js`** - Server-side configuration

@@ -1,6 +1,6 @@
 # Deploying Turnstile Worker from Consuming Projects
 
-**[🏠 Back to Main README](./README.md)**
+**[🏠 Back to Main README](../README.md)**
 
 When using `shared-utils` as a dependency in another project, there are several strategies for deploying the Turnstile Cloudflare Worker. This guide covers all the approaches depending on your needs.
 
@@ -11,7 +11,7 @@ When using `shared-utils` as a dependency in another project, there are several 
   - [📋 Deployment Strategies](#-deployment-strategies)
     - [Strategy 1: Reference Worker (Recommended)](#strategy-1-reference-worker-recommended)
       - [Setup Steps](#setup-steps)
-    - [Strategy 2: Copy Worker Files (Advanced Customization)](#strategy-2-copy-worker-files-advanced-customization)
+    - [Strategy 2: Vendor the Worker (Advanced Customization)](#strategy-2-vendor-the-worker-advanced-customization)
       - [Setup Steps](#setup-steps-1)
     - [Strategy 3: Server-Side Integration Only](#strategy-3-server-side-integration-only)
       - [Setup Steps](#setup-steps-2)
@@ -32,7 +32,7 @@ Create a minimal worker that imports shared-utils functionality. This approach r
 
 #### Setup Steps
 
-1. **Install the dependency**: See [main installation guide](./README.md#installation) for complete instructions.
+1. **Install the dependency**: See [main installation guide](../README.md#installation) for complete instructions.
 
 2. **Create minimal worker file**:
 
@@ -43,8 +43,8 @@ import { createTurnstileWorker } from "@user27828/shared-utils/server";
 export default createTurnstileWorker({
   // Optional: customize behavior
   allowedOrigins: ["https://myapp.com", "https://www.myapp.com"],
-  devMode: process.env.NODE_ENV === "development",
   bypassLocalhost: true,
+  // DEV_MODE / NODE_ENV can also be supplied via Wrangler env vars.
 });
 ```
 
@@ -70,35 +70,26 @@ cd workers/turnstile && wrangler deploy
 
 ---
 
-### Strategy 2: Copy Worker Files (Advanced Customization)
+### Strategy 2: Vendor the Worker (Advanced Customization)
 
-Use this when you need to heavily customize the worker logic beyond configuration options.
+Use this when configuration alone is not enough and you want to own the worker logic in your app.
 
 [🔝 Back to Top](#deploying-turnstile-worker-from-consuming-projects)
 
 #### Setup Steps
 
-1. **Create worker setup script** (optional, for automation):
+1. **Start with Strategy 1** and commit your own `workers/turnstile-worker.ts`.
 
-```bash
-# scripts/setup-turnstile-worker.sh
-#!/bin/bash
+2. **Copy from the repository, not from installed `node_modules`**, if you need the full reference implementation. The published root package ships compiled `dist/` output, not the workspace `server/` sources.
 
-# Create worker directory
-mkdir -p workers/turnstile
+Reference files:
 
-# Copy worker files from dependency
-cp node_modules/@user27828/shared-utils/server/turnstile-worker.ts workers/turnstile/
-cp node_modules/@user27828/shared-utils/server/wrangler.toml workers/turnstile/
-cp -r node_modules/@user27828/shared-utils/server/src workers/turnstile/
+- [server/turnstile-worker.ts](../server/turnstile-worker.ts)
+- [server/wrangler.toml](../server/wrangler.toml)
 
-echo "✅ Turnstile worker files copied to workers/turnstile/"
-echo "📝 Customize files as needed for your specific requirements"
-```
+3. **Customize the vendored worker** for your application.
 
-2. **Customize the copied files** for your specific needs.
-
-3. **Deploy**:
+4. **Deploy**:
 
 ```bash
 cd workers/turnstile && wrangler deploy
@@ -114,20 +105,17 @@ If you only need verification in your existing server without deploying a separa
 
 #### Setup Steps
 
-1. **Install dependency**: See [main installation guide](./README.md#installation) for complete instructions.
+1. **Install dependency**: See [main installation guide](../README.md#installation) for complete instructions.
 
 2. **Use in your server code**:
 
 ```typescript
 // server.js
-import {
-  verifyTurnstileTokenEnhanced,
-  optionsManager,
-} from "@user27828/shared-utils/server";
-import { optionsManager as globalOptions } from "@user27828/shared-utils/utils";
+import { verifyTurnstileTokenEnhanced } from "@user27828/shared-utils/server";
+import { optionsManager } from "@user27828/shared-utils/utils";
 
 // Configure Turnstile options
-globalOptions.setGlobalOptions({
+optionsManager.setGlobalOptions({
   "turnstile-server": {
     secretKey: process.env.TURNSTILE_SECRET_KEY,
     allowedOrigins: ["https://myapp.com"],
@@ -295,4 +283,4 @@ This approach prioritizes simplicity with the reference worker pattern while mai
 
 ---
 
-[🔝 Back to Top](#deploying-turnstile-worker-from-consuming-projects) | **[🏠 Back to Main README](./README.md)**
+[🔝 Back to Top](#deploying-turnstile-worker-from-consuming-projects) | **[🏠 Back to Main README](../README.md)**

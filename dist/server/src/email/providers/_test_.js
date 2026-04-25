@@ -5,6 +5,7 @@ import { log } from "../../../../utils/index.js";
 import { getAttachmentByteLength, getAttachmentContentType, } from "../attachments.js";
 import { formatEmailAddress } from "../address.js";
 import { EmailProviderError } from "../errors.js";
+import { formatCompactLogLine, formatCompactLogList, formatHierarchicalLog, formatCompactLogText, formatCompactLogValue, } from "../logFormat.js";
 const PROVIDER_NAME = "_test_";
 const MAX_SENT_EMAILS = 500;
 export class TestEmailProvider {
@@ -25,9 +26,11 @@ export class TestEmailProvider {
         }
         try {
             await fs.mkdir(this.outputDir, { recursive: true });
-            log.debug?.("TestEmailProvider: Initialized", {
-                outputDir: this.outputDir,
-            });
+            log.debug?.(formatHierarchicalLog("TestEmailProvider: Initialized", [
+                formatCompactLogLine([
+                    ["outputDir", formatCompactLogText(this.outputDir)],
+                ]),
+            ]));
             this.initialized = true;
         }
         catch (err) {
@@ -77,12 +80,16 @@ export class TestEmailProvider {
             if (this.sentEmails.length > MAX_SENT_EMAILS) {
                 this.sentEmails = this.sentEmails.slice(-MAX_SENT_EMAILS);
             }
-            log.info?.("TestEmailProvider: Email saved", {
-                filepath,
-                messageId,
-                to: emailData.to,
-                subject: message.subject,
-            });
+            log.info?.(formatHierarchicalLog("TestEmailProvider: Email saved", [
+                formatCompactLogLine([
+                    ["messageId", formatCompactLogValue(messageId)],
+                    ["subject", formatCompactLogText(message.subject)],
+                ]),
+                formatCompactLogLine([
+                    ["to", formatCompactLogList(emailData.to)],
+                    ["filepath", formatCompactLogText(filepath)],
+                ]),
+            ]));
             if (this.config.logToConsole) {
                 console.log("\n=== TEST EMAIL ===");
                 console.log(`To: ${emailData.to.join(", ")}`);
@@ -92,10 +99,12 @@ export class TestEmailProvider {
             }
         }
         catch (err) {
-            log.warn?.("TestEmailProvider: Failed to write email file", {
-                filepath,
-                error: err.message,
-            });
+            log.warn?.(formatHierarchicalLog("TestEmailProvider: Failed to write email file", [
+                formatCompactLogLine([
+                    ["filepath", formatCompactLogText(filepath)],
+                    ["error", formatCompactLogText(err.message)],
+                ]),
+            ]));
             throw new EmailProviderError(`Failed to persist test email: ${err.message}`, PROVIDER_NAME, {
                 retryable: false,
                 context: { filepath },

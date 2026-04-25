@@ -2,6 +2,7 @@ import { log } from "../../../../utils/index.js";
 import { getAttachmentContentBase64, getAttachmentContentType, } from "../attachments.js";
 import { formatEmailAddress } from "../address.js";
 import { EmailProviderError } from "../errors.js";
+import { formatCompactLogLine, formatCompactLogList, formatHierarchicalLog, formatCompactLogText, formatCompactLogValue, } from "../logFormat.js";
 import { requestWithTimeout } from "../requestTimeout.js";
 const PROVIDER_NAME = "resend";
 const DEFAULT_BASE_URL = "https://api.resend.com";
@@ -102,7 +103,9 @@ export class ResendEmailProvider {
             const baseUrl = this.getBaseUrl();
             new URL(baseUrl);
             this.initialized = true;
-            log.info?.("ResendProvider: Initialized", { baseUrl });
+            log.info?.(formatHierarchicalLog("ResendProvider: Initialized", [
+                formatCompactLogLine([["baseUrl", formatCompactLogText(baseUrl)]]),
+            ]));
         }
         catch (err) {
             const message = err instanceof Error ? err.message : String(err);
@@ -201,11 +204,18 @@ export class ResendEmailProvider {
         const messageId = isRecord(responseBody) && typeof responseBody.id === "string"
             ? responseBody.id
             : message.messageId;
-        log.info?.("ResendProvider: Email sent", {
-            messageId,
-            to: message.to.map((address) => address.email),
-            subject: message.subject,
-        });
+        log.info?.(formatHierarchicalLog("ResendProvider: Email sent", [
+            formatCompactLogLine([
+                ["messageId", formatCompactLogValue(messageId)],
+                ["subject", formatCompactLogText(message.subject)],
+            ]),
+            formatCompactLogLine([
+                [
+                    "to",
+                    formatCompactLogList(message.to.map((address) => address.email)),
+                ],
+            ]),
+        ]));
         return {
             success: true,
             messageId,

@@ -7,7 +7,14 @@ import type {
 
 export type EmailTemplateDeliveryAddress =
   | string
-  | { email: string; name?: string };
+  | { email: string; name?: string }
+  | EmailTemplateDeliverySettingRef;
+
+export type EmailTemplateDeliverySettingKey = "noReplyEmail" | "supportEmail";
+
+export interface EmailTemplateDeliverySettingRef {
+  setting: EmailTemplateDeliverySettingKey;
+}
 
 export interface EmailTemplateDescriptor<TProps = Record<string, unknown>> {
   uid: string;
