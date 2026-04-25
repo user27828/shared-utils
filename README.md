@@ -641,10 +641,12 @@ Option B - Explicit control:
 ```json
 {
   "scripts": {
-    "enable:portal": "dependency-manager --enable",
-    "disable:portal": "dependency-manager --disable",
-    "dev": "yarn enable:portal && yarn dev",
-    "build": "yarn disable:portal && yarn build"
+    "portal:enable": "dependency-manager --enable",
+    "portal:disable": "dependency-manager --disable",
+    "app:dev": "vite",
+    "app:build": "vite build",
+    "dev": "yarn portal:enable && yarn app:dev",
+    "build": "yarn portal:disable && yarn app:build"
   }
 }
 ```

@@ -1,20 +1,20 @@
 #!/bin/bash
 # Murder instances of "node" which are not part of vscode or electron
 # Note: This script uses 'bc' for precise sleep calculations. If 'bc' is not available, it falls back to 0.1 seconds.
-# VS Code protection: Checks command lines, parent processes, working directories, and environment variables.
+# VS Code protection: Checks command lines, parent processes, and working directories.
 
 # Graceful shutdown on signals
 trap 'echo "Script interrupted, exiting safely" >&2; exit 0' INT TERM
 
 # Validate all critical commands exist before proceeding
-for cmd in ps awk cut grep tr kill sleep; do
+for cmd in ps awk cut kill sed sleep sort xargs; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
         echo "CRITICAL: Required command '$cmd' not found" >&2
         exit 1
     fi
 done
 # Processes to exclude from killing
-exclude_processes=("vscode" "Electron" "Android Studio" "Xcode" "cordova" "phonegap" "code" "code-server" "cursor")
+exclude_processes=("vscode" "Electron" "Android Studio" "Xcode" "cordova" "phonegap" "code-server" "cursor")
 
 # Additional VS Code related patterns to exclude
 vscode_patterns=(
@@ -236,15 +236,6 @@ while [ $iteration -lt $max_iterations ]; do
             fi
         fi
         
-        # Check environment variables for VS Code indicators
-        if [ "$skip" = false ]; then
-            # Limit memory consumption and add timeout for safety
-            env_vars=$(timeout 5s head -c 1048576 "/proc/$pid/environ" 2>/dev/null | tr '\0' '\n' | grep -E "(VSCODE|ELECTRON|CODE_)" 2>/dev/null)
-            if [[ -n "$env_vars" ]]; then
-                skip=true
-            fi
-        fi
-
         if $skip; then
             continue # Skip to the next PID
         fi
@@ -259,8 +250,8 @@ while [ $iteration -lt $max_iterations ]; do
             continue
         fi
 
-        # Print PID and command *only* if it will be killed
-        echo "PID: $pid, Command: $cmd"
+        # Print only non-sensitive process identification before killing.
+        echo "PID: $pid, Executable: $current_comm"
 
         # Add the PID to the list of processes to murder
         kill_pids="$kill_pids $pid"
