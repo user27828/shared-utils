@@ -1,286 +1,107 @@
 # Deploying Turnstile Worker from Consuming Projects
 
-**[🏠 Back to Main README](../README.md)**
+This guide covers the supported ways to use the shared-utils Turnstile Worker from another project.
 
-When using `shared-utils` as a dependency in another project, there are several strategies for deploying the Turnstile Cloudflare Worker. This guide covers all the approaches depending on your needs.
+## Strategy 1: Reference Worker
 
-## 📋 Table of Contents
-
-- [Deploying Turnstile Worker from Consuming Projects](#deploying-turnstile-worker-from-consuming-projects)
-  - [📋 Table of Contents](#-table-of-contents)
-  - [📋 Deployment Strategies](#-deployment-strategies)
-    - [Strategy 1: Reference Worker (Recommended)](#strategy-1-reference-worker-recommended)
-      - [Setup Steps](#setup-steps)
-    - [Strategy 2: Vendor the Worker (Advanced Customization)](#strategy-2-vendor-the-worker-advanced-customization)
-      - [Setup Steps](#setup-steps-1)
-    - [Strategy 3: Server-Side Integration Only](#strategy-3-server-side-integration-only)
-      - [Setup Steps](#setup-steps-2)
-  - [🔧 Package.json Scripts for Consuming Projects](#-packagejson-scripts-for-consuming-projects)
-  - [🔒 Environment Configuration](#-environment-configuration)
-    - [Required Secrets (Set via Wrangler CLI)](#required-secrets-set-via-wrangler-cli)
-    - [Environment Variables in wrangler.toml](#environment-variables-in-wranglertoml)
-  - [📁 Recommended Project Structure](#-recommended-project-structure)
-  - [🚀 Quick Start Commands](#-quick-start-commands)
-  - [💡 Best Practices](#-best-practices)
-  - [🔄 Keeping Worker Updated](#-keeping-worker-updated)
-
-## 📋 Deployment Strategies
-
-### Strategy 1: Reference Worker (Recommended)
-
-Create a minimal worker that imports shared-utils functionality. This approach requires no file copying and automatically stays up-to-date.
-
-#### Setup Steps
-
-1. **Install the dependency**: See [main installation guide](../README.md#installation) for complete instructions.
-
-2. **Create minimal worker file**:
+Create a small Worker file that imports the factory from the package.
 
 ```typescript
 // workers/turnstile-worker.ts
 import { createTurnstileWorker } from "@user27828/shared-utils/server";
 
 export default createTurnstileWorker({
-  // Optional: customize behavior
   allowedOrigins: ["https://myapp.com", "https://www.myapp.com"],
-  bypassLocalhost: true,
-  // DEV_MODE / NODE_ENV can also be supplied via Wrangler env vars.
+  expectedAction: "contact-form",
+  expectedHostname: "myapp.com",
 });
 ```
 
-3. **Create wrangler.toml**:
+Wrangler example:
 
 ```toml
-# workers/turnstile/wrangler.toml
-name = "my-app-turnstile-verifier"  # Your custom worker name
+name = "my-app-turnstile"
 main = "../turnstile-worker.ts"
-compatibility_date = "2024-12-01"
+compatibility_date = "2026-04-27"
 
 [vars]
-NODE_ENV = "production"
-
-# Set secrets via: wrangler secret put TURNSTILE_SECRET_KEY
+ALLOWED_ORIGINS = "https://myapp.com,https://www.myapp.com"
 ```
 
-4. **Deploy**:
+Set the secret separately:
 
 ```bash
-cd workers/turnstile && wrangler deploy
+cd workers/turnstile
+wrangler secret put TURNSTILE_SECRET_KEY
+wrangler deploy
 ```
 
----
+## Strategy 2: Vendor the Worker
 
-### Strategy 2: Vendor the Worker (Advanced Customization)
-
-Use this when configuration alone is not enough and you want to own the worker logic in your app.
-
-[🔝 Back to Top](#deploying-turnstile-worker-from-consuming-projects)
-
-#### Setup Steps
-
-1. **Start with Strategy 1** and commit your own `workers/turnstile-worker.ts`.
-
-2. **Copy from the repository, not from installed `node_modules`**, if you need the full reference implementation. The published root package ships compiled `dist/` output, not the workspace `server/` sources.
-
-Reference files:
+If you need to own the Worker source, start from these repository files:
 
 - [server/turnstile-worker.ts](../server/turnstile-worker.ts)
 - [server/wrangler.toml](../server/wrangler.toml)
 
-3. **Customize the vendored worker** for your application.
+Copy them into your app and customize as needed.
 
-4. **Deploy**:
+Do not copy from the installed root package expecting workspace source paths. The published package ships compiled output under `dist/`, not the repository's `server/` workspace tree.
 
-```bash
-cd workers/turnstile && wrangler deploy
-```
+## Strategy 3: Server-Side Integration Only
 
----
-
-### Strategy 3: Server-Side Integration Only
-
-If you only need verification in your existing server without deploying a separate worker.
-
-[🔝 Back to Top](#deploying-turnstile-worker-from-consuming-projects)
-
-#### Setup Steps
-
-1. **Install dependency**: See [main installation guide](../README.md#installation) for complete instructions.
-
-2. **Use in your server code**:
+If you already have an application server, you may not need a Worker at all.
 
 ```typescript
-// server.js
-import { verifyTurnstileTokenEnhanced } from "@user27828/shared-utils/server";
-import { optionsManager } from "@user27828/shared-utils/utils";
+import { verifyTurnstileToken } from "@user27828/shared-utils/server";
 
-// Configure Turnstile options
-optionsManager.setGlobalOptions({
-  "turnstile-server": {
+app.post("/api/contact", async (req, res) => {
+  const token = req.body.turnstileToken || req.body["cf-turnstile-response"];
+
+  const result = await verifyTurnstileToken(token, {
     secretKey: process.env.TURNSTILE_SECRET_KEY,
-    allowedOrigins: ["https://myapp.com"],
-    devMode: process.env.NODE_ENV === "development",
-    bypassLocalhost: true,
-  },
-});
+    remoteip: req.ip,
+    expectedAction: "contact-form",
+    expectedHostname: "myapp.com",
+  });
 
-// Use in your API endpoints
-app.post("/api/verify-turnstile", async (req, res) => {
-  try {
-    const result = await verifyTurnstileTokenEnhanced(
-      req.body.token,
-      process.env.TURNSTILE_SECRET_KEY,
-      req.ip,
-    );
-
-    if (result.success) {
-      res.json({ success: true });
-    } else {
-      res.status(400).json({ success: false, errors: result["error-codes"] });
-    }
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Verification failed" });
+  if (!result.success) {
+    return res.status(400).json({
+      success: false,
+      errors: result["error-codes"],
+    });
   }
+
+  res.json({ success: true });
 });
 ```
 
----
+## Browser and CORS Notes
 
-## 🔧 Package.json Scripts for Consuming Projects
+- If the Worker receives a browser `Origin` header, it only allows origins configured in `allowedOrigins` or `ALLOWED_ORIGINS`.
+- If the request has no `Origin` header, the Worker treats it as server-to-server and skips CORS checks.
+- Avoid `*` in production. Keep the allowed-origin list explicit.
 
-Add these scripts to your consuming project's `package.json`:
-
-[🔝 Back to Top](#deploying-turnstile-worker-from-consuming-projects)
+## Recommended Scripts
 
 ```json
 {
   "scripts": {
     "cf:setup-turnstile": "mkdir -p workers/turnstile",
     "cf:deploy-turnstile": "cd workers/turnstile && wrangler deploy",
-    "cf:deploy-turnstile:dev": "cd workers/turnstile && wrangler deploy --env development",
-    "cf:deploy-turnstile:staging": "cd workers/turnstile && wrangler deploy --env staging",
     "cf:deploy-turnstile:production": "cd workers/turnstile && wrangler deploy --env production"
   }
 }
 ```
 
-Usage:
+## Environment Variables
 
 ```bash
-# Using yarn (recommended)
-yarn cf:setup-turnstile                    # Create directory structure
-yarn cf:deploy-turnstile:production        # Deploy to production
-
-# Using npm (alternative)
-npm run cf:setup-turnstile                 # Create directory structure
-npm run cf:deploy-turnstile:production     # Deploy to production
+TURNSTILE_SECRET_KEY=your_secret_key_here
+ALLOWED_ORIGINS=https://myapp.com,https://www.myapp.com
 ```
 
----
+## Operational Guidance
 
-## 🔒 Environment Configuration
-
-### Required Secrets (Set via Wrangler CLI)
-
-[🔝 Back to Top](#deploying-turnstile-worker-from-consuming-projects)
-
-```bash
-# Navigate to your worker directory
-cd workers/turnstile
-
-# Set Turnstile secret key
-wrangler secret put TURNSTILE_SECRET_KEY
-
-# Optional: Set allowed origins if not using wrangler.toml
-wrangler secret put ALLOWED_ORIGINS
-```
-
-### Environment Variables in wrangler.toml
-
-```toml
-[vars]
-ALLOWED_ORIGINS = "https://myapp.com,https://www.myapp.com"
-NODE_ENV = "production"
-
-[env.staging.vars]
-ALLOWED_ORIGINS = "https://staging.myapp.com"
-NODE_ENV = "staging"
-
-[env.development.vars]
-ALLOWED_ORIGINS = "*"
-NODE_ENV = "development"
-```
-
----
-
-## 📁 Recommended Project Structure
-
-[🔝 Back to Top](#deploying-turnstile-worker-from-consuming-projects)
-
-```
-my-consuming-project/
-├── package.json
-├── workers/
-│   ├── turnstile-worker.ts          # Minimal reference worker
-│   └── turnstile/
-│       └── wrangler.toml            # Configuration only
-└── node_modules/
-    └── @user27828/shared-utils/     # Contains actual implementation
-```
-
----
-
-## 🚀 Quick Start Commands
-
-[🔝 Back to Top](#deploying-turnstile-worker-from-consuming-projects)
-
-```bash
-# 1. Create worker file
-# workers/turnstile-worker.ts with import from shared-utils
-
-# 2. Create wrangler.toml in workers/turnstile/
-
-# 3. Set secrets
-cd workers/turnstile && wrangler secret put TURNSTILE_SECRET_KEY
-
-# 4. Deploy
-cd workers/turnstile && wrangler deploy
-```
-
----
-
-## 💡 Best Practices
-
-[🔝 Back to Top](#deploying-turnstile-worker-from-consuming-projects)
-
-1. **Use Reference Workers**: The minimal import approach keeps your worker automatically updated
-2. **Custom Worker Names**: Always customize the worker name in wrangler.toml
-3. **Environment-Specific Config**: Use wrangler environment configurations for dev/staging/prod
-4. **Secret Management**: Never commit secrets to version control, use `wrangler secret put`
-5. **Testing**: Test with `wrangler dev` before deploying to production
-6. **Version Pinning**: Pin shared-utils version in package.json for production stability
-
----
-
-## 🔄 Keeping Worker Updated
-
-When the shared-utils dependency is updated:
-
-[🔝 Back to Top](#deploying-turnstile-worker-from-consuming-projects)
-
-```bash
-# Update shared-utils package
-yarn add @user27828/shared-utils@https://github.com/user27828/shared-utils.git#master
-
-# Reference workers automatically use latest code - just redeploy
-cd workers/turnstile && wrangler deploy
-
-# For copied workers, re-run copy setup if needed
-# yarn cf:setup-turnstile  # only if using Strategy 2
-```
-
-This approach prioritizes simplicity with the reference worker pattern while maintaining the flexibility to copy and customize when advanced modifications are needed.
-
----
-
-[🔝 Back to Top](#deploying-turnstile-worker-from-consuming-projects) | **[🏠 Back to Main README](../README.md)**
+1. Keep the site key in the browser and the secret key on the server or Worker only.
+2. Validate `expectedAction` and `expectedHostname` whenever you can.
+3. Use the Worker only when you want an edge verification endpoint. A normal application server is simpler when you already have one.

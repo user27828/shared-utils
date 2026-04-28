@@ -1,25 +1,16 @@
 /**
- * Enhanced Turnstile server-side verification with dev mode and localhost bypass
+ * Turnstile server-side verification helpers.
  */
-import { OptionsManager, optionsManager as globalOptionsManager, isDev, } from "../../../utils/index.js";
-import { isLocalhostRequest, createMockVerifyResponse } from "./utils.js";
-import { verifyTurnstileToken } from "./verification.js";
-// Default options for server-side Turnstile verification
+import { OptionsManager, optionsManager as globalOptionsManager, } from "../../../utils/index.js";
 const defaultServerOptions = {
     secretKey: "",
-    allowedOrigins: ["*"],
-    devMode: false,
-    bypassLocalhost: true,
     apiUrl: "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-    interceptor: () => { },
-};
-// Default turnstile options for the options manager
-const defaultTurnstileOptions = {
-    dev: false,
-    bypassLocalhost: false,
+    timeoutMs: 10000,
+    expectedAction: undefined,
+    expectedHostname: undefined,
     allowedOrigins: [],
+    tokenFieldName: "cf-turnstile-response",
 };
-// Options manager for server-side configuration
 let turnstileServerManager = null;
 /**
  * Initialize or get the server options manager
@@ -48,83 +39,5 @@ export const getTurnstileServerOptions = () => {
  */
 export const setGlobalOptions = (options) => {
     globalOptionsManager.setGlobalOptions(options);
-};
-/**
- * Enhanced verification function with dev mode support
- */
-export const verifyTurnstileTokenEnhanced = async (token, secretKey, remoteip, idempotencyKey, options, request) => {
-    const serverOptions = options || getTurnstileServerOptions();
-    const devMode = isDev({
-        devMode: serverOptions.devMode,
-        environment: "server",
-    });
-    const isLocalhost = request
-        ? isLocalhostRequest(request, remoteip || undefined)
-        : false;
-    // Call interceptor for verification start
-    if (serverOptions.interceptor) {
-        try {
-            serverOptions.interceptor("verify-start", {
-                token,
-                remoteip,
-                idempotencyKey,
-                devMode,
-                isLocalhost,
-            });
-        }
-        catch (error) {
-            console.warn("Turnstile interceptor error:", error);
-        }
-    }
-    // Dev mode: return mock success or bypass for localhost
-    if (devMode) {
-        const mockResponse = createMockVerifyResponse();
-        if (serverOptions.interceptor) {
-            try {
-                serverOptions.interceptor("verify-dev-mode", {
-                    token,
-                    remoteip,
-                    response: mockResponse,
-                    bypassReason: "dev-mode",
-                });
-            }
-            catch (error) {
-                console.warn("Turnstile interceptor error:", error);
-            }
-        }
-        return mockResponse;
-    }
-    // Localhost bypass (if enabled)
-    if (serverOptions.bypassLocalhost && isLocalhost) {
-        const mockResponse = createMockVerifyResponse();
-        mockResponse.action = "localhost-bypass";
-        mockResponse.cdata = "localhost-bypass";
-        if (serverOptions.interceptor) {
-            try {
-                serverOptions.interceptor("verify-localhost-bypass", {
-                    token,
-                    remoteip,
-                    response: mockResponse,
-                    bypassReason: "localhost",
-                });
-            }
-            catch (error) {
-                console.warn("Turnstile interceptor error:", error);
-            }
-        }
-        return mockResponse;
-    }
-    // Standard verification
-    return await verifyTurnstileToken(token, secretKey, remoteip, idempotencyKey);
-};
-/**
- * Simple verification function for custom implementations
- */
-export const verifyTurnstileSimple = async (token, secretKey, remoteip, options) => {
-    const serverOptions = { ...getTurnstileServerOptions(), ...options };
-    if (secretKey) {
-        serverOptions.secretKey = secretKey;
-    }
-    return await verifyTurnstileTokenEnhanced(token, serverOptions.secretKey || "", remoteip, undefined, serverOptions);
 };
 //# sourceMappingURL=turnstile.js.map

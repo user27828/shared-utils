@@ -8,18 +8,61 @@ import type {
   Environment,
   TurnstileServerOptions,
 } from "./types.js";
-import { verifyTurnstileTokenEnhanced, getAllowedOrigin } from "./index.js";
+import { verifyTurnstileToken } from "./verification.js";
+import { getAllowedOrigin } from "./utils.js";
 
 /**
  * Configuration options for the Turnstile worker
  */
-export interface TurnstileWorkerConfig {
-  allowedOrigins?: string[];
-  devMode?: boolean;
-  bypassLocalhost?: boolean;
-  apiUrl?: string;
-  interceptor?: (action: string, data: any) => void;
-}
+export interface TurnstileWorkerConfig extends Omit<
+  TurnstileServerOptions,
+  "secretKey" | "tokenFieldName"
+> {}
+
+const buildCorsHeaders = (
+  request: Request,
+  env: Environment,
+  baseHeaders: Record<string, string> = {},
+): Record<string, string> => {
+  const headers: Record<string, string> = {
+    ...baseHeaders,
+    Vary: "Origin",
+  };
+  const allowedOrigin = getAllowedOrigin(request, env);
+
+  if (allowedOrigin) {
+    headers["Access-Control-Allow-Origin"] = allowedOrigin;
+  }
+
+  return headers;
+};
+
+const isCrossOriginRequestAllowed = (
+  request: Request,
+  env: Environment,
+): boolean => {
+  const origin = request.headers.get("Origin");
+
+  if (!origin) {
+    return true;
+  }
+
+  return getAllowedOrigin(request, env) !== null;
+};
+
+const toEnvironment = (
+  env: Environment,
+  allowedOrigins?: string[],
+): Environment => {
+  if (!allowedOrigins) {
+    return env;
+  }
+
+  return {
+    ...env,
+    ALLOWED_ORIGINS: allowedOrigins.join(","),
+  };
+};
 
 /**
  * Creates a Cloudflare Worker for Turnstile verification with optional configuration
@@ -35,23 +78,30 @@ export interface TurnstileWorkerConfig {
  * // With custom configuration
  * export default createTurnstileWorker({
  *   allowedOrigins: ["https://myapp.com", "https://www.myapp.com"],
- *   bypassLocalhost: true,
- *   // DEV_MODE / NODE_ENV can also be supplied via Wrangler env vars.
+ *   expectedHostname: "myapp.com",
  * });
  * ```
  */
 export const createTurnstileWorker = (config: TurnstileWorkerConfig = {}) => {
   return {
     async fetch(request: Request, env: Environment): Promise<Response> {
+      const workerEnv = toEnvironment(env, config.allowedOrigins);
+
+      if (!isCrossOriginRequestAllowed(request, workerEnv)) {
+        return new Response("Forbidden", {
+          status: 403,
+          headers: buildCorsHeaders(request, workerEnv),
+        });
+      }
+
       // Handle CORS preflight
       if (request.method === "OPTIONS") {
         return new Response(null, {
-          headers: {
-            "Access-Control-Allow-Origin": getAllowedOrigin(request, env),
+          headers: buildCorsHeaders(request, workerEnv, {
             "Access-Control-Allow-Methods": "POST, OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type, Authorization",
             "Access-Control-Max-Age": "86400",
-          },
+          }),
         });
       }
 
@@ -59,15 +109,29 @@ export const createTurnstileWorker = (config: TurnstileWorkerConfig = {}) => {
       if (request.method !== "POST") {
         return new Response("Method not allowed", {
           status: 405,
-          headers: {
-            "Access-Control-Allow-Origin": getAllowedOrigin(request, env),
-          },
+          headers: buildCorsHeaders(request, workerEnv),
         });
       }
 
       try {
-        // Parse request body
-        const body: TurnstileVerifyRequest = await request.json();
+        let body: TurnstileVerifyRequest;
+
+        try {
+          body = await request.json();
+        } catch {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              "error-codes": ["bad-request"],
+            }),
+            {
+              status: 400,
+              headers: buildCorsHeaders(request, workerEnv, {
+                "Content-Type": "application/json",
+              }),
+            },
+          );
+        }
 
         if (!body.token) {
           return new Response(
@@ -77,10 +141,9 @@ export const createTurnstileWorker = (config: TurnstileWorkerConfig = {}) => {
             }),
             {
               status: 400,
-              headers: {
+              headers: buildCorsHeaders(request, workerEnv, {
                 "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": getAllowedOrigin(request, env),
-              },
+              }),
             },
           );
         }
@@ -92,50 +155,30 @@ export const createTurnstileWorker = (config: TurnstileWorkerConfig = {}) => {
           request.headers.get("X-Forwarded-For") ||
           request.headers.get("X-Real-IP");
 
-        // Merge configuration with environment variables
         const options: TurnstileServerOptions = {
           secretKey: env.TURNSTILE_SECRET_KEY,
-          devMode:
-            config.devMode ??
-            (env.DEV_MODE === "true" || env.NODE_ENV === "development"),
-          bypassLocalhost: config.bypassLocalhost ?? true,
-          allowedOrigins:
-            config.allowedOrigins ??
-            (env.ALLOWED_ORIGINS
-              ? env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
-              : ["*"]),
-          apiUrl:
-            config.apiUrl ??
-            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-          interceptor: config.interceptor,
+          allowedOrigins: config.allowedOrigins,
+          apiUrl: config.apiUrl,
+          timeoutMs: config.timeoutMs,
+          expectedAction: config.expectedAction,
+          expectedHostname: config.expectedHostname,
         };
 
-        // Verify with enhanced verification
-        const verifyResult = await verifyTurnstileTokenEnhanced(
-          body.token,
-          env.TURNSTILE_SECRET_KEY,
+        const verifyResult = await verifyTurnstileToken(body.token, {
+          ...options,
+          secretKey: env.TURNSTILE_SECRET_KEY,
           remoteip,
-          body.idempotencyKey,
-          options,
-          request,
-        );
+          idempotencyKey: body.idempotencyKey,
+        });
 
         return new Response(JSON.stringify(verifyResult), {
           status: verifyResult.success ? 200 : 400,
-          headers: {
+          headers: buildCorsHeaders(request, workerEnv, {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": getAllowedOrigin(request, env),
-          },
+          }),
         });
       } catch (error) {
-        // Use interceptor for error logging if provided
-        if (config.interceptor) {
-          config.interceptor("error", {
-            error: error instanceof Error ? error.message : String(error),
-          });
-        } else {
-          console.error("Turnstile verification error:", error);
-        }
+        console.error("Turnstile verification error:", error);
 
         return new Response(
           JSON.stringify({
@@ -144,10 +187,9 @@ export const createTurnstileWorker = (config: TurnstileWorkerConfig = {}) => {
           }),
           {
             status: 500,
-            headers: {
+            headers: buildCorsHeaders(request, workerEnv, {
               "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": getAllowedOrigin(request, env),
-            },
+            }),
           },
         );
       }

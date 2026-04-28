@@ -26,10 +26,9 @@ describe("Core Verification", () => {
       }),
     });
 
-    const result = await verification.verifyTurnstileToken(
-      TEST_VALUES.token,
-      TEST_VALUES.secretKey,
-    );
+    const result = await verification.verifyTurnstileToken(TEST_VALUES.token, {
+      secretKey: TEST_VALUES.secretKey,
+    });
 
     expect(result.success).toBe(true);
     expect(global.fetch).toHaveBeenCalledTimes(1);
@@ -39,13 +38,13 @@ describe("Core Verification", () => {
     global.fetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
+      json: async () => ({}),
     });
 
     await expect(
-      verification.verifyTurnstileToken(
-        TEST_VALUES.token,
-        TEST_VALUES.secretKey,
-      ),
+      verification.verifyTurnstileToken(TEST_VALUES.token, {
+        secretKey: TEST_VALUES.secretKey,
+      }),
     ).rejects.toThrow("Turnstile API error: 500");
   });
 
@@ -55,17 +54,20 @@ describe("Core Verification", () => {
       json: async () => ({ success: true }),
     });
 
-    await verification.verifyTurnstileToken(
-      TEST_VALUES.token,
-      TEST_VALUES.secretKey,
-      TEST_VALUES.ipAddress,
-      "idempotency-key",
-    );
+    await verification.verifyTurnstileToken(TEST_VALUES.token, {
+      secretKey: TEST_VALUES.secretKey,
+      remoteip: TEST_VALUES.ipAddress,
+      idempotencyKey: "idempotency-key",
+    });
 
     expect(global.fetch).toHaveBeenCalledTimes(1);
     const [url, options] = global.fetch.mock.calls[0];
     expect(url).toBe(TEST_VALUES.cloudflareApiUrl);
     expect(options.method).toBe("POST");
-    expect(options.body).toBeInstanceOf(FormData);
+    expect(options.body).toBeInstanceOf(URLSearchParams);
+    expect(options.body.get("secret")).toBe(TEST_VALUES.secretKey);
+    expect(options.body.get("response")).toBe(TEST_VALUES.token);
+    expect(options.body.get("remoteip")).toBe(TEST_VALUES.ipAddress);
+    expect(options.body.get("idempotency_key")).toBe("idempotency-key");
   });
 });

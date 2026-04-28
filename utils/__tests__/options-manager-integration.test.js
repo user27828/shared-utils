@@ -42,7 +42,6 @@ describe("Hybrid OptionsManager Integration", () => {
       log: { type: "server" },
       turnstile: {
         siteKey: TEST_VALUES.siteKey,
-        secretKey: TEST_VALUES.secretKey,
       },
     });
 
@@ -51,7 +50,7 @@ describe("Hybrid OptionsManager Integration", () => {
 
     // Verify turnstile options
     expect(turnstile.getOptions().siteKey).toBe(TEST_VALUES.siteKey);
-    expect(turnstile.getOptions().secretKey).toBe(TEST_VALUES.secretKey);
+    expect(turnstile.getOptions().secretKey).toBeUndefined();
   });
 
   test("should preserve existing APIs", () => {
@@ -63,9 +62,10 @@ describe("Hybrid OptionsManager Integration", () => {
     expect(typeof log.setOptions).toBe("function");
     expect(typeof log.getOptions).toBe("function");
 
-    // Turnstile utility API
+    // Turnstile browser utility API
+    expect(typeof turnstile.loadScript).toBe("function");
     expect(typeof turnstile.render).toBe("function");
-    expect(typeof turnstile.verify).toBe("function");
+    expect(typeof turnstile.execute).toBe("function");
     expect(typeof turnstile.setOptions).toBe("function");
     expect(typeof turnstile.getOptions).toBe("function");
     expect(typeof turnstile.resetOptions).toBe("function");

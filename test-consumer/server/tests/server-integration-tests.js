@@ -264,32 +264,26 @@ export async function runServerTests() {
       addTest("worker-factory", "failed", null, error);
     }
 
-    // Test 6: Enhanced Verification Functions
-    console.log("Testing enhanced verification functions...");
+    // Test 6: Verification Function
+    console.log("Testing verification function...");
     try {
-      const { verifyTurnstileTokenEnhanced, verifyTurnstileSimple } =
-        serverModule;
-      let enhancedAvailable =
-        typeof verifyTurnstileTokenEnhanced === "function";
-      let simpleAvailable = typeof verifyTurnstileSimple === "function";
+      const { verifyTurnstileToken } = serverModule;
+      const verifyAvailable = typeof verifyTurnstileToken === "function";
 
-      if (enhancedAvailable && simpleAvailable) {
-        addTest("enhanced-verification", "passed", {
-          message: "Enhanced verification functions are available",
-          enhanced: enhancedAvailable,
-          simple: simpleAvailable,
-          enhancedLength: verifyTurnstileTokenEnhanced.length,
-          simpleLength: verifyTurnstileSimple.length,
+      if (verifyAvailable) {
+        addTest("verification", "passed", {
+          message: "verifyTurnstileToken is available",
+          verifyAvailable,
+          verifyLength: verifyTurnstileToken.length,
         });
       } else {
-        addTest("enhanced-verification", "failed", {
-          message: "Some enhanced verification functions are missing",
-          enhanced: enhancedAvailable,
-          simple: simpleAvailable,
+        addTest("verification", "failed", {
+          message: "verifyTurnstileToken is missing",
+          verifyAvailable,
         });
       }
     } catch (error) {
-      addTest("enhanced-verification", "failed", null, error);
+      addTest("verification", "failed", null, error);
     }
 
     // Test 7: Options Manager Integration
@@ -306,9 +300,9 @@ export async function runServerTests() {
         try {
           // Try to call setGlobalOptions with test configuration
           setGlobalOptions({
-            turnstile: {
-              devMode: true,
-              bypassLocalhost: true,
+            "turnstile-server": {
+              expectedAction: "consumer-test",
+              allowedOrigins: ["http://localhost:3000"],
             },
           });
 
@@ -346,11 +340,11 @@ export async function runServerTests() {
       const { createTurnstileMiddleware } = serverModule;
 
       if (typeof createTurnstileMiddleware === "function") {
-        // Test creating middleware without deprecated options parameter
+        // Test creating middleware with the default configuration path
         const configurations = [
           {
             name: "no-options",
-            description: "Middleware created without deprecated options",
+            description: "Middleware created without explicit options",
           },
         ];
 
@@ -359,7 +353,6 @@ export async function runServerTests() {
 
         for (const { name, description } of configurations) {
           try {
-            // Use the new API without passing options (avoids deprecated warning)
             const middleware = createTurnstileMiddleware();
             if (typeof middleware === "function") {
               middlewareDetails.push({
@@ -416,7 +409,6 @@ export async function runServerTests() {
       const { createTurnstileMiddleware } = serverModule;
 
       if (typeof createTurnstileMiddleware === "function") {
-        // Use the new API without deprecated options parameter
         const middleware = createTurnstileMiddleware();
 
         // Mock Express.js request/response objects
@@ -493,7 +485,7 @@ export async function runServerTests() {
       const { createTurnstileMiddleware } = serverModule;
 
       if (typeof createTurnstileMiddleware === "function") {
-        // Test middleware without deprecated options parameter
+        // Test middleware with the default configuration path
         const middleware = createTurnstileMiddleware();
 
         const testCases = [
@@ -572,7 +564,7 @@ export async function runServerTests() {
       const { createTurnstileMiddleware } = serverModule;
 
       if (typeof createTurnstileMiddleware === "function") {
-        // Test middleware robustness without deprecated options parameter
+        // Test middleware robustness with the default configuration path
         const robustnessTestCases = [
           {
             name: "no-options",
@@ -640,30 +632,25 @@ export async function runServerTests() {
             config: {},
           },
           {
-            name: "dev-mode-worker",
+            name: "localhost-worker",
             config: {
-              devMode: true,
-              bypassLocalhost: true,
               allowedOrigins: ["http://localhost:3000"],
+              expectedAction: "consumer-test",
             },
           },
           {
             name: "production-worker",
             config: {
-              devMode: false,
-              bypassLocalhost: false,
               allowedOrigins: ["https://myapp.com"],
+              expectedHostname: "myapp.com",
               apiUrl:
                 "https://challenges.cloudflare.com/turnstile/v0/siteverify",
             },
           },
           {
-            name: "interceptor-worker",
+            name: "timeout-worker",
             config: {
-              devMode: true,
-              interceptor: (action, data) => {
-                console.log(`Worker interceptor: ${action}`, data);
-              },
+              timeoutMs: 5000,
             },
           },
         ];
@@ -722,9 +709,8 @@ export async function runServerTests() {
 
       if (typeof createTurnstileWorker === "function") {
         const worker = createTurnstileWorker({
-          devMode: true,
-          bypassLocalhost: true,
           allowedOrigins: ["http://localhost:3000"],
+          expectedAction: "consumer-test",
         });
 
         if (worker && typeof worker.fetch === "function") {
@@ -850,14 +836,9 @@ export async function runServerTests() {
     // Test 14: Cloudflare Worker Utilities Integration
     console.log("Testing Cloudflare Worker utilities integration...");
     try {
-      const { getAllowedOrigin, isLocalhostRequest, createMockVerifyResponse } =
-        serverModule;
+      const { getAllowedOrigin } = serverModule;
 
-      const utilities = [
-        { name: "getAllowedOrigin", func: getAllowedOrigin },
-        { name: "isLocalhostRequest", func: isLocalhostRequest },
-        { name: "createMockVerifyResponse", func: createMockVerifyResponse },
-      ];
+      const utilities = [{ name: "getAllowedOrigin", func: getAllowedOrigin }];
 
       let utilityResults = [];
 
@@ -872,42 +853,7 @@ export async function runServerTests() {
               paramCount: func.length,
             };
 
-            // Test specific utilities with mock data
-            if (name === "createMockVerifyResponse") {
-              try {
-                const mockResponse = func(true);
-                testResult.testExecution = {
-                  success: true,
-                  hasResponse: !!mockResponse,
-                  responseType: typeof mockResponse,
-                };
-              } catch (err) {
-                testResult.testExecution = {
-                  success: false,
-                  error: err.message,
-                };
-              }
-            } else if (name === "isLocalhostRequest") {
-              try {
-                const mockRequest = {
-                  headers: {
-                    get: (headerName) =>
-                      headerName === "host" ? "localhost:3000" : null,
-                  },
-                  url: "http://localhost:3000/test",
-                };
-                const result = func(mockRequest);
-                testResult.testExecution = {
-                  success: true,
-                  result: typeof result === "boolean",
-                };
-              } catch (err) {
-                testResult.testExecution = {
-                  success: false,
-                  error: err.message,
-                };
-              }
-            } else if (name === "getAllowedOrigin") {
+            if (name === "getAllowedOrigin") {
               try {
                 const mockRequest = {
                   headers: {
@@ -978,7 +924,13 @@ export async function runServerTests() {
               NODE_ENV: "development",
               ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:3001",
             },
-            config: { devMode: true, bypassLocalhost: true },
+            config: {
+              allowedOrigins: [
+                "http://localhost:3000",
+                "http://localhost:3001",
+              ],
+              expectedAction: "consumer-test",
+            },
           },
           {
             name: "production-environment",
@@ -988,7 +940,10 @@ export async function runServerTests() {
               NODE_ENV: "production",
               ALLOWED_ORIGINS: "https://myapp.com,https://www.myapp.com",
             },
-            config: { devMode: false, bypassLocalhost: false },
+            config: {
+              allowedOrigins: ["https://myapp.com", "https://www.myapp.com"],
+              expectedHostname: "myapp.com",
+            },
           },
           {
             name: "minimal-environment",

@@ -216,8 +216,8 @@ export declare const CmsListRequestSchema: z.ZodObject<{
         published_at: "published_at";
     }>>;
     orderDirection: z.ZodOptional<z.ZodEnum<{
-        asc: "asc";
         desc: "desc";
+        asc: "asc";
     }>>;
     includeTrash: z.ZodOptional<z.ZodBoolean>;
 }, z.core.$strict>;

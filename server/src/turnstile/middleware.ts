@@ -3,30 +3,61 @@
  */
 
 import type { TurnstileServerOptions } from "./types.js";
-import {
-  getTurnstileServerOptions,
-  verifyTurnstileTokenEnhanced,
-} from "./turnstile.js";
+import { getTurnstileServerOptions } from "./turnstile.js";
+import { verifyTurnstileToken } from "./verification.js";
+
+const getTokenFromRequestBody = (
+  body: Record<string, unknown> | undefined,
+  tokenFieldName: string,
+): string | undefined => {
+  if (!body) {
+    return undefined;
+  }
+
+  const candidateTokens = [
+    body[tokenFieldName],
+    body.turnstileToken,
+    body.token,
+  ];
+
+  return candidateTokens.find(
+    (candidate): candidate is string =>
+      typeof candidate === "string" && candidate.trim() !== "",
+  );
+};
+
+const getClientIp = (req: any): string | undefined => {
+  const forwardedFor = req.headers?.["x-forwarded-for"];
+
+  if (Array.isArray(forwardedFor) && forwardedFor.length > 0) {
+    return forwardedFor[0];
+  }
+
+  if (typeof forwardedFor === "string") {
+    return forwardedFor.split(",")[0]?.trim();
+  }
+
+  const realIp = req.headers?.["x-real-ip"];
+  if (typeof realIp === "string" && realIp.trim() !== "") {
+    return realIp;
+  }
+
+  return req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress;
+};
 
 /**
  * Express.js middleware for Node.js servers
- * Automatically uses the global optionsManager configuration
- * Configure using: optionsManager.setGlobalOptions({ 'turnstile-server': { ... } })
+ * Automatically uses the global optionsManager configuration.
  */
 export const createTurnstileMiddleware = (
-  options?: Partial<TurnstileServerOptions>,
+  options: Partial<TurnstileServerOptions> = {},
 ) => {
-  // If options are provided, warn about deprecated usage
-  if (options) {
-    console.warn(
-      '[DEPRECATED] Pass options to createTurnstileMiddleware. Use optionsManager.setGlobalOptions({ "turnstile-server": options }) instead',
-    );
-  }
-
   return async (req: any, res: any, next: any) => {
     try {
-      const token =
-        req.body["cf-turnstile-response"] || req.body.turnstileToken;
+      const serverOptions = { ...getTurnstileServerOptions(), ...options };
+      const tokenFieldName =
+        serverOptions.tokenFieldName || "cf-turnstile-response";
+      const token = getTokenFromRequestBody(req.body, tokenFieldName);
 
       if (!token) {
         return res.status(400).json({
@@ -35,32 +66,11 @@ export const createTurnstileMiddleware = (
         });
       }
 
-      // Get client IP
-      const clientIP =
-        req.ip ||
-        req.connection?.remoteAddress ||
-        req.socket?.remoteAddress ||
-        req.headers["x-forwarded-for"] ||
-        req.headers["x-real-ip"];
-
-      // Mock request object for localhost detection
-      const mockRequest = {
-        headers: {
-          get: (name: string) => req.headers[name.toLowerCase()],
-        },
-      } as Request;
-
-      const serverOptions = { ...getTurnstileServerOptions(), ...options };
-
-      // Verify token with enhanced functionality
-      const result = await verifyTurnstileTokenEnhanced(
-        token,
-        serverOptions.secretKey || "",
-        clientIP,
-        undefined,
-        serverOptions,
-        mockRequest,
-      );
+      const result = await verifyTurnstileToken(token, {
+        ...serverOptions,
+        secretKey: serverOptions.secretKey || "",
+        remoteip: getClientIp(req),
+      });
 
       if (!result.success) {
         return res.status(400).json({

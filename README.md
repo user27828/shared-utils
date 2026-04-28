@@ -94,7 +94,7 @@ import {
 } from "@user27828/shared-utils/client/wysiwyg";
 
 // ✅ Server functionality
-import { verifyTurnstileTokenEnhanced } from "@user27828/shared-utils/server";
+import { verifyTurnstileToken } from "@user27828/shared-utils/server";
 
 // ✅ Shared email types + validation helpers
 import { assertEmailRenderResult } from "@user27828/shared-utils/email";
@@ -187,6 +187,8 @@ optionsManager.setGlobalOptions({
   },
   turnstile: {
     siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+  },
+  "turnstile-server": {
     secretKey: process.env.TURNSTILE_SECRET_KEY,
   },
 });
@@ -566,8 +568,10 @@ optionsManager.setGlobalOptions({
   },
   turnstile: {
     siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
-    secretKey: process.env.TURNSTILE_SECRET_KEY,
     widget: { theme: "auto", size: "normal" },
+  },
+  "turnstile-server": {
+    secretKey: process.env.TURNSTILE_SECRET_KEY,
   },
 });
 ```
@@ -584,6 +588,8 @@ export function initializeUtils() {
   optionsManager.setGlobalOptions({
     turnstile: {
       siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!,
+    },
+    "turnstile-server": {
       secretKey: process.env.TURNSTILE_SECRET_KEY!,
     },
   });
@@ -598,7 +604,7 @@ import { optionsManager } from "@user27828/shared-utils/utils";
 
 optionsManager.setGlobalOptions({
   log: { type: "server" },
-  turnstile: { secretKey: process.env.TURNSTILE_SECRET_KEY! },
+  "turnstile-server": { secretKey: process.env.TURNSTILE_SECRET_KEY! },
 });
 ```
 
@@ -694,8 +700,8 @@ Add useful scripts to your `package.json`:
 
 Complete examples are available in the [`utils/examples/`](./utils/examples/) directory:
 
-- **`client-init.js`** - Client-side setup
-- **`server-init.js`** - Server-side configuration
+- **`turnstile-client-init.js`** - Client-side Turnstile setup
+- **`turnstile-server-init.js`** - Direct server-side verification example
 - **`express-middleware.js`** - Express.js integration
 - **`turnstile-react-component.tsx`** - React component integration
 

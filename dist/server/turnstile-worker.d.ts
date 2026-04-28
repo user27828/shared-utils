@@ -3,9 +3,8 @@
  * This worker provides a secure endpoint for verifying Turnstile tokens
  * Deploy this to Cloudflare Workers and use the URL for server-side verification
  */
-import type { Environment } from "./src/turnstile/index.js";
 declare const _default: {
-    fetch(request: Request, env: Environment): Promise<Response>;
+    fetch(request: Request, env: import("./index.js").Environment): Promise<Response>;
 };
 export default _default;
 export * from "./src/turnstile/index.js";

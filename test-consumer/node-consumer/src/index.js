@@ -5,7 +5,11 @@
  * and can be used by LLM agents to test integration issues.
  */
 
-import { log, turnstile } from "@user27828/shared-utils/utils";
+import { log, optionsManager, turnstile } from "@user27828/shared-utils/utils";
+import {
+  getTurnstileServerOptions,
+  verifyTurnstileToken,
+} from "@user27828/shared-utils/server";
 
 console.log("🚀 Node.js Consumer Test Starting...");
 
@@ -24,15 +28,27 @@ log.error("This is an error message");
 console.log("\n🔒 Testing Turnstile Utility:");
 try {
   turnstile.setOptions({
-    siteKey: "test-key-for-node",
-    secretKey: "test-secret-key",
+    siteKey: "test-browser-site-key",
   });
 
-  const options = turnstile.getOptions();
-  console.log("Turnstile options set:", options);
+  optionsManager.setGlobalOptions({
+    "turnstile-server": {
+      secretKey: "test-secret-key",
+      expectedAction: "node-consumer-test",
+    },
+  });
 
-  // Test server-side verification (mock)
-  console.log("Turnstile utility loaded successfully in Node.js environment");
+  const browserOptions = turnstile.getOptions();
+  const serverOptions = getTurnstileServerOptions();
+
+  console.log("Turnstile browser helper options:", browserOptions);
+  console.log("Turnstile server options:", serverOptions);
+  console.log(
+    "verifyTurnstileToken export available:",
+    typeof verifyTurnstileToken === "function",
+  );
+
+  console.log("Turnstile packages loaded successfully in Node.js environment");
 } catch (error) {
   console.error("Turnstile test failed:", error);
 }

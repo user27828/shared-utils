@@ -1,50 +1,47 @@
 type TurnstileTheme = "light" | "dark" | "auto";
-type TurnstileSize = "normal" | "compact";
-type TurnstileAction = string;
-type Environment = "client" | "server";
+type TurnstileSize = "normal" | "compact" | "flexible";
+type TurnstileAppearance = "always" | "execute" | "interaction-only";
+type TurnstileExecution = "render" | "execute";
+type TurnstileRetry = "auto" | "never";
+type TurnstileRefresh = "auto" | "manual" | "never";
 interface TurnstileWidgetOptions {
     sitekey: string;
-    theme?: TurnstileTheme;
-    size?: TurnstileSize;
-    action?: TurnstileAction;
+    action?: string;
     cData?: string;
     callback?: (token: string) => void;
-    "error-callback"?: (error?: Error) => void;
+    "error-callback"?: (errorCode?: string) => void;
     "expired-callback"?: () => void;
     "timeout-callback"?: () => void;
-    "after-interactive-callback"?: () => void;
     "before-interactive-callback"?: () => void;
+    "after-interactive-callback"?: () => void;
     "unsupported-callback"?: () => void;
-    retry?: "auto" | "never";
-    "retry-interval"?: number;
-    "refresh-expired"?: "auto" | "manual" | "never";
+    theme?: TurnstileTheme;
     language?: string;
-    appearance?: "always" | "execute" | "interaction-only";
+    tabindex?: number;
+    size?: TurnstileSize;
+    retry?: TurnstileRetry;
+    "retry-interval"?: number;
+    "refresh-expired"?: TurnstileRefresh;
+    "refresh-timeout"?: TurnstileRefresh;
+    execution?: TurnstileExecution;
+    appearance?: TurnstileAppearance;
     "response-field"?: boolean;
     "response-field-name"?: string;
+    "feedback-enabled"?: boolean;
+    "offlabel-show-privacy"?: boolean;
+    "offlabel-show-help"?: boolean;
 }
 interface TurnstileOptions {
-    environment?: Environment;
     siteKey?: string;
-    secretKey?: string;
-    apiUrl?: string;
     scriptUrl?: string;
-    widget?: Partial<TurnstileWidgetOptions>;
-    interceptor?: (action: string, data: any) => void;
-}
-interface TurnstileVerifyResponse {
-    success: boolean;
-    "error-codes"?: string[];
-    challenge_ts?: string;
-    hostname?: string;
-    action?: string;
-    cdata?: string;
+    widget?: Partial<Omit<TurnstileWidgetOptions, "sitekey">>;
 }
 declare global {
     interface Window {
         turnstile?: {
-            ready: (callback: () => void) => void;
+            ready?: (callback: () => void) => void;
             render: (container: string | HTMLElement, options: TurnstileWidgetOptions) => string;
+            execute: (widgetIdOrContainer?: string | HTMLElement) => void;
             remove: (widgetId: string) => void;
             reset: (widgetId?: string) => void;
             getResponse: (widgetId?: string) => string | undefined;
@@ -54,24 +51,23 @@ declare global {
 }
 declare class Turnstile {
     private readonly optionsManager;
-    private widgetIds;
-    private scriptLoaded;
-    private scriptLoading;
-    private scriptLoadError;
+    private readonly widgetIds;
+    private loadPromise;
     constructor();
     private get options();
-    private detectEnvironment;
-    private loadScript;
-    private callInterceptor;
+    private assertClient;
+    private getTurnstileApi;
+    private waitForTurnstile;
+    loadScript(): Promise<void>;
     setOptions(values: TurnstileOptions): void;
     resetOptions(): void;
     getOptions(): typeof this.options;
     render(container: string | HTMLElement, customOptions?: Partial<TurnstileWidgetOptions>): Promise<string>;
+    execute(widgetIdOrContainer?: string | HTMLElement): void;
     getResponse(widgetId?: string): string | undefined;
     reset(widgetId?: string): void;
     remove(widgetId: string): void;
     isExpired(widgetId?: string): boolean;
-    verify(token: string, remoteip?: string): Promise<TurnstileVerifyResponse>;
     getActiveWidgets(): string[];
     removeAll(): void;
     cleanup(): void;

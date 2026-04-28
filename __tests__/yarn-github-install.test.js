@@ -82,15 +82,15 @@ describe("Yarn GitHub Installation Test", () => {
     console.log("Package contents:", packageContents);
 
     // Check server dist files
-    const serverDistPath = path.join(nodeModulesPath, "server", "dist");
+    const serverDistPath = path.join(nodeModulesPath, "dist", "server");
 
     if (!fs.existsSync(serverDistPath)) {
       console.error("Server dist path not found:", serverDistPath);
       console.log(
-        "Server directory contents:",
-        fs.existsSync(path.join(nodeModulesPath, "server"))
-          ? fs.readdirSync(path.join(nodeModulesPath, "server"))
-          : "server directory does not exist",
+        "Dist directory contents:",
+        fs.existsSync(path.join(nodeModulesPath, "dist"))
+          ? fs.readdirSync(path.join(nodeModulesPath, "dist"))
+          : "dist directory does not exist",
       );
       throw new Error("Server dist directory not found");
     }

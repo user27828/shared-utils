@@ -4,12 +4,7 @@
  */
 
 // Main verification functions
-export {
-  getTurnstileServerOptions,
-  verifyTurnstileTokenEnhanced,
-  verifyTurnstileSimple,
-  setGlobalOptions,
-} from "./turnstile.js";
+export { getTurnstileServerOptions, setGlobalOptions } from "./turnstile.js";
 
 // Middleware
 export { createTurnstileMiddleware } from "./middleware.js";
@@ -22,11 +17,7 @@ export type { TurnstileWorkerConfig } from "./worker-factory.js";
 export { verifyTurnstileToken } from "./verification.js";
 
 // Utilities
-export {
-  isLocalhostRequest,
-  createMockVerifyResponse,
-  getAllowedOrigin,
-} from "./utils.js";
+export { getAllowedOrigin } from "./utils.js";
 
 // Types
 export type {
@@ -34,6 +25,7 @@ export type {
   TurnstileVerifyResponse,
   Environment,
   TurnstileServerOptions,
+  TurnstileVerificationOptions,
   TurnstileOptions,
   GlobalTurnstileOptions,
 } from "./types.js";

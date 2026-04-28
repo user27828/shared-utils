@@ -1,424 +1,227 @@
-/**
- * Tests for Turnstile utility
- * @jest-environment node
- */
-
-import { jest } from "@jest/globals";
-import { TEST_VALUES } from "../../__tests__/test-configuration.js";
 import turnstile, { Turnstile } from "../src/turnstile.js";
 
-// Mock fetch globally
-global.fetch = jest.fn();
+describe("turnstile browser helper", () => {
+  const originalWindow = global.window;
+  const originalDocument = global.document;
 
-// Mock URLSearchParams
-global.URLSearchParams = class URLSearchParams {
-  constructor() {
-    this.data = {};
-  }
+  let mockRender;
+  let mockExecute;
+  let mockGetResponse;
+  let mockReset;
+  let mockRemove;
+  let mockIsExpired;
+  let mockContainer;
+  let scriptElement;
+  let headAppendChild;
+  let querySelector;
+  let createElement;
 
-  append(key, value) {
-    this.data[key] = value;
-  }
+  const installWindowTurnstile = () => {
+    global.window.turnstile = {
+      render: mockRender,
+      execute: mockExecute,
+      getResponse: mockGetResponse,
+      reset: mockReset,
+      remove: mockRemove,
+      isExpired: mockIsExpired,
+    };
+  };
 
-  toString() {
-    return Object.entries(this.data)
-      .map(
-        ([key, value]) =>
-          `${encodeURIComponent(key)}=${encodeURIComponent(value)}`,
-      )
-      .join("&");
-  }
-};
-
-describe("Turnstile Utility", () => {
   beforeEach(() => {
-    // Clear mocks but don't reset modules (causes issues with ES modules)
     jest.clearAllMocks();
 
-    // Mock DOM environment
+    mockRender = jest.fn(() => "widget-1");
+    mockExecute = jest.fn();
+    mockGetResponse = jest.fn(() => "token-1");
+    mockReset = jest.fn();
+    mockRemove = jest.fn();
+    mockIsExpired = jest.fn(() => false);
+
+    mockContainer = { id: "turnstile-container" };
+    scriptElement = {
+      src: "",
+      defer: false,
+      onload: null,
+      onerror: null,
+    };
+
+    headAppendChild = jest.fn((node) => node);
+    querySelector = jest.fn(() => null);
+    createElement = jest.fn((tagName) => {
+      if (tagName === "script") {
+        return scriptElement;
+      }
+
+      return { tagName };
+    });
+
+    global.window = {};
     global.document = {
-      createElement: jest.fn().mockReturnValue({
-        setAttribute: jest.fn(),
-        style: {},
-        onload: null,
-        onerror: null,
-      }),
       head: {
-        appendChild: jest.fn(),
+        appendChild: headAppendChild,
       },
+      querySelector,
+      createElement,
     };
 
-    global.window = {
-      location: {
-        hostname: TEST_VALUES.hostname,
-      },
-      turnstile: {
-        ready: jest.fn((callback) => {
-          // Call callback immediately for test environment
-          callback();
-        }),
-        render: jest.fn().mockReturnValue("widget-123"),
-        remove: jest.fn(),
-        reset: jest.fn(),
-        getResponse: jest.fn().mockReturnValue(TEST_VALUES.token),
-        isExpired: jest.fn().mockReturnValue(false),
-      },
-    };
-
-    // Reset singleton state to prevent cross-test pollution
+    installWindowTurnstile();
     turnstile.resetOptions();
-
-    // Override environment to client since we've mocked window/document
-    // (detectEnvironment was called at module load time before mocks existed)
-    turnstile.setOptions({ environment: "client" });
-
-    // Mock the script loading to be already loaded for tests
-    turnstile.scriptLoaded = true;
-    turnstile.scriptLoading = false;
+    turnstile.cleanup();
   });
 
   afterEach(() => {
-    delete global.document;
-    delete global.window;
+    turnstile.resetOptions();
+    turnstile.cleanup();
+
+    if (typeof originalWindow === "undefined") {
+      Reflect.deleteProperty(global, "window");
+    } else {
+      global.window = originalWindow;
+    }
+
+    if (typeof originalDocument === "undefined") {
+      Reflect.deleteProperty(global, "document");
+    } else {
+      global.document = originalDocument;
+    }
   });
 
-  describe("Environment Detection", () => {
-    it("should detect client environment correctly", () => {
-      const instance = new Turnstile();
-      const options = instance.getOptions();
-      expect(options.environment).toBe("client");
+  it("loads the explicit Turnstile script", async () => {
+    delete global.window.turnstile;
+
+    headAppendChild.mockImplementation((node) => {
+      installWindowTurnstile();
+      node.onload();
+      return node;
+    });
+
+    await turnstile.loadScript();
+
+    expect(headAppendChild).toHaveBeenCalledTimes(1);
+    expect(scriptElement.src).toBe(
+      "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit",
+    );
+    expect(scriptElement.defer).toBe(true);
+  });
+
+  it("renders with merged global and per-call options", async () => {
+    turnstile.setOptions({
+      siteKey: "site-key",
+      widget: {
+        theme: "dark",
+        size: "flexible",
+      },
+    });
+
+    const callback = jest.fn();
+    const widgetId = await turnstile.render(mockContainer, {
+      action: "contact-form",
+      callback,
+      theme: "light",
+    });
+
+    expect(widgetId).toBe("widget-1");
+    expect(mockRender).toHaveBeenCalledWith(mockContainer, {
+      sitekey: "site-key",
+      theme: "light",
+      size: "flexible",
+      execution: "render",
+      appearance: "always",
+      retry: "auto",
+      "retry-interval": 8000,
+      "refresh-expired": "auto",
+      "refresh-timeout": "auto",
+      "response-field": true,
+      "response-field-name": "cf-turnstile-response",
+      "feedback-enabled": true,
+      action: "contact-form",
+      callback,
     });
   });
 
-  describe("Configuration", () => {
-    it("should set options correctly", () => {
-      turnstile.setOptions({
-        siteKey: TEST_VALUES.siteKey,
-        secretKey: TEST_VALUES.secretKey,
-        widget: {
-          theme: "dark",
-          size: "compact",
+  it("throws when siteKey is missing", async () => {
+    await expect(turnstile.render(mockContainer)).rejects.toThrow(
+      'Site key is required. Call turnstile.setOptions({ siteKey: "your-key" }) first.',
+    );
+  });
+
+  it("proxies widget operations and tracks active widgets", async () => {
+    turnstile.setOptions({ siteKey: "site-key" });
+    const widgetId = await turnstile.render(mockContainer);
+
+    turnstile.execute(widgetId);
+    expect(mockExecute).toHaveBeenCalledWith(widgetId);
+
+    expect(turnstile.getResponse(widgetId)).toBe("token-1");
+    expect(mockGetResponse).toHaveBeenCalledWith(widgetId);
+
+    turnstile.reset(widgetId);
+    expect(mockReset).toHaveBeenCalledWith(widgetId);
+
+    expect(turnstile.isExpired(widgetId)).toBe(false);
+    expect(mockIsExpired).toHaveBeenCalledWith(widgetId);
+
+    expect(turnstile.getActiveWidgets()).toEqual(["widget-1"]);
+
+    turnstile.remove(widgetId);
+    expect(mockRemove).toHaveBeenCalledWith(widgetId);
+    expect(turnstile.getActiveWidgets()).toEqual([]);
+  });
+
+  it("removes all tracked widgets during cleanup", async () => {
+    turnstile.setOptions({ siteKey: "site-key" });
+    mockRender.mockReturnValueOnce("widget-1").mockReturnValueOnce("widget-2");
+
+    await turnstile.render(mockContainer);
+    await turnstile.render(mockContainer);
+
+    turnstile.removeAll();
+
+    expect(mockRemove).toHaveBeenCalledWith("widget-1");
+    expect(mockRemove).toHaveBeenCalledWith("widget-2");
+    expect(turnstile.getActiveWidgets()).toEqual([]);
+  });
+
+  it("creates independent instances", async () => {
+    const instanceA = new Turnstile();
+    const instanceB = new Turnstile();
+
+    instanceA.setOptions({ siteKey: "key-a" });
+    instanceB.setOptions({ siteKey: "key-b" });
+
+    await instanceA.render(mockContainer);
+    await instanceB.render(mockContainer);
+
+    expect(mockRender.mock.calls[0][1].sitekey).toBe("key-a");
+    expect(mockRender.mock.calls[1][1].sitekey).toBe("key-b");
+  });
+
+  it("throws helpful errors outside the browser", async () => {
+    Reflect.deleteProperty(global, "window");
+    Reflect.deleteProperty(global, "document");
+
+    try {
+      const serverTurnstile = new Turnstile();
+      serverTurnstile.setOptions({ siteKey: "site-key" });
+
+      await expect(serverTurnstile.loadScript()).rejects.toThrow(
+        "Turnstile widget rendering requires a browser environment",
+      );
+      await expect(
+        serverTurnstile.render("#turnstile-container"),
+      ).rejects.toThrow(
+        "Turnstile widget rendering requires a browser environment",
+      );
+    } finally {
+      global.window = {};
+      global.document = {
+        head: {
+          appendChild: headAppendChild,
         },
-      });
-
-      const options = turnstile.getOptions();
-      expect(options.siteKey).toBe(TEST_VALUES.siteKey);
-      expect(options.secretKey).toBe(TEST_VALUES.secretKey);
-      expect(options.widget.theme).toBe("dark");
-      expect(options.widget.size).toBe("compact");
-    });
-
-    it("should have sensible defaults", () => {
-      const options = turnstile.getOptions();
-      expect(options.environment).toBe("client");
-      expect(options.apiUrl).toBe(TEST_VALUES.cloudflareApiUrl);
-      expect(options.scriptUrl).toBe(TEST_VALUES.cloudflareScriptUrl);
-      expect(options.widget.theme).toBe("auto");
-      expect(options.widget.size).toBe("normal");
-    });
-
-    it("should call interceptor when configured", async () => {
-      const interceptor = jest.fn();
-      turnstile.setOptions({
-        siteKey: TEST_VALUES.siteKey,
-        interceptor,
-      });
-
-      const result = await turnstile.render("#test-container");
-      expect(result).toBe("widget-123");
-
-      expect(interceptor).toHaveBeenCalledWith(
-        "render-start",
-        expect.objectContaining({
-          container: "#test-container",
-        }),
-      );
-    });
-  });
-
-  describe("Client-side Widget Rendering", () => {
-    beforeEach(() => {
-      turnstile.setOptions({ siteKey: TEST_VALUES.siteKey });
-    });
-
-    it("should render widget successfully", async () => {
-      const widgetId = await turnstile.render("#test-container");
-
-      expect(widgetId).toBe(TEST_VALUES.widgetId);
-      expect(window.turnstile.render).toHaveBeenCalledWith(
-        "#test-container",
-        expect.objectContaining({
-          sitekey: TEST_VALUES.siteKey,
-        }),
-      );
-    });
-
-    it("should throw error without site key", async () => {
-      // Reset options completely and set siteKey to undefined
-      turnstile.resetOptions();
-      // Re-set environment to client after reset (since detectEnvironment was called at module load)
-      turnstile.setOptions({ environment: "client", siteKey: undefined });
-
-      await expect(turnstile.render("#test-container")).rejects.toThrow(
-        TEST_VALUES.errorMessages.siteKeyRequired,
-      );
-    });
-
-    it("should merge custom options with defaults", async () => {
-      await turnstile.render("#test-container", {
-        theme: "light",
-        callback: jest.fn(),
-      });
-
-      expect(window.turnstile.render).toHaveBeenCalledWith(
-        "#test-container",
-        expect.objectContaining({
-          sitekey: TEST_VALUES.siteKey,
-          theme: "light",
-          size: "normal", // default
-          callback: expect.any(Function),
-        }),
-      );
-    });
-
-    it("should get response token", () => {
-      const response = turnstile.getResponse();
-      expect(response).toBe(TEST_VALUES.token);
-      expect(window.turnstile.getResponse).toHaveBeenCalled();
-    });
-
-    it("should reset widget", () => {
-      turnstile.reset(TEST_VALUES.widgetId);
-      expect(window.turnstile.reset).toHaveBeenCalledWith(TEST_VALUES.widgetId);
-    });
-
-    it("should remove widget", () => {
-      turnstile.remove(TEST_VALUES.widgetId);
-      expect(window.turnstile.remove).toHaveBeenCalledWith(
-        TEST_VALUES.widgetId,
-      );
-    });
-
-    it("should check if widget is expired", () => {
-      const expired = turnstile.isExpired(TEST_VALUES.widgetId);
-      expect(expired).toBe(false);
-      expect(window.turnstile.isExpired).toHaveBeenCalledWith(
-        TEST_VALUES.widgetId,
-      );
-    });
-  });
-
-  describe("Server-side Token Verification", () => {
-    let serverTurnstile, ServerTurnstile;
-
-    beforeEach(async () => {
-      // Clear environment mocks to ensure server environment
-      delete global.window;
-      delete global.document;
-
-      jest.resetModules();
-
-      // Import fresh instance in server environment
-      const module = await import("@shared-utils/utils");
-      serverTurnstile = module.turnstile;
-      ServerTurnstile = module.Turnstile;
-
-      serverTurnstile.resetOptions();
-      serverTurnstile.setOptions({ secretKey: TEST_VALUES.secretKey });
-    });
-
-    it("should verify token successfully", async () => {
-      const mockResponse = {
-        success: true,
-        challenge_ts: "2024-01-01T00:00:00.000Z",
-        hostname: "example.com",
+        querySelector,
+        createElement,
       };
-
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse),
-      });
-
-      const result = await serverTurnstile.verify(
-        TEST_VALUES.token,
-        TEST_VALUES.ipAddress,
-      );
-
-      expect(result).toEqual(mockResponse);
-      expect(fetch).toHaveBeenCalledWith(
-        TEST_VALUES.cloudflareApiUrl,
-        expect.objectContaining({
-          method: "POST",
-          body: expect.any(URLSearchParams),
-        }),
-      );
-    });
-
-    it("should throw error without secret key", async () => {
-      // Override the beforeEach setup that sets secretKey for this specific test
-      serverTurnstile.resetOptions();
-
-      await expect(serverTurnstile.verify(TEST_VALUES.token)).rejects.toThrow(
-        TEST_VALUES.errorMessages.secretKeyRequired,
-      );
-    });
-
-    it("should handle verification failure", async () => {
-      const mockResponse = {
-        success: false,
-        "error-codes": ["invalid-input-response"],
-      };
-
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse),
-      });
-
-      const result = await serverTurnstile.verify("invalid-token");
-
-      expect(result.success).toBe(false);
-      expect(result["error-codes"]).toContain("invalid-input-response");
-    });
-
-    it("should handle network errors", async () => {
-      fetch.mockRejectedValueOnce(new Error("Network error"));
-
-      await expect(serverTurnstile.verify(TEST_VALUES.token)).rejects.toThrow(
-        "Network error",
-      );
-    });
-
-    it("should handle HTTP errors", async () => {
-      fetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-      });
-
-      await expect(serverTurnstile.verify(TEST_VALUES.token)).rejects.toThrow(
-        "HTTP error! status: 500",
-      );
-    });
-
-    it("should include optional parameters in verification", async () => {
-      const mockResponse = { success: true };
-
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse),
-      });
-      await serverTurnstile.verify(TEST_VALUES.token, TEST_VALUES.ipAddress);
-
-      const urlSearchParams = fetch.mock.calls[0][1].body;
-      expect(urlSearchParams.data).toEqual({
-        secret: TEST_VALUES.secretKey,
-        response: TEST_VALUES.token,
-        remoteip: TEST_VALUES.ipAddress,
-      });
-    });
-  });
-
-  describe("Singleton Pattern", () => {
-    it("should maintain singleton instance", async () => {
-      const { default: instance1 } = await import("@shared-utils/utils");
-      const { default: instance2 } = await import("@shared-utils/utils");
-
-      expect(instance1).toBe(instance2);
-    });
-
-    it("should allow creating new instances of class", () => {
-      const instance1 = new Turnstile();
-      const instance2 = new Turnstile();
-
-      expect(instance1).not.toBe(instance2);
-      expect(instance1).toBeInstanceOf(Turnstile);
-      expect(instance2).toBeInstanceOf(Turnstile);
-    });
-  });
-
-  describe("Interceptor Functionality", () => {
-    it("should call interceptor for all actions", async () => {
-      const interceptor = jest.fn();
-      turnstile.setOptions({
-        siteKey: "test-key",
-        secretKey: "test-secret",
-        interceptor,
-      });
-
-      // Test render action
-      await turnstile.render("#test-container");
-      expect(interceptor).toHaveBeenCalledWith(
-        "render-start",
-        expect.any(Object),
-      );
-      expect(interceptor).toHaveBeenCalledWith(
-        "render-success",
-        expect.any(Object),
-      );
-
-      // Test get response action
-      turnstile.getResponse();
-      expect(interceptor).toHaveBeenCalledWith(
-        "get-response",
-        expect.any(Object),
-      );
-
-      // Reset to server environment for verification test
-      delete global.window;
-      delete global.document;
-      jest.resetModules();
-      const module = await import("@shared-utils/utils");
-      const serverTurnstile = module.turnstile;
-      serverTurnstile.resetOptions();
-      serverTurnstile.setOptions({
-        secretKey: "test-secret",
-        interceptor,
-      });
-
-      // Test verification action
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ success: true }),
-      });
-
-      await serverTurnstile.verify("test-token");
-      expect(interceptor).toHaveBeenCalledWith(
-        "verify-start",
-        expect.any(Object),
-      );
-      expect(interceptor).toHaveBeenCalledWith(
-        "verify-complete",
-        expect.any(Object),
-      );
-    });
-
-    it("should handle interceptor errors gracefully", async () => {
-      // Suppress console.error for this test to avoid noise
-      const originalConsoleError = console.error;
-      console.error = jest.fn();
-
-      const faultyInterceptor = jest.fn(() => {
-        throw new Error("Interceptor error");
-      });
-
-      turnstile.setOptions({
-        siteKey: "test-key",
-        interceptor: faultyInterceptor,
-      });
-
-      // Should not throw despite interceptor error
-      await expect(turnstile.render("#test-container")).resolves.toBe(
-        "widget-123",
-      );
-      expect(faultyInterceptor).toHaveBeenCalled();
-
-      // Verify that console.error was called (but mocked)
-      expect(console.error).toHaveBeenCalledWith(
-        "Turnstile interceptor error:",
-        expect.any(Error),
-      );
-
-      // Restore original console.error
-      console.error = originalConsoleError;
-    });
+      installWindowTurnstile();
+    }
   });
 });

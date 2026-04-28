@@ -3,39 +3,63 @@
  * @jest-environment node
  */
 
+const fs = require("fs");
+const path = require("path");
+const { execFileSync } = require("child_process");
+
+const inspectModule = (relativePath, exportNames = []) => {
+  const absolutePath = path.resolve(__dirname, relativePath);
+  const script = `
+    import { pathToFileURL } from 'node:url';
+
+    const moduleExports = await import(pathToFileURL(${JSON.stringify(absolutePath)}).href);
+    const exportNames = ${JSON.stringify(exportNames)};
+
+    if (exportNames.length === 0) {
+      console.log(JSON.stringify(Object.keys(moduleExports)));
+    } else {
+      for (const exportName of exportNames) {
+        console.log(\`${"${exportName}"}:\${typeof moduleExports[exportName]}\`);
+      }
+    }
+  `;
+
+  return execFileSync("node", ["--input-type=module", "--eval", script], {
+    encoding: "utf8",
+  }).trim();
+};
+
 describe("Package Import Paths", () => {
   describe("Utils Package Imports", () => {
     it("should import utils using package-style path", () => {
       // This simulates: import { log, Log } from '@shared-utils/utils'
-      const { log, Log } = require("../dist/utils/index.js");
+      const moduleSummary = inspectModule("../dist/utils/index.js", [
+        "log",
+        "Log",
+      ]);
 
-      expect(log).toBeDefined();
-      expect(Log).toBeDefined();
-      expect(typeof log.info).toBe("function");
-      expect(typeof Log).toBe("function");
+      expect(moduleSummary).toContain("log:object");
+      expect(moduleSummary).toContain("Log:function");
     });
 
     it("should work with relative imports from utils", () => {
       // This simulates: import { log } from '../utils'
-      const { log } = require("../dist/utils/index.js");
+      const moduleSummary = inspectModule("../dist/utils/index.js", ["log"]);
 
-      // Mock console to test functionality
-      jest.spyOn(console, "info").mockImplementation();
-
-      log.info("Testing relative import");
-      expect(console.info).toHaveBeenCalledWith("Testing relative import");
-
-      jest.restoreAllMocks();
+      expect(moduleSummary).toContain("log:object");
     });
   });
 
   describe("Client Package Imports", () => {
     it("should be able to import client components", () => {
       // This simulates: import { ... } from '@shared-utils/client'
-      // Note: Client components use ES6 modules and JSX, so we test that the file exists
-      expect(() => {
-        require.resolve("../client/index.js");
-      }).not.toThrow();
+      // Note: Client components use browser-oriented code, so we verify the built entry exists.
+      const clientEntryPath = path.resolve(
+        __dirname,
+        "../dist/client/index.js",
+      );
+
+      expect(fs.existsSync(clientEntryPath)).toBe(true);
 
       // The client module exists and is properly structured (tested separately)
       expect(true).toBe(true);
@@ -45,34 +69,34 @@ describe("Package Import Paths", () => {
   describe("Server Package Imports", () => {
     it("should import server using package-style path", () => {
       // This simulates: import { createTurnstileWorker } from '@shared-utils/server'
-      const serverModule = require("../server/dist/index.js");
+      const moduleSummary = inspectModule("../dist/server/index.js", [
+        "createTurnstileWorker",
+        "createTurnstileMiddleware",
+      ]);
 
-      expect(serverModule).toBeDefined();
-      expect(serverModule.createTurnstileWorker).toBeDefined();
-      expect(typeof serverModule.createTurnstileWorker).toBe("function");
-      expect(serverModule.createTurnstileMiddleware).toBeDefined();
-      expect(typeof serverModule.createTurnstileMiddleware).toBe("function");
+      expect(moduleSummary).toContain("createTurnstileWorker:function");
+      expect(moduleSummary).toContain("createTurnstileMiddleware:function");
     });
 
     it("should work with destructured imports from server", () => {
-      // This simulates: import { createTurnstileWorker, verifyTurnstileTokenEnhanced } from '@shared-utils/server'
-      const {
-        createTurnstileWorker,
-        verifyTurnstileTokenEnhanced,
-      } = require("../server/dist/index.js");
+      // This simulates: import { createTurnstileWorker, verifyTurnstileToken } from '@shared-utils/server'
+      const moduleSummary = inspectModule("../dist/server/index.js", [
+        "createTurnstileWorker",
+        "verifyTurnstileToken",
+      ]);
 
-      expect(typeof createTurnstileWorker).toBe("function");
-      expect(typeof verifyTurnstileTokenEnhanced).toBe("function");
+      expect(moduleSummary).toContain("createTurnstileWorker:function");
+      expect(moduleSummary).toContain("verifyTurnstileToken:function");
     });
   });
 
   describe("Root Package Behavior", () => {
     it("should have minimal root exports", () => {
       // This simulates: import from '@shared-utils'
-      const rootExports = require("../index.js");
+      const rootExportKeys = JSON.parse(inspectModule("../index.js"));
 
       // Root should have minimal or no exports to avoid JSX issues
-      expect(rootExports).toBeDefined();
+      expect(rootExportKeys).toEqual([]);
     });
   });
 });

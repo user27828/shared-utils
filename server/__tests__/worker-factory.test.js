@@ -7,39 +7,40 @@ import { createTurnstileWorker } from "../src/turnstile/worker-factory.js";
 
 describe("createTurnstileWorker", () => {
   let mockEnv;
-  let mockRequest;
+
+  const createMockRequest = ({
+    method = "POST",
+    origin = "https://example.com",
+    body = {},
+    jsonError,
+  } = {}) => ({
+    method,
+    headers: {
+      get: jest.fn((header) => {
+        const headers = {
+          origin,
+          Origin: origin,
+          "CF-Connecting-IP": "203.0.113.10",
+          "X-Forwarded-For": "203.0.113.10",
+          "X-Real-IP": "203.0.113.10",
+        };
+
+        return headers[header] || headers[String(header).toLowerCase()] || null;
+      }),
+    },
+    json: jsonError
+      ? jest.fn().mockRejectedValue(jsonError)
+      : jest.fn().mockResolvedValue(body),
+  });
 
   beforeEach(() => {
-    // Reset mocks
     jest.clearAllMocks();
+    global.fetch = jest.fn();
 
-    // Mock environment
     mockEnv = {
       TURNSTILE_SECRET_KEY: "test-secret-key",
-      DEV_MODE: "false",
-      NODE_ENV: "production",
       ALLOWED_ORIGINS: "https://example.com,https://app.example.com",
     };
-
-    // Mock request
-    mockRequest = {
-      method: "POST",
-      headers: {
-        get: jest.fn((header) => {
-          const headers = {
-            "CF-Connecting-IP": "192.168.1.1",
-            "X-Forwarded-For": "192.168.1.1",
-            "X-Real-IP": "192.168.1.1",
-            Origin: "https://example.com",
-          };
-          return headers[header] || null;
-        }),
-      },
-      json: jest.fn(),
-    };
-
-    // Mock global fetch
-    global.fetch = jest.fn();
   });
 
   test("should create a worker with default configuration", () => {
@@ -51,8 +52,8 @@ describe("createTurnstileWorker", () => {
   test("should create a worker with custom configuration", () => {
     const config = {
       allowedOrigins: ["https://custom.com"],
-      devMode: true,
-      bypassLocalhost: false,
+      expectedHostname: "custom.com",
+      expectedAction: "contact-form",
     };
 
     const worker = createTurnstileWorker(config);
@@ -62,20 +63,32 @@ describe("createTurnstileWorker", () => {
 
   test("should handle OPTIONS request (CORS preflight)", async () => {
     const worker = createTurnstileWorker();
-    const optionsRequest = { ...mockRequest, method: "OPTIONS" };
+    const optionsRequest = createMockRequest({ method: "OPTIONS" });
 
     const response = await worker.fetch(optionsRequest, mockEnv);
 
     expect(response.status).toBe(200);
-    expect(response.headers.get("Access-Control-Allow-Origin")).toBeDefined();
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe(
+      "https://example.com",
+    );
     expect(response.headers.get("Access-Control-Allow-Methods")).toBe(
       "POST, OPTIONS",
     );
   });
 
+  test("should reject disallowed origins", async () => {
+    const worker = createTurnstileWorker();
+    const request = createMockRequest({ origin: "https://evil.com" });
+
+    const response = await worker.fetch(request, mockEnv);
+
+    expect(response.status).toBe(403);
+    expect(await response.text()).toBe("Forbidden");
+  });
+
   test("should reject non-POST requests", async () => {
     const worker = createTurnstileWorker();
-    const getRequest = { ...mockRequest, method: "GET" };
+    const getRequest = createMockRequest({ method: "GET" });
 
     const response = await worker.fetch(getRequest, mockEnv);
 
@@ -85,11 +98,9 @@ describe("createTurnstileWorker", () => {
 
   test("should handle missing token in request body", async () => {
     const worker = createTurnstileWorker();
-    mockRequest.json.mockResolvedValue({
-      /* no token */
-    });
+    const request = createMockRequest({ body: {} });
 
-    const response = await worker.fetch(mockRequest, mockEnv);
+    const response = await worker.fetch(request, mockEnv);
 
     expect(response.status).toBe(400);
     const responseData = await response.json();
@@ -97,9 +108,24 @@ describe("createTurnstileWorker", () => {
     expect(responseData["error-codes"]).toContain("missing-input-response");
   });
 
+  test("should return bad-request for invalid JSON", async () => {
+    const worker = createTurnstileWorker();
+    const request = createMockRequest({
+      jsonError: new Error("Invalid JSON"),
+    });
+
+    const response = await worker.fetch(request, mockEnv);
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      success: false,
+      "error-codes": ["bad-request"],
+    });
+  });
+
   test("should handle request with token", async () => {
-    // Mock the Turnstile API response
     global.fetch.mockResolvedValue({
+      ok: true,
       json: () =>
         Promise.resolve({
           success: true,
@@ -108,50 +134,89 @@ describe("createTurnstileWorker", () => {
     });
 
     const worker = createTurnstileWorker();
-    mockRequest.json.mockResolvedValue({
-      token: "test-token",
-      remoteip: "192.168.1.1",
+    const request = createMockRequest({
+      body: {
+        token: "test-token",
+        remoteip: "203.0.113.10",
+      },
     });
 
-    const response = await worker.fetch(mockRequest, mockEnv);
+    const response = await worker.fetch(request, mockEnv);
 
     expect(response.status).toBe(200);
     const responseData = await response.json();
     expect(responseData.success).toBe(true);
+
+    const verificationRequest = global.fetch.mock.calls[0][1];
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.any(URLSearchParams),
+      }),
+    );
+    expect(verificationRequest.body.get("secret")).toBe("test-secret-key");
+    expect(verificationRequest.body.get("response")).toBe("test-token");
+    expect(verificationRequest.body.get("remoteip")).toBe("203.0.113.10");
   });
 
-  test("should use custom interceptor for error logging", async () => {
-    const mockInterceptor = jest.fn();
+  test("should enforce expected action and hostname checks", async () => {
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          success: true,
+          action: "signup",
+          hostname: "example.com",
+        }),
+    });
+
     const worker = createTurnstileWorker({
-      interceptor: mockInterceptor,
+      expectedAction: "login",
+      expectedHostname: "example.com",
+    });
+    const request = createMockRequest({
+      body: {
+        token: "test-token",
+      },
     });
 
-    // Force an error by providing invalid JSON
-    mockRequest.json.mockRejectedValue(new Error("Invalid JSON"));
+    const response = await worker.fetch(request, mockEnv);
 
-    const response = await worker.fetch(mockRequest, mockEnv);
-
-    expect(response.status).toBe(500);
-    expect(mockInterceptor).toHaveBeenCalledWith("error", {
-      error: "Invalid JSON",
-    });
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual(
+      expect.objectContaining({
+        success: false,
+        "error-codes": ["action-mismatch"],
+      }),
+    );
   });
 
-  test("should handle dev mode configuration", async () => {
-    const worker = createTurnstileWorker({
-      devMode: true,
+  test("should return verification failures from Cloudflare", async () => {
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          success: false,
+          "error-codes": ["invalid-input-response"],
+        }),
     });
 
-    mockRequest.json.mockResolvedValue({
-      token: "test-token",
+    const worker = createTurnstileWorker();
+    const request = createMockRequest({
+      body: {
+        token: "test-token",
+      },
     });
 
-    // In dev mode, it should bypass real verification
-    const response = await worker.fetch(mockRequest, mockEnv);
+    const response = await worker.fetch(request, mockEnv);
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(400);
     const responseData = await response.json();
-    expect(responseData.success).toBe(true);
+    expect(responseData).toEqual({
+      success: false,
+      "error-codes": ["invalid-input-response"],
+    });
   });
 
   test("should merge configuration with environment variables", async () => {
@@ -159,12 +224,8 @@ describe("createTurnstileWorker", () => {
       allowedOrigins: ["https://override.com"],
     });
 
-    mockRequest.json.mockResolvedValue({
-      token: "test-token",
-    });
-
-    // Mock successful Turnstile API response
     global.fetch.mockResolvedValue({
+      ok: true,
       json: () =>
         Promise.resolve({
           success: true,
@@ -172,9 +233,18 @@ describe("createTurnstileWorker", () => {
         }),
     });
 
-    const response = await worker.fetch(mockRequest, mockEnv);
+    const request = createMockRequest({
+      origin: "https://override.com",
+      body: {
+        token: "test-token",
+      },
+    });
+
+    const response = await worker.fetch(request, mockEnv);
 
     expect(response.status).toBe(200);
-    // The custom allowedOrigins should override the environment variable
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe(
+      "https://override.com",
+    );
   });
 });

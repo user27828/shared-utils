@@ -2,16 +2,11 @@
  * Cloudflare Worker Factory for Turnstile verification
  * This creates configurable workers for different deployment scenarios
  */
-import type { Environment } from "./types.js";
+import type { Environment, TurnstileServerOptions } from "./types.js";
 /**
  * Configuration options for the Turnstile worker
  */
-export interface TurnstileWorkerConfig {
-    allowedOrigins?: string[];
-    devMode?: boolean;
-    bypassLocalhost?: boolean;
-    apiUrl?: string;
-    interceptor?: (action: string, data: any) => void;
+export interface TurnstileWorkerConfig extends Omit<TurnstileServerOptions, "secretKey" | "tokenFieldName"> {
 }
 /**
  * Creates a Cloudflare Worker for Turnstile verification with optional configuration
@@ -27,8 +22,7 @@ export interface TurnstileWorkerConfig {
  * // With custom configuration
  * export default createTurnstileWorker({
  *   allowedOrigins: ["https://myapp.com", "https://www.myapp.com"],
- *   bypassLocalhost: true,
- *   // DEV_MODE / NODE_ENV can also be supplied via Wrangler env vars.
+ *   expectedHostname: "myapp.com",
  * });
  * ```
  */

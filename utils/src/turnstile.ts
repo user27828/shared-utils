@@ -1,62 +1,58 @@
 /**
- * Cloudflare Turnstile Widget and Verification Utility
+ * Cloudflare Turnstile browser widget helper.
  */
 import { OptionsManager } from "./options-manager.js";
 
 type TurnstileTheme = "light" | "dark" | "auto";
-type TurnstileSize = "normal" | "compact";
-type TurnstileAction = string;
-type Environment = "client" | "server";
+type TurnstileSize = "normal" | "compact" | "flexible";
+type TurnstileAppearance = "always" | "execute" | "interaction-only";
+type TurnstileExecution = "render" | "execute";
+type TurnstileRetry = "auto" | "never";
+type TurnstileRefresh = "auto" | "manual" | "never";
 
 interface TurnstileWidgetOptions {
   sitekey: string;
-  theme?: TurnstileTheme;
-  size?: TurnstileSize;
-  action?: TurnstileAction;
+  action?: string;
   cData?: string;
   callback?: (token: string) => void;
-  "error-callback"?: (error?: Error) => void;
+  "error-callback"?: (errorCode?: string) => void;
   "expired-callback"?: () => void;
   "timeout-callback"?: () => void;
-  "after-interactive-callback"?: () => void;
   "before-interactive-callback"?: () => void;
+  "after-interactive-callback"?: () => void;
   "unsupported-callback"?: () => void;
-  retry?: "auto" | "never";
-  "retry-interval"?: number;
-  "refresh-expired"?: "auto" | "manual" | "never";
+  theme?: TurnstileTheme;
   language?: string;
-  appearance?: "always" | "execute" | "interaction-only";
+  tabindex?: number;
+  size?: TurnstileSize;
+  retry?: TurnstileRetry;
+  "retry-interval"?: number;
+  "refresh-expired"?: TurnstileRefresh;
+  "refresh-timeout"?: TurnstileRefresh;
+  execution?: TurnstileExecution;
+  appearance?: TurnstileAppearance;
   "response-field"?: boolean;
   "response-field-name"?: string;
+  "feedback-enabled"?: boolean;
+  "offlabel-show-privacy"?: boolean;
+  "offlabel-show-help"?: boolean;
 }
 
 interface TurnstileOptions {
-  environment?: Environment;
   siteKey?: string;
-  secretKey?: string;
-  apiUrl?: string;
   scriptUrl?: string;
-  widget?: Partial<TurnstileWidgetOptions>;
-  interceptor?: (action: string, data: any) => void;
-}
-
-interface TurnstileVerifyResponse {
-  success: boolean;
-  "error-codes"?: string[];
-  challenge_ts?: string;
-  hostname?: string;
-  action?: string;
-  cdata?: string;
+  widget?: Partial<Omit<TurnstileWidgetOptions, "sitekey">>;
 }
 
 declare global {
   interface Window {
     turnstile?: {
-      ready: (callback: () => void) => void;
+      ready?: (callback: () => void) => void;
       render: (
         container: string | HTMLElement,
         options: TurnstileWidgetOptions,
       ) => string;
+      execute: (widgetIdOrContainer?: string | HTMLElement) => void;
       remove: (widgetId: string) => void;
       reset: (widgetId?: string) => void;
       getResponse: (widgetId?: string) => string | undefined;
@@ -65,142 +61,147 @@ declare global {
   }
 }
 
+const TURNSTILE_SCRIPT_BASE_URL =
+  "https://challenges.cloudflare.com/turnstile/v0/api.js";
+const DEFAULT_TURNSTILE_SCRIPT_URL =
+  "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+const TURNSTILE_SCRIPT_SELECTOR = `script[src^="${TURNSTILE_SCRIPT_BASE_URL}"]`;
+
 class Turnstile {
-  private readonly optionsManager: OptionsManager<
-    TurnstileOptions & {
-      environment: Environment;
-      apiUrl: string;
-      scriptUrl: string;
-      widget: Partial<TurnstileWidgetOptions>;
-    }
-  >;
-  private widgetIds: Set<string> = new Set();
-  private scriptLoaded = false;
-  private scriptLoading = false;
-  private scriptLoadError = false;
+  private readonly optionsManager: OptionsManager<{
+    siteKey?: string;
+    scriptUrl: string;
+    widget: Partial<Omit<TurnstileWidgetOptions, "sitekey">>;
+  }>;
+  private readonly widgetIds = new Set<string>();
+  private loadPromise: Promise<void> | null = null;
 
   constructor() {
     const defaultOptions = {
-      environment: this.detectEnvironment(),
-      apiUrl: "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-      scriptUrl: "https://challenges.cloudflare.com/turnstile/v0/api.js",
+      siteKey: undefined,
+      scriptUrl: DEFAULT_TURNSTILE_SCRIPT_URL,
       widget: {
         theme: "auto" as TurnstileTheme,
         size: "normal" as TurnstileSize,
-        retry: "auto" as const,
+        execution: "render" as TurnstileExecution,
+        appearance: "always" as TurnstileAppearance,
+        retry: "auto" as TurnstileRetry,
         "retry-interval": 8000,
-        "refresh-expired": "auto" as const,
-        appearance: "always" as const,
+        "refresh-expired": "auto" as TurnstileRefresh,
+        "refresh-timeout": "auto" as TurnstileRefresh,
         "response-field": true,
         "response-field-name": "cf-turnstile-response",
+        "feedback-enabled": true,
       },
-      siteKey: undefined,
-      secretKey: undefined,
-      interceptor: undefined,
     };
 
     this.optionsManager = new OptionsManager("turnstile", defaultOptions);
-    // Register with the global options manager if present. Prefer the
-    // canonical singleton exposed on globalThis (Symbol.for) to avoid
-    // creating another direct import path to the singleton which can confuse
-    // consumers. Fall back to legacy __shared_utils_optionsManager if present.
+
     try {
-      const g: any = globalThis as any;
-      const GLOBAL_KEY = Symbol.for("@shared-utils/options-manager");
-      const globalOm =
-        (g && g.__shared_utils_optionsManager) || (g && g[GLOBAL_KEY]);
-      if (globalOm && typeof globalOm.registerManager === "function") {
-        globalOm.registerManager("turnstile", this.optionsManager);
+      const globalState = globalThis as any;
+      const globalKey = Symbol.for("@shared-utils/options-manager");
+      const globalOptionsManager =
+        globalState.__shared_utils_optionsManager || globalState[globalKey];
+      if (
+        globalOptionsManager &&
+        typeof globalOptionsManager.registerManager === "function"
+      ) {
+        globalOptionsManager.registerManager("turnstile", this.optionsManager);
       }
-    } catch (e) {
+    } catch {
       // ignore registration failures
     }
-
-    this.render = this.render.bind(this);
-    this.verify = this.verify.bind(this);
-    this.reset = this.reset.bind(this);
-    this.remove = this.remove.bind(this);
   }
 
   private get options() {
     return this.optionsManager.getOption();
   }
 
-  private detectEnvironment(): Environment {
-    if (typeof window !== "undefined" && typeof document !== "undefined") {
-      return "client";
+  private assertClient(): void {
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      throw new Error(
+        "Turnstile widget rendering requires a browser environment",
+      );
     }
-    if (
-      typeof globalThis !== "undefined" &&
-      (globalThis as any).process?.versions?.node
-    ) {
-      return "server";
-    }
-    return "client";
   }
 
-  private async loadScript(): Promise<void> {
-    const options = this.options;
-    if (options.environment !== "client") {
-      throw new Error("Script loading is only available on client-side");
+  private getTurnstileApi() {
+    this.assertClient();
+
+    if (!window.turnstile) {
+      throw new Error("Turnstile script is not loaded");
     }
 
-    if (this.scriptLoaded) {
-      return Promise.resolve();
-    }
+    return window.turnstile;
+  }
 
-    if (this.scriptLoading) {
-      return new Promise((resolve, reject) => {
-        const startTime = Date.now();
-        const checkLoaded = () => {
-          if (this.scriptLoaded) {
-            resolve();
-          } else if (this.scriptLoadError) {
-            reject(new Error("Failed to load Turnstile script"));
-          } else if (Date.now() - startTime > 15000) {
-            reject(new Error("Turnstile script loading timeout"));
-          } else {
-            setTimeout(checkLoaded, 50);
-          }
-        };
-        checkLoaded();
-      });
-    }
-
-    this.scriptLoading = true;
+  private waitForTurnstile(timeoutMs = 15000): Promise<void> {
+    this.assertClient();
 
     return new Promise((resolve, reject) => {
+      const startedAt = Date.now();
+
+      const checkReady = () => {
+        if (window.turnstile) {
+          resolve();
+          return;
+        }
+
+        if (Date.now() - startedAt >= timeoutMs) {
+          reject(new Error("Timed out loading Turnstile script"));
+          return;
+        }
+
+        setTimeout(checkReady, 25);
+      };
+
+      checkReady();
+    });
+  }
+
+  async loadScript(): Promise<void> {
+    this.assertClient();
+
+    if (window.turnstile) {
+      return;
+    }
+
+    if (this.loadPromise) {
+      return this.loadPromise;
+    }
+
+    const existingScript = document.querySelector<HTMLScriptElement>(
+      TURNSTILE_SCRIPT_SELECTOR,
+    );
+
+    if (existingScript) {
+      const loadPromise = this.waitForTurnstile().finally(() => {
+        this.loadPromise = null;
+      });
+      this.loadPromise = loadPromise;
+      return loadPromise;
+    }
+
+    const loadPromise = new Promise<void>((resolve, reject) => {
       const script = document.createElement("script");
-      script.src = options.scriptUrl;
-      // Remove async/defer to fix "Remove async/defer from the Turnstile api.js script tag" error
-      // script.async = true;
-      // script.defer = true;
+      script.src = this.options.scriptUrl;
+      script.defer = true;
 
       script.onload = () => {
-        this.scriptLoaded = true;
-        this.scriptLoading = false;
-        resolve();
+        this.waitForTurnstile().then(resolve).catch(reject);
       };
 
       script.onerror = () => {
-        this.scriptLoading = false;
-        this.scriptLoadError = true;
         reject(new Error("Failed to load Turnstile script"));
       };
 
       document.head.appendChild(script);
+    }).finally(() => {
+      this.loadPromise = null;
     });
-  }
 
-  private callInterceptor(action: string, data: any): void {
-    const options = this.options;
-    if (options.interceptor) {
-      try {
-        options.interceptor(action, data);
-      } catch (error) {
-        console.error("Turnstile interceptor error:", error);
-      }
-    }
+    this.loadPromise = loadPromise;
+    return loadPromise;
   }
 
   setOptions(values: TurnstileOptions): void {
@@ -219,164 +220,45 @@ class Turnstile {
     container: string | HTMLElement,
     customOptions: Partial<TurnstileWidgetOptions> = {},
   ): Promise<string> {
-    const options = this.options;
-    if (options.environment !== "client") {
-      throw new Error("Widget rendering is only available on client-side");
-    }
+    this.assertClient();
 
-    if (!options.siteKey) {
+    if (!this.options.siteKey) {
       throw new Error(
         'Site key is required. Call turnstile.setOptions({ siteKey: "your-key" }) first.',
       );
     }
 
-    this.callInterceptor("render-start", { container, customOptions });
-
     await this.loadScript();
 
-    return new Promise((resolve, reject) => {
-      const renderWidget = () => {
-        try {
-          const widgetOptions: TurnstileWidgetOptions = {
-            sitekey: options.siteKey!,
-            ...options.widget,
-            ...customOptions,
-          };
-
-          const widgetId = window.turnstile!.render(container, widgetOptions);
-          this.widgetIds.add(widgetId);
-
-          this.callInterceptor("render-success", {
-            container,
-            widgetId,
-            options: widgetOptions,
-          });
-          resolve(widgetId);
-        } catch (error) {
-          this.callInterceptor("render-error", { container, error });
-          reject(error);
-        }
-      };
-
-      // When script is dynamically loaded, don't use turnstile.ready()
-      // Just render directly since the script is already loaded when we get here
-      if (window.turnstile) {
-        renderWidget();
-      } else {
-        renderWidget();
-      }
+    const widgetId = this.getTurnstileApi().render(container, {
+      sitekey: this.options.siteKey,
+      ...this.options.widget,
+      ...customOptions,
     });
+
+    this.widgetIds.add(widgetId);
+    return widgetId;
+  }
+
+  execute(widgetIdOrContainer?: string | HTMLElement): void {
+    this.getTurnstileApi().execute(widgetIdOrContainer);
   }
 
   getResponse(widgetId?: string): string | undefined {
-    const options = this.options;
-    if (options.environment !== "client") {
-      throw new Error("Getting response is only available on client-side");
-    }
-
-    if (!window.turnstile) {
-      throw new Error("Turnstile script not loaded");
-    }
-
-    const response = window.turnstile.getResponse(widgetId);
-    this.callInterceptor("get-response", { widgetId, response });
-    return response;
+    return this.getTurnstileApi().getResponse(widgetId);
   }
 
   reset(widgetId?: string): void {
-    const options = this.options;
-    if (options.environment !== "client") {
-      throw new Error("Widget reset is only available on client-side");
-    }
-
-    if (!window.turnstile) {
-      throw new Error("Turnstile script not loaded");
-    }
-
-    window.turnstile.reset(widgetId);
-    this.callInterceptor("reset", { widgetId });
+    this.getTurnstileApi().reset(widgetId);
   }
 
   remove(widgetId: string): void {
-    const options = this.options;
-    if (options.environment !== "client") {
-      throw new Error("Widget removal is only available on client-side");
-    }
-
-    if (!window.turnstile) {
-      throw new Error("Turnstile script not loaded");
-    }
-
-    window.turnstile.remove(widgetId);
+    this.getTurnstileApi().remove(widgetId);
     this.widgetIds.delete(widgetId);
-    this.callInterceptor("remove", { widgetId });
   }
 
   isExpired(widgetId?: string): boolean {
-    const options = this.options;
-    if (options.environment !== "client") {
-      throw new Error("Widget expiry check is only available on client-side");
-    }
-
-    if (!window.turnstile) {
-      throw new Error("Turnstile script not loaded");
-    }
-
-    const expired = window.turnstile.isExpired(widgetId);
-    this.callInterceptor("is-expired", { widgetId, expired });
-    return expired;
-  }
-
-  async verify(
-    token: string,
-    remoteip?: string,
-  ): Promise<TurnstileVerifyResponse> {
-    const options = this.options;
-    if (options.environment !== "server") {
-      throw new Error("Token verification is only available on server-side");
-    }
-
-    if (!options.secretKey) {
-      throw new Error(
-        'Secret key is required. Call turnstile.setOptions({ secretKey: "your-key" }) first.',
-      );
-    }
-
-    this.callInterceptor("verify-start", { token, remoteip });
-
-    const formData = new URLSearchParams();
-    formData.append("secret", options.secretKey);
-    formData.append("response", token);
-    if (remoteip) {
-      formData.append("remoteip", remoteip);
-    }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-    try {
-      const response = await fetch(options.apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: formData,
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result: TurnstileVerifyResponse = await response.json();
-      this.callInterceptor("verify-complete", { token, remoteip, result });
-      return result;
-    } catch (error) {
-      this.callInterceptor("verify-error", { token, remoteip, error });
-      throw error;
-    } finally {
-      clearTimeout(timeoutId);
-    }
+    return this.getTurnstileApi().isExpired(widgetId);
   }
 
   getActiveWidgets(): string[] {
@@ -384,27 +266,21 @@ class Turnstile {
   }
 
   removeAll(): void {
-    const options = this.options;
-    if (options.environment !== "client") {
-      throw new Error("Widget removal is only available on client-side");
-    }
+    this.assertClient();
 
-    const widgetIds = Array.from(this.widgetIds);
-    for (const widgetId of widgetIds) {
+    for (const widgetId of Array.from(this.widgetIds)) {
       this.remove(widgetId);
     }
   }
 
   cleanup(): void {
-    if (this.options.environment === "client") {
+    if (typeof window !== "undefined" && typeof document !== "undefined") {
       this.removeAll();
     }
   }
 }
 
-// Create singleton instance
 const turnstile = new Turnstile();
 
-// Export both the instance and the class, plus OptionsManager components
 export { Turnstile };
 export default turnstile;

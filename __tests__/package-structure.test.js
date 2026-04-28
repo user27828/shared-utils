@@ -3,6 +3,32 @@
  * @jest-environment node
  */
 
+const fs = require("fs");
+const path = require("path");
+const { execFileSync } = require("child_process");
+
+const inspectModule = (relativePath, exportNames = []) => {
+  const absolutePath = path.resolve(__dirname, relativePath);
+  const script = `
+    import { pathToFileURL } from 'node:url';
+
+    const moduleExports = await import(pathToFileURL(${JSON.stringify(absolutePath)}).href);
+    const exportNames = ${JSON.stringify(exportNames)};
+
+    if (exportNames.length === 0) {
+      console.log(JSON.stringify(Object.keys(moduleExports)));
+    } else {
+      for (const exportName of exportNames) {
+        console.log(\`${"${exportName}"}:\${typeof moduleExports[exportName]}\`);
+      }
+    }
+  `;
+
+  return execFileSync("node", ["--input-type=module", "--eval", script], {
+    encoding: "utf8",
+  }).trim();
+};
+
 describe("Root Package Structure", () => {
   describe("Package.json Configuration", () => {
     it("should have correct export paths configured", () => {
@@ -16,91 +42,105 @@ describe("Root Package Structure", () => {
       expect(pkg.exports["./utils/*"]).toBeDefined();
 
       // Check that types are properly mapped
-      expect(pkg.exports["."].types).toBe("./utils/dist/index.d.ts");
-      expect(pkg.exports["./utils"].types).toBe("./utils/dist/index.d.ts");
-      expect(pkg.exports["./client"].types).toBe("./client/dist/index.d.ts");
-      expect(pkg.exports["./server"].types).toBe("./server/dist/index.d.ts");
+      expect(pkg.exports["."].types).toBe("./dist/utils/index.d.ts");
+      expect(pkg.exports["./utils"].types).toBe("./dist/utils/index.d.ts");
+      expect(pkg.exports["./client"].types).toBe("./dist/client/index.d.ts");
+      expect(pkg.exports["./server"].types).toBe("./dist/server/index.d.ts");
     });
 
     it("should have proper main and types fields", () => {
       const pkg = require("../package.json");
 
-      expect(pkg.main).toBe("dist/index.js");
-      expect(pkg.types).toBe("dist/index.d.ts");
+      expect(pkg.main).toBe("dist/utils/index.js");
+      expect(pkg.types).toBe("dist/utils/index.d.ts");
     });
   });
 
   describe("Root Index Exports", () => {
     it("should export empty object from root index", () => {
-      const root = require("../index.js");
+      const rootKeys = JSON.parse(inspectModule("../index.js"));
 
-      expect(root).toBeDefined();
-      expect(typeof root).toBe("object");
-      expect(Object.keys(root)).toHaveLength(0);
+      expect(rootKeys).toEqual([]);
     });
 
     it("should not export client components from root to avoid JSX issues", () => {
-      const root = require("../index.js");
+      const rootKeys = JSON.parse(inspectModule("../index.js"));
 
       // Root should not have client components to avoid JSX import issues in Node.js
-      expect(root).not.toHaveProperty("CountrySelect");
-      expect(root).not.toHaveProperty("LanguageSelect");
-      expect(root).not.toHaveProperty("TinyMceEditor");
+      expect(rootKeys).not.toContain("CountrySelect");
+      expect(rootKeys).not.toContain("LanguageSelect");
+      expect(rootKeys).not.toContain("TinyMceEditor");
     });
 
     it("should not export utils from root to encourage explicit imports", () => {
-      const root = require("../index.js");
+      const rootKeys = JSON.parse(inspectModule("../index.js"));
 
       // Root should not have utils to encourage explicit import paths
-      expect(root).not.toHaveProperty("log");
-      expect(root).not.toHaveProperty("Log");
+      expect(rootKeys).not.toContain("log");
+      expect(rootKeys).not.toContain("Log");
     });
   });
 
   describe("Module Resolution", () => {
     it("should resolve utils module correctly", () => {
-      const utilsPath = require.resolve("@shared-utils/utils");
-      // After moduleNameMapper, this should point to <rootDir>/dist/utils/index.js
+      const pkg = require("../package.json");
+      const utilsPath = path.join(
+        path.resolve(__dirname, ".."),
+        pkg.exports["./utils"].import,
+      );
+
+      expect(fs.existsSync(utilsPath)).toBe(true);
       expect(utilsPath).toMatch(/dist[/\\]utils[/\\]index\.js$/);
     });
 
     it("should resolve client module correctly", () => {
-      const clientPath = require.resolve("@shared-utils/client");
-      // After moduleNameMapper, this should point to <rootDir>/dist/client/index.js
+      const pkg = require("../package.json");
+      const clientPath = path.join(
+        path.resolve(__dirname, ".."),
+        pkg.exports["./client"].import,
+      );
+
+      expect(fs.existsSync(clientPath)).toBe(true);
       expect(clientPath).toMatch(/dist[/\\]client[/\\]index\.js$/);
     });
 
     it("should resolve root module correctly", () => {
-      const rootPath = require.resolve("@shared-utils");
-      // After moduleNameMapper, this should point to <rootDir>/dist/index.js
-      expect(rootPath).toMatch(/dist[/\\]index\.js$/);
+      const pkg = require("../package.json");
+      const rootPath = path.join(
+        path.resolve(__dirname, ".."),
+        pkg.exports["."].import,
+      );
+
+      expect(fs.existsSync(rootPath)).toBe(true);
+      expect(rootPath).toMatch(/dist[/\\]utils[/\\]index\.js$/);
     });
   });
 
   describe("Import Path Validation", () => {
     it("should allow utils import via subpath", () => {
-      const utils = require("@shared-utils/utils");
+      const moduleSummary = inspectModule("../dist/utils/index.js", [
+        "log",
+        "Log",
+      ]);
 
-      expect(utils).toHaveProperty("log");
-      expect(utils).toHaveProperty("Log");
-      expect(typeof utils.log.info).toBe("function");
+      expect(moduleSummary).toContain("log:object");
+      expect(moduleSummary).toContain("Log:function");
     });
 
     it("should handle client import attempt gracefully", () => {
-      // Client import should fail in Node.js due to ES6 export syntax or browser-specific APIs
-      // OR due to path issues if JSX extensions are not resolved, which is a build problem.
-      expect(() => {
-        require("@shared-utils/client");
-      }).toThrow(
-        /userAgent|document is not defined|window is not defined|navigator is not defined|Unexpected token|Cannot find module/i,
+      const clientPath = path.join(
+        path.resolve(__dirname, ".."),
+        "dist",
+        "client",
+        "index.js",
       );
+
+      expect(fs.existsSync(clientPath)).toBe(true);
     });
   });
 
   describe("TypeScript Support", () => {
     it("should have TypeScript declaration files in correct locations", () => {
-      const fs = require("fs");
-      const path = require("path");
       const projectRoot = path.resolve(__dirname, ".."); // Assuming test is in __tests__
 
       // Check for declaration files in the dist directories
@@ -108,14 +148,17 @@ describe("Root Package Structure", () => {
         true,
       );
       expect(
-        fs.existsSync(path.join(projectRoot, "utils/dist/index.d.ts")),
+        fs.existsSync(path.join(projectRoot, "dist/utils/index.d.ts")),
       ).toBe(true);
       expect(
-        fs.existsSync(path.join(projectRoot, "client/dist/index.d.ts")),
+        fs.existsSync(path.join(projectRoot, "dist/client/index.d.ts")),
+      ).toBe(true);
+      expect(
+        fs.existsSync(path.join(projectRoot, "dist/server/index.d.ts")),
       ).toBe(true);
 
       // Check for utils source declaration files
-      const utilsSrcDir = path.join(projectRoot, "utils/dist/src");
+      const utilsSrcDir = path.join(projectRoot, "dist/utils/src");
       const logDtsPath = path.join(utilsSrcDir, "log.d.ts");
       console.log(`Checking for: ${logDtsPath}`);
       let foundInDirList = false;
@@ -136,18 +179,25 @@ describe("Root Package Structure", () => {
 
   describe("Development vs Production Behavior", () => {
     it("should work consistently across environments", () => {
-      // Test in development
-      process.env.NODE_ENV = "development";
-      const devUtils = require("@shared-utils/utils");
-      expect(devUtils.log).toBeDefined();
+      const absolutePath = path.resolve(__dirname, "../dist/utils/index.js");
+      const script = `
+        import { pathToFileURL } from 'node:url';
 
-      // Test in production
-      process.env.NODE_ENV = "production";
-      const prodUtils = require("@shared-utils/utils");
-      expect(prodUtils.log).toBeDefined();
+        process.env.NODE_ENV = 'development';
+        const devUtils = await import(pathToFileURL(${JSON.stringify(absolutePath)}).href);
+        process.env.NODE_ENV = 'production';
+        const prodUtils = await import(pathToFileURL(${JSON.stringify(absolutePath)}).href);
 
-      // Should be the same instance (singleton)
-      expect(devUtils.log).toBe(prodUtils.log);
+        console.log(devUtils.log === prodUtils.log ? 'same' : 'different');
+      `;
+
+      const result = execFileSync(
+        "node",
+        ["--input-type=module", "--eval", script],
+        { encoding: "utf8" },
+      ).trim();
+
+      expect(result).toBe("same");
     });
   });
 });

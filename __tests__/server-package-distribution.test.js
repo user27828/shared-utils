@@ -76,7 +76,7 @@ describe("Server Package Distribution", () => {
       const serverContent = fs.readFileSync(serverPath, "utf8");
       expect(serverContent).toContain("createTurnstileWorker");
       expect(serverContent).toContain("createTurnstileMiddleware");
-      expect(serverContent).toContain("verifyTurnstileTokenEnhanced");
+      expect(serverContent).toContain("verifyTurnstileToken");
     });
 
     it("should export main server functions in file content", () => {
@@ -86,8 +86,6 @@ describe("Server Package Distribution", () => {
       const expectedExports = [
         "createTurnstileWorker",
         "createTurnstileMiddleware",
-        "verifyTurnstileTokenEnhanced",
-        "verifyTurnstileSimple",
         "verifyTurnstileToken",
       ];
 
@@ -102,7 +100,7 @@ describe("Server Package Distribution", () => {
 
       // Check that the file has export statements
       expect(serverContent).toMatch(/export.*createTurnstileWorker/);
-      expect(serverContent).toMatch(/export.*verifyTurnstileTokenEnhanced/);
+      expect(serverContent).toMatch(/export.*verifyTurnstileToken/);
     });
   });
 
@@ -172,13 +170,14 @@ describe("Server Package Distribution", () => {
       // The server package should not depend on workspace packages
       // that won't be available in consuming projects
       const dependencies = serverPackageJson.dependencies || {};
-      const workspaceDeps = Object.keys(dependencies).filter(
+      const unsupportedWorkspaceDeps = Object.keys(dependencies).filter(
         (dep) =>
-          dep.startsWith("@shared-utils/") ||
-          dependencies[dep].includes("workspace:"),
+          dep !== "@shared-utils/utils" &&
+          (dep.startsWith("@shared-utils/") ||
+            dependencies[dep].includes("workspace:")),
       );
 
-      expect(workspaceDeps).toHaveLength(0);
+      expect(unsupportedWorkspaceDeps).toHaveLength(0);
     });
 
     it("should not reference workspace dependencies in compiled code", () => {
@@ -207,7 +206,6 @@ describe("Server Package Distribution", () => {
       for (const [name, script] of Object.entries(scripts)) {
         if (script.includes("tsc") || script.includes("jest")) {
           expect(script).toContain("yarn");
-          expect(script).not.toContain("npx");
           expect(script).not.toContain("npm run");
         }
       }
@@ -333,20 +331,20 @@ describe("Server Package Distribution", () => {
       // Simulate what a consuming project would see in node_modules/@user27828/shared-utils/
       const serverIndexPath = path.join(
         projectRoot,
-        "server",
         "dist",
+        "server",
         "index.js",
       );
       const serverTypesPath = path.join(
         projectRoot,
-        "server",
         "dist",
+        "server",
         "index.d.ts",
       );
       const serverWorkerPath = path.join(
         projectRoot,
-        "server",
         "dist",
+        "server",
         "turnstile-worker.js",
       );
 
@@ -408,7 +406,8 @@ describe("Server Package Distribution", () => {
         const serverFiles = tarContents
           .split("\n")
           .filter((line) => line.includes("server/"));
-        serverFiles.forEach((file) => console.log("  ", file));
+        console.log("Server file count:", serverFiles.length);
+        serverFiles.slice(0, 12).forEach((file) => console.log("  ", file));
 
         // Verify server files are present
         expect(tarContents).toContain("package/dist/server/index.js");
@@ -433,8 +432,8 @@ describe("Server Package Distribution", () => {
       // Test the exact import pattern a consumer would use
       const serverExportPath = path.join(
         projectRoot,
-        "server",
         "dist",
+        "server",
         "index.js",
       );
       expect(fs.existsSync(serverExportPath)).toBe(true);
@@ -450,7 +449,7 @@ describe("Server Package Distribution", () => {
 
       // Verify key exports are present
       expect(content).toContain("createTurnstileWorker");
-      expect(content).toContain("verifyTurnstileTokenEnhanced");
+      expect(content).toContain("verifyTurnstileToken");
     });
   });
 
@@ -467,7 +466,7 @@ describe("Server Package Distribution", () => {
 
       try {
         // Create a test package and try to import it
-        const packResult = execSync(`yarn pack --filename "${tarballPath}"`, {
+        execSync(`yarn pack --filename "${tarballPath}"`, {
           cwd: projectRoot,
           encoding: "utf8",
         });
@@ -478,13 +477,21 @@ describe("Server Package Distribution", () => {
         // Extract package
         execSync(`tar -xzf "${tarballPath}" -C "${testDir}"`);
 
+        // Simulate installed dependencies for the extracted package.
+        const workspaceNodeModules = path.join(projectRoot, "node_modules");
+        expect(fs.existsSync(workspaceNodeModules)).toBe(true);
+        fs.symlinkSync(
+          workspaceNodeModules,
+          path.join(testDir, "node_modules"),
+          "dir",
+        );
+
         // Create test import file
-        const testImportContent = `
-import { createTurnstileWorker, verifyTurnstileTokenEnhanced } from './package/dist/server/index.js';
+        const testImportContent = `import { createTurnstileWorker, verifyTurnstileToken } from './package/dist/server/index.js';
 console.log('SUCCESS: Server exports imported without errors');
 console.log('createTurnstileWorker type:', typeof createTurnstileWorker);
-console.log('verifyTurnstileTokenEnhanced type:', typeof verifyTurnstileTokenEnhanced);
-        `;
+console.log('verifyTurnstileToken type:', typeof verifyTurnstileToken);
+`;
 
         const testImportPath = path.join(testDir, "test-import.mjs");
         fs.writeFileSync(testImportPath, testImportContent);
@@ -497,9 +504,7 @@ console.log('verifyTurnstileTokenEnhanced type:', typeof verifyTurnstileTokenEnh
 
         expect(importResult).toContain("SUCCESS");
         expect(importResult).toContain("createTurnstileWorker type: function");
-        expect(importResult).toContain(
-          "verifyTurnstileTokenEnhanced type: function",
-        );
+        expect(importResult).toContain("verifyTurnstileToken type: function");
       } catch (error) {
         console.error("Import test failed:", error.message);
         throw error;

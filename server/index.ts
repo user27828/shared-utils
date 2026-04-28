@@ -2,7 +2,7 @@
  * Server-side Turnstile verification utilities
  *
  * This package provides modular Turnstile verification for Node.js servers
- * with dev mode support, localhost bypass, and unified configuration.
+ * and Cloudflare Workers with strict server-side validation.
  *
  * @example
  * ```typescript
@@ -11,8 +11,8 @@
  * // Configure options directly
  * const middleware = createTurnstileMiddleware({
  *   secretKey: process.env.TURNSTILE_SECRET_KEY,
- *   devMode: process.env.NODE_ENV === 'development',
- *   bypassLocalhost: true
+ *   expectedAction: 'contact-form',
+ *   expectedHostname: 'example.com'
  * });
  *
  * // Use in Express.js
@@ -23,8 +23,6 @@
 // Main verification functions
 export {
   getTurnstileServerOptions,
-  verifyTurnstileTokenEnhanced,
-  verifyTurnstileSimple,
   setGlobalOptions,
 } from "./src/turnstile/index.js";
 
@@ -46,11 +44,7 @@ export { createTurnstileWorker } from "./src/turnstile/index.js";
 export { verifyTurnstileToken } from "./src/turnstile/index.js";
 
 // Utilities
-export {
-  isLocalhostRequest,
-  createMockVerifyResponse,
-  getAllowedOrigin,
-} from "./src/turnstile/index.js";
+export { getAllowedOrigin } from "./src/turnstile/index.js";
 
 // IP utilities
 export { getClientIp } from "./src/ip.js";
@@ -64,6 +58,7 @@ export type {
   TurnstileVerifyResponse,
   Environment,
   TurnstileServerOptions,
+  TurnstileVerificationOptions,
   TurnstileOptions,
   GlobalTurnstileOptions,
   TurnstileWorkerConfig,

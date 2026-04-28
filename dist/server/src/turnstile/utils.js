@@ -2,72 +2,33 @@
  * Server utilities for Turnstile verification
  * Common functions used across server-side implementations
  */
-/**
- * Check if the request is coming from localhost
- */
-export const isLocalhostRequest = (request, remoteip) => {
-    const origin = request.headers.get("Origin");
-    const referer = request.headers.get("Referer");
-    // Check origin header
-    if (origin) {
-        try {
-            const url = new URL(origin);
-            if (url.hostname === "localhost" ||
-                url.hostname === "127.0.0.1" ||
-                url.hostname.endsWith(".local")) {
-                return true;
-            }
-        }
-        catch { }
+const parseAllowedOrigins = (allowedOrigins) => {
+    if (!allowedOrigins) {
+        return [];
     }
-    // Check referer header
-    if (referer) {
-        try {
-            const url = new URL(referer);
-            if (url.hostname === "localhost" ||
-                url.hostname === "127.0.0.1" ||
-                url.hostname.endsWith(".local")) {
-                return true;
-            }
-        }
-        catch { }
-    }
-    // Check remote IP
-    if (remoteip) {
-        if (remoteip === "127.0.0.1" ||
-            remoteip === "::1" ||
-            remoteip.startsWith("192.168.") ||
-            remoteip.startsWith("10.") ||
-            /^172\.(1[6-9]|2[0-9]|3[01])\./.test(remoteip)) {
-            return true;
-        }
-    }
-    return false;
-};
-/**
- * Create a mock successful verification response for dev mode
- */
-export const createMockVerifyResponse = () => {
-    return {
-        success: true,
-        challenge_ts: new Date().toISOString(),
-        hostname: "localhost",
-        action: "dev-mode",
-        cdata: "dev-bypass",
-    };
+    return allowedOrigins
+        .split(",")
+        .map((origin) => origin.trim())
+        .filter(Boolean);
 };
 /**
  * Get allowed origin for CORS
  */
 export const getAllowedOrigin = (request, env) => {
     const origin = request.headers.get("Origin");
-    if (!env.ALLOWED_ORIGINS) {
-        return "*"; // Allow all origins if not configured
+    if (!origin) {
+        return null;
     }
-    const allowedOrigins = env.ALLOWED_ORIGINS.split(",").map((o) => o.trim());
+    const allowedOrigins = parseAllowedOrigins(env.ALLOWED_ORIGINS);
+    if (allowedOrigins.length === 0) {
+        return null;
+    }
+    if (allowedOrigins.includes("*")) {
+        return origin;
+    }
     if (origin && allowedOrigins.includes(origin)) {
         return origin;
     }
-    return allowedOrigins[0] || "*";
+    return null;
 };
 //# sourceMappingURL=utils.js.map

@@ -2,31 +2,79 @@
  * Core Turnstile verification functionality
  * Handles the actual API calls to Cloudflare's verification service
  */
+const DEFAULT_TURNSTILE_API_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+const DEFAULT_TURNSTILE_TIMEOUT_MS = 10000;
 /**
  * Verify Turnstile token with Cloudflare API
  */
-export const verifyTurnstileToken = async (token, secretKey, remoteip, idempotencyKey) => {
-    const formData = new FormData();
-    formData.append("secret", secretKey);
+export const verifyTurnstileToken = async (token, options) => {
+    if (!options.secretKey) {
+        throw new Error("Turnstile secret key is required");
+    }
+    if (typeof token !== "string" || token.trim() === "") {
+        return {
+            success: false,
+            "error-codes": ["missing-input-response"],
+        };
+    }
+    if (token.length > 2048) {
+        return {
+            success: false,
+            "error-codes": ["invalid-input-response"],
+        };
+    }
+    const formData = new URLSearchParams();
+    formData.append("secret", options.secretKey);
     formData.append("response", token);
-    if (remoteip) {
-        formData.append("remoteip", remoteip);
+    if (options.remoteip) {
+        formData.append("remoteip", options.remoteip);
     }
-    if (idempotencyKey) {
-        formData.append("idempotency_key", idempotencyKey);
+    if (options.idempotencyKey) {
+        formData.append("idempotency_key", options.idempotencyKey);
     }
+    const timeoutMs = typeof options.timeoutMs === "number" && options.timeoutMs > 0
+        ? options.timeoutMs
+        : DEFAULT_TURNSTILE_TIMEOUT_MS;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     try {
-        const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+        const response = await fetch(options.apiUrl || DEFAULT_TURNSTILE_API_URL, {
             method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
             body: formData,
             signal: controller.signal,
         });
-        if (!response.ok) {
+        const result = await response.json();
+        if (!response.ok && typeof result.success !== "boolean") {
             throw new Error(`Turnstile API error: ${response.status}`);
         }
-        return await response.json();
+        if (result.success &&
+            options.expectedAction &&
+            result.action !== options.expectedAction) {
+            return {
+                ...result,
+                success: false,
+                "error-codes": ["action-mismatch"],
+            };
+        }
+        if (result.success &&
+            options.expectedHostname &&
+            result.hostname !== options.expectedHostname) {
+            return {
+                ...result,
+                success: false,
+                "error-codes": ["hostname-mismatch"],
+            };
+        }
+        return result;
+    }
+    catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+            throw new Error("Turnstile verification timed out");
+        }
+        throw error;
     }
     finally {
         clearTimeout(timeoutId);

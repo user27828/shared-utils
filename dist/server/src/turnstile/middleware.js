@@ -1,41 +1,54 @@
 /**
  * Express.js and Node.js middleware for Turnstile verification
  */
-import { getTurnstileServerOptions, verifyTurnstileTokenEnhanced, } from "./turnstile.js";
+import { getTurnstileServerOptions } from "./turnstile.js";
+import { verifyTurnstileToken } from "./verification.js";
+const getTokenFromRequestBody = (body, tokenFieldName) => {
+    if (!body) {
+        return undefined;
+    }
+    const candidateTokens = [
+        body[tokenFieldName],
+        body.turnstileToken,
+        body.token,
+    ];
+    return candidateTokens.find((candidate) => typeof candidate === "string" && candidate.trim() !== "");
+};
+const getClientIp = (req) => {
+    const forwardedFor = req.headers?.["x-forwarded-for"];
+    if (Array.isArray(forwardedFor) && forwardedFor.length > 0) {
+        return forwardedFor[0];
+    }
+    if (typeof forwardedFor === "string") {
+        return forwardedFor.split(",")[0]?.trim();
+    }
+    const realIp = req.headers?.["x-real-ip"];
+    if (typeof realIp === "string" && realIp.trim() !== "") {
+        return realIp;
+    }
+    return req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress;
+};
 /**
  * Express.js middleware for Node.js servers
- * Automatically uses the global optionsManager configuration
- * Configure using: optionsManager.setGlobalOptions({ 'turnstile-server': { ... } })
+ * Automatically uses the global optionsManager configuration.
  */
-export const createTurnstileMiddleware = (options) => {
-    // If options are provided, warn about deprecated usage
-    if (options) {
-        console.warn('[DEPRECATED] Pass options to createTurnstileMiddleware. Use optionsManager.setGlobalOptions({ "turnstile-server": options }) instead');
-    }
+export const createTurnstileMiddleware = (options = {}) => {
     return async (req, res, next) => {
         try {
-            const token = req.body["cf-turnstile-response"] || req.body.turnstileToken;
+            const serverOptions = { ...getTurnstileServerOptions(), ...options };
+            const tokenFieldName = serverOptions.tokenFieldName || "cf-turnstile-response";
+            const token = getTokenFromRequestBody(req.body, tokenFieldName);
             if (!token) {
                 return res.status(400).json({
                     error: "Turnstile token is required",
                     code: "MISSING_TURNSTILE_TOKEN",
                 });
             }
-            // Get client IP
-            const clientIP = req.ip ||
-                req.connection?.remoteAddress ||
-                req.socket?.remoteAddress ||
-                req.headers["x-forwarded-for"] ||
-                req.headers["x-real-ip"];
-            // Mock request object for localhost detection
-            const mockRequest = {
-                headers: {
-                    get: (name) => req.headers[name.toLowerCase()],
-                },
-            };
-            const serverOptions = { ...getTurnstileServerOptions(), ...options };
-            // Verify token with enhanced functionality
-            const result = await verifyTurnstileTokenEnhanced(token, serverOptions.secretKey || "", clientIP, undefined, serverOptions, mockRequest);
+            const result = await verifyTurnstileToken(token, {
+                ...serverOptions,
+                secretKey: serverOptions.secretKey || "",
+                remoteip: getClientIp(req),
+            });
             if (!result.success) {
                 return res.status(400).json({
                     error: "Turnstile verification failed",
