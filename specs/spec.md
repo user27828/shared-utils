@@ -15,7 +15,7 @@ source: codebase-analysis
 **Status**: Draft  
 **Input**: Current-state specification derived from the existing repository and published package surfaces.
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Integrate Shared Surfaces (Priority: P1)
 
@@ -162,7 +162,7 @@ webhook handling operate through the documented seams.
 - How does the system handle Turnstile verification timeouts or hostname/action
   mismatches?
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -195,7 +195,7 @@ webhook handling operate through the documented seams.
   environment loading, Turnstile verification, email webhook handling, and
   storage/provider integration.
 
-### Key Entities *(include if feature involves data)*
+### Key Entities _(include if feature involves data)_
 
 - **Global option space**: Shared configuration categories consumed by logging,
   Turnstile, environment loading, and utility helpers.
@@ -216,7 +216,7 @@ webhook handling operate through the documented seams.
 - **Email render result**: The rendered subject, HTML, text, warnings, and
   metadata produced by a template preview.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

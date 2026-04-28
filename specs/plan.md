@@ -40,26 +40,27 @@ work can consume conventional `spec.md`, `plan.md`, `data-model.md`,
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+_GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
 Current state:
 
-- `.specify/memory/constitution.md` is still the unfilled scaffold template
-  produced by `specify init`.
-- No enforceable project principles, amendment history, or ratified governance
-  rules can be derived from that placeholder file yet.
-- Until the constitution is completed, the effective engineering guidance for
-  this repository remains the existing `AGENTS.md` plus
-  `.github/copilot-instructions.md` and the repo’s established source patterns.
+- `.specify/memory/constitution.md` is now ratified as the repository’s
+  top-level engineering policy.
+- The governing principles are:
+  - contract-first library surfaces
+  - layered domain boundaries and injection
+  - explicit runtime and side-effect boundaries
+  - typed contracts, validation, and failure discipline
+  - verification across workspaces and consumers
 
 Implication for this plan:
 
-- **Gate status**: unresolved governance metadata, but not a blocker for this
-  documentation-baseline plan because the plan is describing the existing repo
-  rather than authorizing a net-new implementation direction.
-- **Follow-up needed**: run `/speckit.constitution` or otherwise complete the
-  constitution before using future Spec-Kit implementation phases as hard
-  governance gates.
+- **Gate status**: pass.
+- This documentation-baseline plan complies because it records the existing
+  package surface, respects the layered architecture, and keeps Spec-Kit
+  artifacts aligned with the actual repository contract.
+- Future implementation plans should cite concrete evidence for each
+  constitution gate rather than treating this section as a placeholder.
 
 ## Project Structure
 
@@ -127,7 +128,6 @@ current-state baseline spanning the whole repository.
 
 > **Fill ONLY if Constitution Check has violations that must be justified**
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| No ratified constitution yet | `specify init` scaffold was created after the repository already had established governance in `AGENTS.md` and repo instructions | Inventing fake constitutional rules would be less accurate than documenting the unresolved state |
+| Violation                                                          | Why Needed                                                                                      | Simpler Alternative Rejected Because                                                        |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | Specs rooted directly in `specs/` instead of `specs/[###-feature]` | This baseline documents the whole brownfield repository rather than one numbered feature branch | Forcing an arbitrary feature-number directory would misrepresent the current artifact scope |
