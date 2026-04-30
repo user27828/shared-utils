@@ -30,6 +30,8 @@ import type { FmAuthzResult } from "./authz.js";
 import type {
   FmWriteEvent,
   FmContext,
+  FmFileRow,
+  FmFileVariantRow,
   FmFilesOrderBy,
   FmOrderDirection,
 } from "../../../../utils/src/fm/types.js";
@@ -44,6 +46,9 @@ import {
   FmMoveRequestSchema,
   FmLinkCreateRequestSchema,
   FmLinkDeleteRequestSchema,
+  FmUploadFinalizeRequestSchema,
+  FmVariantUploadInitRequestSchema,
+  FmVariantUploadFinalizeRequestSchema,
 } from "../../../../utils/src/fm/types.js";
 import { getSingleParam } from "../../express/params.js";
 
@@ -127,6 +132,44 @@ const toTrimmedStringOrEmpty = (v: unknown): string => {
   return String(v).trim();
 };
 
+const requireOwnedFile = async (
+  service: FmServiceCore,
+  res: Response,
+  fileUid: string,
+  ctx: FmContext,
+): Promise<FmFileRow | null> => {
+  const file = await service.getFileByUid(fileUid);
+  if (!file) {
+    res.status(404).json({ success: false, message: "Not found" });
+    return null;
+  }
+  assertOwnerOrAdmin(file, ctx);
+  return file;
+};
+
+const requireOwnedVariantParent = async (
+  service: FmServiceCore,
+  res: Response,
+  variantUid: string,
+  ctx: FmContext,
+): Promise<{ variant: FmFileVariantRow; file: FmFileRow } | null> => {
+  const variant = await service.getVariantByUid(variantUid);
+  if (!variant) {
+    res.status(404).json({ success: false, message: "Not found" });
+    return null;
+  }
+  const file = await requireOwnedFile(
+    service,
+    res,
+    variant.variant_of_uid,
+    ctx,
+  );
+  if (!file) {
+    return null;
+  }
+  return { variant, file };
+};
+
 // ─── Factory ──────────────────────────────────────────────────────────────
 
 /**
@@ -207,6 +250,24 @@ export function createFmRouter(config: CreateFmRouterConfig): Router {
     async (req: Request, res: Response) => {
       try {
         const ctx = authz.getActorContext(req);
+        const parsed = FmUploadFinalizeRequestSchema.safeParse(req.body || {});
+        if (!parsed.success) {
+          res.status(400).json({
+            success: false,
+            message: "Invalid upload finalize request",
+            details: parsed.error.flatten().fieldErrors,
+          });
+          return;
+        }
+        const file = await requireOwnedFile(
+          service,
+          res,
+          parsed.data.fileUid,
+          ctx,
+        );
+        if (!file) {
+          return;
+        }
         const result = await service.uploadFinalize({ request: req.body });
         await fireAfterWrite(
           { action: "upload", fileUid: result.file.uid, userUid: ctx.userUid },
@@ -240,6 +301,11 @@ export function createFmRouter(config: CreateFmRouterConfig): Router {
           return;
         }
 
+        const file = await requireOwnedFile(service, res, fileUid, ctx);
+        if (!file) {
+          return;
+        }
+
         const result = await service.uploadWriteAndFinalize({
           fileUid,
           body,
@@ -266,7 +332,27 @@ export function createFmRouter(config: CreateFmRouterConfig): Router {
     jsonParser,
     async (req: Request, res: Response) => {
       try {
-        authz.getActorContext(req); // ensure authenticated
+        const ctx = authz.getActorContext(req);
+        const parsed = FmVariantUploadInitRequestSchema.safeParse(
+          req.body || {},
+        );
+        if (!parsed.success) {
+          res.status(400).json({
+            success: false,
+            message: "Invalid variant upload init request",
+            details: parsed.error.flatten().fieldErrors,
+          });
+          return;
+        }
+        const file = await requireOwnedFile(
+          service,
+          res,
+          parsed.data.variantOfUid,
+          ctx,
+        );
+        if (!file) {
+          return;
+        }
         const result = await service.variantUploadInit({ request: req.body });
         ok(res, result);
       } catch (err) {
@@ -282,6 +368,26 @@ export function createFmRouter(config: CreateFmRouterConfig): Router {
     async (req: Request, res: Response) => {
       try {
         const ctx = authz.getActorContext(req);
+        const parsed = FmVariantUploadFinalizeRequestSchema.safeParse(
+          req.body || {},
+        );
+        if (!parsed.success) {
+          res.status(400).json({
+            success: false,
+            message: "Invalid variant upload finalize request",
+            details: parsed.error.flatten().fieldErrors,
+          });
+          return;
+        }
+        const ownership = await requireOwnedVariantParent(
+          service,
+          res,
+          parsed.data.variantUid,
+          ctx,
+        );
+        if (!ownership) {
+          return;
+        }
         const result = await service.variantUploadFinalize({
           request: req.body,
         });
@@ -320,6 +426,16 @@ export function createFmRouter(config: CreateFmRouterConfig): Router {
           res
             .status(400)
             .json({ success: false, message: "Missing upload body" });
+          return;
+        }
+
+        const ownership = await requireOwnedVariantParent(
+          service,
+          res,
+          variantUid,
+          ctx,
+        );
+        if (!ownership) {
           return;
         }
 

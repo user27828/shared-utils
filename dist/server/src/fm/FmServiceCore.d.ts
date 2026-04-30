@@ -42,6 +42,7 @@ export declare class FmServiceCore {
     /** The parsed FmServerConfig. */
     getConfig(): FmServerConfig;
     private emitWrite;
+    private deleteLinksForFile;
     uploadInit(input: {
         request: FmUploadInitRequest;
         ownerUserUid?: string | null;
@@ -214,6 +215,13 @@ export declare class FmServiceCore {
      * @returns The file row, or `null` if not found.
      */
     getFileByUid(uid: string): Promise<FmFileRow | null>;
+    /**
+     * Get a single variant by its UID.
+     *
+     * @param uid - The variant UID.
+     * @returns The variant row, or `null` if not found.
+     */
+    getVariantByUid(uid: string): Promise<FmFileVariantRow | null>;
     /**
      * Soft-archive a file by setting its `archived_at` timestamp.
      *

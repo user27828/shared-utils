@@ -56,6 +56,18 @@ If you need to record work, ask the user to commit or use task tracking instead.
 
 **Never use box-drawing dash characters such as `─` in code comments, documentation, or visual separators. In contexts like divider lines, always use the standard ASCII dash character `-`. If dash-divider comment lines are used, make the full line exactly 80 characters wide.**
 
+## Spec Awareness and Brownfield Truth
+
+Do not treat `AGENTS.md` as the only repository truth. This project also maintains brownfield specifications under `specs/` and Spec-Kit runtime assets under `.specify/`.
+
+- For non-Spec-Kit requests that touch product behavior, feature scope, user flows, architecture, or existing requirements, read the relevant specs before making assumptions.
+- Use `specs/product_spec.md` for product-wide current-state behavior.
+- Use `specs/technical_spec.md` for architecture, workspace boundaries, runtime flows, and system responsibilities.
+- Use the relevant `specs/<feature>/spec.md` file for feature-specific current-state requirements and constraints.
+- Treat `.specify/` as Spec-Kit workflow/runtime material, including templates, scripts, workflow definitions, and the runtime constitution used by Spec-Kit commands.
+- Keep `specs/constitution.md` and `.specify/memory/constitution.md` aligned when governance rules change.
+- If specs and code diverge, prefer observable repository reality, note the inconsistency, and avoid inventing future-state behavior.
+
 ### FM storage adapters
 
 - `FmStorageLocal` — local filesystem

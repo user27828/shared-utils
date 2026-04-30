@@ -18,6 +18,7 @@
 import { Router } from "express";
 import type { Request, Response, NextFunction } from "express";
 import type { CmsServiceCore } from "../CmsServiceCore.js";
+import type { CmsUnlockTokenUtils } from "../unlockToken.js";
 export interface CmsPublicRouterConfig {
     /** CmsServiceCore instance. */
     service: CmsServiceCore;
@@ -33,7 +34,7 @@ export interface CmsPublicRouterConfig {
      * Unlock-token utilities from createCmsUnlockTokenUtils().
      * Required only if password-protected content is used.
      */
-    unlockToken?: {
+    unlockToken?: CmsUnlockTokenUtils | {
         sign: (claims: {
             uid: string;
             postType: string;

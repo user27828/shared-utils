@@ -280,7 +280,7 @@ export function createCmsAdminRouter(cfg) {
             const actor = authz.getActorContext(req);
             const row = await service.trashByUid({
                 uid,
-                ifMatchHeader: ifMatch || "*",
+                ifMatchHeader: ifMatch ?? null,
                 actorUserUid: actor.userUid,
             });
             await fireAfterWrite(uid, "trash", actor.userUid, row, req);
@@ -304,7 +304,7 @@ export function createCmsAdminRouter(cfg) {
             const actor = authz.getActorContext(req);
             const row = await service.restoreByUid({
                 uid,
-                ifMatchHeader: ifMatch || "*",
+                ifMatchHeader: ifMatch ?? null,
                 actorUserUid: actor.userUid,
             });
             await fireAfterWrite(uid, "restore", actor.userUid, row, req);

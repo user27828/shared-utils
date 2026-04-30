@@ -33,6 +33,7 @@ import {
   applyCmsPublicCacheHeaders,
 } from "../cacheControl.js";
 import type { CmsServiceCore } from "../CmsServiceCore.js";
+import type { CmsUnlockTokenUtils } from "../unlockToken.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -53,25 +54,27 @@ export interface CmsPublicRouterConfig {
    * Unlock-token utilities from createCmsUnlockTokenUtils().
    * Required only if password-protected content is used.
    */
-  unlockToken?: {
-    sign: (
-      claims: {
-        uid: string;
-        postType: string;
-        locale: string;
-        slug: string;
-        passwordVersion?: number;
-      },
-      ttlSeconds?: number,
-    ) => string;
-    verify: (token: string) => {
-      uid: string;
-      postType: string;
-      locale: string;
-      slug: string;
-      passwordVersion?: number;
-    } | null;
-  };
+  unlockToken?:
+    | CmsUnlockTokenUtils
+    | {
+        sign: (
+          claims: {
+            uid: string;
+            postType: string;
+            locale: string;
+            slug: string;
+            passwordVersion?: number;
+          },
+          ttlSeconds?: number,
+        ) => string;
+        verify: (token: string) => {
+          uid: string;
+          postType: string;
+          locale: string;
+          slug: string;
+          passwordVersion?: number;
+        } | null;
+      };
 
   /** Default unlock token TTL in seconds.  Default: 1800 (30 min). */
   unlockTtlSeconds?: number;
@@ -90,6 +93,132 @@ const sendCmsError = (res: Response, err: unknown) => {
   );
   const message = String((err as any)?.message || "Internal server error");
   res.status(statusCode).json({ success: false, message });
+};
+
+interface PublicUnlockClaims {
+  uid: string;
+  postType: string;
+  locale: string;
+  slug: string;
+  passwordVersion?: number;
+}
+
+const readPublicUnlockClaims = (value: unknown): PublicUnlockClaims | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const raw = value as Record<string, unknown>;
+  const uid = String(raw.uid || "").trim();
+  const postType = String(raw.postType || raw.post_type || "").trim();
+  const locale = String(raw.locale || "").trim();
+  const slug = String(raw.slug || "").trim();
+  const passwordVersionRaw = raw.passwordVersion ?? raw.pv;
+  const passwordVersion =
+    passwordVersionRaw === undefined || passwordVersionRaw === null
+      ? undefined
+      : Number(passwordVersionRaw);
+
+  if (!uid || !postType || !locale || !slug) {
+    return null;
+  }
+
+  return {
+    uid,
+    postType,
+    locale,
+    slug,
+    ...(Number.isFinite(passwordVersion) ? { passwordVersion } : {}),
+  };
+};
+
+const signPublicUnlockToken = (
+  unlockToken: NonNullable<CmsPublicRouterConfig["unlockToken"]>,
+  claims: PublicUnlockClaims,
+  ttlSeconds: number,
+): string => {
+  const signed = (unlockToken.sign as any)(
+    { ...claims, ttlSeconds },
+    ttlSeconds,
+  );
+
+  if (typeof signed === "string") {
+    return signed;
+  }
+
+  if (signed && typeof signed === "object") {
+    const token = String((signed as Record<string, unknown>).token || "");
+    if (token) {
+      return token;
+    }
+  }
+
+  throw new Error("CMS unlock token signer returned an invalid token");
+};
+
+const verifyPublicUnlockToken = (
+  unlockToken: NonNullable<CmsPublicRouterConfig["unlockToken"]>,
+  token: string,
+  expected: PublicUnlockClaims,
+): PublicUnlockClaims | null => {
+  try {
+    const legacyResult = (unlockToken.verify as any)(token);
+    const legacyClaims = readPublicUnlockClaims(legacyResult);
+    if (legacyClaims) {
+      return legacyClaims;
+    }
+    if (!legacyResult || legacyResult.ok !== false) {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+
+  try {
+    const result = (unlockToken.verify as any)({
+      token,
+      uid: expected.uid,
+      postType: expected.postType,
+      locale: expected.locale,
+      slug: expected.slug,
+      passwordVersion: expected.passwordVersion ?? 0,
+    });
+
+    if (!result?.ok) {
+      return null;
+    }
+
+    return readPublicUnlockClaims(result.claims);
+  } catch {
+    return null;
+  }
+};
+
+const unlockClaimsMatch = (
+  claims: PublicUnlockClaims | null,
+  expected: PublicUnlockClaims,
+): boolean => {
+  if (!claims) {
+    return false;
+  }
+
+  if (
+    claims.uid !== expected.uid ||
+    claims.postType !== expected.postType ||
+    claims.locale !== expected.locale ||
+    claims.slug !== expected.slug
+  ) {
+    return false;
+  }
+
+  if (
+    claims.passwordVersion !== undefined &&
+    claims.passwordVersion !== expected.passwordVersion
+  ) {
+    return false;
+  }
+
+  return true;
 };
 
 // ─── Factory ──────────────────────────────────────────────────────────────
@@ -272,29 +401,19 @@ export function createCmsPublicRouter(cfg: CmsPublicRouterConfig): Router {
             return;
           }
 
-          const claims = unlockToken.verify(token);
-          if (
-            !claims ||
-            claims.uid !== head.uid ||
-            claims.postType !== postType ||
-            claims.locale !== locale ||
-            claims.slug !== slug
-          ) {
-            applyCmsPublicCacheHeaders(res, { isProtected: true, etag: null });
-            res.status(401).json({
-              success: false,
-              message: "Password required",
-              requiresPassword: true,
-            });
-            return;
-          }
-
-          // Check password version (rotation invalidates tokens)
-          if (
-            claims.passwordVersion !== undefined &&
-            head.password_version !== undefined &&
-            claims.passwordVersion !== head.password_version
-          ) {
+          const expectedClaims: PublicUnlockClaims = {
+            uid: head.uid,
+            postType,
+            locale,
+            slug,
+            passwordVersion: Number(head.password_version ?? 0),
+          };
+          const claims = verifyPublicUnlockToken(
+            unlockToken,
+            token,
+            expectedClaims,
+          );
+          if (!unlockClaimsMatch(claims, expectedClaims)) {
             applyCmsPublicCacheHeaders(res, { isProtected: true, etag: null });
             res.status(401).json({
               success: false,
@@ -415,13 +534,14 @@ export function createCmsPublicRouter(cfg: CmsPublicRouterConfig): Router {
           return;
         }
 
-        const token = unlockToken.sign(
+        const token = signPublicUnlockToken(
+          unlockToken,
           {
             uid: head.uid,
             postType,
             locale,
             slug,
-            passwordVersion: head.password_version,
+            passwordVersion: Number(head.password_version ?? 0),
           },
           unlockTtlSeconds,
         );

@@ -66,10 +66,11 @@ import {
   FmStorageError,
   FmAuthorizationError,
   FmPolicyError,
+  FmConflictError,
 } from "../../../utils/src/fm/errors.js";
 
 import type { FmConnector } from "./FmConnector.js";
-import { hasEntityLinks } from "./FmConnector.js";
+import { hasEntityLinks, hasFileLinkDelete } from "./FmConnector.js";
 import type { FmServerConfig, FmUploadPathPreset } from "./config.js";
 import {
   getFmUploadPathPresetsFromConfig,
@@ -378,6 +379,53 @@ export class FmServiceCore {
       await this.onWrite(event);
     } catch {
       // best-effort: swallow hook errors
+    }
+  }
+
+  private async deleteLinksForFile(fileUid: string): Promise<void> {
+    if (hasFileLinkDelete(this.connector)) {
+      await this.connector.deleteLinksForFile(fileUid);
+      return;
+    }
+
+    const seen = new Set<string>();
+
+    for (;;) {
+      const result = await this.connector.listLinksForFile(fileUid, {
+        limit: 200,
+        offset: 0,
+      });
+
+      if (!result.items.length) {
+        return;
+      }
+
+      let deletedAny = false;
+      for (const link of result.items) {
+        const key = [
+          link.file_uid,
+          link.linked_entity_type,
+          link.linked_entity_uid,
+          link.linked_field || "",
+        ].join("\u0000");
+
+        if (seen.has(key)) {
+          continue;
+        }
+
+        seen.add(key);
+        await this.connector.deleteLink({
+          fileUid: link.file_uid,
+          linkedEntityType: link.linked_entity_type,
+          linkedEntityUid: link.linked_entity_uid,
+          ...(link.linked_field ? { linkedField: link.linked_field } : {}),
+        });
+        deletedAny = true;
+      }
+
+      if (!deletedAny) {
+        throw new FmConflictError("Unable to delete file links");
+      }
     }
   }
 
@@ -1200,6 +1248,16 @@ export class FmServiceCore {
     return await this.connector.getFileByUid(uid);
   }
 
+  /**
+   * Get a single variant by its UID.
+   *
+   * @param uid - The variant UID.
+   * @returns The variant row, or `null` if not found.
+   */
+  async getVariantByUid(uid: string): Promise<FmFileVariantRow | null> {
+    return await this.connector.getVariantByUid(uid);
+  }
+
   // ── Archive ────────────────────────────────────────────────────────
 
   /**
@@ -1353,8 +1411,9 @@ export class FmServiceCore {
       deletedObjects += 1;
     }
 
-    // Delete variant rows then file row
+    // Delete variant rows, file links, then file row
     await this.connector.deleteVariantsForFile(input.fileUid);
+    await this.deleteLinksForFile(input.fileUid);
     await this.connector.deleteFileByUid(input.fileUid);
 
     await this.emitWrite({

@@ -196,3 +196,22 @@ export function hasEntityLinks(
       "function"
   );
 }
+
+/**
+ * Optional: file-centric bulk link deletion. Enables hard-delete flows to
+ * remove all `fm_file_links` rows that point at a file before deleting it.
+ */
+export interface FmConnectorWithFileLinkDelete extends FmConnector {
+  /** Delete all file-link rows for a file UID. */
+  deleteLinksForFile(fileUid: string): Promise<void>;
+}
+
+/** Type guard: check if a connector supports file-centric link deletion. */
+export function hasFileLinkDelete(
+  connector: FmConnector,
+): connector is FmConnectorWithFileLinkDelete {
+  return (
+    typeof (connector as FmConnectorWithFileLinkDelete).deleteLinksForFile ===
+    "function"
+  );
+}

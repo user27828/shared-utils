@@ -32,8 +32,8 @@ import fs from "fs";
 import path from "path";
 import { nanoid } from "nanoid";
 import { FmUploadInitRequestSchema, FmUploadFinalizeRequestSchema, FmVariantUploadInitRequestSchema, FmVariantUploadFinalizeRequestSchema, } from "../../../utils/src/fm/types.js";
-import { FmNotFoundError, FmValidationError, FmStorageError, FmAuthorizationError, FmPolicyError, } from "../../../utils/src/fm/errors.js";
-import { hasEntityLinks } from "./FmConnector.js";
+import { FmNotFoundError, FmValidationError, FmStorageError, FmAuthorizationError, FmPolicyError, FmConflictError, } from "../../../utils/src/fm/errors.js";
+import { hasEntityLinks, hasFileLinkDelete } from "./FmConnector.js";
 import { getFmUploadPathPresetsFromConfig, resolveFmLocalUploadRootAbsPath, } from "./config.js";
 import { encodeFmStorageKey, decodeFmStorageKey } from "./utils/storageKey.js";
 import { buildFmObjectKey, sanitizeFmFolderPath } from "./utils/objectKey.js";
@@ -245,6 +245,45 @@ export class FmServiceCore {
         }
         catch {
             // best-effort: swallow hook errors
+        }
+    }
+    async deleteLinksForFile(fileUid) {
+        if (hasFileLinkDelete(this.connector)) {
+            await this.connector.deleteLinksForFile(fileUid);
+            return;
+        }
+        const seen = new Set();
+        for (;;) {
+            const result = await this.connector.listLinksForFile(fileUid, {
+                limit: 200,
+                offset: 0,
+            });
+            if (!result.items.length) {
+                return;
+            }
+            let deletedAny = false;
+            for (const link of result.items) {
+                const key = [
+                    link.file_uid,
+                    link.linked_entity_type,
+                    link.linked_entity_uid,
+                    link.linked_field || "",
+                ].join("\u0000");
+                if (seen.has(key)) {
+                    continue;
+                }
+                seen.add(key);
+                await this.connector.deleteLink({
+                    fileUid: link.file_uid,
+                    linkedEntityType: link.linked_entity_type,
+                    linkedEntityUid: link.linked_entity_uid,
+                    ...(link.linked_field ? { linkedField: link.linked_field } : {}),
+                });
+                deletedAny = true;
+            }
+            if (!deletedAny) {
+                throw new FmConflictError("Unable to delete file links");
+            }
         }
     }
     // ── Upload Init ────────────────────────────────────────────────────
@@ -898,6 +937,15 @@ export class FmServiceCore {
     async getFileByUid(uid) {
         return await this.connector.getFileByUid(uid);
     }
+    /**
+     * Get a single variant by its UID.
+     *
+     * @param uid - The variant UID.
+     * @returns The variant row, or `null` if not found.
+     */
+    async getVariantByUid(uid) {
+        return await this.connector.getVariantByUid(uid);
+    }
     // ── Archive ────────────────────────────────────────────────────────
     /**
      * Soft-archive a file by setting its `archived_at` timestamp.
@@ -1020,8 +1068,9 @@ export class FmServiceCore {
             await this.storage.deleteObject({ ref });
             deletedObjects += 1;
         }
-        // Delete variant rows then file row
+        // Delete variant rows, file links, then file row
         await this.connector.deleteVariantsForFile(input.fileUid);
+        await this.deleteLinksForFile(input.fileUid);
         await this.connector.deleteFileByUid(input.fileUid);
         await this.emitWrite({
             action: "delete",

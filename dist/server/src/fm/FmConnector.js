@@ -15,4 +15,9 @@ export function hasEntityLinks(connector) {
         typeof connector.deleteLinksForEntity ===
             "function");
 }
+/** Type guard: check if a connector supports file-centric link deletion. */
+export function hasFileLinkDelete(connector) {
+    return (typeof connector.deleteLinksForFile ===
+        "function");
+}
 //# sourceMappingURL=FmConnector.js.map

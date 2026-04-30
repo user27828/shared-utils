@@ -849,6 +849,58 @@ describe("FmServiceCore", () => {
       expect(connector.deleteFileByUid).toHaveBeenCalled();
     });
 
+    test("force + admin removes file links before deleting file row", async () => {
+      const { service, connector } = buildService();
+      connector.getFileByUid.mockResolvedValue(makeFakeFile());
+      connector.countLinksForFile.mockResolvedValue(2);
+      connector.listLinksForFile
+        .mockResolvedValueOnce({
+          items: [
+            {
+              file_uid: "file-abc",
+              linked_entity_type: "cms",
+              linked_entity_uid: "cms-1",
+              linked_field: "body",
+            },
+            {
+              file_uid: "file-abc",
+              linked_entity_type: "cms",
+              linked_entity_uid: "cms-2",
+              linked_field: "hero",
+            },
+          ],
+          totalCount: 2,
+          limit: 200,
+          offset: 0,
+        })
+        .mockResolvedValueOnce({
+          items: [],
+          totalCount: 0,
+          limit: 200,
+          offset: 0,
+        });
+
+      await service.deleteFile({
+        fileUid: "file-abc",
+        force: true,
+        isAdmin: true,
+      });
+
+      expect(connector.deleteLink).toHaveBeenCalledWith({
+        fileUid: "file-abc",
+        linkedEntityType: "cms",
+        linkedEntityUid: "cms-1",
+        linkedField: "body",
+      });
+      expect(connector.deleteLink).toHaveBeenCalledWith({
+        fileUid: "file-abc",
+        linkedEntityType: "cms",
+        linkedEntityUid: "cms-2",
+        linkedField: "hero",
+      });
+      expect(connector.deleteFileByUid).toHaveBeenCalledWith("file-abc");
+    });
+
     test("deletes variant objects before main object", async () => {
       const { service, connector, storage } = buildService();
       connector.getFileByUid.mockResolvedValue(makeFakeFile());

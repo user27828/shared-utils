@@ -117,4 +117,14 @@ export interface FmConnectorWithEntityLinks extends FmConnector {
 }
 /** Type guard: check if a connector supports entity-centric link queries. */
 export declare function hasEntityLinks(connector: FmConnector): connector is FmConnectorWithEntityLinks;
+/**
+ * Optional: file-centric bulk link deletion. Enables hard-delete flows to
+ * remove all `fm_file_links` rows that point at a file before deleting it.
+ */
+export interface FmConnectorWithFileLinkDelete extends FmConnector {
+    /** Delete all file-link rows for a file UID. */
+    deleteLinksForFile(fileUid: string): Promise<void>;
+}
+/** Type guard: check if a connector supports file-centric link deletion. */
+export declare function hasFileLinkDelete(connector: FmConnector): connector is FmConnectorWithFileLinkDelete;
 //# sourceMappingURL=FmConnector.d.ts.map
