@@ -451,7 +451,22 @@ const ContactActions: React.FC<ContactActionsProps> = ({
               setLinkMenuProvider(null);
             }}
           >
-            <MenuList dense>
+            <MenuList
+              dense
+              onKeyDown={(event) => {
+                if (event.key === "Tab") {
+                  event.preventDefault();
+                  setLinkMenuProvider(null);
+                  return;
+                }
+
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setLinkMenuProvider(null);
+                }
+              }}
+            >
               <Box
                 sx={{
                   px: 2,

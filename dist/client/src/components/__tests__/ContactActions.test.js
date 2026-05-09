@@ -43,4 +43,28 @@ describe("ContactActions", () => {
         expect(event.description).toContain("Linkedin: https://linkedin.com/in/taylor");
         expect(event.description).toContain("Portfolio: portfolio.example.com");
     });
+    test("closes the meeting link submenu from keyboard Escape", async () => {
+        render(_jsx(MenuList, { children: _jsx(ContactActions, { contact: {
+                    name: "Taylor Morgan",
+                    emails: ["taylor@example.com"],
+                }, variant: "menuItems", meetingLinks: [
+                    {
+                        providerKey: "zoom",
+                        label: "Interview room",
+                        value: "https://zoom.us/j/123456789",
+                    },
+                ] }) }));
+        fireEvent.click(screen.getByRole("menuitem", { name: /schedule meeting/i }));
+        const googleCalendarItem = await screen.findByRole("menuitem", {
+            name: /google calendar/i,
+        });
+        fireEvent.mouseEnter(googleCalendarItem);
+        const interviewRoomItem = await screen.findByRole("menuitem", {
+            name: /interview room/i,
+        });
+        fireEvent.keyDown(interviewRoomItem, { key: "Escape" });
+        await waitFor(() => {
+            expect(screen.queryByRole("menuitem", { name: /interview room/i })).toBeNull();
+        });
+    });
 });

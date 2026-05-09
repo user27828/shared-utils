@@ -254,7 +254,18 @@ const ContactActions = ({ contact, variant = "speedDial", iconSize = "small", di
             },
         ], children: _jsx(Paper, { elevation: 6, sx: { minWidth: 220, maxWidth: 360 }, onMouseEnter: handleLinkMenuMouseEnter, onMouseLeave: handleLinkMenuMouseLeave, children: _jsx(ClickAwayListener, { onClickAway: () => {
                     setLinkMenuProvider(null);
-                }, children: _jsxs(MenuList, { dense: true, children: [_jsx(Box, { sx: {
+                }, children: _jsxs(MenuList, { dense: true, onKeyDown: (event) => {
+                        if (event.key === "Tab") {
+                            event.preventDefault();
+                            setLinkMenuProvider(null);
+                            return;
+                        }
+                        if (event.key === "Escape") {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setLinkMenuProvider(null);
+                        }
+                    }, children: [_jsx(Box, { sx: {
                                 px: 2,
                                 py: 0.5,
                                 borderBottom: "1px solid",

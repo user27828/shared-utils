@@ -1522,12 +1522,24 @@ const FmSelectButton = ({ file, api, onSelect }) => {
             setLoading(false);
         }
     }, [open, variants, api, file.uid]);
+    const handleMenuListKeyDown = useCallback((event) => {
+        if (event.key === "Tab") {
+            event.preventDefault();
+            setOpen(false);
+            return;
+        }
+        if (event.key === "Escape") {
+            event.preventDefault();
+            event.stopPropagation();
+            setOpen(false);
+        }
+    }, []);
     if (!isImage) {
         return (_jsx(Button, { size: "small", variant: "contained", onClick: () => onSelect(file), sx: { minWidth: 0, px: 1, alignSelf: "flex-start" }, children: "Select" }));
     }
-    return (_jsxs(_Fragment, { children: [_jsxs(ButtonGroup, { variant: "contained", size: "small", ref: anchorRef, sx: { alignSelf: "flex-start" }, children: [_jsx(Button, { onClick: () => onSelect(file), sx: { minWidth: 0, px: 1 }, children: "Select" }), _jsx(Button, { size: "small", onClick: () => void handleToggle(), sx: { minWidth: 0, px: 0.5 }, "aria-label": "Select variant size", children: loading ? (_jsx(CircularProgress, { size: 16, thickness: 5, color: "inherit" })) : (_jsx(ArrowDropDownIcon, { fontSize: "small" })) })] }), _jsx(Popper, { open: open, anchorEl: anchorRef.current, placement: "bottom-start", transition: true, sx: { zIndex: 1500 }, children: ({ TransitionProps, placement }) => (_jsx(Grow, { ...TransitionProps, style: {
+    return (_jsxs(_Fragment, { children: [_jsxs(ButtonGroup, { variant: "contained", size: "small", ref: anchorRef, sx: { alignSelf: "flex-start" }, children: [_jsx(Button, { onClick: () => onSelect(file), sx: { minWidth: 0, px: 1 }, children: "Select" }), _jsx(Button, { size: "small", onClick: () => void handleToggle(), sx: { minWidth: 0, px: 0.5 }, "aria-label": "Select variant size", "aria-haspopup": "menu", "aria-expanded": open ? "true" : undefined, "aria-controls": open ? `fm-select-menu-${file.uid}` : undefined, children: loading ? (_jsx(CircularProgress, { size: 16, thickness: 5, color: "inherit" })) : (_jsx(ArrowDropDownIcon, { fontSize: "small" })) })] }), _jsx(Popper, { open: open, anchorEl: anchorRef.current, placement: "bottom-start", transition: true, sx: { zIndex: 1500 }, children: ({ TransitionProps, placement }) => (_jsx(Grow, { ...TransitionProps, style: {
                         transformOrigin: placement === "bottom-start" ? "left top" : "left bottom",
-                    }, children: _jsx(Paper, { elevation: 8, children: _jsx(ClickAwayListener, { onClickAway: () => setOpen(false), children: _jsx(MenuList, { dense: true, children: variants && variants.length > 0 ? (variants.map((v) => (_jsx(MenuItem, { onClick: () => {
+                    }, children: _jsx(Paper, { elevation: 8, children: _jsx(ClickAwayListener, { onClickAway: () => setOpen(false), children: _jsx(MenuList, { id: `fm-select-menu-${file.uid}`, dense: true, autoFocusItem: true, onKeyDown: handleMenuListKeyDown, children: variants && variants.length > 0 ? (variants.map((v) => (_jsx(MenuItem, { onClick: () => {
                                         onSelect(file, v);
                                         setOpen(false);
                                     }, children: `Select size: ${v.width}\u00D7${v.height}` }, v.uid)))) : (_jsx(MenuItem, { disabled: true, children: "No size variants" })) }) }) }) })) })] }));

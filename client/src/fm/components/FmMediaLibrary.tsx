@@ -3171,6 +3171,23 @@ const FmSelectButton: React.FC<{
     }
   }, [open, variants, api, file.uid]);
 
+  const handleMenuListKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === "Tab") {
+        event.preventDefault();
+        setOpen(false);
+        return;
+      }
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        setOpen(false);
+      }
+    },
+    [],
+  );
+
   if (!isImage) {
     return (
       <Button
@@ -3200,6 +3217,9 @@ const FmSelectButton: React.FC<{
           onClick={() => void handleToggle()}
           sx={{ minWidth: 0, px: 0.5 }}
           aria-label="Select variant size"
+          aria-haspopup="menu"
+          aria-expanded={open ? "true" : undefined}
+          aria-controls={open ? `fm-select-menu-${file.uid}` : undefined}
         >
           {loading ? (
             <CircularProgress size={16} thickness={5} color="inherit" />
@@ -3225,7 +3245,12 @@ const FmSelectButton: React.FC<{
           >
             <Paper elevation={8}>
               <ClickAwayListener onClickAway={() => setOpen(false)}>
-                <MenuList dense>
+                <MenuList
+                  id={`fm-select-menu-${file.uid}`}
+                  dense
+                  autoFocusItem
+                  onKeyDown={handleMenuListKeyDown}
+                >
                   {variants && variants.length > 0 ? (
                     variants.map((v) => (
                       <MenuItem

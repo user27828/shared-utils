@@ -224,7 +224,15 @@ export const SelectChip = React.forwardRef<HTMLDivElement, SelectChipProps>(
 
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent) => {
+        if (e.key === "Tab") {
+          e.preventDefault();
+          handleCloseMenu();
+          return;
+        }
+
         if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
           handleCloseMenu();
         }
       },
