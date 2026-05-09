@@ -52,12 +52,12 @@ import {
   downloadVCard,
   buildMeetingEvent,
   openCalendarEvent,
-} from "../../../utils/index.js";
+} from "../../../utils/src/contact.js";
 import type {
   ContactInfo,
   CalendarProvider,
-  MeetingLinkEntry,
-} from "../../../utils/index.js";
+} from "../../../utils/src/contact.js";
+import type { MeetingLinkEntry } from "../../../utils/src/meetingProviders.js";
 
 // ============================================================================
 // Types
@@ -93,7 +93,10 @@ export interface ContactActionsProps {
    */
   meetingLinks?: MeetingLinkEntry[];
   /** Callback fired after any action is executed */
-  onAction?: (action: "vcard" | "calendar", provider?: CalendarProvider) => void;
+  onAction?: (
+    action: "vcard" | "calendar",
+    provider?: CalendarProvider,
+  ) => void;
   /** Whether to show the vCard / Add to Contacts action */
   showVCardAction?: boolean;
   /**
@@ -114,11 +117,31 @@ interface CalendarProviderItem {
 }
 
 const CALENDAR_PROVIDERS: CalendarProviderItem[] = [
-  { key: "google", label: "Google Calendar", icon: <GoogleIcon fontSize="small" color="error" /> },
-  { key: "outlook", label: "Outlook", icon: <MicrosoftIcon fontSize="small" color="primary" /> },
-  { key: "apple", label: "Apple Calendar", icon: <AppleIcon fontSize="small" /> },
-  { key: "yahoo", label: "Yahoo Calendar", icon: <CalendarIcon fontSize="small" color="secondary" /> },
-  { key: "ics", label: "Download .ics", icon: <DownloadIcon fontSize="small" color="action" /> },
+  {
+    key: "google",
+    label: "Google Calendar",
+    icon: <GoogleIcon fontSize="small" color="error" />,
+  },
+  {
+    key: "outlook",
+    label: "Outlook",
+    icon: <MicrosoftIcon fontSize="small" color="primary" />,
+  },
+  {
+    key: "apple",
+    label: "Apple Calendar",
+    icon: <AppleIcon fontSize="small" />,
+  },
+  {
+    key: "yahoo",
+    label: "Yahoo Calendar",
+    icon: <CalendarIcon fontSize="small" color="secondary" />,
+  },
+  {
+    key: "ics",
+    label: "Download .ics",
+    icon: <DownloadIcon fontSize="small" color="action" />,
+  },
 ];
 
 const toDisplayLabel = (value?: string): string => {
@@ -183,10 +206,13 @@ const ContactActions: React.FC<ContactActionsProps> = ({
   // SpeedDial open state
   const [dialOpen, setDialOpen] = useState(false);
   // iconButton anchor
-  const [iconMenuAnchor, setIconMenuAnchor] = useState<HTMLElement | null>(null);
+  const [iconMenuAnchor, setIconMenuAnchor] = useState<HTMLElement | null>(
+    null,
+  );
 
   // Cascading meeting-link sub-menu state
-  const [linkMenuProvider, setLinkMenuProvider] = useState<CalendarProvider | null>(null);
+  const [linkMenuProvider, setLinkMenuProvider] =
+    useState<CalendarProvider | null>(null);
   const linkMenuAnchorRef = useRef<HTMLElement | null>(null);
   const linkMenuTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -219,12 +245,9 @@ const ContactActions: React.FC<ContactActionsProps> = ({
     closeAll();
   }, [contact, onAction, onMenuClose, closeAll]);
 
-  const handleOpenCalendarMenu = useCallback(
-    (e: MouseEvent<HTMLElement>) => {
-      setCalMenuAnchor(e.currentTarget);
-    },
-    [],
-  );
+  const handleOpenCalendarMenu = useCallback((e: MouseEvent<HTMLElement>) => {
+    setCalMenuAnchor(e.currentTarget);
+  }, []);
 
   /**
    * Schedule a calendar event, optionally with a meeting link.
@@ -252,7 +275,10 @@ const ContactActions: React.FC<ContactActionsProps> = ({
         if (isUrl) {
           location = link.value;
         }
-        descriptionLines.push("", `Meeting link (${link.label}): ${link.value}`);
+        descriptionLines.push(
+          "",
+          `Meeting link (${link.label}): ${link.value}`,
+        );
       }
 
       const description = descriptionLines.join("\n");
@@ -337,12 +363,14 @@ const ContactActions: React.FC<ContactActionsProps> = ({
       anchorEl={calMenuAnchor}
       open={Boolean(calMenuAnchor)}
       onClose={handleCalMenuClose}
-      TransitionComponent={Fade}
       slotProps={{
         paper: {
           elevation: 4,
           sx: { minWidth: 200 },
         },
+      }}
+      slots={{
+        transition: Fade,
       }}
     >
       <Box
@@ -353,7 +381,12 @@ const ContactActions: React.FC<ContactActionsProps> = ({
           borderColor: "divider",
         }}
       >
-        <Typography variant="caption" color="text.secondary">
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+          }}
+        >
           Choose calendar
         </Typography>
       </Box>
@@ -367,7 +400,11 @@ const ContactActions: React.FC<ContactActionsProps> = ({
               : undefined
           }
           onMouseLeave={hasLinks ? handleProviderMouseLeave : undefined}
-          sx={hasLinks ? { display: "flex", justifyContent: "space-between" } : undefined}
+          sx={
+            hasLinks
+              ? { display: "flex", justifyContent: "space-between" }
+              : undefined
+          }
         >
           <ListItemIcon>{p.icon}</ListItemIcon>
           <ListItemText>{p.label}</ListItemText>
@@ -385,68 +422,101 @@ const ContactActions: React.FC<ContactActionsProps> = ({
 
   // ------ Cascading meeting-link Popper ------
 
-  const linkSubMenu = linkMenuProvider && hasLinks && linkMenuAnchorRef.current ? (
-    <Popper
-      key={`contact-actions-link-submenu-${linkMenuProvider}`}
-      open
-      anchorEl={linkMenuAnchorRef.current}
-      placement="right-start"
-      style={{ zIndex: 1500 }}
-      modifiers={[
-        { name: "offset", options: { offset: [0, -4] } },
-        { name: "flip", enabled: true },
-        { name: "preventOverflow", enabled: true, options: { boundary: "viewport" } },
-      ]}
-    >
-      <Paper
-        elevation={6}
-        sx={{ minWidth: 220, maxWidth: 360 }}
-        onMouseEnter={handleLinkMenuMouseEnter}
-        onMouseLeave={handleLinkMenuMouseLeave}
+  const linkSubMenu =
+    linkMenuProvider && hasLinks && linkMenuAnchorRef.current ? (
+      <Popper
+        key={`contact-actions-link-submenu-${linkMenuProvider}`}
+        open
+        anchorEl={linkMenuAnchorRef.current}
+        placement="right-start"
+        style={{ zIndex: 1500 }}
+        modifiers={[
+          { name: "offset", options: { offset: [0, -4] } },
+          { name: "flip", enabled: true },
+          {
+            name: "preventOverflow",
+            enabled: true,
+            options: { boundary: "viewport" },
+          },
+        ]}
       >
-        <ClickAwayListener onClickAway={() => { setLinkMenuProvider(null); }}>
-          <MenuList dense>
-            <Box sx={{ px: 2, py: 0.5, borderBottom: "1px solid", borderColor: "divider" }}>
-              <Typography variant="caption" color="text.secondary">
-                Include meeting link
-              </Typography>
-            </Box>
-            {meetingLinks!.map((link, idx) => (
-              <MenuItem
-                key={`${link.providerKey}-${idx}`}
-                onClick={() => handleCalendarWithLink(linkMenuProvider, link)}
+        <Paper
+          elevation={6}
+          sx={{ minWidth: 220, maxWidth: 360 }}
+          onMouseEnter={handleLinkMenuMouseEnter}
+          onMouseLeave={handleLinkMenuMouseLeave}
+        >
+          <ClickAwayListener
+            onClickAway={() => {
+              setLinkMenuProvider(null);
+            }}
+          >
+            <MenuList dense>
+              <Box
+                sx={{
+                  px: 2,
+                  py: 0.5,
+                  borderBottom: "1px solid",
+                  borderColor: "divider",
+                }}
               >
-                <ListItemIcon>
-                  <VideoCallIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText
-                  primary={link.label}
-                  secondary={
-                    link.value.length > 40
-                      ? `${link.value.substring(0, 40)}...`
-                      : link.value
-                  }
-                  primaryTypographyProps={{ variant: "body2", noWrap: true }}
-                  secondaryTypographyProps={{ variant: "caption", noWrap: true }}
-                />
-              </MenuItem>
-            ))}
-            <Divider />
-            <MenuItem onClick={() => handleCalendarSelect(linkMenuProvider)}>
-              <ListItemIcon>
-                <LinkIcon fontSize="small" color="disabled" />
-              </ListItemIcon>
-              <ListItemText>
-                <Typography variant="body2" color="text.secondary">
-                  No meeting link
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                  }}
+                >
+                  Include meeting link
                 </Typography>
-              </ListItemText>
-            </MenuItem>
-          </MenuList>
-        </ClickAwayListener>
-      </Paper>
-    </Popper>
-  ) : null;
+              </Box>
+              {meetingLinks!.map((link, idx) => (
+                <MenuItem
+                  key={`${link.providerKey}-${idx}`}
+                  onClick={() => handleCalendarWithLink(linkMenuProvider, link)}
+                >
+                  <ListItemIcon>
+                    <VideoCallIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={link.label}
+                    secondary={
+                      link.value.length > 40
+                        ? `${link.value.substring(0, 40)}...`
+                        : link.value
+                    }
+                    slotProps={{
+                      primary: { variant: "body2", noWrap: true },
+                      secondary: { variant: "caption", noWrap: true },
+                    }}
+                  />
+                </MenuItem>
+              ))}
+              <Divider />
+              <MenuItem onClick={() => handleCalendarSelect(linkMenuProvider)}>
+                <ListItemIcon>
+                  <LinkIcon
+                    color="disabled"
+                    sx={{
+                      fontSize: "small",
+                    }}
+                  />
+                </ListItemIcon>
+                <ListItemText>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "text.secondary",
+                    }}
+                  >
+                    No meeting link
+                  </Typography>
+                </ListItemText>
+              </MenuItem>
+            </MenuList>
+          </ClickAwayListener>
+        </Paper>
+      </Popper>
+    ) : null;
 
   // ------ Tooltip messages for disabled states ------
 
@@ -466,7 +536,12 @@ const ContactActions: React.FC<ContactActionsProps> = ({
       <Divider key="contact-actions-divider" />,
       ...(showVCardAction
         ? [
-            <Tooltip key="contact-actions-vcard" title={vcardTooltip} placement="right" arrow>
+            <Tooltip
+              key="contact-actions-vcard"
+              title={vcardTooltip}
+              placement="right"
+              arrow
+            >
               <span>
                 <MenuItem
                   onClick={handleDownloadVCard}
@@ -488,10 +563,7 @@ const ContactActions: React.FC<ContactActionsProps> = ({
         arrow
       >
         <span>
-          <MenuItem
-            onClick={handleOpenCalendarMenu}
-            disabled={!meetingEnabled}
-          >
+          <MenuItem onClick={handleOpenCalendarMenu} disabled={!meetingEnabled}>
             <ListItemIcon>
               <CalendarIcon fontSize="small" />
             </ListItemIcon>
@@ -511,7 +583,9 @@ const ContactActions: React.FC<ContactActionsProps> = ({
   if (variant === "iconButton") {
     return (
       <>
-        <Tooltip title={anyEnabled ? "Contact actions" : "Add contact info to enable"}>
+        <Tooltip
+          title={anyEnabled ? "Contact actions" : "Add contact info to enable"}
+        >
           <span>
             <IconButton
               size={iconSize}
@@ -526,12 +600,14 @@ const ContactActions: React.FC<ContactActionsProps> = ({
           anchorEl={iconMenuAnchor}
           open={Boolean(iconMenuAnchor)}
           onClose={() => setIconMenuAnchor(null)}
-          TransitionComponent={Fade}
           slotProps={{
             paper: {
               elevation: 3,
               sx: { minWidth: 200 },
             },
+          }}
+          slots={{
+            transition: Fade,
           }}
         >
           {showVCardAction ? (
@@ -589,7 +665,12 @@ const ContactActions: React.FC<ContactActionsProps> = ({
     >
       <SpeedDial
         ariaLabel="Contact actions"
-        icon={<SpeedDialIcon icon={<ContactPhoneIcon />} openIcon={<MoreHorizIcon />} />}
+        icon={
+          <SpeedDialIcon
+            icon={<ContactPhoneIcon />}
+            openIcon={<MoreHorizIcon />}
+          />
+        }
         open={dialOpen}
         onOpen={() => {
           if (anyEnabled) {
@@ -628,16 +709,20 @@ const ContactActions: React.FC<ContactActionsProps> = ({
         {showVCardAction ? (
           <SpeedDialAction
             icon={<PersonAddIcon />}
-            tooltipTitle={vcardTooltip}
             onClick={handleDownloadVCard}
-            FabProps={{ disabled: !vcardEnabled, size: "small" }}
+            slotProps={{
+              fab: { disabled: !vcardEnabled, size: "small" },
+              tooltip: { title: vcardTooltip },
+            }}
           />
         ) : null}
         <SpeedDialAction
           icon={<CalendarIcon />}
-          tooltipTitle={meetingTooltip}
           onClick={handleOpenCalendarMenu}
-          FabProps={{ disabled: !meetingEnabled, size: "small" }}
+          slotProps={{
+            fab: { disabled: !meetingEnabled, size: "small" },
+            tooltip: { title: meetingTooltip },
+          }}
         />
       </SpeedDial>
       {calendarSubMenu}

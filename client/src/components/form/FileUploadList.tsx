@@ -11,7 +11,7 @@ import React, {
   useCallback,
 } from "react";
 import { get, isArray, isFunction, isNumber, isString, size } from "lodash-es";
-import { formatFileSize } from "../../../../utils/index.js";
+import { formatFileSize } from "../../../../utils/src/functions.js";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
@@ -646,7 +646,13 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
                   icon={<CircularProgress size={20} />}
                   sx={{ m: 1 }}
                 >
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{
+                      alignItems: "center",
+                    }}
+                  >
                     {Array.isArray(selectedFile)
                       ? selectedFile
                           .map((f) => (isString(f) ? f : get(f, "name", "")))
@@ -684,7 +690,13 @@ const FileUploadList: React.FC<FileUploadListProps> = ({
             icon={<CircularProgress size={20} />}
             sx={{ m: 1, mb: 2 }}
           >
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                alignItems: "center",
+              }}
+            >
               {Array.isArray(selectedFile)
                 ? selectedFile
                     .map((f) => (isString(f) ? f : get(f, "name", "")))

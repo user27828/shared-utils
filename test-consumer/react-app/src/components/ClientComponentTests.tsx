@@ -31,6 +31,10 @@ import {
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 import { Typography, Box, Button, Stack } from "@mui/material";
 import TestSuiteLayout from "./TestSuiteLayout";
+import {
+  type SuiteAutomationProps,
+  useSuiteAutomation,
+} from "./testSuiteAutomation";
 
 interface Country {
   name: string;
@@ -58,7 +62,10 @@ interface Language {
   speakers: number;
 }
 
-export const ClientComponentTests: React.FC = () => {
+export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
+  automationRunId,
+  onAutomationComplete,
+}) => {
   const [isRunningTestSuite, setIsRunningTestSuite] = useState<boolean>(false);
 
   // Test states for components
@@ -1448,6 +1455,14 @@ export const ClientComponentTests: React.FC = () => {
 
     setIsRunningTestSuite(false);
   };
+
+  useSuiteAutomation({
+    automationRunId,
+    onAutomationComplete,
+    view: "client",
+    tests: testItems,
+    runAllTests,
+  });
 
   return (
     <TestSuiteLayout

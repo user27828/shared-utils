@@ -33,8 +33,8 @@
  *     }),
  *   );
  */
-import { Router } from "express";
-import type { Request, Response, NextFunction } from "express";
+import express from "express";
+import type { Router, Request, Response, NextFunction } from "express";
 import fs from "fs";
 
 import type { FmServiceCore } from "../FmServiceCore.js";
@@ -47,6 +47,7 @@ import {
   FmAuthorizationError,
 } from "../../../../utils/src/fm/errors.js";
 import { getSingleParam } from "../../express/params.js";
+import { applyFmContentHeaders } from "../utils/contentHeaders.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -141,7 +142,7 @@ export function createFmContentRouter(
     cacheControl = "private, max-age=0, no-store",
   } = config;
 
-  const router = Router();
+  const router = express.Router();
 
   // ── GET /:uid — authenticated content endpoint ────────────────────
 
@@ -189,12 +190,16 @@ export function createFmContentRouter(
             fileUid,
             variantKind,
             variantWidth,
+            download,
           });
         } catch (err) {
           // If variant resolution failed and fallback is enabled, try original
           if (enableVariantFallback && variantKind) {
             try {
-              access = await service.resolveContentAccess({ fileUid });
+              access = await service.resolveContentAccess({
+                fileUid,
+                download,
+              });
             } catch (fallbackErr) {
               // Only 404 for not-found; rethrow infrastructure errors
               if (fallbackErr instanceof FmNotFoundError) {
@@ -215,32 +220,45 @@ export function createFmContentRouter(
         // Ownership / access check
         assertAccessible(access.file, ctx);
 
-        // Security headers
-        res.setHeader("X-Content-Type-Options", "nosniff");
-        res.setHeader("Cache-Control", cacheControl);
-        if (access.contentType) {
-          res.type(access.contentType);
-        }
-        if (access.file.sha256) {
-          res.setHeader("ETag", `"${access.file.sha256}"`);
+        if (
+          access.provider === "local" &&
+          access.absPath &&
+          !fs.existsSync(access.absPath)
+        ) {
+          if (enableVariantFallback && variantKind) {
+            try {
+              const originalAccess = await service.resolveContentAccess({
+                fileUid,
+                download,
+              });
+              if (
+                originalAccess.provider === "local" &&
+                originalAccess.absPath &&
+                fs.existsSync(originalAccess.absPath)
+              ) {
+                access = originalAccess;
+              } else {
+                res.status(404).end();
+                return;
+              }
+            } catch {
+              res.status(404).end();
+              return;
+            }
+          } else {
+            res.status(404).end();
+            return;
+          }
         }
 
-        // Force download for potentially dangerous MIME types (HTML, SVG, XML)
-        // to prevent XSS from user-uploaded content served on the app origin.
-        const dangerousMime =
-          access.contentType &&
-          /^(text\/html|application\/xhtml\+xml|image\/svg\+xml|text\/xml|application\/xml)/i.test(
-            access.contentType,
-          );
-
-        // Download disposition — forced for dangerous MIME types to prevent XSS
-        if (download || dangerousMime) {
-          const filename = access.file.original_filename || access.file.uid;
-          res.setHeader(
-            "Content-Disposition",
-            `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
-          );
-        }
+        applyFmContentHeaders({
+          res,
+          cacheControl,
+          contentType: access.contentType,
+          sha256: access.file.sha256,
+          filename: access.file.original_filename || access.file.uid,
+          download,
+        });
 
         // ── S3: redirect to signed URL ────────────────────────────────
         if (access.redirectUrl) {
@@ -250,32 +268,6 @@ export function createFmContentRouter(
 
         // ── Local: stream via sendFile ────────────────────────────────
         if (access.provider === "local" && access.absPath) {
-          if (!fs.existsSync(access.absPath)) {
-            // Variant fallback: if variant file is missing, try original
-            if (enableVariantFallback && variantKind) {
-              try {
-                const originalAccess = await service.resolveContentAccess({
-                  fileUid,
-                });
-                if (
-                  originalAccess.provider === "local" &&
-                  originalAccess.absPath &&
-                  fs.existsSync(originalAccess.absPath)
-                ) {
-                  if (originalAccess.contentType) {
-                    res.type(originalAccess.contentType);
-                  }
-                  res.sendFile(originalAccess.absPath, { dotfiles: "allow" });
-                  return;
-                }
-              } catch {
-                // fall through to 404
-              }
-            }
-            res.status(404).end();
-            return;
-          }
-
           // dotfiles: 'allow' — required for .data/ paths
           res.sendFile(access.absPath, { dotfiles: "allow" }, (err) => {
             if (err && !res.headersSent) {

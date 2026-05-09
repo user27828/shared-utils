@@ -21,11 +21,11 @@
  *     createFmRouter({ service, authz: fmAuthz }),
  *   );
  */
-import { Router } from "express";
 import express from "express";
 import { isFmError, sendFmError, FmAuthorizationError, } from "../../../../utils/src/fm/errors.js";
 import { FmFilePatchRequestSchema, FmFileRenameRequestSchema, FmMoveRequestSchema, FmLinkCreateRequestSchema, FmLinkDeleteRequestSchema, FmUploadFinalizeRequestSchema, FmVariantUploadInitRequestSchema, FmVariantUploadFinalizeRequestSchema, } from "../../../../utils/src/fm/types.js";
 import { getSingleParam } from "../../express/params.js";
+import { applyFmContentHeaders } from "../utils/contentHeaders.js";
 // ─── Helpers ──────────────────────────────────────────────────────────────
 const ok = (res, data, status = 200) => {
     res.status(status).json({ success: true, data });
@@ -104,7 +104,7 @@ const requireOwnedVariantParent = async (service, res, variantUid, ctx) => {
  */
 export function createFmRouter(config) {
     const { service, authz, onAfterWrite, jsonBodyLimit = "2mb", proxiedUploadBodyLimit = "25mb", allowLinks = false, enableContentStreaming = true, } = config;
-    const router = Router();
+    const router = express.Router();
     const jsonParser = express.json({ limit: jsonBodyLimit });
     // ── After-write helper (best-effort, never throws to caller) ──────
     const fireAfterWrite = async (event, req) => {
@@ -553,26 +553,25 @@ export function createFmRouter(config) {
                 const variantKind = variantKindRaw && variantKindRaw !== "original"
                     ? variantKindRaw
                     : undefined;
+                const download = String(pickFirst(req.query.download) ||
+                    "").trim() === "1";
                 const access = await service.resolveContentAccess({
                     fileUid,
                     variantKind,
+                    download,
                 });
                 // Ownership check (public files are ok for authenticated users)
                 if (!access.file.is_public) {
                     assertOwnerOrAdmin(access.file, ctx);
                 }
-                // Download disposition
-                const download = String(pickFirst(req.query.download) ||
-                    "").trim() === "1";
-                if (download) {
-                    const filename = access.file.original_filename || access.file.uid;
-                    res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
-                }
-                // Common headers
-                res.setHeader("Cache-Control", "private, max-age=0, no-store");
-                if (access.contentType) {
-                    res.type(access.contentType);
-                }
+                applyFmContentHeaders({
+                    res,
+                    cacheControl: "private, max-age=0, no-store",
+                    contentType: access.contentType,
+                    sha256: access.file.sha256,
+                    filename: access.file.original_filename || access.file.uid,
+                    download,
+                });
                 if (access.provider === "local" && access.absPath) {
                     // Local: stream via sendFile
                     // dotfiles: 'allow' required for .data/ paths

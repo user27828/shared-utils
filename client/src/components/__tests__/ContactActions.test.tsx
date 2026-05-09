@@ -2,14 +2,15 @@
 
 import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import MenuList from "@mui/material/MenuList";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mockOpenCalendarEvent = vi.fn();
 
-vi.mock("../../../../utils/index.js", async () => {
-  const actual = await vi.importActual<typeof import("../../../../utils/index.js")>(
-    "../../../../utils/index.js",
-  );
+vi.mock("../../../../utils/src/contact.js", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../../../utils/src/contact.js")
+  >("../../../../utils/src/contact.js");
 
   return {
     ...actual,
@@ -26,25 +27,29 @@ describe("ContactActions", () => {
 
   test("includes all stored contact methods in scheduled meeting descriptions", async () => {
     render(
-      <ContactActions
-        contact={{
-          name: "Taylor Morgan",
-          emails: ["taylor@example.com", "recruiter@example.com"],
-          phones: [
-            { value: "555-0101", type: "mobile" },
-            { value: "555-0102" },
-          ],
-          urls: [
-            { url: "https://linkedin.com/in/taylor", label: "linkedin" },
-            { url: "portfolio.example.com", label: "portfolio" },
-          ],
-        }}
-        variant="menuItems"
-        meetingDescriptionSuffix="(via AgentM.com)"
-      />,
+      <MenuList>
+        <ContactActions
+          contact={{
+            name: "Taylor Morgan",
+            emails: ["taylor@example.com", "recruiter@example.com"],
+            phones: [
+              { value: "555-0101", type: "mobile" },
+              { value: "555-0102" },
+            ],
+            urls: [
+              { url: "https://linkedin.com/in/taylor", label: "linkedin" },
+              { url: "portfolio.example.com", label: "portfolio" },
+            ],
+          }}
+          variant="menuItems"
+          meetingDescriptionSuffix="(via AgentM.com)"
+        />
+      </MenuList>,
     );
 
-    fireEvent.click(screen.getByRole("menuitem", { name: /schedule meeting/i }));
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: /schedule meeting/i }),
+    );
     fireEvent.click(
       await screen.findByRole("menuitem", { name: /google calendar/i }),
     );
@@ -69,8 +74,6 @@ describe("ContactActions", () => {
     expect(event.description).toContain(
       "Linkedin: https://linkedin.com/in/taylor",
     );
-    expect(event.description).toContain(
-      "Portfolio: portfolio.example.com",
-    );
+    expect(event.description).toContain("Portfolio: portfolio.example.com");
   });
 });

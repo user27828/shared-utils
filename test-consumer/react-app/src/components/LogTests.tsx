@@ -9,6 +9,10 @@ import {
 } from "@mui/material";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 import TestSuiteLayout from "./TestSuiteLayout";
+import {
+  type SuiteAutomationProps,
+  useSuiteAutomation,
+} from "./testSuiteAutomation";
 
 // Import the log utility from shared-utils
 let log: any = null;
@@ -31,7 +35,10 @@ const loadLogUtility = async () => {
   }
 };
 
-const LogTests: React.FC = () => {
+const LogTests: React.FC<SuiteAutomationProps> = ({
+  automationRunId,
+  onAutomationComplete,
+}) => {
   const [isLoading, setIsLoading] = React.useState(false);
   const [testItems, setTestItems] = React.useState<TestItem[]>([
     {
@@ -818,6 +825,14 @@ const LogTests: React.FC = () => {
 
     setIsLoading(false);
   };
+
+  useSuiteAutomation({
+    automationRunId,
+    onAutomationComplete,
+    view: "log",
+    tests: testItems,
+    runAllTests,
+  });
 
   return (
     <TestSuiteLayout

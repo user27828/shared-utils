@@ -17,7 +17,8 @@
  * Automatically disables actions when minimum required contact info is missing.
  */
 import React from "react";
-import type { ContactInfo, CalendarProvider, MeetingLinkEntry } from "../../../utils/index.js";
+import type { ContactInfo, CalendarProvider } from "../../../utils/src/contact.js";
+import type { MeetingLinkEntry } from "../../../utils/src/meetingProviders.js";
 export type ContactActionsVariant = "speedDial" | "iconButton" | "menuItems";
 export interface ContactActionsProps {
     /** Generic contact information */

@@ -22,6 +22,10 @@ import {
 } from "@user27828/shared-utils/fm/client";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 import TestSuiteLayout from "./TestSuiteLayout";
+import {
+  type SuiteAutomationProps,
+  useSuiteAutomation,
+} from "./testSuiteAutomation";
 
 type FmMoveFileInput = {
   fileUid: string;
@@ -272,7 +276,10 @@ const createMockFmApi = (seedFiles: FmFileRow[]): FmApi => {
   };
 };
 
-const FmTests: React.FC = () => {
+const FmTests: React.FC<SuiteAutomationProps> = ({
+  automationRunId,
+  onAutomationComplete,
+}) => {
   const [isRunningTestSuite, setIsRunningTestSuite] = useState<boolean>(false);
 
   const [pickerOpen, setPickerOpen] = useState<boolean>(false);
@@ -439,6 +446,14 @@ const FmTests: React.FC = () => {
 
     setIsRunningTestSuite(false);
   };
+
+  useSuiteAutomation({
+    automationRunId,
+    onAutomationComplete,
+    view: "fm",
+    tests: testItems,
+    runAllTests,
+  });
 
   return (
     <TestSuiteLayout

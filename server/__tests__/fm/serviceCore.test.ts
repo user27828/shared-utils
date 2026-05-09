@@ -434,6 +434,23 @@ describe("FmServiceCore", () => {
       ).rejects.toThrow(FmNotFoundError);
     });
 
+    test("rejects if uploaded object exceeds declared size", async () => {
+      const { service, connector, storage } = buildService();
+      connector.getFileByUid.mockResolvedValue(makeFakeFile({ byte_size: 64 }));
+      storage.headObject.mockResolvedValue({
+        exists: true,
+        sizeBytes: 128,
+        contentType: "image/jpeg",
+        metadata: {},
+      });
+
+      await expect(
+        service.uploadFinalize({
+          request: { fileUid: "file-abc", object: ref },
+        }),
+      ).rejects.toThrow(FmValidationError);
+    });
+
     test("emits upload write event", async () => {
       const onWrite = jest.fn();
       const { service, connector } = buildService({ onWrite });
@@ -601,7 +618,9 @@ describe("FmServiceCore", () => {
 
     test("patches variant with storage head metadata", async () => {
       const { service, connector, storage } = buildService();
-      connector.getVariantByUid.mockResolvedValue(makeFakeVariant());
+      connector.getVariantByUid.mockResolvedValue(
+        makeFakeVariant({ byte_size: 1024 }),
+      );
 
       const result = await service.variantUploadFinalize({
         request: { variantUid: "var-1", object: varRef },
@@ -614,7 +633,7 @@ describe("FmServiceCore", () => {
     test("sniffs PNG dimensions and validates against declared", async () => {
       const { service, connector, storage } = buildService();
       connector.getVariantByUid.mockResolvedValue(
-        makeFakeVariant({ width: 100, height: 100 }),
+        makeFakeVariant({ width: 100, height: 100, byte_size: 1024 }),
       );
 
       // Build a valid PNG header with width=100, height=100
@@ -665,10 +684,31 @@ describe("FmServiceCore", () => {
       ).rejects.toThrow(FmNotFoundError);
     });
 
+    test("rejects if uploaded variant exceeds declared size", async () => {
+      const { service, connector, storage } = buildService();
+      connector.getVariantByUid.mockResolvedValue(
+        makeFakeVariant({ byte_size: 64 }),
+      );
+      storage.headObject.mockResolvedValue({
+        exists: true,
+        sizeBytes: 128,
+        contentType: "image/jpeg",
+        metadata: {},
+      });
+
+      await expect(
+        service.variantUploadFinalize({
+          request: { variantUid: "var-1", object: varRef },
+        }),
+      ).rejects.toThrow(FmValidationError);
+    });
+
     test("emits variant-upload write event", async () => {
       const onWrite = jest.fn();
       const { service, connector } = buildService({ onWrite });
-      connector.getVariantByUid.mockResolvedValue(makeFakeVariant());
+      connector.getVariantByUid.mockResolvedValue(
+        makeFakeVariant({ byte_size: 1024 }),
+      );
 
       await service.variantUploadFinalize({
         request: { variantUid: "var-1", object: varRef },
@@ -1100,6 +1140,30 @@ describe("FmServiceCore", () => {
       expect(result.expiresAtIso).toBeDefined();
     });
 
+    test("uses signed attachment URLs for dangerous public MIME types", async () => {
+      const { service, connector, storage } = buildService();
+      connector.getFileByUid.mockResolvedValue(
+        makeFakeFile({
+          is_public: true,
+          mime_type: "text/html",
+          original_filename: "unsafe.html",
+        }),
+      );
+
+      const result = await service.resolveReadUrl({
+        fileUid: "file-abc",
+      });
+
+      expect(result.kind).toBe("signed");
+      expect(storage.getPublicUrl).not.toHaveBeenCalled();
+      expect(storage.presignGet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          responseContentType: "text/html",
+          responseContentDisposition: expect.stringContaining("attachment;"),
+        }),
+      );
+    });
+
     test("returns canonical for private file without presignGet", async () => {
       const storage = makeMockStorage();
       storage.getCapabilities.mockReturnValue({
@@ -1188,6 +1252,76 @@ describe("FmServiceCore", () => {
 
       expect(result.provider).toBe("s3");
       expect(result.redirectUrl).toContain("s3.example.com");
+    });
+
+    test("forces attachment disposition for dangerous MIME types on signed URLs", async () => {
+      const { service, connector, storage } = buildService();
+      connector.getFileByUid.mockResolvedValue(
+        makeFakeFile({
+          mime_type: "text/html",
+          original_filename: "unsafe.html",
+        }),
+      );
+
+      await service.resolveContentAccess({ fileUid: "file-abc" });
+
+      expect(storage.presignGet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          responseContentType: "text/html",
+          responseContentDisposition: expect.stringContaining("attachment;"),
+        }),
+      );
+    });
+
+    test("passes attachment disposition when download is requested", async () => {
+      const { service, connector, storage } = buildService();
+      connector.getFileByUid.mockResolvedValue(makeFakeFile());
+
+      await service.resolveContentAccess({
+        fileUid: "file-abc",
+        download: true,
+      });
+
+      expect(storage.presignGet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          responseContentDisposition: expect.stringContaining("attachment;"),
+        }),
+      );
+    });
+
+    test("falls back to the original object when the requested variant is missing", async () => {
+      const { service, connector, storage } = buildService();
+      connector.getFileByUid.mockResolvedValue(makeFakeFile());
+      connector.listVariantsForFile.mockResolvedValue([
+        makeFakeVariant({ variant_kind: "thumb" }),
+      ]);
+      storage.headObject.mockImplementation(async ({ ref }: any) => {
+        if (ref.objectKey === "var-1.jpg") {
+          return {
+            exists: false,
+            metadata: {},
+          };
+        }
+
+        return {
+          exists: true,
+          sizeBytes: 1024,
+          contentType: "image/jpeg",
+          metadata: {},
+        };
+      });
+
+      const result = await service.resolveContentAccess({
+        fileUid: "file-abc",
+        variantKind: "thumb",
+      });
+
+      expect(result.ref.objectKey).toBe("file-abc.jpg");
+      expect(storage.presignGet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ref: { bucket: CMS_BUCKET, objectKey: "file-abc.jpg" },
+        }),
+      );
     });
 
     test("selects variant when variantKind specified", async () => {
@@ -1453,6 +1587,46 @@ describe("FmServiceCore", () => {
         limit: 10,
         offset: 0,
       });
+    });
+
+    test("listFiles clamps limit and offset before delegating", async () => {
+      const { service, connector } = buildService();
+
+      await service.listFiles({ limit: 999, offset: -25 });
+
+      expect(connector.listFiles).toHaveBeenCalledWith(
+        expect.objectContaining({
+          limit: 100,
+          offset: 0,
+        }),
+      );
+    });
+
+    test("listFiles uses batch variant listing when available", async () => {
+      const { service, connector } = buildService();
+      const batchListVariants = jest
+        .fn<(...args: any[]) => Promise<any[]>>()
+        .mockResolvedValue([
+          makeFakeVariant({ uid: "var-a", variant_of_uid: "file-a" }),
+          makeFakeVariant({ uid: "var-b", variant_of_uid: "file-b" }),
+        ]);
+      (connector as any).listVariantsForFiles = batchListVariants;
+      connector.listFiles.mockResolvedValue({
+        items: [
+          makeFakeFile({ uid: "file-a" }),
+          makeFakeFile({ uid: "file-b" }),
+        ],
+        totalCount: 2,
+        limit: 2,
+        offset: 0,
+      });
+
+      const result = await service.listFiles({ includeVariants: true });
+
+      expect(batchListVariants).toHaveBeenCalledWith(["file-a", "file-b"]);
+      expect(connector.listVariantsForFile).not.toHaveBeenCalled();
+      expect((result.items[0] as any).variants).toHaveLength(1);
+      expect((result.items[1] as any).variants).toHaveLength(1);
     });
 
     test("getFileByUid delegates to connector", async () => {

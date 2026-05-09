@@ -88,7 +88,7 @@ import CmsHistoryDrawer, { HISTORY_DRAWER_WIDTH } from "./CmsHistoryDrawer.js";
 import CmsVersionNotesForm from "./CmsVersionNotesForm.js";
 import CmsContentNotes from "./CmsContentNotes.js";
 import { useFmApi } from "../../fm/FmClientProvider.js";
-import { isDev } from "../../../../utils/index.js";
+import { isDev } from "../../../../utils/src/functions.js";
 import { useDebouncedCallback } from "../../helpers/debounce.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -1441,7 +1441,6 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
       >
         {liveErrorMessage}
       </Box>
-
       {/* ═══ FLEX WRAPPER: history drawer + main content ═══ */}
       <Box
         sx={{
@@ -1514,13 +1513,21 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
               {/* Header */}
               <Stack
                 direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                flexWrap="wrap"
-                gap={1}
-                sx={{ mb: 2 }}
+                sx={{
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 1,
+                  mb: 2,
+                }}
               >
-                <Stack direction="row" alignItems="center" spacing={1}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{
+                    alignItems: "center",
+                  }}
+                >
                   <Tooltip title="Back to list">
                     <IconButton onClick={() => nav?.goToList?.()}>
                       <ArrowBackIcon />
@@ -1531,7 +1538,13 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                   </Typography>
                 </Stack>
 
-                <Stack direction="row" spacing={1} flexShrink={0}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{
+                    flexShrink: 0,
+                  }}
+                >
                   {!isNew && (
                     <Tooltip
                       title={
@@ -1638,9 +1651,9 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                 {!isSlugEditing ? (
                   <Stack
                     direction="row"
-                    alignItems="center"
                     spacing={1}
                     sx={{
+                      alignItems: "center",
                       border: 1,
                       borderColor: "divider",
                       borderRadius: 1,
@@ -1715,8 +1728,10 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                     onKeyDown={handleSlugKeyDown}
                     sx={{ maxWidth: { xs: "100%", md: 520 } }}
                     helperText="Used in the URL path. Leading '/' is optional."
-                    inputProps={{
-                      style: { fontFamily: "monospace" },
+                    slotProps={{
+                      htmlInput: {
+                        style: { fontFamily: "monospace" },
+                      },
                     }}
                   />
                 )}
@@ -1727,11 +1742,11 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                 {/* Toolbar: Content type · Locale · Post type ·  Visual | Text */}
                 <Stack
                   direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  flexWrap="nowrap"
-                  gap={1.5}
                   sx={{
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexWrap: "nowrap",
+                    gap: 1.5,
                     px: 2,
                     py: 1,
                     borderColor: "divider",
@@ -1740,9 +1755,12 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                 >
                   <Stack
                     direction="row"
-                    alignItems="center"
-                    gap={1.5}
-                    sx={{ minWidth: 0, flexShrink: 0 }}
+                    sx={{
+                      alignItems: "center",
+                      gap: 1.5,
+                      minWidth: 0,
+                      flexShrink: 0,
+                    }}
                   >
                     <FormControl size="small" sx={{ minWidth: 110 }}>
                       <InputLabel>Content</InputLabel>
@@ -1970,9 +1988,11 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                 {!isNew && !statusVersionEditing && (
                   <Stack
                     direction="row"
-                    alignItems="flex-start"
                     spacing={0.5}
-                    sx={{ mb: 1 }}
+                    sx={{
+                      alignItems: "flex-start",
+                      mb: 1,
+                    }}
                   >
                     {metadata.version?.version && (
                       <Chip
@@ -1986,8 +2006,8 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                     {metadata.version?.notes && (
                       <Typography
                         variant="caption"
-                        color="text.secondary"
                         sx={{
+                          color: "text.secondary",
                           flex: 1,
                           minWidth: 0,
                           wordBreak: "break-word",
@@ -2041,7 +2061,13 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
 
                 {!isNew && (
                   <Stack spacing={0.75} sx={{ mb: 1 }}>
-                    <Stack direction="row" alignItems="center" spacing={1}>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{
+                        alignItems: "center",
+                      }}
+                    >
                       <Chip
                         label={
                           status === "published"
@@ -2063,8 +2089,10 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                       {status === "published" && (
                         <Typography
                           variant="caption"
-                          color="text.secondary"
                           noWrap
+                          sx={{
+                            color: "text.secondary",
+                          }}
                         >
                           {publishedAtText}
                         </Typography>
@@ -2073,9 +2101,11 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
 
                     <Stack
                       direction="row"
-                      alignItems="center"
-                      justifyContent="space-between"
                       spacing={1}
+                      sx={{
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
                     >
                       <Typography variant="body2">
                         Revisions: {revisionsCount}
@@ -2192,18 +2222,22 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                   {/* Featured image */}
                   <Stack
                     direction="row"
-                    alignItems="center"
                     spacing={1}
-                    sx={{ mb: 1 }}
+                    sx={{
+                      alignItems: "center",
+                      mb: 1,
+                    }}
                   >
                     <Typography variant="caption" sx={{ minWidth: 100 }}>
                       Featured image:
                     </Typography>
                     <Typography
                       variant="caption"
-                      color="text.secondary"
                       noWrap
-                      sx={{ flex: 1 }}
+                      sx={{
+                        color: "text.secondary",
+                        flex: 1,
+                      }}
                     >
                       {featuredImageUid || "—"}
                     </Typography>
@@ -2233,18 +2267,22 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                   {/* OG image */}
                   <Stack
                     direction="row"
-                    alignItems="center"
                     spacing={1}
-                    sx={{ mb: 1 }}
+                    sx={{
+                      alignItems: "center",
+                      mb: 1,
+                    }}
                   >
                     <Typography variant="caption" sx={{ minWidth: 100 }}>
                       OG image:
                     </Typography>
                     <Typography
                       variant="caption"
-                      color="text.secondary"
                       noWrap
-                      sx={{ flex: 1 }}
+                      sx={{
+                        color: "text.secondary",
+                        flex: 1,
+                      }}
                     >
                       {ogImageUid || "—"}
                     </Typography>
@@ -2286,15 +2324,19 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                     <Stack
                       key={idx}
                       direction="row"
-                      alignItems="center"
                       spacing={1}
-                      sx={{ mb: 0.5 }}
+                      sx={{
+                        alignItems: "center",
+                        mb: 0.5,
+                      }}
                     >
                       <Typography
                         variant="caption"
-                        color="text.secondary"
                         noWrap
-                        sx={{ flex: 1 }}
+                        sx={{
+                          color: "text.secondary",
+                          flex: 1,
+                        }}
                       >
                         {att.file_uid}
                       </Typography>
@@ -2321,7 +2363,6 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
         {/* /Main content area */}
       </Box>
       {/* /FLEX WRAPPER */}
-
       {/* Loading overlay */}
       {isLoading && (
         <Box
@@ -2340,7 +2381,6 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
           </Paper>
         </Box>
       )}
-
       {/* Conflict dialog */}
       <CmsConflictDialog
         open={conflictOpen}
@@ -2351,7 +2391,6 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
         }}
         onOverwrite={handleConflictOverwrite}
       />
-
       {/* Content type change confirmation */}
       <Dialog
         open={!!pendingContentType}
@@ -2381,7 +2420,6 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Media picker (delegated to host app) */}
       {pickerOpen &&
         config?.renderMediaPicker?.({

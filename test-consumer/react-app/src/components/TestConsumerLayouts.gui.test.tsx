@@ -153,7 +153,7 @@ describe("Consumer test page layouts", () => {
     render(<OptionsManagerTests />);
 
     const runAllButton = screen.getByRole("button", {
-      name: "Run All Options Manager Tests",
+      name: /Loading Utilities...|Run All Options Manager Tests/,
     });
     const results = screen.getByText("Options Manager - Test Progress");
     const content = screen.getByText("About Options Manager Tests");

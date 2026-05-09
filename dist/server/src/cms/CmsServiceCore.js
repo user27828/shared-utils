@@ -15,6 +15,19 @@ import { hashCmsPassword } from "../../../utils/src/cms/password.js";
 import { sanitizeCmsHtml, renderMarkdownToSanitizedHtml, } from "../../../utils/src/cms/sanitization.js";
 // ─── Default lock TTL ─────────────────────────────────────────────────────
 const DEFAULT_LOCK_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const CMS_MAX_LIST_LIMIT = 200;
+const clampCmsListLimit = (value) => {
+    if (value === undefined) {
+        return undefined;
+    }
+    return Math.min(CMS_MAX_LIST_LIMIT, Math.max(1, Math.floor(value)));
+};
+const clampCmsOffset = (value) => {
+    if (value === undefined) {
+        return undefined;
+    }
+    return Math.max(0, Math.floor(value));
+};
 // ─── Service ──────────────────────────────────────────────────────────────
 export class CmsServiceCore {
     connector;
@@ -29,7 +42,11 @@ export class CmsServiceCore {
     }
     // ─── List ─────────────────────────────────────────────────────────────
     async list(params) {
-        const parsed = CmsListRequestSchema.parse(params);
+        const parsed = CmsListRequestSchema.parse({
+            ...params,
+            limit: clampCmsListLimit(params.limit),
+            offset: clampCmsOffset(params.offset),
+        });
         return this.connector.list(parsed);
     }
     // ─── Get by UID ───────────────────────────────────────────────────────
@@ -368,8 +385,8 @@ export class CmsServiceCore {
     async listHistory(params) {
         return this.connector.listHistory({
             cmsUid: params.cmsUid,
-            limit: Math.min(params.limit ?? 50, 200),
-            offset: params.offset ?? 0,
+            limit: clampCmsListLimit(params.limit) ?? 50,
+            offset: clampCmsOffset(params.offset) ?? 0,
             includeSoftDeleted: params.includeSoftDeleted,
         });
     }

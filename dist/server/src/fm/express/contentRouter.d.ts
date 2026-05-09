@@ -1,39 +1,4 @@
-/**
- * FM Content Router Factory — shared-utils/server/src/fm/express
- *
- * Lightweight authenticated router for serving file content via short URLs.
- * Designed for `<img src>`, inline previews, and downloads — NOT for
- * admin CRUD operations.
- *
- * Route: `GET /:uid`
- *   Query params:
- *     - `v`  — variant kind (thumb, preview, web). Default: original.
- *     - `w`  — responsive width (maps to thumb/preview/web).
- *     - `dl` — "1" to force Content-Disposition: attachment.
- *
- * Produces short, embeddable URLs:
- *   `/fm/abc-123-uuid`          → original
- *   `/fm/abc-123-uuid?v=thumb`  → thumbnail variant
- *   `/fm/abc-123-uuid?dl=1`     → download original
- *
- * The router expects the calling app to mount auth middleware *before*
- * this router (e.g. `app.use("/fm", authMiddleware, contentRouter)`).
- * Ownership is enforced internally: the requesting user must own the
- * file or have admin privileges (public files are served to any
- * authenticated user).
- *
- * Mount example:
- *   app.use("/fm",
- *     authMiddleware,
- *     fmContentAuthz.middleware,
- *     createFmContentRouter({
- *       service,
- *       authz: fmContentAuthz,
- *       enableVariantFallback: true,
- *     }),
- *   );
- */
-import { Router } from "express";
+import type { Router } from "express";
 import type { FmServiceCore } from "../FmServiceCore.js";
 import type { FmAuthzResult } from "./authz.js";
 /** Configuration for {@link createFmContentRouter}. */

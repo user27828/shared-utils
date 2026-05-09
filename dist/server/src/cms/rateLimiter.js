@@ -54,7 +54,9 @@ export class CmsRateLimiter {
             }
         }, 60_000);
         // Allow process to exit even if interval is active
-        if (this.cleanupInterval && typeof this.cleanupInterval === "object" && "unref" in this.cleanupInterval) {
+        if (this.cleanupInterval &&
+            typeof this.cleanupInterval === "object" &&
+            "unref" in this.cleanupInterval) {
             this.cleanupInterval.unref();
         }
     }
@@ -94,7 +96,17 @@ export class CmsRateLimiter {
                 multi.incr(redisKey);
                 multi.pexpire(redisKey, rule.windowMs);
                 const res = await multi.exec();
-                const count = Number(res?.[0]?.[1] ?? 0);
+                if (!Array.isArray(res) ||
+                    res.length < 2 ||
+                    res.some((entry) => {
+                        return !Array.isArray(entry) || Boolean(entry[0]);
+                    })) {
+                    throw new Error("Redis transaction failed");
+                }
+                const count = Number(res[0][1]);
+                if (!Number.isFinite(count)) {
+                    throw new Error("Redis transaction returned an invalid count");
+                }
                 if (count <= rule.maxRequests) {
                     return {
                         allowed: true,
@@ -126,9 +138,12 @@ export class CmsRateLimiter {
     cleanup() {
         if (this.cleanupInterval) {
             clearInterval(this.cleanupInterval);
+            this.cleanupInterval = null;
         }
+        this.memoryStore.clear();
         if (this.redis) {
             this.redis.disconnect();
+            this.redis = null;
         }
     }
 }
@@ -147,10 +162,6 @@ export const createCmsAdminRateLimitMiddleware = (config) => {
     const readRule = config.adminRules?.read ?? DEFAULT_ADMIN_READ;
     const writeRule = config.adminRules?.write ?? DEFAULT_ADMIN_WRITE;
     const getUserKey = config.getUserKey ?? defaultGetUserKey;
-    // Cleanup on process exit
-    const cleanup = () => limiter.cleanup();
-    process.on("SIGTERM", cleanup);
-    process.on("SIGINT", cleanup);
     return async (req, res, next) => {
         const m = (req.method || "GET").toUpperCase();
         const rule = m === "GET" || m === "HEAD" ? readRule : writeRule;
@@ -172,9 +183,6 @@ export const createCmsPublicRateLimitMiddleware = (config) => {
     const readRule = config.publicRules?.read ?? DEFAULT_PUBLIC_READ;
     const writeRule = config.publicRules?.write ?? DEFAULT_PUBLIC_WRITE;
     const unlockRule = config.publicRules?.unlock ?? DEFAULT_PUBLIC_UNLOCK;
-    const cleanup = () => limiter.cleanup();
-    process.on("SIGTERM", cleanup);
-    process.on("SIGINT", cleanup);
     return async (req, res, next) => {
         const m = (req.method || "GET").toUpperCase();
         const p = req.path || "";

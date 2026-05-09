@@ -9,6 +9,10 @@ import {
 } from "@mui/material";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 import TestSuiteLayout from "./TestSuiteLayout";
+import {
+  type SuiteAutomationProps,
+  useSuiteAutomation,
+} from "./testSuiteAutomation";
 
 // Import the options manager utilities from shared-utils
 let OptionsManager: any = null;
@@ -29,8 +33,13 @@ const loadOptionsManager = async () => {
   }
 };
 
-const OptionsManagerTests: React.FC = () => {
+const OptionsManagerTests: React.FC<SuiteAutomationProps> = ({
+  automationRunId,
+  onAutomationComplete,
+}) => {
   const [isLoading, setIsLoading] = React.useState(false);
+  const [optionsManagerImportSettled, setOptionsManagerImportSettled] =
+    React.useState(false);
   const [testItems, setTestItems] = React.useState<TestItem[]>([
     {
       name: "Basic Options Manager",
@@ -64,6 +73,7 @@ const OptionsManagerTests: React.FC = () => {
       const utilities = await loadOptionsManager();
       OptionsManager = utilities.OptionsManager;
       optionsManager = utilities.optionsManager;
+      setOptionsManagerImportSettled(true);
     };
 
     initOptionsManager();
@@ -522,6 +532,15 @@ const OptionsManagerTests: React.FC = () => {
     setIsLoading(false);
   };
 
+  useSuiteAutomation({
+    automationRunId,
+    onAutomationComplete,
+    view: "options",
+    isReady: optionsManagerImportSettled,
+    tests: testItems,
+    runAllTests,
+  });
+
   return (
     <TestSuiteLayout
       title="Options Manager Integration Tests"
@@ -531,10 +550,14 @@ const OptionsManagerTests: React.FC = () => {
           <Button
             variant="contained"
             onClick={runAllTests}
-            disabled={isLoading}
+            disabled={isLoading || !optionsManagerImportSettled}
             size="large"
           >
-            {isLoading ? "Running Tests..." : "Run All Options Manager Tests"}
+            {!optionsManagerImportSettled
+              ? "Loading Utilities..."
+              : isLoading
+                ? "Running Tests..."
+                : "Run All Options Manager Tests"}
           </Button>
 
           <Button

@@ -70,7 +70,11 @@ import {
 } from "../../../utils/src/fm/errors.js";
 
 import type { FmConnector } from "./FmConnector.js";
-import { hasEntityLinks, hasFileLinkDelete } from "./FmConnector.js";
+import {
+  hasBatchVariantList,
+  hasEntityLinks,
+  hasFileLinkDelete,
+} from "./FmConnector.js";
 import type { FmServerConfig, FmUploadPathPreset } from "./config.js";
 import {
   getFmUploadPathPresetsFromConfig,
@@ -90,6 +94,10 @@ import {
   buildFmObjectMetadataForInit,
   buildFmObjectMetadataForExistingFile,
 } from "./utils/objectMetadata.js";
+import {
+  buildAttachmentContentDisposition,
+  isDangerousInlineMimeType,
+} from "./utils/contentHeaders.js";
 import { sniffMimeFromHeader } from "./utils/mimeSniff.js";
 import { extractImageDimensionsFromHeader } from "./utils/imageDimensions.js";
 
@@ -99,6 +107,8 @@ const DEFAULT_BUCKET_CMS = "cms";
 const DEFAULT_BUCKET_CMS_B64 = "cms-b64";
 const DEFAULT_BUCKET_USER_UPLOADS = "user-uploads";
 const DEFAULT_SIGNED_URL_TTL_SECS = 300;
+const FM_MAX_LIST_LIMIT = 100;
+const FM_VARIANT_INCLUDE_BATCH_SIZE = 20;
 
 /**
  * Configuration for FmServiceCore.
@@ -224,6 +234,61 @@ const clampPositiveInt = (n: unknown): number | undefined => {
     return undefined;
   }
   return Math.floor(v);
+};
+
+const clampListLimit = (n: unknown, fallback: number, max: number): number => {
+  const v = Number(n);
+  if (!Number.isFinite(v) || v <= 0) {
+    return fallback;
+  }
+  return Math.min(max, Math.floor(v));
+};
+
+const clampNonNegativeInt = (n: unknown): number => {
+  const v = Number(n);
+  if (!Number.isFinite(v) || v <= 0) {
+    return 0;
+  }
+  return Math.floor(v);
+};
+
+const chunkArray = <T>(items: T[], size: number): T[][] => {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+};
+
+const appendQueryParams = (
+  url: string,
+  params: Record<string, string | undefined>,
+): string => {
+  const next = new URL(url);
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value) {
+      next.searchParams.set(key, value);
+    }
+  }
+
+  return next.toString();
+};
+
+const assertActualObjectSizeWithinDeclaredLimit = (input: {
+  actualSize?: number;
+  declaredSize?: number;
+}): void => {
+  const { actualSize, declaredSize } = input;
+  if (!Number.isFinite(actualSize) || !Number.isFinite(declaredSize)) {
+    return;
+  }
+  if ((declaredSize as number) < 0) {
+    return;
+  }
+  if ((actualSize as number) > (declaredSize as number)) {
+    throw new FmValidationError("Upload exceeds declared size");
+  }
 };
 
 const validateVariantKindAndTarget = (input: {
@@ -429,6 +494,112 @@ export class FmServiceCore {
     }
   }
 
+  private async listVariantsForFiles(
+    fileUids: string[],
+  ): Promise<Map<string, FmFileVariantRow[]>> {
+    const variantsByFile = new Map<string, FmFileVariantRow[]>();
+
+    for (const fileUid of fileUids) {
+      variantsByFile.set(fileUid, []);
+    }
+
+    if (!fileUids.length) {
+      return variantsByFile;
+    }
+
+    if (hasBatchVariantList(this.connector)) {
+      const variants = await this.connector.listVariantsForFiles(fileUids);
+      for (const variant of variants) {
+        const rows = variantsByFile.get(variant.variant_of_uid);
+        if (rows) {
+          rows.push(variant);
+        } else {
+          variantsByFile.set(variant.variant_of_uid, [variant]);
+        }
+      }
+      return variantsByFile;
+    }
+
+    for (const batch of chunkArray(fileUids, FM_VARIANT_INCLUDE_BATCH_SIZE)) {
+      const batchVariants = await Promise.all(
+        batch.map((fileUid) => this.connector.listVariantsForFile(fileUid)),
+      );
+      for (let index = 0; index < batch.length; index++) {
+        variantsByFile.set(batch[index], batchVariants[index]);
+      }
+    }
+
+    return variantsByFile;
+  }
+
+  private async resolveDeliveryTarget(input: {
+    fileUid: string;
+    variantKind?: string;
+    variantWidth?: number;
+  }): Promise<{
+    file: FmFileRow;
+    ref: FmObjectRef;
+    contentType?: string;
+  }> {
+    const file = await this.connector.getFileByUid(input.fileUid);
+    if (!file) {
+      throw new FmNotFoundError("File", input.fileUid);
+    }
+
+    const originalRef = decodeFmStorageKey(file.storage_key);
+    const originalContentType = file.mime_type || undefined;
+
+    if (!input.variantKind && input.variantWidth === undefined) {
+      return {
+        file,
+        ref: originalRef,
+        contentType: originalContentType,
+      };
+    }
+
+    const variants = await this.connector.listVariantsForFile(input.fileUid);
+    const variant = pickVariant(
+      variants,
+      input.variantKind || "web",
+      input.variantWidth,
+    );
+
+    if (!variant) {
+      return {
+        file,
+        ref: originalRef,
+        contentType: originalContentType,
+      };
+    }
+
+    const variantRef = decodeFmStorageKey(variant.storage_key);
+    const variantContentType = variant.mime_type || originalContentType;
+    const caps = this.storage.getCapabilities();
+
+    if (caps.headObject && this.storage.headObject) {
+      const head = await this.storage.headObject({ ref: variantRef });
+      if (!head.exists) {
+        return {
+          file,
+          ref: originalRef,
+          contentType: originalContentType,
+        };
+      }
+
+      return {
+        file,
+        ref: variantRef,
+        contentType: head.contentType || variantContentType,
+      };
+    }
+
+    return {
+      file,
+      ref: variantRef,
+      contentType: variantContentType,
+    };
+  }
+
   // ── Upload Init ────────────────────────────────────────────────────
 
   async uploadInit(input: {
@@ -577,6 +748,11 @@ export class FmServiceCore {
       throw new FmNotFoundError("Uploaded object", parsed.object.objectKey);
     }
 
+    assertActualObjectSizeWithinDeclaredLimit({
+      actualSize: head.sizeBytes,
+      declaredSize: existing.byte_size,
+    });
+
     let sha256: string | undefined;
     let sniffedMime: string | null = null;
     if (this.storage.getProvider() === "local") {
@@ -594,7 +770,7 @@ export class FmServiceCore {
     }
 
     const patch: Record<string, unknown> = {
-      byte_size: head.sizeBytes || existing.byte_size,
+      byte_size: head.sizeBytes ?? existing.byte_size,
       sha256: sha256 || existing.sha256,
       mime_type: sniffedMime || head.contentType || existing.mime_type,
       updated_at: new Date().toISOString(),
@@ -857,8 +1033,13 @@ export class FmServiceCore {
       throw new FmNotFoundError("Uploaded object", parsed.object.objectKey);
     }
 
+    assertActualObjectSizeWithinDeclaredLimit({
+      actualSize: head.sizeBytes,
+      declaredSize: variant.byte_size,
+    });
+
     const patch: Record<string, unknown> = {
-      byte_size: head.sizeBytes || variant.byte_size,
+      byte_size: head.sizeBytes ?? variant.byte_size,
       mime_type: head.contentType || variant.mime_type,
     };
 
@@ -1053,34 +1234,54 @@ export class FmServiceCore {
   }> {
     const caps = this.storage.getCapabilities();
 
-    const file = await this.connector.getFileByUid(input.fileUid);
-    if (!file) {
-      throw new FmNotFoundError("File", input.fileUid);
-    }
-
-    let ref: FmObjectRef = decodeFmStorageKey(file.storage_key);
-    if (input.variantKind) {
-      const variants = await this.connector.listVariantsForFile(input.fileUid);
-      const v = pickVariant(variants, input.variantKind);
-      if (v) {
-        ref = decodeFmStorageKey(v.storage_key);
-      }
-    }
+    const { file, ref, contentType } = await this.resolveDeliveryTarget({
+      fileUid: input.fileUid,
+      variantKind: input.variantKind,
+    });
+    const shouldForceAttachment = isDangerousInlineMimeType(contentType);
+    const canonicalUrl = appendQueryParams(
+      buildCanonicalMediaUrl({
+        uid: input.fileUid,
+        req: input.req,
+        clientUrl: this.cfg.clientUrl,
+      }),
+      {
+        variant: input.variantKind,
+      },
+    );
 
     // Public assets
     if (file.is_public && !file.archived_at) {
-      if (caps.publicUrl && this.storage.getPublicUrl) {
+      if (
+        !shouldForceAttachment &&
+        caps.publicUrl &&
+        this.storage.getPublicUrl
+      ) {
         const direct = this.storage.getPublicUrl({ ref });
         if (direct) {
           return { url: direct, kind: "public" };
         }
       }
+
+      if (shouldForceAttachment && caps.presignGet && this.storage.presignGet) {
+        const ttl = input.expiresInSeconds || getSignedUrlTtlSeconds(this.cfg);
+        const signed = await this.storage.presignGet({
+          ref,
+          expiresInSeconds: ttl,
+          responseContentType: contentType,
+          responseContentDisposition: buildAttachmentContentDisposition(
+            file.original_filename || file.uid,
+          ),
+        });
+        return {
+          url: signed.url,
+          kind: "signed",
+          expiresAtIso: signed.expiresAtIso,
+        };
+      }
+
       return {
-        url: buildCanonicalMediaUrl({
-          uid: input.fileUid,
-          req: input.req,
-          clientUrl: this.cfg.clientUrl,
-        }),
+        url: canonicalUrl,
         kind: "canonical",
       };
     }
@@ -1091,7 +1292,12 @@ export class FmServiceCore {
       const signed = await this.storage.presignGet({
         ref,
         expiresInSeconds: ttl,
-        responseContentType: file.mime_type || undefined,
+        responseContentType: contentType,
+        responseContentDisposition: shouldForceAttachment
+          ? buildAttachmentContentDisposition(
+              file.original_filename || file.uid,
+            )
+          : undefined,
       });
       return {
         url: signed.url,
@@ -1101,11 +1307,7 @@ export class FmServiceCore {
     }
 
     return {
-      url: buildCanonicalMediaUrl({
-        uid: input.fileUid,
-        req: input.req,
-        clientUrl: this.cfg.clientUrl,
-      }),
+      url: canonicalUrl,
       kind: "canonical",
     };
   }
@@ -1123,6 +1325,8 @@ export class FmServiceCore {
     variantKind?: string;
     /** Exact variant width — picks the variant closest to this width. */
     variantWidth?: number;
+    /** Force download disposition for signed URLs and streamed responses. */
+    download?: boolean;
   }): Promise<{
     provider: "local" | "s3";
     ref: FmObjectRef;
@@ -1131,47 +1335,17 @@ export class FmServiceCore {
     redirectUrl?: string;
     contentType?: string;
   }> {
-    const file = await this.connector.getFileByUid(input.fileUid);
-    if (!file) {
-      throw new FmNotFoundError("File", input.fileUid);
-    }
-
-    let ref: FmObjectRef = decodeFmStorageKey(file.storage_key);
-    let contentType = file.mime_type || undefined;
-    let usingVariant = false;
-
-    if (input.variantKind || input.variantWidth) {
-      const variants = await this.connector.listVariantsForFile(input.fileUid);
-      const v = pickVariant(
-        variants,
-        input.variantKind || "web",
-        input.variantWidth,
-      );
-      if (v) {
-        ref = decodeFmStorageKey(v.storage_key);
-        contentType = v.mime_type || contentType;
-        usingVariant = true;
-      }
-    }
+    const { file, ref, contentType } = await this.resolveDeliveryTarget({
+      fileUid: input.fileUid,
+      variantKind: input.variantKind,
+      variantWidth: input.variantWidth,
+    });
 
     const provider = this.storage.getProvider();
 
     if (provider === "local") {
       const uploadRoot = resolveFmLocalUploadRootAbsPath(this.cfg);
       let absPath = path.resolve(uploadRoot, ref.bucket, ref.objectKey);
-
-      // If we resolved a variant but the file doesn't exist on disk,
-      // fall back to the original file (same behaviour as legacy fmExtras).
-      if (usingVariant && !fs.existsSync(absPath)) {
-        const originalRef = decodeFmStorageKey(file.storage_key);
-        absPath = path.resolve(
-          uploadRoot,
-          originalRef.bucket,
-          originalRef.objectKey,
-        );
-        ref = originalRef;
-        contentType = file.mime_type || undefined;
-      }
 
       return { provider, ref, file, absPath, contentType };
     }
@@ -1180,10 +1354,17 @@ export class FmServiceCore {
     const caps = this.storage.getCapabilities();
     if (caps.presignGet && this.storage.presignGet) {
       const ttl = getSignedUrlTtlSeconds(this.cfg);
+      const responseContentDisposition =
+        input.download || isDangerousInlineMimeType(contentType)
+          ? buildAttachmentContentDisposition(
+              file.original_filename || file.uid,
+            )
+          : undefined;
       const signed = await this.storage.presignGet({
         ref,
         expiresInSeconds: ttl,
         responseContentType: contentType,
+        responseContentDisposition,
       });
       return {
         provider,
@@ -1216,17 +1397,19 @@ export class FmServiceCore {
     params: FmFileListFilters,
     options?: { includeVariants?: boolean },
   ): Promise<FmFileListResult> {
-    const result = await this.connector.listFiles(params);
+    const normalizedParams: FmFileListFilters = {
+      ...params,
+      limit: clampListLimit(params.limit, 25, FM_MAX_LIST_LIMIT),
+      offset: clampNonNegativeInt(params.offset),
+    };
+
+    const result = await this.connector.listFiles(normalizedParams);
     const include = options?.includeVariants ?? Boolean(params.includeVariants);
 
     if (include && result.items.length > 0) {
-      const variantsByFile = new Map<string, FmFileVariantRow[]>();
-      const allVariants = await Promise.all(
-        result.items.map((f) => this.connector.listVariantsForFile(f.uid)),
+      const variantsByFile = await this.listVariantsForFiles(
+        result.items.map((file) => file.uid),
       );
-      for (let i = 0; i < result.items.length; i++) {
-        variantsByFile.set(result.items[i].uid, allVariants[i]);
-      }
       result.items = result.items.map((f) => ({
         ...f,
         variants: variantsByFile.get(f.uid) || [],

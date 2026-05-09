@@ -6,7 +6,7 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
  */
 import { useEffect, useState, useRef, useCallback, } from "react";
 import { get, isArray, isFunction, isNumber, isString, size } from "lodash-es";
-import { formatFileSize } from "../../../../utils/index.js";
+import { formatFileSize } from "../../../../utils/src/functions.js";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
@@ -473,13 +473,17 @@ onExistingFileSelect = () => { }, onDeleteExistingFile = () => { }, onError = ()
         onExistingFileSelect,
         selectedFile,
     ]);
-    return (_jsxs(Card, { raised: true, sx: { m: 1, mt: 3 }, children: [_jsx(CardHeader, { disableTypography: true, title: title, sx: { p: 1 } }), _jsxs(CardContent, { children: [!showExistingFiles && (_jsx(_Fragment, { children: _jsxs("label", { htmlFor: "contained-button-file", children: [_jsx("input", { accept: _fileExtensions, id: "contained-button-file", type: "file", multiple: multipleUpload, onChange: handleFileUpload, ref: fileInputRef, style: { display: "none" }, "data-testid": "file-input" }), _jsx(Button, { variant: "contained", size: "small", fullWidth: true, onClick: handleFileClick, startIcon: _jsx(AttachFileIcon, {}), children: uploadText }), selectedFile && isProcessing && (_jsx(Alert, { variant: "outlined", severity: "info", icon: _jsx(CircularProgress, { size: 20 }), sx: { m: 1 }, children: _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", children: [Array.isArray(selectedFile)
+    return (_jsxs(Card, { raised: true, sx: { m: 1, mt: 3 }, children: [_jsx(CardHeader, { disableTypography: true, title: title, sx: { p: 1 } }), _jsxs(CardContent, { children: [!showExistingFiles && (_jsx(_Fragment, { children: _jsxs("label", { htmlFor: "contained-button-file", children: [_jsx("input", { accept: _fileExtensions, id: "contained-button-file", type: "file", multiple: multipleUpload, onChange: handleFileUpload, ref: fileInputRef, style: { display: "none" }, "data-testid": "file-input" }), _jsx(Button, { variant: "contained", size: "small", fullWidth: true, onClick: handleFileClick, startIcon: _jsx(AttachFileIcon, {}), children: uploadText }), selectedFile && isProcessing && (_jsx(Alert, { variant: "outlined", severity: "info", icon: _jsx(CircularProgress, { size: 20 }), sx: { m: 1 }, children: _jsxs(Stack, { direction: "row", spacing: 1, sx: {
+                                            alignItems: "center",
+                                        }, children: [Array.isArray(selectedFile)
                                                 ? selectedFile
                                                     .map((f) => (isString(f) ? f : get(f, "name", "")))
                                                     .join(", ")
                                                 : isString(selectedFile)
                                                     ? selectedFile
-                                                    : get(selectedFile, "name", ""), " ", "Processing"] }) }))] }) })), showExistingFiles && (_jsx("input", { accept: _fileExtensions, id: "contained-button-file", type: "file", multiple: multipleUpload, onChange: handleFileUpload, ref: fileInputRef, style: { display: "none" }, "data-testid": "file-input" })), showExistingFiles && selectedFile && isProcessing && (_jsx(Alert, { variant: "outlined", severity: "info", icon: _jsx(CircularProgress, { size: 20 }), sx: { m: 1, mb: 2 }, children: _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "center", children: [Array.isArray(selectedFile)
+                                                    : get(selectedFile, "name", ""), " ", "Processing"] }) }))] }) })), showExistingFiles && (_jsx("input", { accept: _fileExtensions, id: "contained-button-file", type: "file", multiple: multipleUpload, onChange: handleFileUpload, ref: fileInputRef, style: { display: "none" }, "data-testid": "file-input" })), showExistingFiles && selectedFile && isProcessing && (_jsx(Alert, { variant: "outlined", severity: "info", icon: _jsx(CircularProgress, { size: 20 }), sx: { m: 1, mb: 2 }, children: _jsxs(Stack, { direction: "row", spacing: 1, sx: {
+                                alignItems: "center",
+                            }, children: [Array.isArray(selectedFile)
                                     ? selectedFile
                                         .map((f) => (isString(f) ? f : get(f, "name", "")))
                                         .join(", ")

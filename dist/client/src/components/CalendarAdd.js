@@ -25,12 +25,12 @@ import CalendarIcon from "@mui/icons-material/CalendarMonth";
 import InfoIcon from "@mui/icons-material/Info";
 import LockIcon from "@mui/icons-material/Lock";
 import DownloadIcon from "@mui/icons-material/Download";
-import { openCalendarEvent, DEFAULT_CALENDAR_CONFIG, } from "../../../utils/index.js";
+import { openCalendarEvent, DEFAULT_CALENDAR_CONFIG, } from "../../../utils/src/contact.js";
 /**
  * Re-export DEFAULT_CALENDAR_CONFIG for backwards compatibility.
  * @deprecated Import from `@user27828/shared-utils` (utils) instead.
  */
-export { DEFAULT_CALENDAR_CONFIG } from "../../../utils/index.js";
+export { DEFAULT_CALENDAR_CONFIG } from "../../../utils/src/contact.js";
 /**
  * Adding events to various calendar services
  *
@@ -84,7 +84,8 @@ const CalendarAdd = ({ event, requireAuth = false, isAuthenticated, onAuthRequir
                         alignItems: "center",
                     }, children: [_jsx(Tooltip, { title: requireAuth && !isAuthenticated
                                 ? "Sign in to use calendar features"
-                                : "Add to calendar", children: _jsx("span", { children: _jsx(IconButton, { ...buttonProps, id: menuTriggerId, type: buttonProps.type || "button", size: buttonProps.size || "small", color: buttonProps.color || "primary", onClick: handleClick, disabled: Boolean(buttonProps.disabled) || (requireAuth && !isAuthenticated), "aria-label": buttonProps["aria-label"] || event?.title || "Add to calendar", children: _jsx(EventNoteIcon, { fontSize: "small" }) }) }) }), requireAuth && !isAuthenticated && (_jsx(LockIcon, { color: "action", fontSize: "small", sx: {
+                                : "Add to calendar", children: _jsx("span", { children: _jsx(IconButton, { ...buttonProps, id: menuTriggerId, type: buttonProps.type || "button", size: buttonProps.size || "small", color: buttonProps.color || "primary", onClick: handleClick, disabled: Boolean(buttonProps.disabled) ||
+                                        (requireAuth && !isAuthenticated), "aria-label": buttonProps["aria-label"] || event?.title || "Add to calendar", children: _jsx(EventNoteIcon, { fontSize: "small" }) }) }) }), requireAuth && !isAuthenticated && (_jsx(LockIcon, { color: "action", fontSize: "small", sx: {
                                 position: "absolute",
                                 top: "50%",
                                 left: "50%",
@@ -93,21 +94,28 @@ const CalendarAdd = ({ event, requireAuth = false, isAuthenticated, onAuthRequir
                                 borderRadius: "50%",
                                 padding: "2px",
                                 cursor: "pointer",
-                            }, onClick: () => onAuthRequired("calendar feature") }))] }), _jsxs(Menu, { anchorEl: anchorEl, open: open, onClose: handleClose, MenuListProps: {
-                        "aria-labelledby": menuTriggerId,
-                    }, PaperProps: {
-                        elevation: 3,
-                        sx: {
-                            mt: 1,
-                            borderRadius: 2,
-                            width: 220,
+                            }, onClick: () => onAuthRequired("calendar feature") }))] }), _jsxs(Menu, { anchorEl: anchorEl, open: open, onClose: handleClose, slotProps: {
+                        list: {
+                            "aria-labelledby": menuTriggerId,
                         },
-                    }, TransitionComponent: Fade, children: [_jsx(Box, { sx: {
+                        paper: {
+                            elevation: 3,
+                            sx: {
+                                mt: 1,
+                                borderRadius: 2,
+                                width: 220,
+                            },
+                        },
+                    }, slots: {
+                        transition: Fade,
+                    }, children: [_jsx(Box, { sx: {
                                 px: 2,
                                 py: 1,
                                 borderBottom: "1px solid",
                                 borderColor: "divider",
-                            }, children: _jsx(Typography, { variant: "subtitle2", color: "text.secondary", children: "Choose Calendar Type" }) }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("google"), children: [_jsx(ListItemIcon, { children: _jsx(GoogleIcon, { fontSize: "small", color: "error" }) }), _jsx(ListItemText, { children: "Google Calendar" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("outlook"), children: [_jsx(ListItemIcon, { children: _jsx(MicrosoftIcon, { fontSize: "small", color: "primary" }) }), _jsx(ListItemText, { children: "Outlook" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("apple"), children: [_jsx(ListItemIcon, { children: _jsx(AppleIcon, { fontSize: "small" }) }), _jsx(ListItemText, { children: "Apple Calendar" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("yahoo"), children: [_jsx(ListItemIcon, { children: _jsx(CalendarIcon, { fontSize: "small", color: "secondary" }) }), _jsx(ListItemText, { children: "Yahoo Calendar" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("ics"), children: [_jsx(ListItemIcon, { children: _jsx(DownloadIcon, { fontSize: "small", color: "action" }) }), _jsx(ListItemText, { children: "Calendar ICS" })] }), _jsxs(Box, { sx: {
+                            }, children: _jsx(Typography, { variant: "subtitle2", sx: {
+                                    color: "text.secondary",
+                                }, children: "Choose Calendar Type" }) }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("google"), children: [_jsx(ListItemIcon, { children: _jsx(GoogleIcon, { fontSize: "small", color: "error" }) }), _jsx(ListItemText, { children: "Google Calendar" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("outlook"), children: [_jsx(ListItemIcon, { children: _jsx(MicrosoftIcon, { fontSize: "small", color: "primary" }) }), _jsx(ListItemText, { children: "Outlook" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("apple"), children: [_jsx(ListItemIcon, { children: _jsx(AppleIcon, { fontSize: "small" }) }), _jsx(ListItemText, { children: "Apple Calendar" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("yahoo"), children: [_jsx(ListItemIcon, { children: _jsx(CalendarIcon, { fontSize: "small", color: "secondary" }) }), _jsx(ListItemText, { children: "Yahoo Calendar" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("ics"), children: [_jsx(ListItemIcon, { children: _jsx(DownloadIcon, { fontSize: "small", color: "action" }) }), _jsx(ListItemText, { children: "Calendar ICS" })] }), _jsxs(Box, { sx: {
                                 px: 2,
                                 py: 1.5,
                                 mt: 1,
@@ -134,21 +142,28 @@ const CalendarAdd = ({ event, requireAuth = false, isAuthenticated, onAuthRequir
                     borderRadius: "50%",
                     padding: "2px",
                     cursor: "pointer",
-                }, onClick: () => onAuthRequired("calendar feature") })), _jsxs(Menu, { anchorEl: anchorEl, open: open, onClose: handleClose, MenuListProps: {
-                    "aria-labelledby": menuTriggerId,
-                }, PaperProps: {
-                    elevation: 3,
-                    sx: {
-                        mt: 1,
-                        borderRadius: 2,
-                        width: 220,
+                }, onClick: () => onAuthRequired("calendar feature") })), _jsxs(Menu, { anchorEl: anchorEl, open: open, onClose: handleClose, slotProps: {
+                    list: {
+                        "aria-labelledby": menuTriggerId,
                     },
-                }, TransitionComponent: Fade, children: [_jsx(Box, { sx: {
+                    paper: {
+                        elevation: 3,
+                        sx: {
+                            mt: 1,
+                            borderRadius: 2,
+                            width: 220,
+                        },
+                    },
+                }, slots: {
+                    transition: Fade,
+                }, children: [_jsx(Box, { sx: {
                             px: 2,
                             py: 1,
                             borderBottom: "1px solid",
                             borderColor: "divider",
-                        }, children: _jsx(Typography, { variant: "subtitle2", color: "text.secondary", children: "Choose Calendar Type" }) }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("google"), children: [_jsx(ListItemIcon, { children: _jsx(GoogleIcon, { fontSize: "small", color: "error" }) }), _jsx(ListItemText, { children: "Google Calendar" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("outlook"), children: [_jsx(ListItemIcon, { children: _jsx(MicrosoftIcon, { fontSize: "small", color: "primary" }) }), _jsx(ListItemText, { children: "Outlook" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("apple"), children: [_jsx(ListItemIcon, { children: _jsx(AppleIcon, { fontSize: "small" }) }), _jsx(ListItemText, { children: "Apple Calendar" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("yahoo"), children: [_jsx(ListItemIcon, { children: _jsx(CalendarIcon, { fontSize: "small", color: "secondary" }) }), _jsx(ListItemText, { children: "Yahoo Calendar" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("ics"), children: [_jsx(ListItemIcon, { children: _jsx(DownloadIcon, { fontSize: "small", color: "action" }) }), _jsx(ListItemText, { children: "Calendar ICS" })] }), _jsxs(Box, { sx: {
+                        }, children: _jsx(Typography, { variant: "subtitle2", sx: {
+                                color: "text.secondary",
+                            }, children: "Choose Calendar Type" }) }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("google"), children: [_jsx(ListItemIcon, { children: _jsx(GoogleIcon, { fontSize: "small", color: "error" }) }), _jsx(ListItemText, { children: "Google Calendar" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("outlook"), children: [_jsx(ListItemIcon, { children: _jsx(MicrosoftIcon, { fontSize: "small", color: "primary" }) }), _jsx(ListItemText, { children: "Outlook" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("apple"), children: [_jsx(ListItemIcon, { children: _jsx(AppleIcon, { fontSize: "small" }) }), _jsx(ListItemText, { children: "Apple Calendar" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("yahoo"), children: [_jsx(ListItemIcon, { children: _jsx(CalendarIcon, { fontSize: "small", color: "secondary" }) }), _jsx(ListItemText, { children: "Yahoo Calendar" })] }), _jsxs(MenuItem, { onClick: () => handleAddToCalendar("ics"), children: [_jsx(ListItemIcon, { children: _jsx(DownloadIcon, { fontSize: "small", color: "action" }) }), _jsx(ListItemText, { children: "Calendar ICS" })] }), _jsxs(Box, { sx: {
                             px: 2,
                             py: 1.5,
                             mt: 1,

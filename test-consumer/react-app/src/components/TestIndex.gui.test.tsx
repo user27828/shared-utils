@@ -1,10 +1,21 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import TestIndex from "./TestIndex";
+import { createInitialSuiteSnapshots } from "./testSuiteAutomation";
 
 describe("TestIndex GUI", () => {
-  it("shows CMS and FM conformance items", () => {
-    render(<TestIndex onNavigate={vi.fn()} />);
+  it("shows Run All plus CMS and FM conformance items", () => {
+    render(
+      <TestIndex
+        onNavigate={vi.fn()}
+        onRunAllSuites={vi.fn()}
+        isRunningAllSuites={false}
+        activeSuite={null}
+        suiteRunSnapshots={createInitialSuiteSnapshots()}
+      />,
+    );
+
+    screen.getByRole("button", { name: "Run All" });
 
     screen.getByText("Server Integration Tests");
 

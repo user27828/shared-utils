@@ -2,10 +2,19 @@ import React, { useState, useEffect } from "react";
 import { Button, Box, Typography, Alert, Chip, Stack } from "@mui/material";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 import TestSuiteLayout from "./TestSuiteLayout";
+import {
+  type SuiteAutomationProps,
+  useSuiteAutomation,
+} from "./testSuiteAutomation";
 
-export const ServerIntegrationTests: React.FC = () => {
+export const ServerIntegrationTests: React.FC<SuiteAutomationProps> = ({
+  automationRunId,
+  onAutomationComplete,
+}) => {
   const [isRunningTestSuite, setIsRunningTestSuite] = useState<boolean>(false);
   const [serverTestsAvailable, setServerTestsAvailable] = useState(false);
+  const [serverAvailabilityChecked, setServerAvailabilityChecked] =
+    useState(false);
 
   const [testItems, setTestItems] = useState<TestItem[]>([
     {
@@ -107,6 +116,7 @@ export const ServerIntegrationTests: React.FC = () => {
   const checkServerTestConsumer = async () => {
     const testName = "Server Test Consumer Health Check";
     const startTime = Date.now();
+    setServerAvailabilityChecked(false);
     updateTestStatus(
       testName,
       "running",
@@ -143,6 +153,8 @@ export const ServerIntegrationTests: React.FC = () => {
         "Server test consumer not running. Start it with: cd test-consumer/server && node index.js",
         duration,
       );
+    } finally {
+      setServerAvailabilityChecked(true);
     }
   };
 
@@ -503,6 +515,15 @@ export const ServerIntegrationTests: React.FC = () => {
     setIsRunningTestSuite(false);
   };
 
+  useSuiteAutomation({
+    automationRunId,
+    onAutomationComplete,
+    view: "server",
+    isReady: serverAvailabilityChecked,
+    tests: testItems,
+    runAllTests,
+  });
+
   const openServerTestConsumer = () => {
     window.open("http://localhost:8030/test", "_blank");
   };
@@ -550,12 +571,14 @@ export const ServerIntegrationTests: React.FC = () => {
             <Button
               variant="contained"
               onClick={runAllTests}
-              disabled={isRunningTestSuite}
+              disabled={isRunningTestSuite || !serverAvailabilityChecked}
               size="large"
             >
-              {isRunningTestSuite
-                ? "Running Integration Tests..."
-                : "Run All Server Integration Tests"}
+              {!serverAvailabilityChecked
+                ? "Checking Server Status..."
+                : isRunningTestSuite
+                  ? "Running Integration Tests..."
+                  : "Run All Server Integration Tests"}
             </Button>
 
             <Button

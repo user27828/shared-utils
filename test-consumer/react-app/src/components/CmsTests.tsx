@@ -17,12 +17,20 @@ import {
 } from "@user27828/shared-utils/cms/client";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 import TestSuiteLayout from "./TestSuiteLayout";
+import {
+  type SuiteAutomationProps,
+  useSuiteAutomation,
+} from "./testSuiteAutomation";
 
-interface CmsTestsProps {
+interface CmsTestsProps extends SuiteAutomationProps {
   darkMode: boolean;
 }
 
-const CmsTests: React.FC<CmsTestsProps> = ({ darkMode }) => {
+const CmsTests: React.FC<CmsTestsProps> = ({
+  automationRunId,
+  onAutomationComplete,
+  darkMode,
+}) => {
   const [isRunningTestSuite, setIsRunningTestSuite] = useState<boolean>(false);
 
   const [contentType, setContentType] = useState<CmsContentType>("html");
@@ -276,6 +284,14 @@ const CmsTests: React.FC<CmsTestsProps> = ({ darkMode }) => {
 
     setIsRunningTestSuite(false);
   };
+
+  useSuiteAutomation({
+    automationRunId,
+    onAutomationComplete,
+    view: "cms",
+    tests: testItems,
+    runAllTests,
+  });
 
   return (
     <TestSuiteLayout

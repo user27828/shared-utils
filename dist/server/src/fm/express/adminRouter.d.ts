@@ -1,28 +1,4 @@
-/**
- * FM Admin Router Factory — shared-utils/server/src/fm/express
- *
- * Creates a fully-wired Express router that exposes the complete admin FM
- * HTTP contract.  The host app provides:
- *  - a FmServiceCore instance (with connector + storage already wired)
- *  - an FmAuthzResult adapter (from createFmAuthz)
- *  - optional hooks and configuration
- *
- * This router consolidates ALL FM admin endpoints:
- *  - Upload flows (init / finalize / proxied, for both files and variants)
- *  - File CRUD, listing, metadata, content streaming
- *  - Archive / restore / delete / move
- *  - Link management (optional, behind allowLinks flag)
- *
- * Mount example:
- *   const fmAuthz = createFmAuthz({ resolveContext: myResolver });
- *   app.use("/api/fm",
- *     authMiddleware,
- *     fmAuthz.middleware,
- *     createFmRouter({ service, authz: fmAuthz }),
- *   );
- */
-import { Router } from "express";
-import type { Request } from "express";
+import type { Router, Request } from "express";
 import type { FmServiceCore } from "../FmServiceCore.js";
 import type { FmAuthzResult } from "./authz.js";
 import type { FmWriteEvent } from "../../../../utils/src/fm/types.js";

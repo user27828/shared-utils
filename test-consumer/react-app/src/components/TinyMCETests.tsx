@@ -11,12 +11,20 @@ import {
 } from "@mui/material";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 import TestSuiteLayout from "./TestSuiteLayout";
+import {
+  type SuiteAutomationProps,
+  useSuiteAutomation,
+} from "./testSuiteAutomation";
 
-interface TinyMCETestsProps {
+interface TinyMCETestsProps extends SuiteAutomationProps {
   darkMode: boolean;
 }
 
-const TinyMCETests: React.FC<TinyMCETestsProps> = ({ darkMode }) => {
+const TinyMCETests: React.FC<TinyMCETestsProps> = ({
+  automationRunId,
+  onAutomationComplete,
+  darkMode,
+}) => {
   const [editor, setEditor] = useState<any>(null);
   const [content, setContent] = useState<string>(
     "<h2>Welcome to TinyMCE Integration!</h2><p>This demonstrates TinyMCE with shared-utils integration.</p>",
@@ -605,6 +613,15 @@ const TinyMCETests: React.FC<TinyMCETestsProps> = ({ darkMode }) => {
     setIsRunningTestSuite(false);
   };
 
+  useSuiteAutomation({
+    automationRunId,
+    onAutomationComplete,
+    view: "tinymce",
+    isReady: Boolean(editor),
+    tests: testItems,
+    runAllTests: testAllOptions,
+  });
+
   return (
     <TestSuiteLayout
       title="TinyMCE Integration Tests"
@@ -614,10 +631,14 @@ const TinyMCETests: React.FC<TinyMCETestsProps> = ({ darkMode }) => {
           <Button
             variant="contained"
             onClick={testAllOptions}
-            disabled={isRunningTestSuite}
+            disabled={isRunningTestSuite || !editor}
             size="large"
           >
-            {isRunningTestSuite ? "Running Tests..." : "Run All TinyMCE Tests"}
+            {!editor
+              ? "Editor Initializing..."
+              : isRunningTestSuite
+                ? "Running Tests..."
+                : "Run All TinyMCE Tests"}
           </Button>
           <Button
             variant="outlined"

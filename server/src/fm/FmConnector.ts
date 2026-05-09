@@ -161,6 +161,27 @@ export function hasBatchVariantDelete(
 }
 
 /**
+ * Optional: Batch variant listing for a set of parent file UIDs.
+ *
+ * Connectors can implement this to avoid N+1 variant queries for file
+ * listings that request `includeVariants: true`.
+ */
+export interface FmConnectorWithBatchVariantList extends FmConnector {
+  /** List variant rows for multiple parent file UIDs in one call. */
+  listVariantsForFiles(fileUids: string[]): Promise<FmFileVariantRow[]>;
+}
+
+/** Type guard: check if a connector supports batch variant listing. */
+export function hasBatchVariantList(
+  connector: FmConnector,
+): connector is FmConnectorWithBatchVariantList {
+  return (
+    typeof (connector as FmConnectorWithBatchVariantList)
+      .listVariantsForFiles === "function"
+  );
+}
+
+/**
  * Optional: Entity-centric link queries.  Enables features like
  * "list all FM files referenced by a CMS post" or "remove all links
  * for a deleted entity" without knowing the file UIDs up-front.

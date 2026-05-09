@@ -43,6 +43,8 @@ export declare class FmServiceCore {
     getConfig(): FmServerConfig;
     private emitWrite;
     private deleteLinksForFile;
+    private listVariantsForFiles;
+    private resolveDeliveryTarget;
     uploadInit(input: {
         request: FmUploadInitRequest;
         ownerUserUid?: string | null;
@@ -185,6 +187,8 @@ export declare class FmServiceCore {
         variantKind?: string;
         /** Exact variant width — picks the variant closest to this width. */
         variantWidth?: number;
+        /** Force download disposition for signed URLs and streamed responses. */
+        download?: boolean;
     }): Promise<{
         provider: "local" | "s3";
         ref: FmObjectRef;

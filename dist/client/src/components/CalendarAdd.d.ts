@@ -1,4 +1,4 @@
-export { DEFAULT_CALENDAR_CONFIG } from "../../../utils/index.js";
+export { DEFAULT_CALENDAR_CONFIG } from "../../../utils/src/contact.js";
 export default CalendarAdd;
 /**
  * Adding events to various calendar services

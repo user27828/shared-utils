@@ -27,13 +27,13 @@ import DownloadIcon from "@mui/icons-material/Download";
 import {
   openCalendarEvent,
   DEFAULT_CALENDAR_CONFIG,
-} from "../../../utils/index.js";
+} from "../../../utils/src/contact.js";
 
 /**
  * Re-export DEFAULT_CALENDAR_CONFIG for backwards compatibility.
  * @deprecated Import from `@user27828/shared-utils` (utils) instead.
  */
-export { DEFAULT_CALENDAR_CONFIG } from "../../../utils/index.js";
+export { DEFAULT_CALENDAR_CONFIG } from "../../../utils/src/contact.js";
 
 /**
  * Adding events to various calendar services
@@ -118,8 +118,13 @@ const CalendarAdd = ({
                 size={buttonProps.size || "small"}
                 color={buttonProps.color || "primary"}
                 onClick={handleClick}
-                disabled={Boolean(buttonProps.disabled) || (requireAuth && !isAuthenticated)}
-                aria-label={buttonProps["aria-label"] || event?.title || "Add to calendar"}
+                disabled={
+                  Boolean(buttonProps.disabled) ||
+                  (requireAuth && !isAuthenticated)
+                }
+                aria-label={
+                  buttonProps["aria-label"] || event?.title || "Add to calendar"
+                }
               >
                 <EventNoteIcon fontSize="small" />
               </IconButton>
@@ -148,18 +153,22 @@ const CalendarAdd = ({
           anchorEl={anchorEl}
           open={open}
           onClose={handleClose}
-          MenuListProps={{
-            "aria-labelledby": menuTriggerId,
-          }}
-          PaperProps={{
-            elevation: 3,
-            sx: {
-              mt: 1,
-              borderRadius: 2,
-              width: 220,
+          slotProps={{
+            list: {
+              "aria-labelledby": menuTriggerId,
+            },
+            paper: {
+              elevation: 3,
+              sx: {
+                mt: 1,
+                borderRadius: 2,
+                width: 220,
+              },
             },
           }}
-          TransitionComponent={Fade}
+          slots={{
+            transition: Fade,
+          }}
         >
           <Box
             sx={{
@@ -169,7 +178,12 @@ const CalendarAdd = ({
               borderColor: "divider",
             }}
           >
-            <Typography variant="subtitle2" color="text.secondary">
+            <Typography
+              variant="subtitle2"
+              sx={{
+                color: "text.secondary",
+              }}
+            >
               Choose Calendar Type
             </Typography>
           </Box>
@@ -254,7 +268,6 @@ const CalendarAdd = ({
       >
         Add to Calendar
       </Button>
-
       {requireAuth && !isAuthenticated && (
         <LockIcon
           color="action"
@@ -272,23 +285,26 @@ const CalendarAdd = ({
           onClick={() => onAuthRequired("calendar feature")}
         />
       )}
-
       <Menu
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
-        MenuListProps={{
-          "aria-labelledby": menuTriggerId,
-        }}
-        PaperProps={{
-          elevation: 3,
-          sx: {
-            mt: 1,
-            borderRadius: 2,
-            width: 220,
+        slotProps={{
+          list: {
+            "aria-labelledby": menuTriggerId,
+          },
+          paper: {
+            elevation: 3,
+            sx: {
+              mt: 1,
+              borderRadius: 2,
+              width: 220,
+            },
           },
         }}
-        TransitionComponent={Fade}
+        slots={{
+          transition: Fade,
+        }}
       >
         <Box
           sx={{
@@ -298,7 +314,12 @@ const CalendarAdd = ({
             borderColor: "divider",
           }}
         >
-          <Typography variant="subtitle2" color="text.secondary">
+          <Typography
+            variant="subtitle2"
+            sx={{
+              color: "text.secondary",
+            }}
+          >
             Choose Calendar Type
           </Typography>
         </Box>

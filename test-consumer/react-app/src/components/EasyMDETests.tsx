@@ -21,8 +21,12 @@ import {
 } from "@mui/material";
 import { TestProgress, type TestItem } from "./TestProgress";
 import TestSuiteLayout from "./TestSuiteLayout";
+import {
+  type SuiteAutomationProps,
+  useSuiteAutomation,
+} from "./testSuiteAutomation";
 
-interface EasyMDETestsProps {
+interface EasyMDETestsProps extends SuiteAutomationProps {
   darkMode: boolean;
 }
 
@@ -48,7 +52,11 @@ const fileToDataUrl = async (file: File): Promise<string> => {
   });
 };
 
-const EasyMDETests: React.FC<EasyMDETestsProps> = ({ darkMode }) => {
+const EasyMDETests: React.FC<EasyMDETestsProps> = ({
+  automationRunId,
+  onAutomationComplete,
+  darkMode,
+}) => {
   const [editor, setEditor] = useState<any>(null);
   const [content, setContent] = useState<string>(
     "# EasyMDE Integration\n\nThis demonstrates **EasyMDE** via the unified `WysiwygEditor` export.\n\nTry the toolbar buttons: Image / File / Media (media is inserted as a plain link).",
@@ -261,6 +269,15 @@ const EasyMDETests: React.FC<EasyMDETestsProps> = ({ darkMode }) => {
 
     setIsRunningTestSuite(false);
   };
+
+  useSuiteAutomation({
+    automationRunId,
+    onAutomationComplete,
+    view: "easymde",
+    isReady: Boolean(editor),
+    tests: testItems,
+    runAllTests,
+  });
 
   const onPickAsset = async (request: WysiwygPickRequest) => {
     return await new Promise<WysiwygPickResult | null>((resolve) => {

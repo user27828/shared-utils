@@ -2,6 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { Typography, Box, Button, Stack } from "@mui/material";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 import TestSuiteLayout from "./TestSuiteLayout";
+import {
+  type SuiteAutomationProps,
+  useSuiteAutomation,
+} from "./testSuiteAutomation";
 
 // Import the turnstile utility from shared-utils
 // Note: This will test the actual integration
@@ -27,9 +31,14 @@ const loadTurnstile = async () => {
   }
 };
 
-export const TurnstileTests: React.FC = () => {
+export const TurnstileTests: React.FC<SuiteAutomationProps> = ({
+  automationRunId,
+  onAutomationComplete,
+}) => {
   const [isRunningTestSuite, setIsRunningTestSuite] = useState<boolean>(false);
   const [turnstileLoaded, setTurnstileLoaded] = useState(false);
+  const [turnstileImportSettled, setTurnstileImportSettled] =
+    useState<boolean>(false);
 
   // Widget refs for cleanup
   const basicWidgetRef = useRef<HTMLDivElement>(null);
@@ -142,6 +151,8 @@ export const TurnstileTests: React.FC = () => {
           duration,
         );
       }
+
+      setTurnstileImportSettled(true);
     };
 
     initTurnstile();
@@ -535,6 +546,15 @@ export const TurnstileTests: React.FC = () => {
 
     setIsRunningTestSuite(false);
   };
+
+  useSuiteAutomation({
+    automationRunId,
+    onAutomationComplete,
+    view: "turnstile",
+    isReady: turnstileImportSettled,
+    tests: testItems,
+    runAllTests,
+  });
 
   return (
     <TestSuiteLayout

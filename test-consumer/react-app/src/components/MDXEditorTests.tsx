@@ -14,12 +14,20 @@ import {
 } from "@mui/material";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 import TestSuiteLayout from "./TestSuiteLayout";
+import {
+  type SuiteAutomationProps,
+  useSuiteAutomation,
+} from "./testSuiteAutomation";
 
-interface MDXEditorTestsProps {
+interface MDXEditorTestsProps extends SuiteAutomationProps {
   darkMode: boolean;
 }
 
-const MDXEditorTests: React.FC<MDXEditorTestsProps> = ({ darkMode }) => {
+const MDXEditorTests: React.FC<MDXEditorTestsProps> = ({
+  automationRunId,
+  onAutomationComplete,
+  darkMode,
+}) => {
   const editorRef = useRef<MDXEditorMethods>(null);
   const [editor, setEditor] = useState<MDXEditorMethods | null>(null);
   const [content, setContent] = useState<string>(
@@ -484,6 +492,15 @@ const MDXEditorTests: React.FC<MDXEditorTestsProps> = ({ darkMode }) => {
 
     setIsRunningTestSuite(false);
   };
+
+  useSuiteAutomation({
+    automationRunId,
+    onAutomationComplete,
+    view: "mdxeditor",
+    isReady: Boolean(editor),
+    tests: testItems,
+    runAllTests: testAllOptions,
+  });
 
   return (
     <TestSuiteLayout

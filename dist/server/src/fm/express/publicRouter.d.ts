@@ -1,25 +1,4 @@
-/**
- * FM Public Router Factory — shared-utils/server/src/fm/express
- *
- * Provides the canonical `/media/:uid` public GET endpoint with:
- *  - Variant-aware resolution (?variant=thumb|preview|web, ?w= for responsive)
- *  - Content-type detection from metadata
- *  - Cache headers (ETag + Cache-Control)
- *  - Redirect vs stream decision (S3: redirect to signed URL; local: sendFile)
- *  - Built-in in-memory LRU redirect cache (configurable TTL/size)
- *  - Variant fallback: if requested variant is missing, serve original
- *
- * Mount example:
- *   app.use("/media",
- *     fmMediaRateLimitMiddleware,
- *     createFmPublicRouter({
- *       service,
- *       cacheControl: "public, max-age=86400, immutable",
- *       cache: { maxEntries: 5000, ttlMs: 60_000 },
- *     }),
- *   );
- */
-import { Router } from "express";
+import type { Router } from "express";
 import type { FmServiceCore } from "../FmServiceCore.js";
 /** Configuration for the redirect cache used by the public router. */
 export interface FmPublicRouterCacheConfig {

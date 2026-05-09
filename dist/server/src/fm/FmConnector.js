@@ -8,6 +8,11 @@ export function hasBatchVariantDelete(connector) {
     return (typeof connector
         .deleteVariantsByUids === "function");
 }
+/** Type guard: check if a connector supports batch variant listing. */
+export function hasBatchVariantList(connector) {
+    return (typeof connector
+        .listVariantsForFiles === "function");
+}
 /** Type guard: check if a connector supports entity-centric link queries. */
 export function hasEntityLinks(connector) {
     return (typeof connector.listLinksForEntity ===

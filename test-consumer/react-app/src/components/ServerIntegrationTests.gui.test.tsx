@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { ServerIntegrationTests } from "./ServerIntegrationTests";
 
 const expectBefore = (first: HTMLElement, second: HTMLElement) => {
@@ -32,12 +32,50 @@ describe("ServerIntegrationTests GUI", () => {
     expect(true).toBe(true);
   });
 
-  it("keeps server controls before results before the about section", () => {
+  it("keeps Run All disabled until the initial availability check settles", async () => {
+    let resolveFetch: ((value: Response) => void) | undefined;
+    globalThis.fetch = vi.fn(() => {
+      return new Promise<Response>((resolve) => {
+        resolveFetch = resolve;
+      });
+    }) as any;
+
     render(<ServerIntegrationTests />);
 
-    const runAllButton = screen.getAllByRole("button", {
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Checking Server Status...",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+
+    if (resolveFetch) {
+      resolveFetch(
+        new Response(JSON.stringify({ status: "ok" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    }
+
+    await waitFor(() => {
+      expect(
+        (
+          screen.getByRole("button", {
+            name: "Run All Server Integration Tests",
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(false);
+    });
+  });
+
+  it("keeps server controls before results before the about section", async () => {
+    render(<ServerIntegrationTests />);
+
+    const runAllButton = await screen.findByRole("button", {
       name: "Run All Server Integration Tests",
-    })[0];
+    });
     const results = screen.getByText(
       "Server Integration Tests - Test Progress",
     );

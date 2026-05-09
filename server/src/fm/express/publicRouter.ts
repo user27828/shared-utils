@@ -19,8 +19,8 @@
  *     }),
  *   );
  */
-import { Router } from "express";
-import type { Request, Response, NextFunction } from "express";
+import express from "express";
+import type { Router, Request, Response, NextFunction } from "express";
 import fs from "fs";
 
 import type { FmServiceCore } from "../FmServiceCore.js";
@@ -30,6 +30,7 @@ import {
   FmNotFoundError,
 } from "../../../../utils/src/fm/errors.js";
 import { getSingleParam } from "../../express/params.js";
+import { applyFmContentHeaders } from "../utils/contentHeaders.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -168,7 +169,7 @@ export function createFmPublicRouter(
   const cacheEnabled = config.cache?.enabled !== false;
   const redirectCache = cacheEnabled ? new RedirectCache(config.cache) : null;
 
-  const router = Router();
+  const router = express.Router();
 
   // ── GET /:uid — public content endpoint ───────────────────────────
 
@@ -212,12 +213,16 @@ export function createFmPublicRouter(
           access = await service.resolveContentAccess({
             fileUid,
             variantKind,
+            download,
           });
         } catch (err) {
           // If variant resolution failed and fallback is enabled, try original
           if (enableVariantFallback && variantKind) {
             try {
-              access = await service.resolveContentAccess({ fileUid });
+              access = await service.resolveContentAccess({
+                fileUid,
+                download,
+              });
             } catch {
               res.status(404).end();
               return;
@@ -237,26 +242,48 @@ export function createFmPublicRouter(
           return;
         }
 
-        // Common headers
-        if (access.contentType) {
-          res.type(access.contentType);
-        }
-        if (access.file.sha256) {
-          res.setHeader("ETag", `"${access.file.sha256}"`);
+        if (
+          access.provider === "local" &&
+          access.absPath &&
+          !fs.existsSync(access.absPath)
+        ) {
+          if (enableVariantFallback && variantKind) {
+            try {
+              const originalAccess = await service.resolveContentAccess({
+                fileUid,
+                download,
+              });
+              if (
+                originalAccess.provider === "local" &&
+                originalAccess.absPath &&
+                fs.existsSync(originalAccess.absPath)
+              ) {
+                access = originalAccess;
+              } else {
+                res.status(404).end();
+                return;
+              }
+            } catch {
+              res.status(404).end();
+              return;
+            }
+          } else {
+            res.status(404).end();
+            return;
+          }
         }
 
-        // Download disposition
-        if (download) {
-          const filename = access.file.original_filename || access.file.uid;
-          res.setHeader(
-            "Content-Disposition",
-            `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
-          );
-        }
+        applyFmContentHeaders({
+          res,
+          cacheControl,
+          contentType: access.contentType,
+          sha256: access.file.sha256,
+          filename: access.file.original_filename || access.file.uid,
+          download,
+        });
 
         // ── S3: redirect to signed URL ──────────────────────────────
         if (access.redirectUrl) {
-          res.setHeader("Cache-Control", cacheControl);
           if (redirectCache) {
             redirectCache.set(cacheKey, access.redirectUrl);
           }
@@ -266,45 +293,6 @@ export function createFmPublicRouter(
 
         // ── Local: stream via sendFile ──────────────────────────────
         if (access.provider === "local" && access.absPath) {
-          // Check file existence before attempting sendFile
-          if (!fs.existsSync(access.absPath)) {
-            // Variant fallback: if variant file is missing, try original
-            if (enableVariantFallback && variantKind) {
-              try {
-                const originalAccess = await service.resolveContentAccess({
-                  fileUid,
-                });
-                if (
-                  originalAccess.provider === "local" &&
-                  originalAccess.absPath &&
-                  fs.existsSync(originalAccess.absPath)
-                ) {
-                  if (originalAccess.contentType) {
-                    res.type(originalAccess.contentType);
-                  }
-                  res.setHeader(
-                    "Cache-Control",
-                    access.file.is_public
-                      ? cacheControl
-                      : "private, max-age=0, no-store",
-                  );
-                  res.sendFile(originalAccess.absPath, { dotfiles: "allow" });
-                  return;
-                }
-              } catch {
-                // fall through to 404
-              }
-            }
-            res.status(404).end();
-            return;
-          }
-
-          res.setHeader(
-            "Cache-Control",
-            access.file.is_public
-              ? cacheControl
-              : "private, max-age=0, no-store",
-          );
           // dotfiles: 'allow' — required for .data/ paths
           res.sendFile(access.absPath, { dotfiles: "allow" }, (err) => {
             if (err && !res.headersSent) {
