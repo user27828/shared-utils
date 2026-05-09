@@ -85,7 +85,9 @@ export const FmVideoViewer: React.FC<FmVideoViewerProps> = ({
       onClose={handleClose}
       fullWidth
       maxWidth="lg"
-      PaperProps={{ sx: { bgcolor: "background.default" } }}
+      slotProps={{
+        paper: { sx: { bgcolor: "background.default" } },
+      }}
     >
       <Stack
         direction="row"

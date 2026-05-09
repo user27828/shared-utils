@@ -64,18 +64,88 @@ const TinyMceEditor = (props) => {
     const { data, onChange, onEditorInstance, onPickFile, onUploadImage, canonicalizeUrl, skinUrl, contentCss, darkMode, init: initOverride, ...otherProps } = props;
     const editorRef = useRef(null);
     const initialValueRef = useRef(data || "");
+    const lastExternalValueRef = useRef(data || "");
+    const lastPropagatedValueRef = useRef(data || "");
+    const pendingExternalValueRef = useRef(null);
+    const pendingLocalValuesRef = useRef([]);
+    const editorKey = darkMode ? "dark" : "light";
+    const lastEditorKeyRef = useRef(editorKey);
+    if (lastEditorKeyRef.current !== editorKey) {
+        initialValueRef.current = data || lastExternalValueRef.current || "";
+        lastEditorKeyRef.current = editorKey;
+    }
     useEffect(() => {
-        if (editorRef.current && !editorRef.current.hasFocus()) {
-            initialValueRef.current = data || "";
+        const editor = editorRef.current;
+        const nextValue = data || "";
+        const pendingLocalValues = pendingLocalValuesRef.current;
+        const matchedPendingIndex = pendingLocalValues.lastIndexOf(nextValue);
+        if (matchedPendingIndex !== -1) {
+            const hasNewerPendingValue = matchedPendingIndex < pendingLocalValues.length - 1;
+            pendingLocalValues.splice(0, matchedPendingIndex + 1);
+            if (hasNewerPendingValue) {
+                return;
+            }
+        }
+        else if (pendingLocalValues.length > 0 &&
+            nextValue !== lastExternalValueRef.current) {
+            pendingLocalValues.length = 0;
+        }
+        if (!editor) {
+            initialValueRef.current = nextValue;
+            lastExternalValueRef.current = nextValue;
+            lastPropagatedValueRef.current = nextValue;
+            return;
+        }
+        if (nextValue === lastExternalValueRef.current) {
+            lastPropagatedValueRef.current = nextValue;
+            return;
+        }
+        try {
+            if (editor.hasFocus?.()) {
+                return;
+            }
+            const currentValue = editor.getContent?.() || "";
+            if (currentValue === nextValue) {
+                lastExternalValueRef.current = nextValue;
+                lastPropagatedValueRef.current = nextValue;
+                return;
+            }
+            pendingExternalValueRef.current = nextValue;
+            editor.setContent(nextValue);
+            lastExternalValueRef.current = nextValue;
+            lastPropagatedValueRef.current = nextValue;
+        }
+        catch {
+            pendingExternalValueRef.current = null;
         }
     }, [data]);
     const handleEditorChange = (content) => {
+        const pendingExternalValue = pendingExternalValueRef.current;
+        lastExternalValueRef.current = content;
+        if (pendingExternalValue !== null) {
+            pendingExternalValueRef.current = null;
+            if (content === pendingExternalValue) {
+                return;
+            }
+        }
+        if (content === lastPropagatedValueRef.current) {
+            return;
+        }
+        lastPropagatedValueRef.current = content;
         if (onChange) {
+            const pendingLocalValues = pendingLocalValuesRef.current;
+            if (pendingLocalValues[pendingLocalValues.length - 1] !== content) {
+                pendingLocalValues.push(content);
+            }
             const editorInstance = {
                 getData: () => content,
             };
             onChange(null, editorInstance);
         }
+    };
+    const handleEditorEvent = (_event, editor) => {
+        const content = editor?.getContent?.() || editorRef.current?.getContent?.() || "";
+        handleEditorChange(content);
     };
     // Select light or dark skin based on darkMode prop.
     const resolvedSkinUrl = skinUrl ||
@@ -198,7 +268,7 @@ const TinyMceEditor = (props) => {
             if (onEditorInstance) {
                 onEditorInstance(editor);
             }
-        }, initialValue: initialValueRef.current, value: data || "", onEditorChange: handleEditorChange, init: merge({}, defaultInit, initOverride, {
+        }, initialValue: initialValueRef.current, onEditorChange: handleEditorChange, onUndo: handleEditorEvent, onRedo: handleEditorEvent, init: merge({}, defaultInit, initOverride, {
             // skinUrl/contentCss props already resolved into defaultInit;
             // only override here if caller passed explicit values.
             ...(props.skinUrl ? { skin_url: props.skinUrl } : {}),
@@ -209,7 +279,7 @@ const TinyMceEditor = (props) => {
             ...(imagesUploadHandler
                 ? { images_upload_handler: imagesUploadHandler }
                 : {}),
-        }), ...otherProps }, darkMode ? "dark" : "light"));
+        }), ...otherProps }, editorKey));
 };
 TinyMceEditor.displayName = "TinyMceEditor";
 export default TinyMceEditor;

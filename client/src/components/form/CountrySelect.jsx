@@ -222,35 +222,52 @@ const CountrySelect = ({
             </MenuItem>
           );
         }}
-        renderTags={(value, getTagProps) =>
-          value.map((option, index) => (
-            <Chip
-              variant="outlined"
-              label={option.name}
-              {...getTagProps({ index })}
-              key={option.iso3166_1_alpha3 || option.iso3166_1_alpha2}
-            />
-          ))
+        renderValue={
+          multiple
+            ? (selectedValues, getItemProps) => {
+                const selectedCountries = Array.isArray(selectedValues)
+                  ? selectedValues
+                  : selectedValues
+                    ? [selectedValues]
+                    : [];
+
+                return selectedCountries.map((option, index) => (
+                  <Chip
+                    variant="outlined"
+                    label={option.name}
+                    {...getItemProps({ index })}
+                    key={option.iso3166_1_alpha3 || option.iso3166_1_alpha2}
+                  />
+                ));
+              }
+            : undefined
         }
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            name={name}
-            label={label}
-            placeholder={placeholder}
-            required={required}
-            error={error}
-            helperText={helperText}
-            fullWidth={fullWidth}
-            size={size}
-            variant={variant}
-            disabled={disabled}
-            InputProps={{
-              ...params.InputProps,
-              sx: { ...sx },
-            }}
-          />
-        )}
+        renderInput={(params) => {
+          const { slotProps = {}, ...textFieldParams } = params;
+
+          return (
+            <TextField
+              {...textFieldParams}
+              name={name}
+              label={label}
+              placeholder={placeholder}
+              required={required}
+              error={error}
+              helperText={helperText}
+              fullWidth={fullWidth}
+              size={size}
+              variant={variant}
+              disabled={disabled}
+              slotProps={{
+                ...slotProps,
+                input: {
+                  ...(slotProps.input || {}),
+                  sx: { ...sx },
+                },
+              }}
+            />
+          );
+        }}
         disabled={disabled}
         {...props}
       />

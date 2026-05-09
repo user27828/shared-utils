@@ -138,10 +138,25 @@ const CountrySelect = ({ value, onChange, multiple = false, topCountries = [], s
                     _jsx(ListItemText, { primary: _jsxs(Box, { sx: { display: "flex", justifyContent: "space-between" }, children: [_jsx("span", { children: option.name }), _jsxs(Typography, { variant: "caption", color: "text.secondary", children: [option.iso3166_1_alpha2, showTelCode && option.telCountryCode
                                             ? ` +${option.telCountryCode}`
                                             : ""] })] }), secondary: option.nameLocal !== option.name ? option.nameLocal : null })));
-            }, renderTags: (value, getTagProps) => value.map((option, index) => (_createElement(Chip, { variant: "outlined", label: option.name, ...getTagProps({ index }), key: option.iso3166_1_alpha3 || option.iso3166_1_alpha2 }))), renderInput: (params) => (_jsx(TextField, { ...params, name: name, label: label, placeholder: placeholder, required: required, error: error, helperText: helperText, fullWidth: fullWidth, size: size, variant: variant, disabled: disabled, InputProps: {
-                    ...params.InputProps,
-                    sx: { ...sx },
-                } })), disabled: disabled, ...props }));
+            }, renderValue: multiple
+                ? (selectedValues, getItemProps) => {
+                    const selectedCountries = Array.isArray(selectedValues)
+                        ? selectedValues
+                        : selectedValues
+                            ? [selectedValues]
+                            : [];
+                    return selectedCountries.map((option, index) => (_createElement(Chip, { variant: "outlined", label: option.name, ...getItemProps({ index }), key: option.iso3166_1_alpha3 || option.iso3166_1_alpha2 })));
+                }
+                : undefined, renderInput: (params) => {
+                const { slotProps = {}, ...textFieldParams } = params;
+                return (_jsx(TextField, { ...textFieldParams, name: name, label: label, placeholder: placeholder, required: required, error: error, helperText: helperText, fullWidth: fullWidth, size: size, variant: variant, disabled: disabled, slotProps: {
+                        ...slotProps,
+                        input: {
+                            ...(slotProps.input || {}),
+                            sx: { ...sx },
+                        },
+                    } }));
+            }, disabled: disabled, ...props }));
     }
     // Regular Select component for non-searchable version
     return (_jsxs(FormControl, { fullWidth: fullWidth, required: required, error: error, disabled: disabled, size: size, variant: variant, sx: sx, children: [_jsx(InputLabel, { id: `${id}-label`, children: label }), _jsx(Select, { id: id, name: name, labelId: `${id}-label`, value: multiple ? value || [] : value || "", onChange: handleRegularSelectChange, multiple: multiple, label: label, renderValue: (selected) => {

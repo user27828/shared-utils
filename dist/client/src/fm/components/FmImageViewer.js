@@ -155,7 +155,9 @@ export const FmImageViewer = ({ open, onClose, fileUid, api, title, file, onSele
             onSelect(file, selectedVariant);
         }
     }, [onSelect, file, selectedVariant]);
-    return (_jsxs(Dialog, { open: open, onClose: handleClose, fullWidth: true, maxWidth: "lg", PaperProps: { sx: { bgcolor: "background.default" } }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, sx: { px: 2, py: 1 }, children: [_jsx(Typography, { fontWeight: 700, noWrap: true, sx: { flex: 1, minWidth: 0 }, children: title || "Image" }), _jsx(Tooltip, { title: "Close", children: _jsx(IconButton, { size: "small", edge: "end", onClick: handleClose, children: _jsx(CloseIcon, {}) }) })] }), _jsxs(DialogContent, { sx: { p: 0, display: "flex", flexDirection: "column" }, children: [_jsxs(Box, { sx: {
+    return (_jsxs(Dialog, { open: open, onClose: handleClose, fullWidth: true, maxWidth: "lg", slotProps: {
+            paper: { sx: { bgcolor: "background.default" } },
+        }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, sx: { px: 2, py: 1 }, children: [_jsx(Typography, { fontWeight: 700, noWrap: true, sx: { flex: 1, minWidth: 0 }, children: title || "Image" }), _jsx(Tooltip, { title: "Close", children: _jsx(IconButton, { size: "small", edge: "end", onClick: handleClose, children: _jsx(CloseIcon, {}) }) })] }), _jsxs(DialogContent, { sx: { p: 0, display: "flex", flexDirection: "column" }, children: [_jsxs(Box, { sx: {
                             px: 2,
                             py: 1.5,
                             borderBottom: 1,

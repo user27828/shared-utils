@@ -171,20 +171,108 @@ const TinyMceEditor: React.FC<TinyMceEditorProps> = (props) => {
   } = props;
   const editorRef = useRef<any>(null);
   const initialValueRef = useRef<string>(data || "");
+  const lastExternalValueRef = useRef<string>(data || "");
+  const lastPropagatedValueRef = useRef<string>(data || "");
+  const pendingExternalValueRef = useRef<string | null>(null);
+  const pendingLocalValuesRef = useRef<string[]>([]);
+  const editorKey = darkMode ? "dark" : "light";
+  const lastEditorKeyRef = useRef<string>(editorKey);
+
+  if (lastEditorKeyRef.current !== editorKey) {
+    initialValueRef.current = data || lastExternalValueRef.current || "";
+    lastEditorKeyRef.current = editorKey;
+  }
 
   useEffect(() => {
-    if (editorRef.current && !editorRef.current.hasFocus()) {
-      initialValueRef.current = data || "";
+    const editor = editorRef.current;
+    const nextValue = data || "";
+    const pendingLocalValues = pendingLocalValuesRef.current;
+    const matchedPendingIndex = pendingLocalValues.lastIndexOf(nextValue);
+
+    if (matchedPendingIndex !== -1) {
+      const hasNewerPendingValue =
+        matchedPendingIndex < pendingLocalValues.length - 1;
+      pendingLocalValues.splice(0, matchedPendingIndex + 1);
+
+      if (hasNewerPendingValue) {
+        return;
+      }
+    } else if (
+      pendingLocalValues.length > 0 &&
+      nextValue !== lastExternalValueRef.current
+    ) {
+      pendingLocalValues.length = 0;
+    }
+
+    if (!editor) {
+      initialValueRef.current = nextValue;
+      lastExternalValueRef.current = nextValue;
+      lastPropagatedValueRef.current = nextValue;
+      return;
+    }
+
+    if (nextValue === lastExternalValueRef.current) {
+      lastPropagatedValueRef.current = nextValue;
+      return;
+    }
+
+    try {
+      if (editor.hasFocus?.()) {
+        return;
+      }
+
+      const currentValue = editor.getContent?.() || "";
+      if (currentValue === nextValue) {
+        lastExternalValueRef.current = nextValue;
+        lastPropagatedValueRef.current = nextValue;
+        return;
+      }
+
+      pendingExternalValueRef.current = nextValue;
+      editor.setContent(nextValue);
+      lastExternalValueRef.current = nextValue;
+      lastPropagatedValueRef.current = nextValue;
+    } catch {
+      pendingExternalValueRef.current = null;
     }
   }, [data]);
 
   const handleEditorChange = (content: string) => {
+    const pendingExternalValue = pendingExternalValueRef.current;
+    lastExternalValueRef.current = content;
+
+    if (pendingExternalValue !== null) {
+      pendingExternalValueRef.current = null;
+
+      if (content === pendingExternalValue) {
+        return;
+      }
+    }
+
+    if (content === lastPropagatedValueRef.current) {
+      return;
+    }
+
+    lastPropagatedValueRef.current = content;
+
     if (onChange) {
+      const pendingLocalValues = pendingLocalValuesRef.current;
+
+      if (pendingLocalValues[pendingLocalValues.length - 1] !== content) {
+        pendingLocalValues.push(content);
+      }
+
       const editorInstance = {
         getData: () => content,
       };
       onChange(null, editorInstance);
     }
+  };
+
+  const handleEditorEvent = (_event: any, editor: any) => {
+    const content =
+      editor?.getContent?.() || editorRef.current?.getContent?.() || "";
+    handleEditorChange(content);
   };
 
   // Select light or dark skin based on darkMode prop.
@@ -319,7 +407,7 @@ const TinyMceEditor: React.FC<TinyMceEditorProps> = (props) => {
   return (
     <Editor
       // Force re-mount when dark mode changes so TinyMCE reloads the skin.
-      key={darkMode ? "dark" : "light"}
+      key={editorKey}
       // No API key needed for self-hosted or community version
       onInit={(evt: any, editor: any) => {
         editorRef.current = editor;
@@ -328,8 +416,9 @@ const TinyMceEditor: React.FC<TinyMceEditorProps> = (props) => {
         }
       }}
       initialValue={initialValueRef.current}
-      value={data || ""}
       onEditorChange={handleEditorChange}
+      onUndo={handleEditorEvent}
+      onRedo={handleEditorEvent}
       init={merge({}, defaultInit, initOverride, {
         // skinUrl/contentCss props already resolved into defaultInit;
         // only override here if caller passed explicit values.

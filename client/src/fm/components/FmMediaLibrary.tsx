@@ -2163,9 +2163,11 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
         anchor="right"
         open={Boolean(activeUid)}
         onClose={closeDetail}
-        slotProps={{ backdrop: { sx: { zIndex: 1400 } } }}
+        slotProps={{
+          backdrop: { sx: { zIndex: 1400 } },
+          paper: { sx: { width: "min(520px, 100vw)", p: 2, zIndex: 1400 } },
+        }}
         sx={{ zIndex: 1400 }}
-        PaperProps={{ sx: { width: "min(520px, 100vw)", p: 2, zIndex: 1400 } }}
       >
         <Stack direction="row" alignItems="center" spacing={1}>
           {!detailIsRenaming && (

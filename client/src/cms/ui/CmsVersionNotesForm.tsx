@@ -97,7 +97,9 @@ const CmsVersionNotesForm: React.FC<CmsVersionNotesFormProps> = ({
           size="small"
           fullWidth
           disabled={disabled || isSaving}
-          inputProps={{ maxLength: 256 }}
+          slotProps={{
+            htmlInput: { maxLength: 256 },
+          }}
           helperText="A short human-readable label for this version"
         />
         <TextField
@@ -111,7 +113,9 @@ const CmsVersionNotesForm: React.FC<CmsVersionNotesFormProps> = ({
           minRows={2}
           maxRows={6}
           disabled={disabled || isSaving}
-          inputProps={{ maxLength: 4096 }}
+          slotProps={{
+            htmlInput: { maxLength: 4096 },
+          }}
         />
         <Stack direction="row" spacing={1} justifyContent="flex-end">
           {onCancel && (

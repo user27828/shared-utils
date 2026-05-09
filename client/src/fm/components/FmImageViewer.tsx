@@ -231,7 +231,9 @@ export const FmImageViewer: React.FC<FmImageViewerProps> = ({
       onClose={handleClose}
       fullWidth
       maxWidth="lg"
-      PaperProps={{ sx: { bgcolor: "background.default" } }}
+      slotProps={{
+        paper: { sx: { bgcolor: "background.default" } },
+      }}
     >
       <Stack
         direction="row"

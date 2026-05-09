@@ -931,7 +931,9 @@ export class FmServiceCore {
         });
         // Public assets
         if (file.is_public && !file.archived_at) {
-            if (!shouldForceAttachment && caps.publicUrl && this.storage.getPublicUrl) {
+            if (!shouldForceAttachment &&
+                caps.publicUrl &&
+                this.storage.getPublicUrl) {
                 const direct = this.storage.getPublicUrl({ ref });
                 if (direct) {
                     return { url: direct, kind: "public" };

@@ -237,7 +237,9 @@ const CmsContentNotes: React.FC<CmsContentNotesProps> = ({
           minRows={1}
           maxRows={4}
           disabled={disabled}
-          inputProps={{ maxLength: 4096 }}
+          slotProps={{
+            htmlInput: { maxLength: 4096 },
+          }}
         />
         <Tooltip title="Save note (Ctrl+Enter)">
           <span>

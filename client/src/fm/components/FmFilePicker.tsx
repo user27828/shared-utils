@@ -49,7 +49,9 @@ export const FmFilePicker: React.FC<FmFilePickerProps> = ({
       onClose={onClose}
       fullWidth
       maxWidth="lg"
-      PaperProps={{ sx: { height: "min(85vh, 900px)" } }}
+      slotProps={{
+        paper: { sx: { height: "min(85vh, 900px)" } },
+      }}
     >
       <DialogTitle>
         <Stack direction="row" alignItems="center">
