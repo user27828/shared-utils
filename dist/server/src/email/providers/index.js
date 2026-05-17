@@ -1,5 +1,6 @@
 export { TestEmailProvider, isConfigured as isTestProviderConfigured, createTestProvider, } from "./_test_.js";
 export { GmailEmailProvider, isConfigured as isGmailProviderConfigured, createGmailProvider, } from "./gmail.js";
+export { CloudflareEmailProvider, createCloudflareProvider, isConfigured as isCloudflareProviderConfigured, } from "./cloudflare.js";
 export { ResendEmailProvider, isConfigured as isResendProviderConfigured, createResendProvider, } from "./resend.js";
 export { SesEmailProvider, isConfigured as isSesProviderConfigured, createSesProvider, } from "./ses.js";
 //# sourceMappingURL=index.js.map

@@ -8,6 +8,10 @@ import { EmailError, EmailProviderError } from "../src/email/errors.js";
 import { formatEmailAddress } from "../src/email/address.js";
 import { formatHierarchicalLog } from "../src/email/logFormat.js";
 import {
+  CloudflareEmailProvider,
+  isConfigured as isCloudflareProviderConfigured,
+} from "../src/email/providers/cloudflare.js";
+import {
   GmailEmailProvider,
   isConfigured as isGmailProviderConfigured,
 } from "../src/email/providers/gmail.js";
@@ -24,6 +28,17 @@ const GMAIL_ENV_KEYS = [
   "EMAIL_GMAIL_SMTP_USER",
   "EMAIL_GMAIL_SMTP_APP_PASSWORD",
 ];
+
+const CLOUDFLARE_ENV_KEYS = [
+  "EMAIL_CLOUDFLARE_ENABLED",
+  "EMAIL_CLOUDFLARE_ACCOUNT_ID",
+  "EMAIL_CLOUDFLARE_ZONE_ID",
+  "EMAIL_CLOUDFLARE_API_TOKEN",
+  "EMAIL_CLOUDFLARE_BASE_URL",
+  "EMAIL_CLOUDFLARE_TIMEOUT_MS",
+];
+
+const EMAIL_PROVIDER_ENV_KEYS = [...GMAIL_ENV_KEYS, ...CLOUDFLARE_ENV_KEYS];
 
 const createMessage = (overrides = {}) => {
   return {
@@ -44,7 +59,7 @@ const createMessage = (overrides = {}) => {
 };
 
 const restoreEnv = (snapshot) => {
-  for (const key of GMAIL_ENV_KEYS) {
+  for (const key of EMAIL_PROVIDER_ENV_KEYS) {
     const value = snapshot[key];
     if (value === undefined) {
       delete process.env[key];
@@ -52,6 +67,29 @@ const restoreEnv = (snapshot) => {
       process.env[key] = value;
     }
   }
+};
+
+const createCloudflareResponse = (status, body, statusText = "OK") => {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    statusText,
+    text: jest.fn().mockResolvedValue(JSON.stringify(body)),
+  };
+};
+
+const createCloudflareRuntime = (overrides = {}) => {
+  const fetch = overrides.fetch || jest.fn();
+  const requestWithTimeout =
+    overrides.requestWithTimeout ||
+    jest.fn(async (_operationName, request) => {
+      return request(new AbortController().signal);
+    });
+
+  return {
+    fetch,
+    requestWithTimeout,
+  };
 };
 
 describe("Email providers", () => {
@@ -63,7 +101,7 @@ describe("Email providers", () => {
 
   beforeEach(() => {
     envSnapshot = Object.fromEntries(
-      GMAIL_ENV_KEYS.map((key) => [key, process.env[key]]),
+      EMAIL_PROVIDER_ENV_KEYS.map((key) => [key, process.env[key]]),
     );
 
     originalShowCaller = log.getOptions().showCaller;
@@ -103,7 +141,7 @@ describe("Email providers", () => {
         email: " sender@example.com ",
         name: ' Sender "Name" ',
       }),
-    ).toBe('"Sender \\"Name\\"" <sender@example.com>');
+    ).toBe('"Sender \\\"Name\\\"" <sender@example.com>');
 
     expect(() => {
       formatEmailAddress({
@@ -169,6 +207,22 @@ describe("Email providers", () => {
       }),
     );
     expect(verify).toHaveBeenCalledTimes(1);
+  });
+
+  test("Cloudflare provider env detection requires enabled flag and credentials", () => {
+    process.env.EMAIL_CLOUDFLARE_ENABLED = "true";
+    process.env.EMAIL_CLOUDFLARE_ACCOUNT_ID = "acct-123";
+    process.env.EMAIL_CLOUDFLARE_API_TOKEN = "token-123";
+
+    expect(isCloudflareProviderConfigured()).toBe(false);
+
+    process.env.EMAIL_CLOUDFLARE_ZONE_ID = "zone-123";
+
+    expect(isCloudflareProviderConfigured()).toBe(true);
+
+    process.env.EMAIL_CLOUDFLARE_ZONE_ID = "   ";
+
+    expect(isCloudflareProviderConfigured()).toBe(false);
   });
 
   test("formatHierarchicalLog produces a single multiline logger event", () => {
@@ -246,6 +300,366 @@ describe("Email providers", () => {
     expect(writeFileSpy).toHaveBeenCalledTimes(1);
     expect(provider.getSentCount()).toBe(0);
     expect(provider.getLastEmail()).toBeUndefined();
+  });
+
+  test("CloudflareEmailProvider maps the documented REST payload", async () => {
+    const runtime = createCloudflareRuntime({
+      fetch: jest.fn().mockResolvedValue(
+        createCloudflareResponse(200, {
+          success: true,
+          errors: [],
+          messages: [],
+          result: {
+            delivered: ["recipient@example.com"],
+            permanent_bounces: [],
+            queued: [],
+          },
+        }),
+      ),
+    });
+
+    const provider = new CloudflareEmailProvider(
+      {
+        enabled: true,
+        accountId: "acct-123",
+        zoneId: "zone-123",
+        apiToken: "token-123",
+        timeoutMs: 2500,
+      },
+      runtime,
+    );
+
+    const result = await provider.send(
+      createMessage({
+        html: "<h1>Hello</h1>",
+        cc: [{ email: "cc@example.com", name: "CC Recipient" }],
+        bcc: [{ email: "bcc@example.com", name: "BCC Recipient" }],
+        replyTo: { email: "support@example.com", name: "Support" },
+        headers: {
+          "X-Campaign-ID": "weekly-digest",
+        },
+        attachments: [
+          {
+            filename: "invoice.pdf",
+            content: Buffer.from("invoice-body", "utf8"),
+            contentType: "application/pdf",
+            disposition: "attachment",
+          },
+        ],
+        priority: "high",
+        inReplyTo: "<thread-root@example.com>",
+        references: ["<thread-root@example.com>", "<thread-mid@example.com>"],
+      }),
+    );
+
+    expect(runtime.requestWithTimeout).toHaveBeenCalledWith(
+      "Cloudflare send",
+      expect.any(Function),
+      2500,
+    );
+    expect(runtime.fetch).toHaveBeenCalledWith(
+      "https://api.cloudflare.com/client/v4/accounts/acct-123/email/sending/send",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Authorization: "Bearer token-123",
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        }),
+      }),
+    );
+
+    const payload = JSON.parse(runtime.fetch.mock.calls[0][1].body);
+    expect(payload).toEqual(
+      expect.objectContaining({
+        from: '"Sender" <sender@example.com>',
+        to: ['"Recipient" <recipient@example.com>'],
+        cc: ['"CC Recipient" <cc@example.com>'],
+        bcc: ['"BCC Recipient" <bcc@example.com>'],
+        reply_to: '"Support" <support@example.com>',
+        subject: "Provider regression test",
+        text: "Body",
+        html: "<h1>Hello</h1>",
+      }),
+    );
+    expect(payload.attachments).toEqual([
+      {
+        content: Buffer.from("invoice-body", "utf8").toString("base64"),
+        filename: "invoice.pdf",
+        type: "application/pdf",
+        disposition: "attachment",
+      },
+    ]);
+    expect(payload.headers).toEqual(
+      expect.objectContaining({
+        "X-Campaign-ID": "weekly-digest",
+        "In-Reply-To": "<thread-root@example.com>",
+        References: "<thread-root@example.com> <thread-mid@example.com>",
+        Importance: "high",
+      }),
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        success: true,
+        provider: "cloudflare",
+        providerResponse: expect.objectContaining({
+          result: expect.objectContaining({
+            delivered: ["recipient@example.com"],
+          }),
+        }),
+      }),
+    );
+  });
+
+  test("CloudflareEmailProvider fails initialization before network when config is incomplete", async () => {
+    const runtime = createCloudflareRuntime();
+    const provider = new CloudflareEmailProvider(
+      {
+        enabled: true,
+        accountId: "acct-123",
+        zoneId: "",
+        apiToken: "token-123",
+      },
+      runtime,
+    );
+
+    await expect(provider.initialize()).rejects.toBeInstanceOf(
+      EmailProviderError,
+    );
+    expect(runtime.fetch).not.toHaveBeenCalled();
+  });
+
+  test("CloudflareEmailProvider rejects recipient overflow locally", async () => {
+    const runtime = createCloudflareRuntime();
+    const provider = new CloudflareEmailProvider(
+      {
+        enabled: true,
+        accountId: "acct-123",
+        zoneId: "zone-123",
+        apiToken: "token-123",
+      },
+      runtime,
+    );
+
+    await expect(
+      provider.send(
+        createMessage({
+          to: Array.from({ length: 51 }, (_, index) => {
+            return {
+              email: `recipient-${index}@example.com`,
+            };
+          }),
+        }),
+      ),
+    ).rejects.toThrow("50 recipients");
+
+    expect(runtime.fetch).not.toHaveBeenCalled();
+  });
+
+  test("CloudflareEmailProvider rejects oversized messages locally", async () => {
+    const runtime = createCloudflareRuntime();
+    const provider = new CloudflareEmailProvider(
+      {
+        enabled: true,
+        accountId: "acct-123",
+        zoneId: "zone-123",
+        apiToken: "token-123",
+      },
+      runtime,
+    );
+
+    await expect(
+      provider.send(
+        createMessage({
+          html: "<p>Body</p>",
+          attachments: [
+            {
+              filename: "large.txt",
+              content: "a".repeat(5 * 1024 * 1024),
+              contentType: "text/plain",
+            },
+          ],
+        }),
+      ),
+    ).rejects.toThrow("5 MiB");
+
+    expect(runtime.fetch).not.toHaveBeenCalled();
+  });
+
+  test("CloudflareEmailProvider rejects disallowed headers locally", async () => {
+    const runtime = createCloudflareRuntime();
+    const provider = new CloudflareEmailProvider(
+      {
+        enabled: true,
+        accountId: "acct-123",
+        zoneId: "zone-123",
+        apiToken: "token-123",
+      },
+      runtime,
+    );
+
+    await expect(
+      provider.send(
+        createMessage({
+          headers: {
+            "Message-ID": "<manual@example.com>",
+          },
+        }),
+      ),
+    ).rejects.toThrow("platform-controlled");
+
+    expect(runtime.fetch).not.toHaveBeenCalled();
+  });
+
+  test("CloudflareEmailProvider rejects messages without html or text", async () => {
+    const runtime = createCloudflareRuntime();
+    const provider = new CloudflareEmailProvider(
+      {
+        enabled: true,
+        accountId: "acct-123",
+        zoneId: "zone-123",
+        apiToken: "token-123",
+      },
+      runtime,
+    );
+
+    await expect(
+      provider.send(
+        createMessage({
+          html: undefined,
+          text: undefined,
+        }),
+      ),
+    ).rejects.toThrow("html or text");
+
+    expect(runtime.fetch).not.toHaveBeenCalled();
+  });
+
+  test("CloudflareEmailProvider translates timeout failures into retryable provider errors", async () => {
+    const runtime = createCloudflareRuntime({
+      requestWithTimeout: jest
+        .fn()
+        .mockRejectedValue(new Error("Cloudflare send timed out after 5000ms")),
+    });
+
+    const provider = new CloudflareEmailProvider(
+      {
+        enabled: true,
+        accountId: "acct-123",
+        zoneId: "zone-123",
+        apiToken: "token-123",
+      },
+      runtime,
+    );
+
+    try {
+      await provider.send(createMessage({ html: "<p>Body</p>" }));
+      throw new Error("Expected Cloudflare send to fail");
+    } catch (err) {
+      expect(err).toBeInstanceOf(EmailProviderError);
+      expect(err.provider).toBe("cloudflare");
+      expect(err.retryable).toBe(true);
+      expect(err.context).toEqual(
+        expect.objectContaining({
+          operation: "send",
+        }),
+      );
+    }
+  });
+
+  test("CloudflareEmailProvider translates API errors with provider context", async () => {
+    const runtime = createCloudflareRuntime({
+      fetch: jest.fn().mockResolvedValue(
+        createCloudflareResponse(
+          429,
+          {
+            success: false,
+            errors: [
+              {
+                code: 10004,
+                message: "email.sending.error.throttled",
+              },
+            ],
+            messages: [],
+            result: null,
+          },
+          "Too Many Requests",
+        ),
+      ),
+    });
+
+    const provider = new CloudflareEmailProvider(
+      {
+        enabled: true,
+        accountId: "acct-123",
+        zoneId: "zone-123",
+        apiToken: "token-123",
+      },
+      runtime,
+    );
+
+    try {
+      await provider.send(createMessage({ html: "<p>Body</p>" }));
+      throw new Error("Expected Cloudflare API rejection");
+    } catch (err) {
+      expect(err).toBeInstanceOf(EmailProviderError);
+      expect(err.provider).toBe("cloudflare");
+      expect(err.providerCode).toBe("10004");
+      expect(err.retryable).toBe(true);
+      expect(err.context).toEqual(
+        expect.objectContaining({
+          operation: "send",
+          httpStatus: 429,
+        }),
+      );
+    }
+  });
+
+  test("CloudflareEmailProvider healthCheck uses the read-only subdomain probe", async () => {
+    const runtime = createCloudflareRuntime({
+      fetch: jest.fn().mockResolvedValue(
+        createCloudflareResponse(200, {
+          success: true,
+          errors: [],
+          messages: [],
+          result: {
+            subdomains: [],
+          },
+        }),
+      ),
+    });
+
+    const provider = new CloudflareEmailProvider(
+      {
+        enabled: true,
+        accountId: "acct-123",
+        zoneId: "zone-123",
+        apiToken: "token-123",
+      },
+      runtime,
+    );
+
+    const health = await provider.healthCheck();
+
+    expect(health).toEqual(
+      expect.objectContaining({
+        provider: "cloudflare",
+        healthy: true,
+      }),
+    );
+    expect(runtime.requestWithTimeout).toHaveBeenCalledWith(
+      "Cloudflare health check",
+      expect.any(Function),
+      undefined,
+    );
+    expect(runtime.fetch).toHaveBeenCalledWith(
+      "https://api.cloudflare.com/client/v4/zones/zone-123/email/sending/subdomains",
+      expect.objectContaining({
+        method: "GET",
+      }),
+    );
+    expect(runtime.fetch.mock.calls[0][0]).not.toContain("/accounts/");
   });
 
   test("SesEmailProvider validates recipient addresses before dispatch", async () => {

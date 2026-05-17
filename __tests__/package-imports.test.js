@@ -3,9 +3,14 @@
  * @jest-environment node
  */
 
-const fs = require("fs");
-const path = require("path");
-const { execFileSync } = require("child_process");
+import * as fs from "node:fs";
+import { execFileSync } from "node:child_process";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "@jest/globals";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const inspectModule = (relativePath, exportNames = []) => {
   const absolutePath = path.resolve(__dirname, relativePath);
@@ -87,6 +92,34 @@ describe("Package Import Paths", () => {
 
       expect(moduleSummary).toContain("createTurnstileWorker:function");
       expect(moduleSummary).toContain("verifyTurnstileToken:function");
+    });
+
+    it("should import the email provider barrel with Cloudflare exports", () => {
+      const moduleSummary = inspectModule(
+        "../dist/server/src/email/providers/index.js",
+        [
+          "CloudflareEmailProvider",
+          "createCloudflareProvider",
+          "isCloudflareProviderConfigured",
+        ],
+      );
+
+      expect(moduleSummary).toContain("CloudflareEmailProvider:function");
+      expect(moduleSummary).toContain("createCloudflareProvider:function");
+      expect(moduleSummary).toContain(
+        "isCloudflareProviderConfigured:function",
+      );
+    });
+
+    it("should import the dedicated Cloudflare provider subpath", () => {
+      const moduleSummary = inspectModule(
+        "../dist/server/src/email/providers/cloudflare.js",
+        ["CloudflareEmailProvider", "createCloudflareProvider", "isConfigured"],
+      );
+
+      expect(moduleSummary).toContain("CloudflareEmailProvider:function");
+      expect(moduleSummary).toContain("createCloudflareProvider:function");
+      expect(moduleSummary).toContain("isConfigured:function");
     });
   });
 

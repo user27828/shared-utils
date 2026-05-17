@@ -3,9 +3,20 @@
  * @jest-environment node
  */
 
-const fs = require("fs");
-const path = require("path");
-const { execFileSync } = require("child_process");
+import * as fs from "node:fs";
+import { execFileSync } from "node:child_process";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "@jest/globals";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const readRootPackageJson = () => {
+  return JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, "../package.json"), "utf8"),
+  );
+};
 
 const inspectModule = (relativePath, exportNames = []) => {
   const absolutePath = path.resolve(__dirname, relativePath);
@@ -32,7 +43,7 @@ const inspectModule = (relativePath, exportNames = []) => {
 describe("Root Package Structure", () => {
   describe("Package.json Configuration", () => {
     it("should have correct export paths configured", () => {
-      const pkg = require("../package.json");
+      const pkg = readRootPackageJson();
 
       expect(pkg.exports).toBeDefined();
       expect(pkg.exports["."]).toBeDefined();
@@ -40,16 +51,23 @@ describe("Root Package Structure", () => {
       expect(pkg.exports["./client"]).toBeDefined();
       expect(pkg.exports["./server"]).toBeDefined();
       expect(pkg.exports["./utils/*"]).toBeDefined();
+      expect(pkg.exports["./email/server/providers/cloudflare"]).toBeDefined();
 
       // Check that types are properly mapped
       expect(pkg.exports["."].types).toBe("./dist/utils/index.d.ts");
       expect(pkg.exports["./utils"].types).toBe("./dist/utils/index.d.ts");
       expect(pkg.exports["./client"].types).toBe("./dist/client/index.d.ts");
       expect(pkg.exports["./server"].types).toBe("./dist/server/index.d.ts");
+      expect(pkg.exports["./email/server/providers/cloudflare"].types).toBe(
+        "./dist/server/src/email/providers/cloudflare.d.ts",
+      );
+      expect(
+        pkg.typesVersions["*"]["email/server/providers/cloudflare"],
+      ).toEqual(["dist/server/src/email/providers/cloudflare.d.ts"]);
     });
 
     it("should have proper main and types fields", () => {
-      const pkg = require("../package.json");
+      const pkg = readRootPackageJson();
 
       expect(pkg.main).toBe("dist/utils/index.js");
       expect(pkg.types).toBe("dist/utils/index.d.ts");
@@ -83,7 +101,7 @@ describe("Root Package Structure", () => {
 
   describe("Module Resolution", () => {
     it("should resolve utils module correctly", () => {
-      const pkg = require("../package.json");
+      const pkg = readRootPackageJson();
       const utilsPath = path.join(
         path.resolve(__dirname, ".."),
         pkg.exports["./utils"].import,
@@ -94,7 +112,7 @@ describe("Root Package Structure", () => {
     });
 
     it("should resolve client module correctly", () => {
-      const pkg = require("../package.json");
+      const pkg = readRootPackageJson();
       const clientPath = path.join(
         path.resolve(__dirname, ".."),
         pkg.exports["./client"].import,
@@ -105,7 +123,7 @@ describe("Root Package Structure", () => {
     });
 
     it("should resolve root module correctly", () => {
-      const pkg = require("../package.json");
+      const pkg = readRootPackageJson();
       const rootPath = path.join(
         path.resolve(__dirname, ".."),
         pkg.exports["."].import,
@@ -113,6 +131,19 @@ describe("Root Package Structure", () => {
 
       expect(fs.existsSync(rootPath)).toBe(true);
       expect(rootPath).toMatch(/dist[/\\]utils[/\\]index\.js$/);
+    });
+
+    it("should resolve the Cloudflare provider subpath correctly", () => {
+      const pkg = readRootPackageJson();
+      const cloudflareProviderPath = path.join(
+        path.resolve(__dirname, ".."),
+        pkg.exports["./email/server/providers/cloudflare"].import,
+      );
+
+      expect(fs.existsSync(cloudflareProviderPath)).toBe(true);
+      expect(cloudflareProviderPath).toMatch(
+        /dist[/\\]server[/\\]src[/\\]email[/\\]providers[/\\]cloudflare\.js$/,
+      );
     });
   });
 
@@ -125,6 +156,24 @@ describe("Root Package Structure", () => {
 
       expect(moduleSummary).toContain("log:object");
       expect(moduleSummary).toContain("Log:function");
+    });
+
+    it("should allow Cloudflare provider imports via email subpaths", () => {
+      const barrelSummary = inspectModule(
+        "../dist/server/src/email/providers/index.js",
+        ["CloudflareEmailProvider", "isCloudflareProviderConfigured"],
+      );
+      const subpathSummary = inspectModule(
+        "../dist/server/src/email/providers/cloudflare.js",
+        ["CloudflareEmailProvider", "isConfigured"],
+      );
+
+      expect(barrelSummary).toContain("CloudflareEmailProvider:function");
+      expect(barrelSummary).toContain(
+        "isCloudflareProviderConfigured:function",
+      );
+      expect(subpathSummary).toContain("CloudflareEmailProvider:function");
+      expect(subpathSummary).toContain("isConfigured:function");
     });
 
     it("should handle client import attempt gracefully", () => {

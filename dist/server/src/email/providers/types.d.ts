@@ -63,6 +63,14 @@ export interface ResendProviderConfig {
     apiKey: string;
     baseUrl?: string;
 }
+export interface CloudflareProviderConfig {
+    enabled: boolean;
+    accountId: string;
+    zoneId: string;
+    apiToken: string;
+    baseUrl?: string;
+    timeoutMs?: number;
+}
 export interface SesProviderConfig {
     enabled: boolean;
     region: string;

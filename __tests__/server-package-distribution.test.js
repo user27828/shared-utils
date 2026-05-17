@@ -4,10 +4,15 @@
  * @jest-environment node
  */
 
-const fs = require("fs");
-const path = require("path");
-const { pathToFileURL } = require("url");
-const os = require("os");
+import { execSync } from "node:child_process";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+import { beforeAll, describe, expect, it } from "@jest/globals";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 describe("Server Package Distribution", () => {
   const projectRoot = path.resolve(__dirname, "..");
@@ -37,6 +42,21 @@ describe("Server Package Distribution", () => {
       // Check src directory structure
       const srcPath = path.join(serverDistPath, "src", "turnstile");
       expect(fs.existsSync(srcPath)).toBe(true);
+
+      const providerFiles = [
+        path.join(serverDistPath, "src", "email", "providers", "cloudflare.js"),
+        path.join(
+          serverDistPath,
+          "src",
+          "email",
+          "providers",
+          "cloudflare.d.ts",
+        ),
+      ];
+
+      for (const filePath of providerFiles) {
+        expect(fs.existsSync(filePath)).toBe(true);
+      }
     });
 
     it("should include dist in root package files array", () => {
@@ -61,6 +81,33 @@ describe("Server Package Distribution", () => {
       // Verify these files exist
       const typesPath = path.join(projectRoot, serverExport.types);
       const importPath = path.join(projectRoot, serverExport.import);
+
+      expect(fs.existsSync(typesPath)).toBe(true);
+      expect(fs.existsSync(importPath)).toBe(true);
+    });
+
+    it("should have proper Cloudflare provider export configuration", () => {
+      const packageJsonPath = path.join(projectRoot, "package.json");
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+
+      expect(
+        packageJson.exports["./email/server/providers/cloudflare"],
+      ).toBeDefined();
+
+      const cloudflareExport =
+        packageJson.exports["./email/server/providers/cloudflare"];
+      expect(cloudflareExport.types).toBe(
+        "./dist/server/src/email/providers/cloudflare.d.ts",
+      );
+      expect(cloudflareExport.import).toBe(
+        "./dist/server/src/email/providers/cloudflare.js",
+      );
+      expect(cloudflareExport.default).toBe(
+        "./dist/server/src/email/providers/cloudflare.js",
+      );
+
+      const typesPath = path.join(projectRoot, cloudflareExport.types);
+      const importPath = path.join(projectRoot, cloudflareExport.import);
 
       expect(fs.existsSync(typesPath)).toBe(true);
       expect(fs.existsSync(importPath)).toBe(true);
@@ -92,6 +139,21 @@ describe("Server Package Distribution", () => {
       for (const exportName of expectedExports) {
         expect(serverContent).toContain(exportName);
       }
+    });
+
+    it("should export Cloudflare provider symbols from the provider barrel", () => {
+      const providerBarrelPath = path.join(
+        serverDistPath,
+        "src",
+        "email",
+        "providers",
+        "index.js",
+      );
+      const providerBarrelContent = fs.readFileSync(providerBarrelPath, "utf8");
+
+      expect(providerBarrelContent).toContain("CloudflareEmailProvider");
+      expect(providerBarrelContent).toContain("isCloudflareProviderConfigured");
+      expect(providerBarrelContent).toContain("createCloudflareProvider");
     });
 
     it("should support destructured imports via exports", () => {
@@ -299,8 +361,6 @@ describe("Server Package Distribution", () => {
   describe("Package Distribution Simulation", () => {
     it("should include server files in yarn pack simulation", async () => {
       // This test simulates what yarn pack would include
-      const { execSync } = require("child_process");
-
       try {
         // Capture both stdout and stderr since yarn pack outputs to stderr
         const packOutput = execSync("yarn pack --dry-run 2>&1", {
@@ -380,8 +440,6 @@ describe("Server Package Distribution", () => {
     });
 
     it("should create a test tarball and verify server files are included", async () => {
-      const { execSync } = require("child_process");
-
       // Create a temporary directory for this test
       const tempDir = fs.mkdtempSync(
         path.join(os.tmpdir(), "shared-utils-tarball-"),
@@ -456,8 +514,6 @@ describe("Server Package Distribution", () => {
   describe("Consuming Project Integration", () => {
     it("should not have workspace dependency issues when imported in consuming projects", async () => {
       // This test ensures the server package can be imported without workspace dependencies
-      const { execSync } = require("child_process");
-
       // Create a temporary directory for this test
       const tempDir = fs.mkdtempSync(
         path.join(os.tmpdir(), "shared-utils-import-"),

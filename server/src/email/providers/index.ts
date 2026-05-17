@@ -8,6 +8,7 @@ export type {
   ProviderHealthStatus,
   GmailProviderConfig,
   ResendProviderConfig,
+  CloudflareProviderConfig,
   SesProviderConfig,
   TestProviderConfig,
   IEmailProvider,
@@ -26,6 +27,11 @@ export {
   isConfigured as isGmailProviderConfigured,
   createGmailProvider,
 } from "./gmail.js";
+export {
+  CloudflareEmailProvider,
+  createCloudflareProvider,
+  isConfigured as isCloudflareProviderConfigured,
+} from "./cloudflare.js";
 export {
   ResendEmailProvider,
   isConfigured as isResendProviderConfigured,

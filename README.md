@@ -112,6 +112,7 @@ import {
   isEmailError,
 } from "@user27828/shared-utils/email/server/errors";
 import {
+  CloudflareEmailProvider,
   GmailEmailProvider,
   ResendEmailProvider,
   SesEmailProvider,
@@ -468,18 +469,19 @@ Server-side functionality and Cloudflare Workers:
 
 **Import paths:**
 
-| Path                                                    | Contents                                                                                                             |
-| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `@user27828/shared-utils/server`                        | Turnstile verification, Express middleware, env loader, IP helpers, and general server utilities                     |
-| `@user27828/shared-utils/email`                         | Shared email preview/request/response types and validation helpers                                                   |
-| `@user27828/shared-utils/email/client`                  | Email template preview client, hooks, and preview/admin UI components                                                |
-| `@user27828/shared-utils/email/server`                  | Email template registry, attachment helpers, marketing sync, webhook router factories, and shared email server types |
-| `@user27828/shared-utils/email/server/errors`           | `EmailError`, `EmailProviderError`, and `isEmailError`                                                               |
-| `@user27828/shared-utils/email/server/providers`        | Provider contracts plus built-in Gmail, Resend, SES, and `_test_` providers                                          |
-| `@user27828/shared-utils/email/server/providers/_test_` | Deep import for the file-backed `_test_` provider                                                                    |
-| `@user27828/shared-utils/email/server/providers/gmail`  | Deep import for the Gmail provider                                                                                   |
-| `@user27828/shared-utils/email/server/providers/resend` | Deep import for the Resend provider                                                                                  |
-| `@user27828/shared-utils/email/server/providers/ses`    | Deep import for the Amazon SES provider                                                                              |
+| Path                                                        | Contents                                                                                                             |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `@user27828/shared-utils/server`                            | Turnstile verification, Express middleware, env loader, IP helpers, and general server utilities                     |
+| `@user27828/shared-utils/email`                             | Shared email preview/request/response types and validation helpers                                                   |
+| `@user27828/shared-utils/email/client`                      | Email template preview client, hooks, and preview/admin UI components                                                |
+| `@user27828/shared-utils/email/server`                      | Email template registry, attachment helpers, marketing sync, webhook router factories, and shared email server types |
+| `@user27828/shared-utils/email/server/errors`               | `EmailError`, `EmailProviderError`, and `isEmailError`                                                               |
+| `@user27828/shared-utils/email/server/providers`            | Provider contracts plus built-in Gmail, Cloudflare, Resend, SES, and `_test_` providers                              |
+| `@user27828/shared-utils/email/server/providers/_test_`     | Deep import for the file-backed `_test_` provider                                                                    |
+| `@user27828/shared-utils/email/server/providers/cloudflare` | Deep import for the Cloudflare Email Service provider                                                                |
+| `@user27828/shared-utils/email/server/providers/gmail`      | Deep import for the Gmail provider                                                                                   |
+| `@user27828/shared-utils/email/server/providers/resend`     | Deep import for the Resend provider                                                                                  |
+| `@user27828/shared-utils/email/server/providers/ses`        | Deep import for the Amazon SES provider                                                                              |
 
 Note: email template descriptors may emit `from` / `replyTo` setting refs such as `{ setting: "noReplyEmail" }` and `{ setting: "supportEmail" }`. Those refs are consumer-resolved metadata; the consuming server must map them to concrete addresses before composing or sending provider messages.
 

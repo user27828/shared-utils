@@ -72,6 +72,15 @@ export interface ResendProviderConfig {
   baseUrl?: string;
 }
 
+export interface CloudflareProviderConfig {
+  enabled: boolean;
+  accountId: string;
+  zoneId: string;
+  apiToken: string;
+  baseUrl?: string;
+  timeoutMs?: number;
+}
+
 export interface SesProviderConfig {
   enabled: boolean;
   region: string;
@@ -108,7 +117,9 @@ export interface IEmailProvider {
   dispose(): Promise<void>;
 }
 
-export type ProviderFactory<TConfig = unknown> = (config: TConfig) => IEmailProvider;
+export type ProviderFactory<TConfig = unknown> = (
+  config: TConfig,
+) => IEmailProvider;
 
 export type ProviderConfigCheck = () => boolean;
 

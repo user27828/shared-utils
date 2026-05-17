@@ -140,6 +140,12 @@
       "require": "./dist/server/src/email/providers/gmail.js",
       "default": "./dist/server/src/email/providers/gmail.js"
     },
+    "./email/server/providers/cloudflare": {
+      "types": "./dist/server/src/email/providers/cloudflare.d.ts",
+      "import": "./dist/server/src/email/providers/cloudflare.js",
+      "require": "./dist/server/src/email/providers/cloudflare.js",
+      "default": "./dist/server/src/email/providers/cloudflare.js"
+    },
     "./email/server/providers/resend": {
       "types": "./dist/server/src/email/providers/resend.d.ts",
       "import": "./dist/server/src/email/providers/resend.js",
@@ -239,6 +245,9 @@
       ],
       "email/server/providers/gmail": [
         "dist/server/src/email/providers/gmail.d.ts"
+      ],
+      "email/server/providers/cloudflare": [
+        "dist/server/src/email/providers/cloudflare.d.ts"
       ],
       "email/server/providers/resend": [
         "dist/server/src/email/providers/resend.d.ts"

@@ -40,7 +40,7 @@ export default {
     },
     {
       displayName: "integration",
-      testMatch: ["<rootDir>/__tests__/**/*.js", "<rootDir>/**/*.test.ts"],
+      testMatch: ["<rootDir>/__tests__/**/*.js", "<rootDir>/__tests__/**/*.ts"],
       moduleNameMapper: {
         "^@shared-utils/server$": "<rootDir>/server/dist/index.js",
         "^shared-utils/client$": "<rootDir>/client/dist/index.js",

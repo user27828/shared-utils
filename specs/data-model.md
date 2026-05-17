@@ -1,183 +1,108 @@
 ---
-title: shared-utils Current State Data Model
-feature: shared-utils-current-state
+title: shared-utils Cloudflare Email Provider Data Model
+feature: shared-utils-email-cloudflare-provider
 artifact: data-model
-status: current-state-baseline
-created: 2026-04-28
-updated: 2026-04-28
-source: codebase-analysis
+status: proposed-enhancement
+created: 2026-05-17
+updated: 2026-05-17
+source: analysis-remediation
 ---
 
-# Data Model: shared-utils Current State
+# Data Model: shared-utils Cloudflare Email Provider
 
 ## Scope
 
-This document normalizes the current source-backed domain model across the
-three main feature families exposed by the package:
+This document defines the runtime entities and relationships that matter for the
+Cloudflare provider enhancement inside the existing shared email provider
+surface.
 
-- CMS
-- FM
-- Email
+Primary sources:
 
-It complements the broader architecture narrative in
-[technical_spec.md](./technical_spec.md).
+- `server/src/email/providers/types.ts`
+- `server/src/email/providers/cloudflare.ts`
+- `specs/contracts/email-cloudflare-api.md`
 
-## CMS Domain Model
+## Core Entities
 
-Primary source: `utils/src/cms/types.ts`
+| Entity                           | Cardinality                      | Purpose                                   | Key fields                                                                                                  |
+| -------------------------------- | -------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `EmailMessage`                   | 1 per send attempt               | Shared provider input model               | `from`, `to`, optional `cc`, `bcc`, `replyTo`, `subject`, optional `html`, `text`, `attachments`, `headers` |
+| `CloudflareProviderConfig`       | 1 per provider instance          | Runtime configuration for Cloudflare send | `enabled`, `accountId`, `zoneId`, `apiToken`, optional `baseUrl`, optional `timeoutMs`                      |
+| `CloudflareSendPayload`          | 1 per outbound send attempt      | Structured Cloudflare REST payload        | `to`, `from`, `subject`, optional `html`, `text`, `cc`, `bcc`, `reply_to`, `headers`, `attachments`         |
+| `CloudflareAttachment`           | 0..n per `CloudflareSendPayload` | Attachment payload for the REST API       | `filename`, `content`, `type`, `disposition`                                                                |
+| `CloudflareSendResultEnvelope`   | 1 per Cloudflare response        | Normalized delivery breakdown             | `success`, `result.delivered[]`, `result.permanent_bounces[]`, `result.queued[]`, `errors[]`, `messages[]`  |
+| `CloudflareProviderErrorContext` | 0..1 per failure                 | Provider-specific error metadata          | `httpStatus`, `providerCode`, `operation`, `retryable`, optional response payload                           |
+| `ProviderHealthStatus`           | 1 per health probe               | Shared provider health result             | `provider`, `healthy`, `lastCheck`, optional `error`, optional `latencyMs`                                  |
 
-### Core entities
-
-| Entity             | Cardinality               | Purpose                                            | Key fields                                                                                                                                                                         |
-| ------------------ | ------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CmsHeadRow`       | 1 per content item        | Canonical editable record                          | `uid`, `title`, `content`, `content_type`, `slug`, `locale`, `post_type`, `options`, `metadata`, `tags`, `status`, `etag`, `version_number`, publish/lock/trash/archive timestamps |
-| `CmsHistoryRow`    | 0..n per `CmsHeadRow`     | Historical snapshot for restore and audit flows    | `id`, `cms_uid`, `revision`, `snapshot`, `created_by`, soft-delete metadata                                                                                                        |
-| `CmsMetadata`      | 0..1 per `CmsHeadRow`     | Structured metadata bag                            | `version`, `notes`                                                                                                                                                                 |
-| `CmsVersionMeta`   | 0..1 inside `CmsMetadata` | Save/revision annotation                           | `version`, `notes`, `dt_updated`, `user_uid`                                                                                                                                       |
-| `CmsContentNote`   | 0..n inside `CmsMetadata` | Persistent notes independent of revisions          | `note`, `dt_updated`, `user_uid`                                                                                                                                                   |
-| `CmsPublicPayload` | Derived view              | Public render-ready projection                     | `uid`, `post_type`, `locale`, `slug`, `title`, `content_type`, rendered content fields                                                                                             |
-| `CmsPublicHead`    | Derived view              | Lightweight lookup for ETag/password/public checks | `uid`, `post_type`, `locale`, `slug`, `status`, `etag`, password fields, publish fields                                                                                            |
-
-### Relationships
+## Relationships
 
 ```text
-CmsHeadRow 1 ---- 0..n CmsHistoryRow
-CmsHeadRow 1 ---- 0..1 CmsMetadata
-CmsMetadata 1 ---- 0..1 CmsVersionMeta
-CmsMetadata 1 ---- 0..n CmsContentNote
-CmsHeadRow 1 ---- 0..1 CmsPublicPayload (derived public read model)
-CmsHeadRow 1 ---- 0..1 CmsPublicHead (derived lightweight public read model)
+CloudflareProviderConfig 1 ---- 0..n EmailMessage
+EmailMessage 1 ---- 1 CloudflareSendPayload
+CloudflareSendPayload 1 ---- 0..n CloudflareAttachment
+CloudflareSendPayload 1 ---- 1 CloudflareSendResultEnvelope
+CloudflareSendResultEnvelope 0..n ---- 0..1 CloudflareProviderErrorContext
+CloudflareProviderConfig 1 ---- 0..n ProviderHealthStatus
 ```
 
-### Enumerated state
+## Entity Notes
 
-- Post type: `post`, `page`, `general`, `faq`, `blog`, `embed`, `data`,
-  `docs`, `kb`, `other`
-- Status: `draft`, `published`, `trash`
-- Content type: `text/html`, `text/markdown`, `application/json`, `text/plain`
+### `EmailMessage`
 
-### Invariants
+- This is the existing shared-utils provider input contract.
+- The Cloudflare provider must consume it without introducing a second public
+  message model.
 
-- `etag` and `version_number` together support optimistic concurrency.
-- `password_hash` and `password_version` drive protected-content access.
-- Trash and archive metadata preserve lifecycle state without immediate hard
-  deletion.
-- History rows snapshot prior state before destructive or version-changing
-  actions.
+### `CloudflareProviderConfig`
 
-## FM Domain Model
+- Holds the minimal runtime configuration necessary to authenticate and target
+  the Cloudflare Email Sending API.
+- The config must be compatible with env-based `isConfigured()` detection.
+- `zoneId` is included because `healthCheck()` uses the documented
+  `GET /zones/{zone_id}/email/sending/subdomains` read-only probe.
 
-Primary source: `utils/src/fm/types.ts`
+### `CloudflareSendPayload`
 
-### Core entities
+- This is a transport model, not a new public consumer-facing type.
+- It exists to capture the Cloudflare-specific request mapping from the shared
+  `EmailMessage` model.
 
-| Entity              | Cardinality             | Purpose                                   | Key fields                                                                                                                                     |
-| ------------------- | ----------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `FmFileRow`         | 1 per original file     | Canonical file record                     | `uid`, owner/creator fields, filename/title/alt text, tags, storage location/key, size, MIME, SHA-256, visibility, purpose, archive timestamps |
-| `FmFileVariantRow`  | 0..n per `FmFileRow`    | Derived variant asset                     | `uid`, `variant_of_uid`, `variant_kind`, dimensions, transform, storage location/key, size, MIME                                               |
-| `FmFileLinkRow`     | 0..n per `FmFileRow`    | Link to consuming entity                  | `file_uid`, `linked_entity_type`, `linked_entity_uid`, `linked_field`                                                                          |
-| `FmObjectRef`       | Transport object        | Storage address for upload/finalize flows | `bucket`, `objectKey`                                                                                                                          |
-| `FmDestinationHint` | Optional transport hint | Client-suggested bucket/prefix            | `bucket`, `prefix`                                                                                                                             |
+### `CloudflareSendResultEnvelope`
 
-### Relationships
+- Mirrors the Cloudflare REST success envelope and preserves delivery outcome
+  buckets for `providerResponse`.
 
-```text
-FmFileRow 1 ---- 0..n FmFileVariantRow
-FmFileRow 1 ---- 0..n FmFileLinkRow
-FmFileRow 1 ---- 1 FmObjectRef (resolved storage address for original object)
-FmFileVariantRow 1 ---- 1 FmObjectRef (resolved storage address for variant object)
-```
+### `ProviderHealthStatus`
 
-### Enumerated state
+- Must represent a non-sending health probe result.
+- The provider may validate config and perform a lightweight authenticated
+  read-only API check, but it must not send an email from `healthCheck()`.
 
-- Purpose: `resume`, `job`, `cms_asset`, `cms_b64`, `avatar`, `generic`
-- Visibility: `private`, `public`
-- Variant kind: `original`, `thumb`, `preview`, `web`
+## Invariants
 
-### Invariants
-
-- Uploads are intentionally modeled as two-phase init/finalize transactions.
-- Variants are distinct persisted records, not fields on the original file row.
-- `sha256`, `mime_type`, and dimension metadata are part of the final stored
-  file identity.
-- Links are first-class records because files may be reused by many entities.
-
-## Email Domain Model
-
-Primary sources: `utils/src/email/types.ts`, `server/src/email/registry.ts`
-
-### Core entities
-
-| Entity                         | Cardinality                | Purpose                           | Key fields                                                                                 |
-| ------------------------------ | -------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------ |
-| `EmailTemplateSummary`         | 1 per registered template  | Catalog-level identity            | `uid`, `name`, `category`, `description`, `sendScenarios`, `tags`, `fixtureCount`          |
-| `EmailTemplateDetail`          | 1 per selected template    | Detail-level identity             | summary fields plus `previewFixtures`                                                      |
-| `EmailPreviewFixture`          | 0..n per template          | Named preview scenario            | `uid`, `label`, `description`, `props`                                                     |
-| `EmailRenderResult`            | Derived render output      | Concrete subject/body result      | `subject`, `html`, `text`, `warnings`, `metadata`                                          |
-| `EmailTemplatePreviewRequest`  | Client request DTO         | Preview selection input           | `fixtureUid`, `propsOverride`                                                              |
-| `EmailTemplatePreviewResponse` | Preview result DTO         | Template plus render output       | `template`, `fixtureUid`, `subject`, `html`, `text`, `warnings`, `metadata`                |
-| `EmailTemplateDescriptor`      | Server registry definition | Authoritative template descriptor | summary fields, delivery refs, fixtures, subject builder, optional text builder, component |
-
-### Relationships
-
-```text
-EmailTemplateDescriptor 1 ---- 0..n EmailPreviewFixture
-EmailTemplateDescriptor 1 ---- 1 EmailTemplateSummary (derived catalog view)
-EmailTemplateDescriptor 1 ---- 1 EmailTemplateDetail (derived detail view)
-EmailTemplateDescriptor + EmailPreviewFixture ----> EmailRenderResult
-EmailTemplatePreviewRequest ----> EmailTemplatePreviewResponse
-```
-
-### Enumerated state
-
-- Category: `auth`, `transactional`, `notification`, `marketing`, `system`,
-  `other`
-- Delivery setting refs supported by the registry: `noReplyEmail`,
-  `supportEmail`
-
-### Invariants
-
-- Preview fixtures are part of the template contract, not separate sample data.
-- `EmailTemplateDetail` is a derived, client-facing projection of the richer
-  server-side descriptor.
-- HTML and plain-text render results are both considered first-class outputs.
-
-## Cross-Domain Relationships
-
-### CMS <-> FM
-
-- CMS content can embed or reference FM assets.
-- The CMS server layer exposes an `onAfterWrite` hook used by the FM link
-  tracker to keep `fm_file_links` synchronized with CMS content references.
-- This is the strongest cross-domain relationship in the package.
-
-### Email <-> CMS/FM
-
-- No direct persisted package-level relationship is modeled between email
-  templates and CMS/FM entities in the current shared-utils core.
-- Any such relationship would be defined in consuming applications through
-  template props or external business data.
+- `accountId`, `zoneId`, and `apiToken` are required for a usable enabled
+  provider.
+- At least one of `html` or `text` must be present before sending.
+- Combined `to`, `cc`, and `bcc` recipients must not exceed Cloudflare's
+  documented limit of 50.
+- Combined payload size must not exceed the feature's conservative 5 MiB total
+  message limit.
+- Attachments must be normalized to Cloudflare-compatible string or base64
+  payloads rather than Node SMTP buffer semantics.
+- Platform-controlled headers such as `Message-ID`, `Date`, and `Content-Type`
+  cannot be supplied through the custom `headers` map.
+- `healthCheck()` is a non-sending operation; success means configuration and
+  lightweight authenticated reachability through
+  `GET /zones/{zone_id}/email/sending/subdomains` are both good enough to
+  report the provider as healthy.
 
 ## Lifecycle Summary
 
-### CMS lifecycle
-
 ```text
-draft -> published -> trash -> restored or permanently deleted
-           |
-           +-> history snapshots across save/publish/restore flows
-```
+CloudflareProviderConfig -> initialize -> send EmailMessage -> build CloudflareSendPayload
+                                                   |
+                                                   +-> CloudflareSendResultEnvelope on success
+                                                   +-> CloudflareProviderErrorContext on failure
 
-### FM lifecycle
-
-```text
-upload init -> upload finalize -> active file
-                               -> variants added later
-active file -> archived -> restored or hard deleted
-```
-
-### Email lifecycle
-
-```text
-registered template -> catalog/detail view -> preview fixture selection -> render result -> optional test send
+CloudflareProviderConfig -> healthCheck -> ProviderHealthStatus
 ```
