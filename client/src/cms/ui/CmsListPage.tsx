@@ -225,9 +225,7 @@ const CmsListPage: React.FC<CmsListPageProps> = ({
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Stack
         direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        sx={{ mb: 2 }}
+        sx={{ mb: 2, justifyContent: "space-between", alignItems: "center" }}
       >
         <Typography variant="h5">CMS Content</Typography>
         <Stack direction="row" spacing={1}>
@@ -248,7 +246,7 @@ const CmsListPage: React.FC<CmsListPageProps> = ({
 
       {/* Search + Tabs */}
       <Paper sx={{ mb: 2 }}>
-        <Stack direction="row" alignItems="center" sx={{ px: 2, pt: 1 }}>
+        <Stack direction="row" sx={{ px: 2, pt: 1, alignItems: "center" }}>
           <TextField
             size="small"
             placeholder="Search..."
@@ -329,8 +327,13 @@ const CmsListPage: React.FC<CmsListPageProps> = ({
             {/* Header row */}
             <Stack
               direction="row"
-              alignItems="center"
-              sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider" }}
+              sx={{
+                px: 2,
+                py: 1,
+                borderBottom: 1,
+                borderColor: "divider",
+                alignItems: "center",
+              }}
             >
               <Checkbox
                 size="small"
@@ -368,12 +371,12 @@ const CmsListPage: React.FC<CmsListPageProps> = ({
               <Stack
                 key={item.uid}
                 direction="row"
-                alignItems="center"
                 sx={{
                   px: 2,
                   py: 1,
                   borderBottom: 1,
                   borderColor: "divider",
+                  alignItems: "center",
                   cursor: "pointer",
                   "&:hover": { bgcolor: "action.hover" },
                 }}

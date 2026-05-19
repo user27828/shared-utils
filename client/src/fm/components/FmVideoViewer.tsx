@@ -91,11 +91,10 @@ export const FmVideoViewer: React.FC<FmVideoViewerProps> = ({
     >
       <Stack
         direction="row"
-        alignItems="center"
         spacing={1}
-        sx={{ px: 2, py: 1 }}
+        sx={{ px: 2, py: 1, alignItems: "center" }}
       >
-        <Typography fontWeight={700} noWrap sx={{ flex: 1, minWidth: 0 }}>
+        <Typography sx={{ flex: 1, minWidth: 0, fontWeight: 700 }} noWrap>
           {title || "Video"}
         </Typography>
         <Tooltip title="Fullscreen">

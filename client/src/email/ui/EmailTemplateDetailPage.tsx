@@ -59,7 +59,11 @@ const EmailTemplateDetailPage: React.FC<EmailTemplateDetailPageProps> = ({
 
   return (
     <Stack spacing={3}>
-      <Stack direction="row" spacing={2} justifyContent="space-between">
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{ justifyContent: "space-between" }}
+      >
         <Box>
           <Typography variant="h4" gutterBottom>
             {template.name}
@@ -86,10 +90,20 @@ const EmailTemplateDetailPage: React.FC<EmailTemplateDetailPageProps> = ({
 
       <Paper variant="outlined" sx={{ p: 2 }}>
         <Stack spacing={2}>
-          <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+          <Stack
+            direction="row"
+            spacing={1}
+            useFlexGap
+            sx={{ flexWrap: "wrap" }}
+          >
             <Chip label={template.category} size="small" />
             {template.sendScenarios.map((scenario) => (
-              <Chip key={scenario} label={scenario} size="small" variant="outlined" />
+              <Chip
+                key={scenario}
+                label={scenario}
+                size="small"
+                variant="outlined"
+              />
             ))}
           </Stack>
           <Typography color="text.secondary">{template.description}</Typography>

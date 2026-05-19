@@ -264,7 +264,7 @@ const StatCard = ({ title, value, icon, color = "primary.main", loading, formatV
                 overflow: "visible",
                 borderTop: 3,
                 borderTopColor: mainColor,
-            }, children: [resolvedCornerAction && _jsx(CornerActionEl, { action: resolvedCornerAction }), _jsxs(CardContent, { sx: {
+            }, children: [resolvedCornerAction && (_jsx(CornerActionEl, { action: resolvedCornerAction })), _jsxs(CardContent, { sx: {
                         py: 2,
                         pl: 2.5,
                         pr: recruiterContentPaddingRight,
@@ -282,9 +282,10 @@ const StatCard = ({ title, value, icon, color = "primary.main", loading, formatV
                                                 lineHeight: 1.2,
                                                 display: "block",
                                                 mb: 0.5,
-                                            }, noWrap: true, children: title }), _jsx(Typography, { variant: "h4", fontWeight: "bold", sx: {
+                                            }, noWrap: true, children: title }), _jsx(Typography, { variant: "h4", sx: {
                                                 lineHeight: 1.1,
                                                 opacity: loading ? 0.5 : 1,
+                                                fontWeight: "bold",
                                             }, noWrap: true, children: loading ? "—" : formattedTotal }), subtitle && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: { display: "block", mt: 0.5 }, noWrap: true, children: subtitle }))] }), !recruiterUsesCornerIcon && (_jsxs(Box, { sx: {
                                         display: "flex",
                                         flexDirection: "column",
@@ -330,7 +331,11 @@ const StatCard = ({ title, value, icon, color = "primary.main", loading, formatV
                 : undefined,
         }, children: icon })) : null;
     const adminTopRowGap = adminUsesCornerIcon ? 0 : topRowGap;
-    const adminTopRowMinHeight = adminUsesCornerIcon ? (dense ? 48 : 56) : undefined;
+    const adminTopRowMinHeight = adminUsesCornerIcon
+        ? dense
+            ? 48
+            : 56
+        : undefined;
     if (adminUsesCornerIcon) {
         paddingSx.pr = Math.max(paddingSx.pr ?? 0, dense ? 7 : 8);
     }
@@ -348,6 +353,6 @@ const StatCard = ({ title, value, icon, color = "primary.main", loading, formatV
                     alignItems: topRowAlign,
                     gap: adminTopRowGap,
                     minHeight: adminTopRowMinHeight,
-                }, children: [adminInlineIconNode, _jsxs(Box, { sx: { minWidth: 0 }, children: [titlePlacement === "above" && (_jsx(Typography, { variant: resolvedTitleVariant, color: "text.secondary", noWrap: true, children: title })), loading ? (_jsx(Skeleton, { variant: "text", width: 60, height: 40 })) : (_jsx(Typography, { variant: resolvedValueVariant, fontWeight: "bold", noWrap: true, children: formattedTotal })), !loading && subtitle && (_jsx(Box, { sx: { mt: subtitleMarginTop }, children: subtitle })), titlePlacement === "below" && (_jsx(Typography, { variant: resolvedTitleVariant, color: "text.secondary", noWrap: true, children: title }))] })] }), !loading && splitItems && (_jsx(Box, { sx: { mt: dense ? 0 : splitChipMarginTop }, children: _jsx(SplitChip, { items: splitItems, variant: "outlined", size: "small" }) }))] }));
+                }, children: [adminInlineIconNode, _jsxs(Box, { sx: { minWidth: 0 }, children: [titlePlacement === "above" && (_jsx(Typography, { variant: resolvedTitleVariant, color: "text.secondary", noWrap: true, children: title })), loading ? (_jsx(Skeleton, { variant: "text", width: 60, height: 40 })) : (_jsx(Typography, { variant: resolvedValueVariant, sx: { fontWeight: "bold" }, noWrap: true, children: formattedTotal })), !loading && subtitle && (_jsx(Box, { sx: { mt: subtitleMarginTop }, children: subtitle })), titlePlacement === "below" && (_jsx(Typography, { variant: resolvedTitleVariant, color: "text.secondary", noWrap: true, children: title }))] })] }), !loading && splitItems && (_jsx(Box, { sx: { mt: dense ? 0 : splitChipMarginTop }, children: _jsx(SplitChip, { items: splitItems, variant: "outlined", size: "small" }) }))] }));
 };
 export default StatCard;

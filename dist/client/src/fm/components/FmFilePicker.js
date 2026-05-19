@@ -11,6 +11,6 @@ import { FmMediaLibrary } from "./FmMediaLibrary.js";
 export const FmFilePicker = ({ open, onClose, onSelect, title = "Select file", api, }) => {
     return (_jsxs(Dialog, { open: open, onClose: onClose, fullWidth: true, maxWidth: "lg", slotProps: {
             paper: { sx: { height: "min(85vh, 900px)" } },
-        }, children: [_jsx(DialogTitle, { children: _jsxs(Stack, { direction: "row", alignItems: "center", children: [_jsx(Typography, { fontWeight: 800, sx: { flex: 1 }, children: title }), _jsx(IconButton, { onClick: onClose, edge: "end", children: _jsx(CloseIcon, {}) })] }) }), _jsx(DialogContent, { dividers: true, sx: { overflow: "auto" }, children: _jsx(FmMediaLibrary, { onSelect: onSelect, api: api }) })] }));
+        }, children: [_jsx(DialogTitle, { children: _jsxs(Stack, { direction: "row", sx: { alignItems: "center" }, children: [_jsx(Typography, { sx: { flex: 1, fontWeight: 800 }, children: title }), _jsx(IconButton, { onClick: onClose, edge: "end", children: _jsx(CloseIcon, {}) })] }) }), _jsx(DialogContent, { dividers: true, sx: { overflow: "auto" }, children: _jsx(FmMediaLibrary, { onSelect: onSelect, api: api }) })] }));
 };
 export default FmFilePicker;

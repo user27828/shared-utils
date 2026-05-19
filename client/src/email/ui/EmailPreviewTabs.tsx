@@ -59,7 +59,12 @@ const EmailPreviewTabs: React.FC<EmailPreviewTabsProps> = ({
           </Typography>
           <Typography variant="h6">{subject}</Typography>
           {warningChips.length > 0 ? (
-            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+            <Stack
+              direction="row"
+              spacing={1}
+              useFlexGap
+              sx={{ flexWrap: "wrap" }}
+            >
               {warningChips.map((warning) => (
                 <Chip key={warning} label={warning} size="small" />
               ))}

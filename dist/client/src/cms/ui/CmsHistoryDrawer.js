@@ -40,7 +40,7 @@ import TimelineDot from "@mui/lab/TimelineDot";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
-import { PickersDay } from "@mui/x-date-pickers/PickersDay";
+import { PickerDay } from "@mui/x-date-pickers/PickerDay";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import RestoreIcon from "@mui/icons-material/Restore";
@@ -84,7 +84,7 @@ const RevisionDay = React.memo(function RevisionDay(props) {
                 right: "50%",
                 transform: "translateX(50%)",
             },
-        }, children: _jsx(PickersDay, { day: day, outsideCurrentMonth: outsideCurrentMonth, ...rest }) }, String(day)));
+        }, children: _jsx(PickerDay, { day: day, outsideCurrentMonth: outsideCurrentMonth, ...rest }) }, String(day)));
 });
 // ─── Component ────────────────────────────────────────────────────────────
 const CmsHistoryDrawer = React.memo(({ open, onClose, history, loadedRevisionId, isDirty, isSaving, includeSoftDeleted, onIncludeSoftDeletedChange, onLoadRevision, onRestoreRevision, onSoftDeleteRevision, onHardDeleteRevision, onDismissRevision, currentVersionNumber, currentUpdatedAt, onUpdateHistoryMeta, currentVersionMeta, }) => {
@@ -157,10 +157,9 @@ const CmsHistoryDrawer = React.memo(({ open, onClose, history, loadedRevisionId,
         }
         return s;
     }, [filteredHistory]);
-    // ── Memoised slotProps for DateCalendar (avoids full re-render) ────
-    const calendarSlotProps = useMemo(() => ({
-        day: { revisionDates },
-    }), [revisionDates]);
+    const RevisionDaySlot = useCallback((dayProps) => {
+        return _jsx(RevisionDay, { ...dayProps, revisionDates: revisionDates });
+    }, [revisionDates]);
     // ── Calendar date bounds from history ──────────────────────────────
     /** Earliest and latest history dates — clamp calendar to this range. */
     const { calendarMinDate, calendarMaxDate } = useMemo(() => {
@@ -341,7 +340,9 @@ const CmsHistoryDrawer = React.memo(({ open, onClose, history, loadedRevisionId,
                     easing: transitionEasing,
                     duration: transitionDuration,
                 }),
-            }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", justifyContent: "space-between", sx: {
+            }, children: [_jsxs(Stack, { direction: "row", sx: {
+                        alignItems: "center",
+                        justifyContent: "space-between",
                         px: 1.5,
                         py: 1,
                         borderBottom: 1,
@@ -357,8 +358,8 @@ const CmsHistoryDrawer = React.memo(({ open, onClose, history, loadedRevisionId,
                                     maxHeight: 280,
                                 },
                             }, children: _jsx(LocalizationProvider, { dateAdapter: AdapterDateFns, children: _jsx(DateCalendar, { value: selectedDate, onChange: handleDateChange, views: ["day"], slots: {
-                                        day: RevisionDay,
-                                    }, slotProps: calendarSlotProps, shouldDisableDate: shouldDisableDate, minDate: calendarMinDate, maxDate: calendarMaxDate, sx: {
+                                        day: RevisionDaySlot,
+                                    }, shouldDisableDate: shouldDisableDate, minDate: calendarMinDate, maxDate: calendarMaxDate, sx: {
                                         "& .MuiPickersDay-root": { fontSize: "0.75rem" },
                                         "& .Mui-disabled:not(.Mui-selected)": {
                                             color: "text.disabled",
@@ -369,7 +370,9 @@ const CmsHistoryDrawer = React.memo(({ open, onClose, history, loadedRevisionId,
                                 borderBottom: 1,
                                 borderColor: "divider",
                                 flexShrink: 0,
-                            }, children: _jsxs(ButtonGroup, { size: "small", variant: "outlined", fullWidth: true, children: [_jsx(Tooltip, { title: "Jump to earliest revision", children: _jsx(Button, { startIcon: _jsx(SkipPreviousIcon, {}), onClick: handleNavFirst, disabled: groupedByDate.length === 0, sx: { fontSize: "0.7rem", textTransform: "none" }, children: "First" }) }), _jsx(Button, { onClick: handleNavYesterday, sx: { fontSize: "0.7rem", textTransform: "none" }, children: "Yesterday" }), _jsx(Tooltip, { title: "Jump to today", children: _jsx(Button, { startIcon: _jsx(TodayIcon, {}), onClick: handleNavToday, sx: { fontSize: "0.7rem", textTransform: "none" }, children: "Today" }) })] }) }), _jsxs(Stack, { direction: "row", alignItems: "center", justifyContent: "space-between", sx: {
+                            }, children: _jsxs(ButtonGroup, { size: "small", variant: "outlined", fullWidth: true, children: [_jsx(Tooltip, { title: "Jump to earliest revision", children: _jsx(Button, { startIcon: _jsx(SkipPreviousIcon, {}), onClick: handleNavFirst, disabled: groupedByDate.length === 0, sx: { fontSize: "0.7rem", textTransform: "none" }, children: "First" }) }), _jsx(Button, { onClick: handleNavYesterday, sx: { fontSize: "0.7rem", textTransform: "none" }, children: "Yesterday" }), _jsx(Tooltip, { title: "Jump to today", children: _jsx(Button, { startIcon: _jsx(TodayIcon, {}), onClick: handleNavToday, sx: { fontSize: "0.7rem", textTransform: "none" }, children: "Today" }) })] }) }), _jsxs(Stack, { direction: "row", sx: {
+                                alignItems: "center",
+                                justifyContent: "space-between",
                                 px: 1,
                                 py: 0.5,
                                 borderBottom: 1,
@@ -380,7 +383,8 @@ const CmsHistoryDrawer = React.memo(({ open, onClose, history, loadedRevisionId,
                                 overflowY: "auto",
                                 overflowX: "hidden",
                                 pr: 0.5,
-                            }, children: [currentVersionNumber != null && (_jsx(Box, { sx: { px: 1, pt: 1.5, pb: 0.5 }, children: _jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, sx: {
+                            }, children: [currentVersionNumber != null && (_jsx(Box, { sx: { px: 1, pt: 1.5, pb: 0.5 }, children: _jsxs(Stack, { direction: "row", spacing: 1, sx: {
+                                            alignItems: "center",
                                             p: 1,
                                             borderRadius: 1,
                                             cursor: loadedRevisionId ? "pointer" : "default",
@@ -400,7 +404,7 @@ const CmsHistoryDrawer = React.memo(({ open, onClose, history, loadedRevisionId,
                                                     borderRadius: "50%",
                                                     bgcolor: isDirty ? "warning.main" : "success.main",
                                                     flexShrink: 0,
-                                                } }), _jsxs(Stack, { sx: { flex: 1, minWidth: 0 }, children: [_jsx(Stack, { direction: "row", spacing: 0.5, alignItems: "center", children: _jsx(Chip, { label: currentVersionMeta?.version
+                                                } }), _jsxs(Stack, { sx: { flex: 1, minWidth: 0 }, children: [_jsx(Stack, { direction: "row", spacing: 0.5, sx: { alignItems: "center" }, children: _jsx(Chip, { label: currentVersionMeta?.version
                                                                 ? currentVersionMeta.version
                                                                 : `Rev ${currentVersionNumber}`, size: "small", color: "success", variant: "filled", sx: {
                                                                 height: 22,
@@ -415,7 +419,7 @@ const CmsHistoryDrawer = React.memo(({ open, onClose, history, loadedRevisionId,
                                                             fontStyle: "italic",
                                                         }, children: currentVersionMeta.notes.length > 60
                                                             ? `${currentVersionMeta.notes.slice(0, 60)}…`
-                                                            : currentVersionMeta.notes })), currentUpdatedAt && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: { mt: 0.25 }, children: format(new Date(currentUpdatedAt), "MMM d, h:mm a") }))] }), _jsxs(Stack, { spacing: 0.5, alignItems: "flex-end", children: [isDirty && (_jsx(Chip, { label: "Unsaved", size: "small", color: "warning", variant: "outlined", sx: { height: 20, fontSize: "0.65rem" } })), _jsx(Chip, { label: "Current", size: "small", color: "success", variant: "outlined", sx: { height: 20, fontSize: "0.65rem" } }), loadedRevisionId && (_jsx(Tooltip, { title: "Return to current version", children: _jsx(IconButton, { size: "small", children: _jsx(VisibilityIcon, { fontSize: "small", color: "primary" }) }) }))] })] }) })), filteredHistory.length === 0 && (_jsx(Box, { sx: { px: 1.5, py: 4, textAlign: "center" }, children: _jsx(Typography, { variant: "body2", color: "text.secondary", children: "No revision history yet" }) })), groupedByDate.map((group, gi) => (_jsxs(Box, { "data-date-key": group.dateKey, sx: {
+                                                            : currentVersionMeta.notes })), currentUpdatedAt && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: { mt: 0.25 }, children: format(new Date(currentUpdatedAt), "MMM d, h:mm a") }))] }), _jsxs(Stack, { spacing: 0.5, sx: { alignItems: "flex-end" }, children: [isDirty && (_jsx(Chip, { label: "Unsaved", size: "small", color: "warning", variant: "outlined", sx: { height: 20, fontSize: "0.65rem" } })), _jsx(Chip, { label: "Current", size: "small", color: "success", variant: "outlined", sx: { height: 20, fontSize: "0.65rem" } }), loadedRevisionId && (_jsx(Tooltip, { title: "Return to current version", children: _jsx(IconButton, { size: "small", children: _jsx(VisibilityIcon, { fontSize: "small", color: "primary" }) }) }))] })] }) })), filteredHistory.length === 0 && (_jsx(Box, { sx: { px: 1.5, py: 4, textAlign: "center" }, children: _jsx(Typography, { variant: "body2", color: "text.secondary", children: "No revision history yet" }) })), groupedByDate.map((group, gi) => (_jsxs(Box, { "data-date-key": group.dateKey, sx: {
                                         // Flash highlight: instant on, smooth fade off
                                         bgcolor: flashKey === group.dateKey ? flashBg : "transparent",
                                         transition: `background-color ${FLASH_FADE_MS} ease-out`,
@@ -451,7 +455,8 @@ const CmsHistoryDrawer = React.memo(({ open, onClose, history, loadedRevisionId,
                                                                         ...(isLoaded && {
                                                                             boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.2)}`,
                                                                         }),
-                                                                    } }), !isLastOverall && _jsx(TimelineConnector, {})] }), _jsx(TimelineContent, { sx: { py: 0.5, pl: 1, pr: 0.5 }, children: _jsxs(Stack, { direction: "row", alignItems: "center", spacing: 0.5, sx: {
+                                                                    } }), !isLastOverall && _jsx(TimelineConnector, {})] }), _jsx(TimelineContent, { sx: { py: 0.5, pl: 1, pr: 0.5 }, children: _jsxs(Stack, { direction: "row", spacing: 0.5, sx: {
+                                                                    alignItems: "center",
                                                                     p: 0.75,
                                                                     borderRadius: 1,
                                                                     ...(isLoaded && {
@@ -459,7 +464,7 @@ const CmsHistoryDrawer = React.memo(({ open, onClose, history, loadedRevisionId,
                                                                         border: 1,
                                                                         borderColor: alpha(theme.palette.primary.main, 0.3),
                                                                     }),
-                                                                }, children: [_jsxs(Stack, { sx: { flex: 1, minWidth: 0 }, children: [_jsxs(Stack, { direction: "row", spacing: 0.5, alignItems: "center", children: [_jsx(Chip, { label: getRevisionLabel(h), size: "small", variant: "outlined", sx: { height: 20, fontSize: "0.7rem" } }), isSoftDeleted && (_jsx(Chip, { label: "deleted", size: "small", color: "error", variant: "outlined", sx: { height: 20, fontSize: "0.65rem" } })), isLoaded && (_jsx(Chip, { label: "loaded", size: "small", color: "primary", sx: { height: 20, fontSize: "0.65rem" } })), onUpdateHistoryMeta &&
+                                                                }, children: [_jsxs(Stack, { sx: { flex: 1, minWidth: 0 }, children: [_jsxs(Stack, { direction: "row", spacing: 0.5, sx: { alignItems: "center" }, children: [_jsx(Chip, { label: getRevisionLabel(h), size: "small", variant: "outlined", sx: { height: 20, fontSize: "0.7rem" } }), isSoftDeleted && (_jsx(Chip, { label: "deleted", size: "small", color: "error", variant: "outlined", sx: { height: 20, fontSize: "0.65rem" } })), isLoaded && (_jsx(Chip, { label: "loaded", size: "small", color: "primary", sx: { height: 20, fontSize: "0.65rem" } })), onUpdateHistoryMeta &&
                                                                                         editingMetaId !== h.id && (_jsx(Tooltip, { title: "Edit version label / notes", children: _jsx(IconButton, { size: "small", onClick: () => setEditingMetaId(h.id), sx: { p: 0.25 }, children: _jsx(EditIcon, { sx: { fontSize: "0.85rem" } }) }) }))] }), (() => {
                                                                                 const vm = getSnapshotVersionMeta(h);
                                                                                 return vm?.notes ? (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: {

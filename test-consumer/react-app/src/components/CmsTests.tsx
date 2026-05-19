@@ -337,7 +337,7 @@ const CmsTests: React.FC<CmsTestsProps> = ({
               sx={{ mb: 2 }}
             >
               <Box>
-                <Typography variant="caption" display="block">
+                <Typography variant="caption" sx={{ display: "block" }}>
                   Content type
                 </Typography>
                 <Select
@@ -356,7 +356,7 @@ const CmsTests: React.FC<CmsTestsProps> = ({
               </Box>
 
               <Box>
-                <Typography variant="caption" display="block">
+                <Typography variant="caption" sx={{ display: "block" }}>
                   HTML editor
                 </Typography>
                 <Select
@@ -415,7 +415,7 @@ const CmsTests: React.FC<CmsTestsProps> = ({
               sx={{ mt: 2 }}
             >
               <Box>
-                <Typography variant="caption" display="block">
+                <Typography variant="caption" sx={{ display: "block" }}>
                   Last picked asset
                 </Typography>
                 <Typography variant="body2">
@@ -423,7 +423,7 @@ const CmsTests: React.FC<CmsTestsProps> = ({
                 </Typography>
               </Box>
               <Box>
-                <Typography variant="caption" display="block">
+                <Typography variant="caption" sx={{ display: "block" }}>
                   Last uploaded image
                 </Typography>
                 <Typography variant="body2">

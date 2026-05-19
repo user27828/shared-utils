@@ -54,10 +54,8 @@ export const FmFilePicker: React.FC<FmFilePickerProps> = ({
       }}
     >
       <DialogTitle>
-        <Stack direction="row" alignItems="center">
-          <Typography fontWeight={800} sx={{ flex: 1 }}>
-            {title}
-          </Typography>
+        <Stack direction="row" sx={{ alignItems: "center" }}>
+          <Typography sx={{ flex: 1, fontWeight: 800 }}>{title}</Typography>
           <IconButton onClick={onClose} edge="end">
             <CloseIcon />
           </IconButton>

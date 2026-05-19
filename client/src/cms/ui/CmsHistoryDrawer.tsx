@@ -45,8 +45,8 @@ import TimelineDot from "@mui/lab/TimelineDot";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
-import { PickersDay } from "@mui/x-date-pickers/PickersDay";
-import type { PickersDayProps } from "@mui/x-date-pickers/PickersDay";
+import { PickerDay } from "@mui/x-date-pickers/PickerDay";
+import type { PickerDayProps } from "@mui/x-date-pickers/PickerDay";
 
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -150,7 +150,7 @@ interface DateGroup {
 
 // ─── Custom PickersDay with revision-dot badge ────────────────────────────
 
-interface RevisionDayProps extends PickersDayProps {
+interface RevisionDayProps extends PickerDayProps {
   revisionDates?: Set<string>;
 }
 
@@ -177,7 +177,7 @@ const RevisionDay = React.memo<RevisionDayProps>(function RevisionDay(props) {
         },
       }}
     >
-      <PickersDay
+      <PickerDay
         day={day}
         outsideCurrentMonth={outsideCurrentMonth}
         {...rest}
@@ -293,11 +293,10 @@ const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = React.memo(
       return s;
     }, [filteredHistory]);
 
-    // ── Memoised slotProps for DateCalendar (avoids full re-render) ────
-    const calendarSlotProps = useMemo(
-      () => ({
-        day: { revisionDates } as Partial<RevisionDayProps>,
-      }),
+    const RevisionDaySlot = useCallback(
+      (dayProps: PickerDayProps) => {
+        return <RevisionDay {...dayProps} revisionDates={revisionDates} />;
+      },
       [revisionDates],
     );
 
@@ -532,9 +531,9 @@ const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = React.memo(
           {/* ── Header ─────────────────────────────────────────── */}
           <Stack
             direction="row"
-            alignItems="center"
-            justifyContent="space-between"
             sx={{
+              alignItems: "center",
+              justifyContent: "space-between",
               px: 1.5,
               py: 1,
               borderBottom: 1,
@@ -578,9 +577,8 @@ const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = React.memo(
                     onChange={handleDateChange}
                     views={["day"]}
                     slots={{
-                      day: RevisionDay as React.ComponentType<PickersDayProps>,
+                      day: RevisionDaySlot,
                     }}
-                    slotProps={calendarSlotProps}
                     shouldDisableDate={shouldDisableDate}
                     minDate={calendarMinDate}
                     maxDate={calendarMaxDate}
@@ -637,9 +635,9 @@ const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = React.memo(
               {/* ── Controls row ───────────────────────────────────── */}
               <Stack
                 direction="row"
-                alignItems="center"
-                justifyContent="space-between"
                 sx={{
+                  alignItems: "center",
+                  justifyContent: "space-between",
                   px: 1,
                   py: 0.5,
                   borderBottom: 1,
@@ -680,9 +678,9 @@ const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = React.memo(
                   <Box sx={{ px: 1, pt: 1.5, pb: 0.5 }}>
                     <Stack
                       direction="row"
-                      alignItems="center"
                       spacing={1}
                       sx={{
+                        alignItems: "center",
                         p: 1,
                         borderRadius: 1,
                         cursor: loadedRevisionId ? "pointer" : "default",
@@ -712,7 +710,7 @@ const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = React.memo(
                         <Stack
                           direction="row"
                           spacing={0.5}
-                          alignItems="center"
+                          sx={{ alignItems: "center" }}
                         >
                           <Chip
                             label={
@@ -761,7 +759,7 @@ const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = React.memo(
                           </Typography>
                         )}
                       </Stack>
-                      <Stack spacing={0.5} alignItems="flex-end">
+                      <Stack spacing={0.5} sx={{ alignItems: "flex-end" }}>
                         {isDirty && (
                           <Chip
                             label="Unsaved"
@@ -874,9 +872,9 @@ const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = React.memo(
                             <TimelineContent sx={{ py: 0.5, pl: 1, pr: 0.5 }}>
                               <Stack
                                 direction="row"
-                                alignItems="center"
                                 spacing={0.5}
                                 sx={{
+                                  alignItems: "center",
                                   p: 0.75,
                                   borderRadius: 1,
                                   ...(isLoaded && {
@@ -897,7 +895,7 @@ const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps> = React.memo(
                                   <Stack
                                     direction="row"
                                     spacing={0.5}
-                                    alignItems="center"
+                                    sx={{ alignItems: "center" }}
                                   >
                                     <Chip
                                       label={getRevisionLabel(h)}

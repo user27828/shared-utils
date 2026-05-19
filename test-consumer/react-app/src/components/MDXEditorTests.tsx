@@ -574,7 +574,7 @@ const MDXEditorTests: React.FC<MDXEditorTestsProps> = ({
             <Typography variant="h6" gutterBottom>
               Integration Statistics
             </Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap">
+            <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
               <Chip
                 label={`${content.length} Characters in Editor`}
                 color="secondary"

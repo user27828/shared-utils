@@ -46,6 +46,6 @@ const CmsVersionNotesForm = ({ initialVersion = "", initialNotes = "", onSave, o
                             htmlInput: { maxLength: 256 },
                         }, helperText: "A short human-readable label for this version" }), _jsx(TextField, { label: "Notes", placeholder: "Optional longer description or context...", value: notes, onChange: (e) => setNotes(e.target.value), size: "small", fullWidth: true, multiline: true, minRows: 2, maxRows: 6, disabled: disabled || isSaving, slotProps: {
                             htmlInput: { maxLength: 4096 },
-                        } }), _jsxs(Stack, { direction: "row", spacing: 1, justifyContent: "flex-end", children: [onCancel && (_jsx(Button, { onClick: onCancel, disabled: isSaving, color: "inherit", size: "small", children: "Cancel" })), _jsx(Button, { variant: "contained", size: "small", startIcon: _jsx(SaveIcon, {}), onClick: handleSave, disabled: !hasContent || isSaving || disabled, children: isSaving ? "Saving..." : saveLabel })] })] })] }));
+                        } }), _jsxs(Stack, { direction: "row", spacing: 1, sx: { justifyContent: "flex-end" }, children: [onCancel && (_jsx(Button, { onClick: onCancel, disabled: isSaving, color: "inherit", size: "small", children: "Cancel" })), _jsx(Button, { variant: "contained", size: "small", startIcon: _jsx(SaveIcon, {}), onClick: handleSave, disabled: !hasContent || isSaving || disabled, children: isSaving ? "Saving..." : saveLabel })] })] })] }));
 };
 export default CmsVersionNotesForm;

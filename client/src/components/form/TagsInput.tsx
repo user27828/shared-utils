@@ -109,7 +109,12 @@ export const TagsInput: React.FC<TagsInputProps> = ({
   return (
     <Stack spacing={1}>
       {value.length > 0 && (
-        <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+        <Stack
+          direction="row"
+          spacing={0.5}
+          useFlexGap
+          sx={{ flexWrap: "wrap" }}
+        >
           {value.map((tag, idx) => (
             <Chip
               key={`${tag}-${idx}`}
@@ -122,7 +127,7 @@ export const TagsInput: React.FC<TagsInputProps> = ({
           ))}
         </Stack>
       )}
-      <Stack direction="row" spacing={1} alignItems="center">
+      <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
         <TextField
           label={label}
           placeholder={placeholder}

@@ -114,7 +114,7 @@ const EmailTemplateListPage: React.FC<EmailTemplateListPageProps> = ({
                 <Stack
                   direction={{ xs: "column", md: "row" }}
                   spacing={2}
-                  justifyContent="space-between"
+                  sx={{ justifyContent: "space-between" }}
                 >
                   <Box>
                     <Typography variant="h6">{template.name}</Typography>
@@ -122,7 +122,12 @@ const EmailTemplateListPage: React.FC<EmailTemplateListPageProps> = ({
                       {template.uid}
                     </Typography>
                   </Box>
-                  <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    useFlexGap
+                    sx={{ flexWrap: "wrap" }}
+                  >
                     <Chip label={template.category} size="small" />
                     <Chip
                       label={`${template.fixtureCount} fixture${template.fixtureCount === 1 ? "" : "s"}`}
@@ -136,7 +141,12 @@ const EmailTemplateListPage: React.FC<EmailTemplateListPageProps> = ({
                   {template.description}
                 </Typography>
 
-                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  useFlexGap
+                  sx={{ flexWrap: "wrap" }}
+                >
                   {template.sendScenarios.map((scenario) => (
                     <Chip
                       key={scenario}

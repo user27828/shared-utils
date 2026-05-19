@@ -24,7 +24,7 @@ import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import SaveIcon from "@mui/icons-material/Save";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 
 import type { CmsContentNote } from "../../../../utils/src/cms/types.js";
 
@@ -85,7 +85,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
       "&:hover .note-delete": { opacity: 1 },
     }}
   >
-    <Stack direction="row" alignItems="flex-start" spacing={0.5}>
+    <Stack direction="row" spacing={0.5} sx={{ alignItems: "flex-start" }}>
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography
           variant="body2"
@@ -97,7 +97,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
         >
           {note.note}
         </Typography>
-        <Stack direction="row" spacing={0.5} alignItems="baseline">
+        <Stack direction="row" spacing={0.5} sx={{ alignItems: "baseline" }}>
           <Typography
             variant="caption"
             color="text.disabled"
@@ -129,7 +129,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
               mt: -0.5,
             }}
           >
-            <DeleteOutlineIcon sx={{ fontSize: "0.9rem" }} />
+            <DeleteOutlinedIcon sx={{ fontSize: "0.9rem" }} />
           </IconButton>
         </Tooltip>
       )}
@@ -224,7 +224,7 @@ const CmsContentNotes: React.FC<CmsContentNotesProps> = ({
       )}
 
       {/* Add note input */}
-      <Stack direction="row" spacing={1} alignItems="flex-start">
+      <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>
         <TextField
           inputRef={inputRef}
           placeholder="Add a note..."

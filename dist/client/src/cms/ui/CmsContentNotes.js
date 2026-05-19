@@ -25,7 +25,7 @@ import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import SaveIcon from "@mui/icons-material/Save";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 // ─── Constants ────────────────────────────────────────────────────────────
 /** Maximum notes shown inline before "View all" link. */
 const INLINE_LIMIT = 3;
@@ -49,15 +49,15 @@ const NoteItem = ({ note, index, onRemove, compact = false, }) => (_jsx(Box, { s
         borderRadius: 1,
         bgcolor: "action.hover",
         "&:hover .note-delete": { opacity: 1 },
-    }, children: _jsxs(Stack, { direction: "row", alignItems: "flex-start", spacing: 0.5, children: [_jsxs(Box, { sx: { flex: 1, minWidth: 0 }, children: [_jsx(Typography, { variant: "body2", sx: {
+    }, children: _jsxs(Stack, { direction: "row", spacing: 0.5, sx: { alignItems: "flex-start" }, children: [_jsxs(Box, { sx: { flex: 1, minWidth: 0 }, children: [_jsx(Typography, { variant: "body2", sx: {
                             whiteSpace: "pre-wrap",
                             wordBreak: "break-word",
                             fontSize: compact ? "0.8rem" : "0.85rem",
-                        }, children: note.note }), _jsxs(Stack, { direction: "row", spacing: 0.5, alignItems: "baseline", children: [_jsx(Typography, { variant: "caption", color: "text.disabled", sx: { fontSize: "0.7rem" }, children: formatNoteDate(note.dt_updated) }), note.user_email && (_jsxs(Typography, { variant: "caption", color: "text.disabled", sx: { fontSize: "0.7rem" }, noWrap: true, children: ["\u2014 ", note.user_email] }))] })] }), onRemove && (_jsx(Tooltip, { title: "Remove note", children: _jsx(IconButton, { className: "note-delete", size: "small", onClick: () => onRemove(index), sx: {
+                        }, children: note.note }), _jsxs(Stack, { direction: "row", spacing: 0.5, sx: { alignItems: "baseline" }, children: [_jsx(Typography, { variant: "caption", color: "text.disabled", sx: { fontSize: "0.7rem" }, children: formatNoteDate(note.dt_updated) }), note.user_email && (_jsxs(Typography, { variant: "caption", color: "text.disabled", sx: { fontSize: "0.7rem" }, noWrap: true, children: ["\u2014 ", note.user_email] }))] })] }), onRemove && (_jsx(Tooltip, { title: "Remove note", children: _jsx(IconButton, { className: "note-delete", size: "small", onClick: () => onRemove(index), sx: {
                         opacity: 0,
                         transition: "opacity 150ms",
                         mt: -0.5,
-                    }, children: _jsx(DeleteOutlineIcon, { sx: { fontSize: "0.9rem" } }) }) }))] }) }));
+                    }, children: _jsx(DeleteOutlinedIcon, { sx: { fontSize: "0.9rem" } }) }) }))] }) }));
 // ─── Component ────────────────────────────────────────────────────────────
 const CmsContentNotes = ({ notes, onAddNote, onRemoveNote, disabled = false, }) => {
     const [input, setInput] = useState("");
@@ -89,7 +89,7 @@ const CmsContentNotes = ({ notes, onAddNote, onRemoveNote, disabled = false, }) 
                     const realIdx = sorted.length - INLINE_LIMIT + idx;
                     const actualIdx = realIdx < 0 ? idx : realIdx;
                     return (_jsx(NoteItem, { note: note, index: actualIdx, onRemove: onRemoveNote, compact: true }, `${note.dt_updated}-${idx}`));
-                }) })), hasMore && (_jsxs(Link, { component: "button", variant: "caption", onClick: () => setDialogOpen(true), sx: { mb: 1, display: "block" }, children: ["View all ", sorted.length, " notes..."] })), _jsxs(Stack, { direction: "row", spacing: 1, alignItems: "flex-start", children: [_jsx(TextField, { inputRef: inputRef, placeholder: "Add a note...", value: input, onChange: (e) => setInput(e.target.value), onKeyDown: handleKeyDown, size: "small", fullWidth: true, multiline: true, minRows: 1, maxRows: 4, disabled: disabled, slotProps: {
+                }) })), hasMore && (_jsxs(Link, { component: "button", variant: "caption", onClick: () => setDialogOpen(true), sx: { mb: 1, display: "block" }, children: ["View all ", sorted.length, " notes..."] })), _jsxs(Stack, { direction: "row", spacing: 1, sx: { alignItems: "flex-start" }, children: [_jsx(TextField, { inputRef: inputRef, placeholder: "Add a note...", value: input, onChange: (e) => setInput(e.target.value), onKeyDown: handleKeyDown, size: "small", fullWidth: true, multiline: true, minRows: 1, maxRows: 4, disabled: disabled, slotProps: {
                             htmlInput: { maxLength: 4096 },
                         } }), _jsx(Tooltip, { title: "Save note (Ctrl+Enter)", children: _jsx("span", { children: _jsx(IconButton, { color: "primary", onClick: handleAdd, disabled: disabled || !input.trim(), "aria-label": "Save note", sx: { mt: 0.25 }, children: _jsx(SaveIcon, {}) }) }) })] }), _jsxs(Dialog, { open: dialogOpen, onClose: () => setDialogOpen(false), maxWidth: "sm", fullWidth: true, children: [_jsxs(DialogTitle, { children: ["All Notes (", sorted.length, ")"] }), _jsx(DialogContent, { dividers: true, children: _jsxs(Stack, { spacing: 1, children: [sorted.map((note, idx) => (_jsxs(React.Fragment, { children: [_jsx(NoteItem, { note: note, index: idx, onRemove: onRemoveNote }), idx < sorted.length - 1 && _jsx(Divider, {})] }, `${note.dt_updated}-${idx}`))), sorted.length === 0 && (_jsx(Typography, { color: "text.secondary", variant: "body2", children: "No notes yet." }))] }) }), _jsx(DialogActions, { children: _jsx(Button, { onClick: () => setDialogOpen(false), children: "Close" }) })] })] }));
 };

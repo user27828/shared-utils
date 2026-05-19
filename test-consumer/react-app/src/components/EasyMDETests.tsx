@@ -395,7 +395,7 @@ const EasyMDETests: React.FC<EasyMDETestsProps> = ({
               <Typography variant="h6" gutterBottom>
                 Session Status
               </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap">
+              <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
                 <Chip
                   label={darkMode ? "Dark" : "Light"}
                   color={darkMode ? "info" : "default"}

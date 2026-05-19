@@ -22,9 +22,7 @@ import Skeleton from "@mui/material/Skeleton";
 import Typography from "@mui/material/Typography";
 import type { TypographyProps } from "@mui/material/Typography";
 
-import SplitChip, {
-  type SplitChipItem,
-} from "./layout/SplitChip.js";
+import SplitChip, { type SplitChipItem } from "./layout/SplitChip.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -232,7 +230,10 @@ const CornerActionEl: React.FC<{ action: CornerAction }> = ({ action }) => {
 
   if (action.href && action.linkComponent) {
     const LinkComponent = action.linkComponent;
-    const linkProps = { ...(action.linkProps || {}) } as Record<string, unknown>;
+    const linkProps = { ...(action.linkProps || {}) } as Record<
+      string,
+      unknown
+    >;
 
     if (typeof linkProps.to === "undefined") {
       linkProps.to = action.href;
@@ -406,7 +407,10 @@ const StatCard: React.FC<StatCardProps> = ({
       const sx = { fontSize: 16 } satisfies SxProps<Theme>;
       if (calculatedTrend === "up") {
         return (
-          <Box component="span" sx={{ ...sx, color: theme.palette.success.main }}>
+          <Box
+            component="span"
+            sx={{ ...sx, color: theme.palette.success.main }}
+          >
             ▲
           </Box>
         );
@@ -513,7 +517,9 @@ const StatCard: React.FC<StatCardProps> = ({
           borderTopColor: mainColor,
         }}
       >
-        {resolvedCornerAction && <CornerActionEl action={resolvedCornerAction} />}
+        {resolvedCornerAction && (
+          <CornerActionEl action={resolvedCornerAction} />
+        )}
         <CardContent
           sx={{
             py: 2,
@@ -551,10 +557,10 @@ const StatCard: React.FC<StatCardProps> = ({
               </Typography>
               <Typography
                 variant="h4"
-                fontWeight="bold"
                 sx={{
                   lineHeight: 1.1,
                   opacity: loading ? 0.5 : 1,
+                  fontWeight: "bold",
                 }}
                 noWrap
               >
@@ -596,54 +602,60 @@ const StatCard: React.FC<StatCardProps> = ({
   const badgeFg =
     badgeVariant === "soft" ? mainColor : theme.palette.common.white;
   const adminUsesCornerIcon = resolvedIconPlacement === "corner";
-  const adminInlineIconNode = icon && !adminUsesCornerIcon ? (
-    <Box
-      sx={{
-        bgcolor: badgeBg,
-        color: badgeFg,
-        borderRadius: 2,
-        p: iconBadgePadding,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-      }}
-    >
-      {icon}
-    </Box>
-  ) : null;
-  const adminCornerIconNode = icon && adminUsesCornerIcon ? (
-    <Box
-      data-slot="admin-corner-icon"
-      sx={{
-        position: "absolute",
-        top: 0,
-        right: 0,
-        bgcolor: badgeBg,
-        color: badgeFg,
-        borderTopRightRadius: `${theme.shape.borderRadius}px`,
-        borderBottomLeftRadius: theme.spacing(1.75),
-        borderTopLeftRadius: 0,
-        borderBottomRightRadius: 0,
-        px: dense ? 1.5 : 1.75,
-        py: dense ? 1.25 : 1.5,
-        minWidth: dense ? 48 : 56,
-        minHeight: dense ? 48 : 56,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-        boxShadow:
-          badgeVariant === "soft"
-            ? `inset 0 0 0 1px ${alpha(mainColor, 0.08)}`
-            : undefined,
-      }}
-    >
-      {icon}
-    </Box>
-  ) : null;
+  const adminInlineIconNode =
+    icon && !adminUsesCornerIcon ? (
+      <Box
+        sx={{
+          bgcolor: badgeBg,
+          color: badgeFg,
+          borderRadius: 2,
+          p: iconBadgePadding,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        {icon}
+      </Box>
+    ) : null;
+  const adminCornerIconNode =
+    icon && adminUsesCornerIcon ? (
+      <Box
+        data-slot="admin-corner-icon"
+        sx={{
+          position: "absolute",
+          top: 0,
+          right: 0,
+          bgcolor: badgeBg,
+          color: badgeFg,
+          borderTopRightRadius: `${theme.shape.borderRadius}px`,
+          borderBottomLeftRadius: theme.spacing(1.75),
+          borderTopLeftRadius: 0,
+          borderBottomRightRadius: 0,
+          px: dense ? 1.5 : 1.75,
+          py: dense ? 1.25 : 1.5,
+          minWidth: dense ? 48 : 56,
+          minHeight: dense ? 48 : 56,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+          boxShadow:
+            badgeVariant === "soft"
+              ? `inset 0 0 0 1px ${alpha(mainColor, 0.08)}`
+              : undefined,
+        }}
+      >
+        {icon}
+      </Box>
+    ) : null;
   const adminTopRowGap = adminUsesCornerIcon ? 0 : topRowGap;
-  const adminTopRowMinHeight = adminUsesCornerIcon ? (dense ? 48 : 56) : undefined;
+  const adminTopRowMinHeight = adminUsesCornerIcon
+    ? dense
+      ? 48
+      : 56
+    : undefined;
 
   if (adminUsesCornerIcon) {
     paddingSx.pr = Math.max(paddingSx.pr ?? 0, dense ? 7 : 8);
@@ -695,7 +707,7 @@ const StatCard: React.FC<StatCardProps> = ({
           ) : (
             <Typography
               variant={resolvedValueVariant}
-              fontWeight="bold"
+              sx={{ fontWeight: "bold" }}
               noWrap
             >
               {formattedTotal}

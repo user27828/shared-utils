@@ -237,11 +237,10 @@ export const FmImageViewer: React.FC<FmImageViewerProps> = ({
     >
       <Stack
         direction="row"
-        alignItems="center"
         spacing={1}
-        sx={{ px: 2, py: 1 }}
+        sx={{ px: 2, py: 1, alignItems: "center" }}
       >
-        <Typography fontWeight={700} noWrap sx={{ flex: 1, minWidth: 0 }}>
+        <Typography sx={{ flex: 1, minWidth: 0, fontWeight: 700 }} noWrap>
           {title || "Image"}
         </Typography>
         <Tooltip title="Close">
@@ -265,7 +264,11 @@ export const FmImageViewer: React.FC<FmImageViewerProps> = ({
             flexWrap: "wrap",
           }}
         >
-          <Typography variant="body2" fontWeight={600} color="text.secondary">
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontWeight: 600 }}
+          >
             Size:
           </Typography>
           {loadingVariants ? (

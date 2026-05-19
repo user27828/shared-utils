@@ -58,7 +58,7 @@ import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { useTheme } from "@mui/material/styles";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import CheckOutlinedIcon from "@mui/icons-material/CheckOutlined";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
@@ -1377,9 +1377,8 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
       <Stack
         direction="row"
         spacing={1}
-        flexWrap="wrap"
-        alignItems="center"
         useFlexGap
+        sx={{ flexWrap: "wrap", alignItems: "center" }}
       >
         <TextField
           size="small"
@@ -1507,10 +1506,8 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
         <Stack
           direction="row"
           spacing={1}
-          flexWrap="wrap"
-          alignItems="center"
           useFlexGap
-          sx={{ mt: 1.5 }}
+          sx={{ mt: 1.5, flexWrap: "wrap", alignItems: "center" }}
         >
           <Chip label={`${selectedUids.size} selected`} size="small" />
           <Button
@@ -1666,7 +1663,11 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                       </TableCell>
                     )}
                     <TableCell>
-                      <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Stack
+                        direction="row"
+                        spacing={1.5}
+                        sx={{ alignItems: "center" }}
+                      >
                         <Box
                           sx={{
                             width: 44,
@@ -1707,9 +1708,8 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                               />
                               <Typography
                                 variant="caption"
-                                fontWeight={700}
                                 color="text.secondary"
-                                sx={{ fontSize: "0.65rem" }}
+                                sx={{ fontSize: "0.65rem", fontWeight: 700 }}
                               >
                                 {getFileExtLabel(f)}
                               </Typography>
@@ -1720,16 +1720,14 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                           <Stack
                             direction="row"
                             spacing={0.5}
-                            alignItems="center"
-                            sx={{ minWidth: 0 }}
+                            sx={{ minWidth: 0, alignItems: "center" }}
                           >
                             {!isRenaming && (
                               <>
                                 <Typography
-                                  fontWeight={700}
                                   noWrap
                                   title={getFileLabel(f)}
-                                  sx={{ minWidth: 0 }}
+                                  sx={{ minWidth: 0, fontWeight: 700 }}
                                 >
                                   {getFileLabel(f)}
                                 </Typography>
@@ -1785,8 +1783,7 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                           <Stack
                             direction="row"
                             spacing={0.5}
-                            flexWrap="wrap"
-                            sx={{ mt: 0.5 }}
+                            sx={{ mt: 0.5, flexWrap: "wrap" }}
                           >
                             {f.is_public && (
                               <Chip
@@ -1987,12 +1984,12 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                     </>
                   ) : (
                     <Box
-                      textAlign="center"
                       sx={{
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
                         gap: 0.5,
+                        textAlign: "center",
                       }}
                     >
                       <InsertDriveFileOutlinedIcon
@@ -2000,8 +1997,8 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                       />
                       <Typography
                         variant="caption"
-                        fontWeight={700}
                         color="text.secondary"
+                        sx={{ fontWeight: 700 }}
                       >
                         {getFileExtLabel(f)}
                       </Typography>
@@ -2014,14 +2011,12 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                   <Stack
                     direction="row"
                     spacing={0.5}
-                    alignItems="center"
-                    sx={{ minWidth: 0 }}
+                    sx={{ minWidth: 0, alignItems: "center" }}
                   >
                     <Typography
-                      fontWeight={700}
                       noWrap
                       title={getFileLabel(f)}
-                      sx={{ minWidth: 0, flex: 1 }}
+                      sx={{ minWidth: 0, flex: 1, fontWeight: 700 }}
                     >
                       {getFileLabel(f)}
                     </Typography>
@@ -2080,8 +2075,7 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                 <Stack
                   direction="row"
                   spacing={0.5}
-                  flexWrap="wrap"
-                  alignItems="center"
+                  sx={{ flexWrap: "wrap", alignItems: "center" }}
                 >
                   {f.is_public && (
                     <Chip label="Public" size="small" variant="outlined" />
@@ -2118,7 +2112,7 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
       )}
 
       {/* Pagination */}
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1.5 }}>
+      <Stack direction="row" spacing={1} sx={{ mt: 1.5, alignItems: "center" }}>
         <Button
           size="small"
           variant="outlined"
@@ -2169,14 +2163,13 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
         }}
         sx={{ zIndex: 1400 }}
       >
-        <Stack direction="row" alignItems="center" spacing={1}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           {!detailIsRenaming && (
             <>
               <Typography
-                fontWeight={800}
                 noWrap
                 title={activeFile ? getFileLabel(activeFile) : activeUid || ""}
-                sx={{ flex: 1, minWidth: 0 }}
+                sx={{ flex: 1, minWidth: 0, fontWeight: 800 }}
               >
                 {activeFile ? getFileLabel(activeFile) : activeUid}
               </Typography>
@@ -2207,8 +2200,7 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
             <Stack
               direction="row"
               spacing={0.5}
-              alignItems="center"
-              sx={{ flex: 1, minWidth: 0 }}
+              sx={{ flex: 1, minWidth: 0, alignItems: "center" }}
             >
               <TextField
                 size="small"
@@ -2291,8 +2283,7 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
               <Stack
                 direction="row"
                 spacing={1}
-                alignItems="center"
-                sx={{ mt: 0.25 }}
+                sx={{ mt: 0.25, alignItems: "center" }}
               >
                 <Typography
                   variant="body2"
@@ -2392,7 +2383,11 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                 )}
               </Paper>
 
-              <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ mt: 1, flexWrap: "wrap" }}
+              >
                 <CopyButton
                   value={api.getContentUrl({ fileUid: activeFile.uid })}
                   tooltip="Copy URL"
@@ -2420,7 +2415,7 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
 
             {/* Metadata */}
             <Box>
-              <Typography fontWeight={800}>Metadata</Typography>
+              <Typography sx={{ fontWeight: 800 }}>Metadata</Typography>
               <Stack spacing={1.5} sx={{ mt: 1 }}>
                 <TextField
                   size="small"
@@ -2520,8 +2515,12 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
 
             {/* Actions */}
             <Box>
-              <Typography fontWeight={800}>Actions</Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
+              <Typography sx={{ fontWeight: 800 }}>Actions</Typography>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ mt: 1, flexWrap: "wrap" }}
+              >
                 {!activeFile.archived_at && (
                   <Button
                     variant="outlined"
@@ -2580,7 +2579,7 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
 
             {/* Move */}
             <Box>
-              <Typography fontWeight={800}>Move</Typography>
+              <Typography sx={{ fontWeight: 800 }}>Move</Typography>
               <MoveForm
                 fileUid={activeFile.uid}
                 onMove={async (toBucket, toFolderPath) => {
@@ -2597,8 +2596,8 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
 
             {/* Where used (Links) */}
             <Box>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Typography fontWeight={800}>Where used</Typography>
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                <Typography sx={{ fontWeight: 800 }}>Where used</Typography>
                 <Button
                   size="small"
                   sx={{ ml: "auto" }}
@@ -2743,7 +2742,9 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
               }
             }}
           >
-            <Typography fontWeight={700}>Drag & drop files here</Typography>
+            <Typography sx={{ fontWeight: 700 }}>
+              Drag & drop files here
+            </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
               Or choose files
             </Typography>
@@ -2787,7 +2788,9 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                 {uploadItems.map((u) => (
                   <TableRow key={u.id}>
                     <TableCell>
-                      <Typography fontWeight={700}>{u.file.name}</Typography>
+                      <Typography sx={{ fontWeight: 700 }}>
+                        {u.file.name}
+                      </Typography>
                       <Typography variant="caption" color="text.secondary">
                         {formatBytes(u.file.size)} ·{" "}
                         {u.file.type || "application/octet-stream"}
@@ -2942,7 +2945,7 @@ export const FmMediaLibrary: React.FC<FmMediaLibraryProps> = (props) => {
                                 u.status === "init"
                               }
                             >
-                              <DeleteOutlineIcon fontSize="small" />
+                              <DeleteOutlinedIcon fontSize="small" />
                             </IconButton>
                           </span>
                         </Tooltip>
@@ -3024,7 +3027,7 @@ const InlineRenameField: React.FC<{
   /** Compact mode for grid view (single-line, smaller font). */
   compact?: boolean;
 }> = ({ value, onChange, onSubmit, onCancel, isSubmitting, compact }) => (
-  <Stack direction="row" spacing={0.5} alignItems="center">
+  <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
     <TextField
       size="small"
       multiline={!compact}
@@ -3083,7 +3086,7 @@ const FmFileActionIcons: React.FC<{
   onOpenDetail: (uid: string) => void;
   onDelete: (file: FmFileRow) => void;
 }> = ({ file, api, onOpenDetail, onDelete }) => (
-  <Stack direction="row" spacing={0.5} alignItems="center">
+  <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
     <CopyButton
       value={api.getContentUrl({ fileUid: file.uid })}
       tooltip="Copy URL"
@@ -3101,7 +3104,7 @@ const FmFileActionIcons: React.FC<{
         sx={{ color: "error.main" }}
         onClick={() => void onDelete(file)}
       >
-        <DeleteOutlineIcon fontSize="small" />
+        <DeleteOutlinedIcon fontSize="small" />
       </IconButton>
     </Tooltip>
   </Stack>
@@ -3171,22 +3174,19 @@ const FmSelectButton: React.FC<{
     }
   }, [open, variants, api, file.uid]);
 
-  const handleMenuListKeyDown = useCallback(
-    (event: React.KeyboardEvent) => {
-      if (event.key === "Tab") {
-        event.preventDefault();
-        setOpen(false);
-        return;
-      }
+  const handleMenuListKeyDown = useCallback((event: React.KeyboardEvent) => {
+    if (event.key === "Tab") {
+      event.preventDefault();
+      setOpen(false);
+      return;
+    }
 
-      if (event.key === "Escape") {
-        event.preventDefault();
-        event.stopPropagation();
-        setOpen(false);
-      }
-    },
-    [],
-  );
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+    }
+  }, []);
 
   if (!isImage) {
     return (
@@ -3353,7 +3353,7 @@ const CreateLinkForm: React.FC<{
 
   return (
     <Box sx={{ mt: 1.5 }}>
-      <Typography fontWeight={700} variant="body2">
+      <Typography variant="body2" sx={{ fontWeight: 700 }}>
         Add link
       </Typography>
       {error && (

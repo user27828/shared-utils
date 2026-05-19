@@ -480,8 +480,22 @@ const loadEnvironmentVariables = () => {
             // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
             const dotenv = req("dotenv");
             const dotenvExpand = req("dotenv-expand");
-            const { parsed, error } = dotenv.config({ path: envPath, quiet: true });
-            dotenvExpand.expand({ parsed });
+            const dotenvProcessEnv = { ...process.env };
+            const loaded = dotenv.config({
+                path: envPath,
+                quiet: true,
+                processEnv: dotenvProcessEnv,
+            });
+            const parsed = loaded.parsed
+                ? dotenvExpand.expand({
+                    parsed: loaded.parsed,
+                    // Expand against a detached snapshot so our merge logic controls
+                    // what reaches process.env, even if dotenv or dotenv-expand change
+                    // how they populate environment variables internally.
+                    processEnv: dotenvProcessEnv,
+                }).parsed
+                : loaded.parsed;
+            const { error } = loaded;
             if (error) {
                 console.warn(`Error loading ${envPath}:`, error);
             }

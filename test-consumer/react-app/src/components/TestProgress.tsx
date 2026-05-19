@@ -129,7 +129,7 @@ export const TestProgress: React.FC<TestProgressProps> = ({
               sx={{ mb: 2 }}
             />
 
-            <Stack direction="row" spacing={1} flexWrap="wrap">
+            <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
               {passedTests > 0 && (
                 <Chip
                   label={`${passedTests} Passed`}
@@ -158,7 +158,7 @@ export const TestProgress: React.FC<TestProgressProps> = ({
           </Box>
 
           {/* Control Buttons */}
-          <Stack direction="row" spacing={2} flexWrap="wrap">
+          <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
             {onRunAll && (
               <button
                 onClick={onRunAll}
@@ -213,15 +213,14 @@ export const TestProgress: React.FC<TestProgressProps> = ({
                   color="text.secondary"
                 >
                   {test.startTime && (
-                    <Typography variant="caption" display="block">
+                    <Typography variant="caption" sx={{ display: "block" }}>
                       {test.startTime.toLocaleTimeString()}
                     </Typography>
                   )}
                   {test.duration && (
                     <Typography
                       variant="caption"
-                      display="block"
-                      fontWeight="bold"
+                      sx={{ display: "block", fontWeight: "bold" }}
                     >
                       {test.duration}ms
                     </Typography>
@@ -278,7 +277,7 @@ export const TestProgress: React.FC<TestProgressProps> = ({
                     <Typography
                       variant="subtitle2"
                       component="div"
-                      fontWeight="bold"
+                      sx={{ fontWeight: "bold" }}
                     >
                       {getStatusIcon(test.status)} {test.name}
                     </Typography>

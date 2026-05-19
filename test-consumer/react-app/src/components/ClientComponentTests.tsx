@@ -1524,7 +1524,7 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
               data-testid="country-select"
             />
           </Box>
-          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+          <Typography variant="caption" sx={{ display: "block", mt: 1 }}>
             Selected: {countryValue || "None"}
           </Typography>
         </Box>
@@ -1551,7 +1551,7 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
               topCountries={["US", "CA", "GB"]}
             />
           </Box>
-          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+          <Typography variant="caption" sx={{ display: "block", mt: 1 }}>
             Selected: {multiCountryValue.join(", ") || "None"}
           </Typography>
         </Box>
@@ -1577,7 +1577,7 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
               data-testid="language-select"
             />
           </Box>
-          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+          <Typography variant="caption" sx={{ display: "block", mt: 1 }}>
             Selected: {languageValue || "None"}
           </Typography>
         </Box>
@@ -1604,7 +1604,7 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
               topLanguages={["en", "es", "fr"]}
             />
           </Box>
-          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+          <Typography variant="caption" sx={{ display: "block", mt: 1 }}>
             Selected: {multiLanguageValue.join(", ") || "None"}
           </Typography>
         </Box>
@@ -1635,7 +1635,7 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
               onFileUpload={false}
             />
           </Box>
-          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+          <Typography variant="caption" sx={{ display: "block", mt: 1 }}>
             Selected:{" "}
             {selectedFile
               ? typeof selectedFile === "string"
@@ -1647,8 +1647,7 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
             <Typography
               variant="caption"
               color="error"
-              display="block"
-              sx={{ mt: 1 }}
+              sx={{ display: "block", mt: 1 }}
             >
               Error: {fileUploadError}
             </Typography>
@@ -1681,7 +1680,7 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
               onFileUpload={false}
             />
           </Box>
-          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+          <Typography variant="caption" sx={{ display: "block", mt: 1 }}>
             Selected:{" "}
             {Array.isArray(multipleSelectedFiles)
               ? multipleSelectedFiles
@@ -1693,8 +1692,7 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
             <Typography
               variant="caption"
               color="error"
-              display="block"
-              sx={{ mt: 1 }}
+              sx={{ display: "block", mt: 1 }}
             >
               Error: {fileUploadError}
             </Typography>
@@ -1727,7 +1725,7 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
               onFileUpload={false}
             />
           </Box>
-          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+          <Typography variant="caption" sx={{ display: "block", mt: 1 }}>
             Selected:{" "}
             {selectedFile
               ? typeof selectedFile === "string"
@@ -1803,7 +1801,7 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
               onFileUpload={true}
             />
           </Box>
-          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+          <Typography variant="caption" sx={{ display: "block", mt: 1 }}>
             Selected:{" "}
             {selectedFile
               ? typeof selectedFile === "string"
@@ -1813,8 +1811,7 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
           </Typography>
           <Typography
             variant="caption"
-            display="block"
-            sx={{ mt: 1, fontStyle: "italic" }}
+            sx={{ display: "block", mt: 1, fontStyle: "italic" }}
           >
             Note: This component tests integration with server at
             http://localhost:5030/
@@ -1823,8 +1820,7 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
             <Typography
               variant="caption"
               color="error"
-              display="block"
-              sx={{ mt: 1 }}
+              sx={{ display: "block", mt: 1 }}
             >
               Error: {fileUploadError}
             </Typography>
@@ -1854,7 +1850,12 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
           <Typography variant="h6" gutterBottom>
             CheckChip
           </Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          <Stack
+            direction="row"
+            spacing={1}
+            useFlexGap
+            sx={{ flexWrap: "wrap" }}
+          >
             <CheckChip
               label="Email notifications"
               checked={checkChipChecked}
@@ -1886,7 +1887,7 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
               Reset
             </Button>
           </Stack>
-          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+          <Typography variant="caption" sx={{ display: "block", mt: 1 }}>
             Email notifications: {checkChipChecked ? "Enabled" : "Disabled"}
           </Typography>
         </Box>
@@ -1926,7 +1927,7 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
                 emptyLabel="Choose channels"
                 showApplyButton={true}
               />
-              <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+              <Typography variant="caption" sx={{ display: "block", mt: 1 }}>
                 Selected: {selectChipValues.join(", ") || "None"}
               </Typography>
             </Box>
@@ -1945,10 +1946,13 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
                   setLastReselectedOption(value);
                 }}
               />
-              <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+              <Typography variant="caption" sx={{ display: "block", mt: 1 }}>
                 Selected: {singleSelectChipValue[0] || "None"}
               </Typography>
-              <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+              <Typography
+                variant="caption"
+                sx={{ display: "block", mt: 0.5 }}
+              >
                 Last reselected: {lastReselectedOption || "None"}
               </Typography>
             </Box>
@@ -1977,7 +1981,7 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
             variant="outlined"
             size="small"
           />
-          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+          <Typography variant="caption" sx={{ display: "block", mt: 1 }}>
             Useful for showing compact grouped status summaries.
           </Typography>
         </Box>
@@ -1995,7 +1999,12 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
           <Typography variant="h6" gutterBottom>
             ProcessStatusChip
           </Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          <Stack
+            direction="row"
+            spacing={1}
+            useFlexGap
+            sx={{ flexWrap: "wrap" }}
+          >
             <ProcessStatusChip
               status="syncing"
               label="Syncing"
@@ -2073,7 +2082,7 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
             }}
           >
             <Typography variant="body2">Simulated panel content</Typography>
-            <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+            <Typography variant="caption" sx={{ display: "block", mt: 0.5 }}>
               Toggle the loader to preview localized behavior.
             </Typography>
             <Button
@@ -2107,7 +2116,7 @@ export const ClientComponentTests: React.FC<SuiteAutomationProps> = ({
           <Typography variant="h6" gutterBottom>
             Disconnected
           </Typography>
-          <Typography variant="caption" display="block" sx={{ mb: 1.5 }}>
+          <Typography variant="caption" sx={{ display: "block", mb: 1.5 }}>
             Retry count: {disconnectedRetryCount}
           </Typography>
           <Box sx={{ minHeight: 220 }}>

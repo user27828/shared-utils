@@ -534,7 +534,7 @@ const CKEditorTests: React.FC<CKEditorTestsProps> = ({
               <Typography variant="h6" gutterBottom>
                 Session Status
               </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap">
+              <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
                 <Chip
                   label={editor ? "CKEditor Ready" : "CKEditor Initializing"}
                   color={editor ? "success" : "warning"}
@@ -589,7 +589,7 @@ const CKEditorTests: React.FC<CKEditorTestsProps> = ({
                 multiline
                 minRows={6}
                 maxRows={12}
-                InputProps={{ readOnly: true }}
+                slotProps={{ input: { readOnly: true } }}
               />
             </CardContent>
           </Card>

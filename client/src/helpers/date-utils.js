@@ -1,3 +1,5 @@
+import { getTimezoneOffset as getTimezoneOffsetMs } from "date-fns-tz";
+
 /**
  * Date utilities for formatting, parsing, and manipulation
  */
@@ -405,16 +407,16 @@ export const getTimezoneInfo = (timezone) => {
  */
 export const getTimezoneOffset = (date, timezone) => {
   try {
-    const utc = date.getTime() + date.getTimezoneOffset() * 60000;
-    const targetTime = new Date(utc + 0); // UTC time
-    const targetDate = new Date(
-      targetTime.toLocaleString("en-US", { timeZone: timezone }),
-    );
-    const offset = (targetDate.getTime() - utc) / 60000;
+    const offsetMs = getTimezoneOffsetMs(timezone, date);
 
-    const offsetHours = Math.floor(Math.abs(offset) / 60);
-    const offsetMinutes = Math.abs(offset) % 60;
-    const offsetSign = offset >= 0 ? "+" : "-";
+    if (!Number.isFinite(offsetMs)) {
+      return "+00:00";
+    }
+
+    const offsetMinutesTotal = Math.round(offsetMs / 60000);
+    const offsetHours = Math.floor(Math.abs(offsetMinutesTotal) / 60);
+    const offsetMinutes = Math.abs(offsetMinutesTotal) % 60;
+    const offsetSign = offsetMinutesTotal >= 0 ? "+" : "-";
 
     return `${offsetSign}${offsetHours.toString().padStart(2, "0")}:${offsetMinutes.toString().padStart(2, "0")}`;
   } catch (error) {

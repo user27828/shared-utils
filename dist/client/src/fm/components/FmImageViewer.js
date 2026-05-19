@@ -157,7 +157,7 @@ export const FmImageViewer = ({ open, onClose, fileUid, api, title, file, onSele
     }, [onSelect, file, selectedVariant]);
     return (_jsxs(Dialog, { open: open, onClose: handleClose, fullWidth: true, maxWidth: "lg", slotProps: {
             paper: { sx: { bgcolor: "background.default" } },
-        }, children: [_jsxs(Stack, { direction: "row", alignItems: "center", spacing: 1, sx: { px: 2, py: 1 }, children: [_jsx(Typography, { fontWeight: 700, noWrap: true, sx: { flex: 1, minWidth: 0 }, children: title || "Image" }), _jsx(Tooltip, { title: "Close", children: _jsx(IconButton, { size: "small", edge: "end", onClick: handleClose, children: _jsx(CloseIcon, {}) }) })] }), _jsxs(DialogContent, { sx: { p: 0, display: "flex", flexDirection: "column" }, children: [_jsxs(Box, { sx: {
+        }, children: [_jsxs(Stack, { direction: "row", spacing: 1, sx: { px: 2, py: 1, alignItems: "center" }, children: [_jsx(Typography, { sx: { flex: 1, minWidth: 0, fontWeight: 700 }, noWrap: true, children: title || "Image" }), _jsx(Tooltip, { title: "Close", children: _jsx(IconButton, { size: "small", edge: "end", onClick: handleClose, children: _jsx(CloseIcon, {}) }) })] }), _jsxs(DialogContent, { sx: { p: 0, display: "flex", flexDirection: "column" }, children: [_jsxs(Box, { sx: {
                             px: 2,
                             py: 1.5,
                             borderBottom: 1,
@@ -166,7 +166,7 @@ export const FmImageViewer = ({ open, onClose, fileUid, api, title, file, onSele
                             alignItems: "center",
                             gap: 1.5,
                             flexWrap: "wrap",
-                        }, children: [_jsx(Typography, { variant: "body2", fontWeight: 600, color: "text.secondary", children: "Size:" }), loadingVariants ? (_jsx(CircularProgress, { size: 20, thickness: 5 })) : (_jsx(ToggleButtonGroup, { size: "small", exclusive: true, value: selectedSize, onChange: handleSizeChange, "aria-label": "Image size selection", children: sizeOptions.map((opt) => (_jsx(ToggleButton, { value: opt.value, children: opt.label }, opt.value))) })), onSelect && file && (_jsx(Button, { variant: "contained", size: "small", onClick: handleSelect, sx: { ml: "auto" }, children: "Select" }))] }), _jsx(Box, { sx: {
+                        }, children: [_jsx(Typography, { variant: "body2", color: "text.secondary", sx: { fontWeight: 600 }, children: "Size:" }), loadingVariants ? (_jsx(CircularProgress, { size: 20, thickness: 5 })) : (_jsx(ToggleButtonGroup, { size: "small", exclusive: true, value: selectedSize, onChange: handleSizeChange, "aria-label": "Image size selection", children: sizeOptions.map((opt) => (_jsx(ToggleButton, { value: opt.value, children: opt.label }, opt.value))) })), onSelect && file && (_jsx(Button, { variant: "contained", size: "small", onClick: handleSelect, sx: { ml: "auto" }, children: "Select" }))] }), _jsx(Box, { sx: {
                             flex: 1,
                             display: "flex",
                             alignItems: "center",
