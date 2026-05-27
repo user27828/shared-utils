@@ -3,11 +3,15 @@ import express from "express";
 import { jest } from "@jest/globals";
 import request from "supertest";
 
-const loadRouterModules = async () => {
+const loadRouterModule = async () => {
   jest.resetModules();
 
+  return import("../src/email/webhooks/router.js");
+};
+
+const loadRouterModules = async () => {
+  const routerModule = await loadRouterModule();
   const envModule = await import("../src/env.js");
-  const routerModule = await import("../src/email/webhooks/router.js");
 
   return {
     env: envModule.default,
@@ -30,7 +34,7 @@ const createMisconfiguredApp = (createWebhookRouter) => {
 
 describe("Email webhook router", () => {
   test("returns the provider challenge response", async () => {
-    const { createWebhookRouter } = await loadRouterModules();
+    const { createWebhookRouter } = await loadRouterModule();
     const app = createApp(createWebhookRouter);
 
     const response = await request(app).get(
