@@ -6,7 +6,7 @@ import log, { Log, ORIGINAL_CONSOLE_METHODS } from "./src/log.js";
 import turnstile, { Turnstile } from "./src/turnstile.js";
 import { isDev, formatFileSize, sanitizeFilename, convertBytesToUnit, getFileExtension, removeFileExtension, isValidFilename, isValidEmail, normalizeUrl, formatDate, mergeJson, mergeJsonActions, } from "./src/functions.js";
 import { detectFormatFromText } from "./src/detectFormat/index.js";
-import { generateVCard, canGenerateVCard, canScheduleMeeting, downloadVCard, buildCalendarUrl, buildMeetingEvent, generateICS, downloadICS, openCalendarEvent, getNextHalfHour, stripHtml, DEFAULT_CALENDAR_CONFIG, } from "./src/contact.js";
+import { buildContactExportFile, generateVCard, generateGoogleContactsCsv, generateMultiVCard, generateOutlookContactsCsv, canGenerateVCard, canScheduleMeeting, downloadVCard, buildCalendarUrl, buildMeetingEvent, generateICS, downloadICS, openCalendarEvent, getNextHalfHour, stripHtml, DEFAULT_CALENDAR_CONFIG, } from "./src/contact.js";
 import { MEETING_PROVIDERS, getMeetingProvider, createMeetingEntry, flattenMeetingEntries, } from "./src/meetingProviders.js";
 export { 
 // Logging utilities
@@ -20,6 +20,6 @@ isDev,
 // File utilities
 formatFileSize, sanitizeFilename, convertBytesToUnit, getFileExtension, removeFileExtension, isValidFilename, isValidEmail, normalizeUrl, formatDate, mergeJson, mergeJsonActions, detectFormatFromText, // plain text format detection
 // Contact & calendar utilities
-generateVCard, canGenerateVCard, canScheduleMeeting, downloadVCard, buildCalendarUrl, buildMeetingEvent, generateICS, downloadICS, openCalendarEvent, getNextHalfHour, stripHtml, DEFAULT_CALENDAR_CONFIG, 
+buildContactExportFile, generateVCard, generateGoogleContactsCsv, generateMultiVCard, generateOutlookContactsCsv, canGenerateVCard, canScheduleMeeting, downloadVCard, buildCalendarUrl, buildMeetingEvent, generateICS, downloadICS, openCalendarEvent, getNextHalfHour, stripHtml, DEFAULT_CALENDAR_CONFIG, 
 // Meeting provider data
 MEETING_PROVIDERS, getMeetingProvider, createMeetingEntry, flattenMeetingEntries, };

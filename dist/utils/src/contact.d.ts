@@ -14,8 +14,14 @@ export interface ContactInfo {
     name: string;
     /** First name (optional, derived from name if omitted) */
     firstName?: string;
+    /** Middle name */
+    middleName?: string;
     /** Last name (optional, derived from name if omitted) */
     lastName?: string;
+    /** Name prefix */
+    prefix?: string;
+    /** Name suffix */
+    suffix?: string;
     /** Primary email addresses */
     emails?: string[];
     /** Phone numbers with optional type labels */
@@ -36,6 +42,12 @@ export interface ContactInfo {
     }[];
     /** Free-form notes */
     notes?: string;
+}
+export type ContactExportFormat = "google_csv" | "outlook_csv" | "vcard";
+export interface ContactExportFile {
+    content: string;
+    contentType: string;
+    extension: string;
 }
 /** Supported calendar providers */
 export type CalendarProvider = "google" | "outlook" | "yahoo" | "apple" | "ics";
@@ -64,6 +76,10 @@ export interface CalendarConfig {
 }
 /** Default calendar configuration */
 export declare const DEFAULT_CALENDAR_CONFIG: CalendarConfig;
+export declare const generateGoogleContactsCsv: (contacts: ContactInfo[]) => string;
+export declare const generateOutlookContactsCsv: (contacts: ContactInfo[]) => string;
+export declare const generateMultiVCard: (contacts: ContactInfo[]) => string;
+export declare const buildContactExportFile: (contacts: ContactInfo[], format: ContactExportFormat) => ContactExportFile;
 /**
  * Generate a vCard 3.0 string from a ContactInfo object.
  *

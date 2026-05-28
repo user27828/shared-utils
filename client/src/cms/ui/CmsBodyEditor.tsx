@@ -598,6 +598,8 @@ const MarkdownEditor: React.FC<{
     null,
   );
   const loadedRef = useRef(false);
+  const { mode, systemMode } = useColorScheme();
+  const isDark = (mode === "system" ? systemMode : mode) === "dark";
 
   React.useEffect(() => {
     if (loadedRef.current) {
@@ -637,7 +639,33 @@ const MarkdownEditor: React.FC<{
     );
   }
 
-  return <MdEditor markdown={value} onChange={onChange} />;
+  return (
+    <MdEditor
+      data={value}
+      darkMode={isDark}
+      onChange={(_event: any, helpers: { getData: () => string }) =>
+        onChange(helpers.getData())
+      }
+      onUploadImage={
+        onUploadImage
+          ? async (request: {
+              file: File;
+              filename: string;
+              mimeType: string;
+              sizeBytes: number;
+            }) => {
+              const url = await onUploadImage(request.file, {
+                source: "editor-upload",
+              });
+              if (!url) {
+                throw new Error("Upload failed");
+              }
+              return { url };
+            }
+          : undefined
+      }
+    />
+  );
 };
 
 CmsBodyEditor.displayName = "CmsBodyEditor";

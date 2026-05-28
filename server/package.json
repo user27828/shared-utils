@@ -42,13 +42,13 @@
     "@aws-sdk/s3-request-presigner": "^3.1053.0",
     "@shared-utils/utils": "workspace:*",
     "express": "^5.2.1",
-    "nodemailer": "^8.0.7"
+    "nodemailer": "^8.0.8"
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
     "@babel/preset-env": "^7.29.5",
     "@babel/preset-typescript": "^7.28.5",
-    "@cloudflare/workers-types": "^4.20260523.1",
+    "@cloudflare/workers-types": "^4.20260524.1",
     "@jest/globals": "^30.4.1",
     "@types/express": "^5.0.6",
     "@types/node": "^25.9.1",

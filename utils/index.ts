@@ -21,7 +21,11 @@ import {
 import type { IsDevOptions, EnvironmentObject, MergeJsonProps } from "./src/functions.js";
 import { detectFormatFromText } from "./src/detectFormat/index.js";
 import {
+  buildContactExportFile,
   generateVCard,
+  generateGoogleContactsCsv,
+  generateMultiVCard,
+  generateOutlookContactsCsv,
   canGenerateVCard,
   canScheduleMeeting,
   downloadVCard,
@@ -36,6 +40,8 @@ import {
 } from "./src/contact.js";
 import type {
   ContactInfo,
+  ContactExportFile,
+  ContactExportFormat,
   CalendarProvider,
   CalendarEvent,
   CalendarConfig,
@@ -85,7 +91,11 @@ export {
   detectFormatFromText, // plain text format detection
 
   // Contact & calendar utilities
+  buildContactExportFile,
   generateVCard,
+  generateGoogleContactsCsv,
+  generateMultiVCard,
+  generateOutlookContactsCsv,
   canGenerateVCard,
   canScheduleMeeting,
   downloadVCard,
@@ -112,6 +122,8 @@ export type {
   MergeJsonProps,
   // Contact & calendar types
   ContactInfo,
+  ContactExportFile,
+  ContactExportFormat,
   CalendarProvider,
   CalendarEvent,
   CalendarConfig,

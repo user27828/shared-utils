@@ -344,6 +344,8 @@ const HtmlEditor = ({ value, onChange, height, editor, onPickAsset, onUploadImag
 const MarkdownEditor = ({ value, onChange, onPickAsset, onUploadImage }) => {
     const [MdEditor, setMdEditor] = useState(null);
     const loadedRef = useRef(false);
+    const { mode, systemMode } = useColorScheme();
+    const isDark = (mode === "system" ? systemMode : mode) === "dark";
     React.useEffect(() => {
         if (loadedRef.current) {
             return;
@@ -370,7 +372,17 @@ const MarkdownEditor = ({ value, onChange, onPickAsset, onUploadImage }) => {
                 color: "text.primary",
             } }));
     }
-    return _jsx(MdEditor, { markdown: value, onChange: onChange });
+    return (_jsx(MdEditor, { data: value, darkMode: isDark, onChange: (_event, helpers) => onChange(helpers.getData()), onUploadImage: onUploadImage
+            ? async (request) => {
+                const url = await onUploadImage(request.file, {
+                    source: "editor-upload",
+                });
+                if (!url) {
+                    throw new Error("Upload failed");
+                }
+                return { url };
+            }
+            : undefined }));
 };
 CmsBodyEditor.displayName = "CmsBodyEditor";
 export default CmsBodyEditor;
