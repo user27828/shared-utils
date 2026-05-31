@@ -47,6 +47,38 @@ export type { CmsAdminRouterConfig } from "./express/adminRouter.js";
 export { createCmsPublicRouter } from "./express/publicRouter.js";
 export type { CmsPublicRouterConfig } from "./express/publicRouter.js";
 
+export {
+  CMS_TRANSFER_SCHEMA_VERSION,
+  buildCmsTransferAssetTargetFolderPath,
+  buildCmsTransferFilename,
+  buildCmsTransferPackage,
+  buildCmsTransferPortableEntry,
+  buildTransferInspectResult,
+  buildTransferPackageSummary,
+  createTransferAssetConflict,
+  describeTransferAssetConflict,
+  findTransferEntryConflict,
+  getDefaultTransferAssetResolutionMode,
+  parseCmsTransferAssetTargetFolderPath,
+  parseCmsTransferPackage,
+  stringifyCmsTransferPackage,
+  suggestUniqueTransferSlug,
+  validateCreateCopySlug,
+} from "./express/index.js";
+export type {
+  CmsTransferAssetConflict,
+  CmsTransferAssetResolutionMode,
+  CmsTransferAssetRole,
+  CmsTransferEntryConflict,
+  CmsTransferEntryResolutionMode,
+  CmsTransferInspectResult,
+  CmsTransferPackage,
+  CmsTransferPackageSummary,
+  CmsTransferPackagedAsset,
+  CmsTransferPortableEntry,
+  CmsTransferReferenceLocation,
+} from "./express/index.js";
+
 // ── Conformance test harness ──────────────────────────────────────────────
 export { runCmsConnectorConformanceTests } from "./conformance.js";
 export type { ConformanceTestConfig } from "./conformance.js";

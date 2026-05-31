@@ -77,6 +77,19 @@ const safeJsonParse = (input) => {
         return { value: null, error: err?.message || "Invalid JSON" };
     }
 };
+const CMS_UNCATEGORIZED_CATEGORY = "uncategorized";
+const firstNonEmptyString = (...values) => {
+    for (const value of values) {
+        if (typeof value !== "string") {
+            continue;
+        }
+        const trimmed = value.trim();
+        if (trimmed) {
+            return trimmed;
+        }
+    }
+    return null;
+};
 const slugify = (str) => str
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, "")
@@ -116,12 +129,29 @@ const formatIsoDateTime = (iso) => {
         minute: "2-digit",
     }).format(date);
 };
+const downloadTextFile = (fileName, text, mimeType = "application/json") => {
+    if (typeof document === "undefined" || typeof URL === "undefined") {
+        return;
+    }
+    const blob = new Blob([text], {
+        type: `${mimeType};charset=utf-8`,
+    });
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(objectUrl);
+};
 const defaultApi = new CmsClient();
 // ─── Component ────────────────────────────────────────────────────────────
 const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLocale = "en", }) => {
     const api = config?.api ?? defaultApi;
     const toast = config?.toast ?? defaultToast;
     const nav = config?.navigation;
+    const transferUi = config?.transfer;
     // Stable refs so callbacks never depend on api/toast/nav identity.
     // This prevents parent re-renders (e.g. auth context refresh) from
     // causing load() to regenerate and re-fire.
@@ -131,6 +161,7 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
     toastRef.current = toast;
     const navRef = useRef(nav);
     navRef.current = nav;
+    const loadRef = useRef(async () => undefined);
     const localeOptions = useMemo(() => config?.localeOptions ?? [{ label: "English", value: "en" }], [config?.localeOptions]);
     const isNew = !propUid;
     // ── Data state ────────────────────────────────────────────────────────
@@ -175,6 +206,12 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
     const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
     const [loadedRevisionId, setLoadedRevisionId] = useState(null);
     const [pendingContentType, setPendingContentType] = useState(null);
+    const [transferBusy, setTransferBusy] = useState(false);
+    const [transferError, setTransferError] = useState(null);
+    const [transferImportOpen, setTransferImportOpen] = useState(false);
+    const [transferInspectOpen, setTransferInspectOpen] = useState(false);
+    const [transferPackageText, setTransferPackageText] = useState("");
+    const [transferInspectResult, setTransferInspectResult] = useState(null);
     // ── Metadata / version-notes state ────────────────────────────────────
     const [metadata, setMetadata] = useState({});
     const [saveVersionOpen, setSaveVersionOpen] = useState(false);
@@ -212,6 +249,33 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         { value: "page", label: "Page" },
         { value: "post", label: "Post" },
     ], [config?.postTypeOptions]);
+    const categoryOptions = useMemo(() => {
+        return config?.categoryOptionsByPostType?.[postType] ?? [];
+    }, [config?.categoryOptionsByPostType, postType]);
+    const selectedCategory = useMemo(() => {
+        const optionsValue = optionsParse.value;
+        const optionsRecord = optionsValue && typeof optionsValue === "object" && !Array.isArray(optionsValue)
+            ? optionsValue
+            : {};
+        const publicContent = optionsRecord.publicContent &&
+            typeof optionsRecord.publicContent === "object" &&
+            !Array.isArray(optionsRecord.publicContent)
+            ? optionsRecord.publicContent
+            : {};
+        const publicEntry = optionsRecord.publicContentEntry &&
+            typeof optionsRecord.publicContentEntry === "object" &&
+            !Array.isArray(optionsRecord.publicContentEntry)
+            ? optionsRecord.publicContentEntry
+            : {};
+        const value = firstNonEmptyString(optionsRecord.category, optionsRecord.public_category, publicContent.category, publicEntry.category);
+        if (value) {
+            return value;
+        }
+        if (postType === "blog" || postType === "faq") {
+            return CMS_UNCATEGORIZED_CATEGORY;
+        }
+        return "";
+    }, [optionsParse.value, postType]);
     const hasVisualMode = contentType === "html" || contentType === "markdown";
     const effectiveContentType = hasVisualMode && editorMode === "text" ? "text" : contentType;
     /** Whether the editor body contains user-authored content (beyond the default empty state). */
@@ -376,6 +440,147 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         toastRef.current.error("Copy failed");
         announceErr("Copy failed");
     }, [announce, announceErr, copyToClipboard, slugPath]);
+    const handleOpenTransferImport = useCallback(() => {
+        setTransferError(null);
+        setTransferImportOpen(true);
+    }, []);
+    const handleCloseTransferImport = useCallback(() => {
+        if (transferBusy) {
+            return;
+        }
+        setTransferImportOpen(false);
+        setTransferError(null);
+    }, [transferBusy]);
+    const handleCloseTransferInspect = useCallback(() => {
+        if (transferBusy) {
+            return;
+        }
+        setTransferInspectOpen(false);
+        setTransferError(null);
+    }, [transferBusy]);
+    const handleTransferExportCopy = useCallback(async () => {
+        if (isNew || !propUid) {
+            toastRef.current.info("Save the item before exporting it.");
+            return;
+        }
+        setTransferBusy(true);
+        setTransferError(null);
+        try {
+            const pkg = await apiRef.current.adminGetTransferPackage({
+                uid: propUid,
+                includeAssets: transferUi?.includeAssetsByDefault !== false,
+            });
+            const packageText = `${JSON.stringify(pkg, null, 2)}\n`;
+            const copied = await copyToClipboard(packageText);
+            if (!copied) {
+                throw new Error("Unable to copy export JSON to the clipboard.");
+            }
+            toastRef.current.success("Export package copied");
+            announce("Export package copied");
+        }
+        catch (err) {
+            const message = err?.message || "Failed to copy export package";
+            setTransferError(message);
+            toastRef.current.error(message);
+            announceErr(message);
+        }
+        finally {
+            setTransferBusy(false);
+        }
+    }, [
+        announce,
+        announceErr,
+        copyToClipboard,
+        isNew,
+        propUid,
+        transferUi?.includeAssetsByDefault,
+    ]);
+    const handleTransferExportDownload = useCallback(async () => {
+        if (isNew || !propUid) {
+            toastRef.current.info("Save the item before exporting it.");
+            return;
+        }
+        setTransferBusy(true);
+        setTransferError(null);
+        try {
+            const download = await apiRef.current.adminDownloadTransferPackage({
+                uid: propUid,
+                includeAssets: transferUi?.includeAssetsByDefault !== false,
+            });
+            downloadTextFile(download.fileName, download.packageText);
+            toastRef.current.success("Export package downloaded");
+            announce("Export package downloaded");
+        }
+        catch (err) {
+            const message = err?.message || "Failed to download export package";
+            setTransferError(message);
+            toastRef.current.error(message);
+            announceErr(message);
+        }
+        finally {
+            setTransferBusy(false);
+        }
+    }, [announce, announceErr, isNew, propUid, transferUi?.includeAssetsByDefault]);
+    const handleInspectTransferPackageText = useCallback(async (packageText) => {
+        setTransferBusy(true);
+        setTransferError(null);
+        try {
+            const result = await apiRef.current.adminInspectTransferPackage({
+                packageText,
+            });
+            setTransferPackageText(packageText);
+            setTransferInspectResult(result);
+            setTransferImportOpen(false);
+            setTransferInspectOpen(true);
+            toastRef.current.success("Transfer package inspected");
+        }
+        catch (err) {
+            const message = err?.message || "Failed to inspect transfer package";
+            setTransferError(message);
+            toastRef.current.error(message);
+        }
+        finally {
+            setTransferBusy(false);
+        }
+    }, []);
+    const handleApplyTransferPackage = useCallback(async (request) => {
+        if (!transferPackageText) {
+            setTransferError("No transfer package is loaded.");
+            return;
+        }
+        setTransferBusy(true);
+        setTransferError(null);
+        try {
+            const result = await apiRef.current.adminApplyTransferPackage({
+                package: transferPackageText,
+                entryResolution: request.entryResolution,
+                assetResolutions: request.assetResolutions,
+            });
+            setTransferInspectOpen(false);
+            setTransferImportOpen(false);
+            setTransferInspectResult(null);
+            setTransferPackageText("");
+            toastRef.current.success("Transfer package imported");
+            announce("Transfer package imported");
+            const nextUid = result.appliedUid || result.row?.uid;
+            if (nextUid && navRef.current?.goToEdit) {
+                navRef.current.goToEdit(nextUid);
+                return;
+            }
+            if (nextUid && nextUid === propUid) {
+                await loadRef.current({ silent: true });
+            }
+        }
+        catch (err) {
+            const message = err?.message || "Failed to import transfer package";
+            setTransferError(message);
+            toastRef.current.error(message);
+            announceErr(message);
+        }
+        finally {
+            setTransferBusy(false);
+        }
+    }, [announce, announceErr, propUid, transferPackageText]);
     const handleStartSlugEdit = useCallback(() => {
         slugBeforeEditRef.current = slug;
         setIsSlugEditing(true);
@@ -445,6 +650,7 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
             setIsLoading(false);
         }
     }, [propUid, isNew, defaultLocale, defaultPostType]);
+    loadRef.current = load;
     useEffect(() => {
         void load();
     }, [load]);
@@ -1066,6 +1272,16 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
         mutator(clone);
         setOptionsJson(JSON.stringify(clone, null, 2));
     };
+    const handleCategoryChange = useCallback((nextCategory) => {
+        const normalized = nextCategory.trim();
+        updateOptionsJson((o) => {
+            if (!normalized) {
+                delete o.category;
+                return;
+            }
+            o.category = normalized;
+        });
+    }, [updateOptionsJson]);
     // ── Featured image helpers ────────────────────────────────────────────
     const featuredImageUid = optionsParse.value?.featured_image_file_uid;
     const ogImageUid = optionsParse.value?.seo?.og_image_file_uid;
@@ -1163,7 +1379,17 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                                                             alignItems: "center",
                                                         }, children: [_jsx(Tooltip, { title: "Back to list", children: _jsx(IconButton, { onClick: () => nav?.goToList?.(), children: _jsx(ArrowBackIcon, {}) }) }), _jsx(Typography, { variant: "h5", children: isNew ? "New CMS Item" : "Edit CMS Item" })] }), _jsxs(Stack, { direction: "row", spacing: 1, sx: {
                                                             flexShrink: 0,
-                                                        }, children: [!isNew && (_jsx(Tooltip, { title: historyDrawerOpen ? "Close history" : "Open history", children: _jsx(Button, { onClick: () => setHistoryDrawerOpen((o) => !o), color: historyDrawerOpen ? "primary" : "info", size: "small", startIcon: _jsx(HistoryIcon, {}), children: "History" }) })), canPreview && previewUrl && (_jsx(Button, { size: "small", href: previewUrl, target: "_blank", startIcon: _jsx(OpenInNewIcon, {}), children: "Preview" })), _jsxs(ButtonGroup, { variant: "contained", ref: saveVersionAnchorRef, "aria-label": "Save actions", children: [_jsx(Button, { onClick: () => handleSave(), disabled: isSaving || isLoading || (!isNew && !isDirty), children: isSaving ? "Saving..." : "Save" }), _jsx(Button, { size: "small", onClick: () => setSaveVersionOpen((o) => !o), disabled: isSaving || isLoading || (!isNew && !isDirty), "aria-label": "Save with version label", sx: { px: 0.5 }, children: _jsx(ArrowDropDownIcon, {}) })] }), _jsx(Popper, { open: saveVersionOpen, anchorEl: saveVersionAnchorRef.current, placement: "bottom-end", transition: true, disablePortal: true, sx: { zIndex: 1300 }, children: ({ TransitionProps }) => (_jsx(Grow, { ...TransitionProps, children: _jsx(Paper, { elevation: 8, sx: { p: 2, width: 340, mt: 0.5 }, children: _jsx(ClickAwayListener, { onClickAway: () => setSaveVersionOpen(false), children: _jsx(Box, { children: _jsx(CmsVersionNotesForm, { title: "Save Version", saveLabel: "Save Version", isSaving: isSaving, onSave: handleSaveVersion, onCancel: () => setSaveVersionOpen(false) }) }) }) }) })) })] })] }), error && (_jsx(Alert, { ref: errorAlertRef, severity: "error", onClose: () => setError(null), sx: { mb: 2 }, tabIndex: -1, children: error })), _jsxs(Paper, { sx: { p: 2, mb: 2 }, children: [_jsx(TextField, { label: "Title", fullWidth: true, value: title, onChange: (e) => setTitle(e.target.value), onBlur: handleTitleBlur, sx: { mb: isSlugEditing ? 2 : "1px" } }), !isSlugEditing ? (_jsxs(Stack, { direction: "row", spacing: 1, sx: {
+                                                        }, children: [!isNew && (_jsx(Tooltip, { title: historyDrawerOpen ? "Close history" : "Open history", children: _jsx(Button, { onClick: () => setHistoryDrawerOpen((o) => !o), color: historyDrawerOpen ? "primary" : "info", size: "small", startIcon: _jsx(HistoryIcon, {}), children: "History" }) })), canPreview && previewUrl && (_jsx(Button, { size: "small", href: previewUrl, target: "_blank", startIcon: _jsx(OpenInNewIcon, {}), children: "Preview" })), transferUi?.renderActions?.({
+                                                                disabled: isLoading || isSaving,
+                                                                busy: transferBusy,
+                                                                onExportCopy: !isNew
+                                                                    ? handleTransferExportCopy
+                                                                    : undefined,
+                                                                onExportDownload: !isNew
+                                                                    ? handleTransferExportDownload
+                                                                    : undefined,
+                                                                onImport: handleOpenTransferImport,
+                                                            }), _jsxs(ButtonGroup, { variant: "contained", ref: saveVersionAnchorRef, "aria-label": "Save actions", children: [_jsx(Button, { onClick: () => handleSave(), disabled: isSaving || isLoading || (!isNew && !isDirty), children: isSaving ? "Saving..." : "Save" }), _jsx(Button, { size: "small", onClick: () => setSaveVersionOpen((o) => !o), disabled: isSaving || isLoading || (!isNew && !isDirty), "aria-label": "Save with version label", sx: { px: 0.5 }, children: _jsx(ArrowDropDownIcon, {}) })] }), _jsx(Popper, { open: saveVersionOpen, anchorEl: saveVersionAnchorRef.current, placement: "bottom-end", transition: true, disablePortal: true, sx: { zIndex: 1300 }, children: ({ TransitionProps }) => (_jsx(Grow, { ...TransitionProps, children: _jsx(Paper, { elevation: 8, sx: { p: 2, width: 340, mt: 0.5 }, children: _jsx(ClickAwayListener, { onClickAway: () => setSaveVersionOpen(false), children: _jsx(Box, { children: _jsx(CmsVersionNotesForm, { title: "Save Version", saveLabel: "Save Version", isSaving: isSaving, onSave: handleSaveVersion, onCancel: () => setSaveVersionOpen(false) }) }) }) }) })) })] })] }), error && (_jsx(Alert, { ref: errorAlertRef, severity: "error", onClose: () => setError(null), sx: { mb: 2 }, tabIndex: -1, children: error })), _jsxs(Paper, { sx: { p: 2, mb: 2 }, children: [_jsx(TextField, { label: "Title", fullWidth: true, value: title, onChange: (e) => setTitle(e.target.value), onBlur: handleTitleBlur, sx: { mb: isSlugEditing ? 2 : "1px" } }), !isSlugEditing ? (_jsxs(Stack, { direction: "row", spacing: 1, sx: {
                                                             alignItems: "center",
                                                             border: 1,
                                                             borderColor: "divider",
@@ -1210,7 +1436,9 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                                                                                     else {
                                                                                         setContentType(next);
                                                                                     }
-                                                                                }, children: [_jsx(MenuItem, { value: "html", children: "HTML" }), _jsx(MenuItem, { value: "markdown", children: "Markdown" }), _jsx(MenuItem, { value: "json", children: "JSON" }), _jsx(MenuItem, { value: "text", children: "Text" })] })] }), _jsxs(FormControl, { size: "small", sx: { minWidth: 110 }, children: [_jsx(InputLabel, { children: "Locale" }), _jsx(Select, { value: locale, label: "Locale", onChange: (e) => setLocale(e.target.value), children: localeOptions.map((opt) => (_jsx(MenuItem, { value: opt.value, children: opt.label }, opt.value))) })] }), _jsxs(FormControl, { size: "small", sx: { minWidth: 110 }, children: [_jsx(InputLabel, { children: "Post type" }), _jsx(Select, { value: postType, label: "Post type", onChange: (e) => setPostType(e.target.value), children: postTypeOpts.map((opt) => (_jsx(MenuItem, { value: opt.value, children: opt.label }, opt.value))) })] }), devMode && contentType === "html" && (_jsx(Tooltip, { title: "Dev only \u2014 switch WYSIWYG editor", placement: "top-end", children: _jsxs(FormControl, { size: "small", sx: {
+                                                                                }, children: [_jsx(MenuItem, { value: "html", children: "HTML" }), _jsx(MenuItem, { value: "markdown", children: "Markdown" }), _jsx(MenuItem, { value: "json", children: "JSON" }), _jsx(MenuItem, { value: "text", children: "Text" })] })] }), _jsxs(FormControl, { size: "small", sx: { minWidth: 110 }, children: [_jsx(InputLabel, { children: "Locale" }), _jsx(Select, { value: locale, label: "Locale", onChange: (e) => setLocale(e.target.value), children: localeOptions.map((opt) => (_jsx(MenuItem, { value: opt.value, children: opt.label }, opt.value))) })] }), _jsxs(FormControl, { size: "small", sx: { minWidth: 110 }, children: [_jsx(InputLabel, { children: "Post type" }), _jsx(Select, { value: postType, label: "Post type", onChange: (e) => setPostType(e.target.value), children: postTypeOpts.map((opt) => (_jsx(MenuItem, { value: opt.value, children: opt.label }, opt.value))) })] }), categoryOptions.length > 0 && (_jsxs(FormControl, { size: "small", sx: { minWidth: 150 }, children: [_jsx(InputLabel, { children: "Category" }), _jsx(Select, { value: selectedCategory, label: "Category", onChange: (e) => {
+                                                                                    handleCategoryChange(String(e.target.value || ""));
+                                                                                }, children: categoryOptions.map((opt) => (_jsx(MenuItem, { value: opt.value, children: opt.label }, opt.value))) })] })), devMode && contentType === "html" && (_jsx(Tooltip, { title: "Dev only \u2014 switch WYSIWYG editor", placement: "top-end", children: _jsxs(FormControl, { size: "small", sx: {
                                                                                 minWidth: 105,
                                                                                 "& .MuiOutlinedInput-notchedOutline": {
                                                                                     borderColor: "warning.main",
@@ -1312,7 +1540,27 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                 }, children: _jsx(Paper, { sx: { p: 3 }, children: _jsx(Typography, { children: "Loading..." }) }) })), _jsx(CmsConflictDialog, { open: conflictOpen, onCancel: () => setConflictOpen(false), onReload: () => {
                     setConflictOpen(false);
                     void load();
-                }, onOverwrite: handleConflictOverwrite }), _jsxs(Dialog, { open: !!pendingContentType, onClose: () => setPendingContentType(null), children: [_jsx(DialogTitle, { children: "Change content type?" }), _jsx(DialogContent, { children: _jsx(DialogContentText, { children: "The editor already has content. Choosing the wrong content type may affect how it is displayed or cause formatting issues." }) }), _jsxs(DialogActions, { children: [_jsx(Button, { onClick: () => setPendingContentType(null), color: "inherit", children: "Cancel" }), _jsx(Button, { variant: "contained", onClick: () => {
+                }, onOverwrite: handleConflictOverwrite }), transferUi?.renderImportDialog?.({
+                open: transferImportOpen,
+                busy: transferBusy,
+                defaultPackageText: transferPackageText,
+                error: transferError,
+                onClose: handleCloseTransferImport,
+                onInspectPackageText: (packageText) => void handleInspectTransferPackageText(packageText),
+                onInspectFileText: (packageText) => void handleInspectTransferPackageText(packageText),
+            }), transferUi?.renderInspectDialog?.({
+                open: transferInspectOpen,
+                busy: transferBusy,
+                error: transferError,
+                summary: transferInspectResult?.packageSummary ?? null,
+                entryConflict: transferInspectResult?.entryConflict ?? null,
+                assetConflicts: transferInspectResult?.assetConflicts ?? [],
+                publicEligibility: transferInspectResult?.publicEligibility ?? null,
+                validationErrors: transferInspectResult?.validationErrors ?? [],
+                warnings: transferInspectResult?.warnings ?? [],
+                onClose: handleCloseTransferInspect,
+                onApply: (request) => void handleApplyTransferPackage(request),
+            }), _jsxs(Dialog, { open: !!pendingContentType, onClose: () => setPendingContentType(null), children: [_jsx(DialogTitle, { children: "Change content type?" }), _jsx(DialogContent, { children: _jsx(DialogContentText, { children: "The editor already has content. Choosing the wrong content type may affect how it is displayed or cause formatting issues." }) }), _jsxs(DialogActions, { children: [_jsx(Button, { onClick: () => setPendingContentType(null), color: "inherit", children: "Cancel" }), _jsx(Button, { variant: "contained", onClick: () => {
                                     if (pendingContentType) {
                                         setContentType(pendingContentType);
                                     }

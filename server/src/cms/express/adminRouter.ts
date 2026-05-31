@@ -29,6 +29,11 @@ import {
 import { getSingleParam } from "../../express/params.js";
 import type { CmsServiceCore } from "../CmsServiceCore.js";
 import type { CmsActorContext } from "../authz.js";
+import {
+  buildCmsTransferFilename,
+  stringifyCmsTransferPackage,
+  type CmsTransferPackage,
+} from "./transferPackage.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -68,6 +73,30 @@ export interface CmsAdminRouterConfig {
 
   /** Max allowed body size in bytes.  Default: 1_048_576 (1 MB). */
   bodyLimitBytes?: number;
+
+  /** Optional reusable CMS transfer handlers (export / inspect / apply). */
+  transfer?: {
+    bodyLimitBytes?: number;
+    exportPackage: (args: {
+      uid: string;
+      includeAssets: boolean;
+      actor: CmsActorContext;
+      req: Request;
+    }) => Promise<CmsTransferPackage>;
+    inspectPackage: (args: {
+      packageText: string;
+      actor: CmsActorContext;
+      req: Request;
+    }) => Promise<Record<string, unknown>>;
+    applyPackage: (args: {
+      packageText: string;
+      packageValue: unknown;
+      entryResolution: unknown;
+      assetResolutions: unknown;
+      actor: CmsActorContext;
+      req: Request;
+    }) => Promise<Record<string, unknown>>;
+  };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -110,6 +139,36 @@ const parseBoolQuery = (val: any): boolean | undefined => {
   return undefined;
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+};
+
+const extractPackageText = (req: Request): string | null => {
+  if (typeof req.body?.packageText === "string") {
+    const trimmed = req.body.packageText.trim();
+    return trimmed ? trimmed : null;
+  }
+
+  if (isRecord(req.body) && req.body.package !== undefined) {
+    return JSON.stringify(req.body.package);
+  }
+
+  if (typeof req.body === "string") {
+    const trimmed = req.body.trim();
+    return trimmed ? trimmed : null;
+  }
+
+  return null;
+};
+
+const isTransferRoutePath = (path: string): boolean => {
+  return (
+    path === "/transfer-package/inspect" ||
+    path === "/transfer-package/apply" ||
+    /\/[^/]+\/transfer-package$/.test(path)
+  );
+};
+
 // ─── Factory ──────────────────────────────────────────────────────────────
 
 export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
@@ -119,6 +178,7 @@ export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
     onAfterWrite,
     resolveUserEmails,
     bodyLimitBytes = 1_048_576,
+    transfer,
   } = cfg;
   const router = Router();
 
@@ -128,20 +188,24 @@ export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
       return next();
     }
 
+    const isTransferRoute = isTransferRoutePath(req.path);
+    const effectiveBodyLimitBytes = isTransferRoute
+      ? transfer?.bodyLimitBytes ?? bodyLimitBytes
+      : bodyLimitBytes;
+    const bodyTooLargeMessage = isTransferRoute
+      ? "Transfer package request body too large. Try exporting without embedded assets or increase the transfer body limit."
+      : "Request body too large";
+
     const cl = parseInt(req.headers["content-length"] || "0", 10);
-    if (cl > bodyLimitBytes) {
-      res
-        .status(413)
-        .json({ success: false, message: "Request body too large" });
+    if (cl > effectiveBodyLimitBytes) {
+      res.status(413).json({ success: false, message: bodyTooLargeMessage });
       return;
     }
 
     try {
       const len = Buffer.byteLength(JSON.stringify(req.body ?? ""), "utf8");
-      if (len > bodyLimitBytes) {
-        res
-          .status(413)
-          .json({ success: false, message: "Request body too large" });
+      if (len > effectiveBodyLimitBytes) {
+        res.status(413).json({ success: false, message: bodyTooLargeMessage });
         return;
       }
     } catch {
@@ -150,7 +214,136 @@ export function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router {
     }
 
     next();
+
   });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  //  TRANSFER EXPORT   GET /:uid/transfer-package
+  // ═══════════════════════════════════════════════════════════════════════
+  router.get(
+    "/:uid/transfer-package",
+    authz.requireAuthor,
+    async (req: Request, res: Response) => {
+      if (!transfer?.exportPackage) {
+        res
+          .status(404)
+          .json({ success: false, message: "CMS transfer is not configured" });
+        return;
+      }
+
+      try {
+        const uid = getSingleParam(req.params.uid);
+        if (!uid) {
+          res.status(400).json({ success: false, message: "Missing uid" });
+          return;
+        }
+
+        const actor = authz.getActorContext(req);
+        const pkg = await transfer.exportPackage({
+          uid,
+          includeAssets: parseBoolQuery(req.query.includeAssets) !== false,
+          actor,
+          req,
+        });
+
+        if (parseBoolQuery(req.query.download)) {
+          const fileName = buildCmsTransferFilename(pkg);
+          res.setHeader("Content-Type", "application/json; charset=utf-8");
+          res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="${fileName}"`,
+          );
+          res.status(200).send(stringifyCmsTransferPackage(pkg));
+          return;
+        }
+
+        ok(res, { package: pkg });
+      } catch (err) {
+        sendCmsError(res, err);
+      }
+    },
+  );
+
+  // ═══════════════════════════════════════════════════════════════════════
+  //  TRANSFER INSPECT   POST /transfer-package/inspect
+  // ═══════════════════════════════════════════════════════════════════════
+  router.post(
+    "/transfer-package/inspect",
+    authz.requireAuthor,
+    async (req: Request, res: Response) => {
+      if (!transfer?.inspectPackage) {
+        res
+          .status(404)
+          .json({ success: false, message: "CMS transfer is not configured" });
+        return;
+      }
+
+      try {
+        const packageText = extractPackageText(req);
+        if (!packageText) {
+          res.status(400).json({
+            success: false,
+            message: "Transfer package JSON is required",
+          });
+          return;
+        }
+
+        const actor = authz.getActorContext(req);
+        const result = await transfer.inspectPackage({
+          packageText,
+          actor,
+          req,
+        });
+        ok(res, result);
+      } catch (err) {
+        sendCmsError(res, err);
+      }
+    },
+  );
+
+  // ═══════════════════════════════════════════════════════════════════════
+  //  TRANSFER APPLY   POST /transfer-package/apply
+  // ═══════════════════════════════════════════════════════════════════════
+  router.post(
+    "/transfer-package/apply",
+    authz.requireAuthor,
+    async (req: Request, res: Response) => {
+      if (!transfer?.applyPackage) {
+        res
+          .status(404)
+          .json({ success: false, message: "CMS transfer is not configured" });
+        return;
+      }
+
+      try {
+        const packageText = extractPackageText(req);
+        if (!packageText) {
+          res.status(400).json({
+            success: false,
+            message: "Transfer package JSON is required",
+          });
+          return;
+        }
+
+        const actor = authz.getActorContext(req);
+        const result = await transfer.applyPackage({
+          packageText,
+          packageValue: isRecord(req.body) ? req.body.package : undefined,
+          entryResolution: isRecord(req.body)
+            ? req.body.entryResolution
+            : undefined,
+          assetResolutions: isRecord(req.body)
+            ? req.body.assetResolutions
+            : undefined,
+          actor,
+          req,
+        });
+        ok(res, result);
+      } catch (err) {
+        sendCmsError(res, err);
+      }
+    },
+  );
 
   // ── After-write helper ────────────────────────────────────────────────
   const fireAfterWrite = async (

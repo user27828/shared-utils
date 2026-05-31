@@ -19,6 +19,7 @@ import { Router } from "express";
 import type { Request, Response, NextFunction } from "express";
 import type { CmsServiceCore } from "../CmsServiceCore.js";
 import type { CmsActorContext } from "../authz.js";
+import { type CmsTransferPackage } from "./transferPackage.js";
 export interface CmsAdminRouterConfig {
     /** CmsServiceCore instance. */
     service: CmsServiceCore;
@@ -51,6 +52,29 @@ export interface CmsAdminRouterConfig {
     resolveUserEmails?: (uuids: string[]) => Promise<Map<string, string>>;
     /** Max allowed body size in bytes.  Default: 1_048_576 (1 MB). */
     bodyLimitBytes?: number;
+    /** Optional reusable CMS transfer handlers (export / inspect / apply). */
+    transfer?: {
+        bodyLimitBytes?: number;
+        exportPackage: (args: {
+            uid: string;
+            includeAssets: boolean;
+            actor: CmsActorContext;
+            req: Request;
+        }) => Promise<CmsTransferPackage>;
+        inspectPackage: (args: {
+            packageText: string;
+            actor: CmsActorContext;
+            req: Request;
+        }) => Promise<Record<string, unknown>>;
+        applyPackage: (args: {
+            packageText: string;
+            packageValue: unknown;
+            entryResolution: unknown;
+            assetResolutions: unknown;
+            actor: CmsActorContext;
+            req: Request;
+        }) => Promise<Record<string, unknown>>;
+    };
 }
 export declare function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router;
 //# sourceMappingURL=adminRouter.d.ts.map

@@ -7,17 +7,23 @@
  * The host app mounts this as a route component and provides the
  * CmsAdminUiConfig for API, navigation, and toast integration.
  */
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useDebouncedValue } from "../../helpers/debounce.js";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import ButtonGroup from "@mui/material/ButtonGroup";
 import Checkbox from "@mui/material/Checkbox";
 import Chip from "@mui/material/Chip";
+import ClickAwayListener from "@mui/material/ClickAwayListener";
 import Container from "@mui/material/Container";
+import Grow from "@mui/material/Grow";
 import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import LinearProgress from "@mui/material/LinearProgress";
+import MenuItem from "@mui/material/MenuItem";
+import MenuList from "@mui/material/MenuList";
 import Paper from "@mui/material/Paper";
+import Popper from "@mui/material/Popper";
 import Stack from "@mui/material/Stack";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
@@ -27,12 +33,13 @@ import Typography from "@mui/material/Typography";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import RestoreIcon from "@mui/icons-material/Restore";
 
 import type { CmsHeadRow } from "../../../../utils/src/cms/types.js";
 import { CmsClient } from "../CmsClient.js";
-import type { CmsApi } from "../CmsApi.js";
+import type { CmsApi, CmsTransferInspectResult } from "../CmsApi.js";
 import type { CmsAdminUiConfig } from "./CmsAdminUiConfig.js";
 import { defaultToast } from "./CmsAdminUiConfig.js";
 
@@ -83,6 +90,7 @@ const CmsListPage: React.FC<CmsListPageProps> = ({
   const api: CmsApi = config?.api ?? defaultApi;
   const toast = config?.toast ?? defaultToast;
   const nav = config?.navigation;
+  const transferUi = config?.transfer;
 
   // ── Tab state ─────────────────────────────────────────────────────────
   const [internalTab, setInternalTab] = useState<CmsTabKey>("all");
@@ -118,6 +126,21 @@ const CmsListPage: React.FC<CmsListPageProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedUids, setSelectedUids] = useState<Set<string>>(new Set());
+  const [newMenuOpen, setNewMenuOpen] = useState(false);
+  const [transferBusy, setTransferBusy] = useState(false);
+  const [transferError, setTransferError] = useState<string | null>(null);
+  const [transferImportOpen, setTransferImportOpen] = useState(false);
+  const [transferImportAutoOpenFilePicker, setTransferImportAutoOpenFilePicker] =
+    useState(false);
+  const [transferInspectOpen, setTransferInspectOpen] = useState(false);
+  const [transferPackageText, setTransferPackageText] = useState("");
+  const [transferInspectResult, setTransferInspectResult] =
+    useState<CmsTransferInspectResult | null>(null);
+  const newButtonGroupRef = useRef<HTMLDivElement | null>(null);
+
+  const hasTransferImport = Boolean(
+    transferUi?.renderImportDialog && transferUi?.renderInspectDialog,
+  );
 
   const statusFilter = useMemo(() => {
     if (tab === "draft") {
@@ -164,6 +187,127 @@ const CmsListPage: React.FC<CmsListPageProps> = ({
   useEffect(() => {
     void load();
   }, [load]);
+
+  const handleToggleNewMenu = useCallback(() => {
+    if (!hasTransferImport) {
+      return;
+    }
+
+    setNewMenuOpen((prev) => !prev);
+  }, [hasTransferImport]);
+
+  const handleCloseNewMenu = useCallback(() => {
+    setNewMenuOpen(false);
+  }, []);
+
+  const handleOpenTransferImport = useCallback(
+    (mode: "paste" | "upload") => {
+      handleCloseNewMenu();
+      setTransferError(null);
+      setTransferImportOpen(true);
+      setTransferImportAutoOpenFilePicker(mode === "upload");
+    },
+    [handleCloseNewMenu],
+  );
+
+  const handleCloseTransferImport = useCallback(() => {
+    if (transferBusy) {
+      return;
+    }
+
+    setTransferImportOpen(false);
+    setTransferImportAutoOpenFilePicker(false);
+    setTransferError(null);
+  }, [transferBusy]);
+
+  const handleCloseTransferInspect = useCallback(() => {
+    if (transferBusy) {
+      return;
+    }
+
+    setTransferInspectOpen(false);
+    setTransferError(null);
+  }, [transferBusy]);
+
+  const handleInspectTransferPackageText = useCallback(
+    async (packageText: string) => {
+      setTransferBusy(true);
+      setTransferError(null);
+
+      try {
+        const result = await api.adminInspectTransferPackage({
+          packageText,
+        });
+
+        setTransferPackageText(packageText);
+        setTransferInspectResult(result);
+        setTransferImportOpen(false);
+        setTransferImportAutoOpenFilePicker(false);
+        setTransferInspectOpen(true);
+        toast.success("Transfer package inspected");
+      } catch (err: any) {
+        const message = err?.message || "Failed to inspect transfer package";
+        setTransferError(message);
+        toast.error(message);
+      } finally {
+        setTransferBusy(false);
+      }
+    },
+    [api, toast],
+  );
+
+  const handleApplyTransferPackage = useCallback(
+    async (request: {
+      entryResolution: {
+        mode: "update_existing" | "create_copy";
+        slug?: string;
+      };
+      assetResolutions: Array<{
+        assetId: string;
+        mode:
+          | "reuse_existing_asset"
+          | "upload_packaged_asset"
+          | "rename_upload";
+      }>;
+    }) => {
+      if (!transferPackageText) {
+        setTransferError("No transfer package is loaded.");
+        return;
+      }
+
+      setTransferBusy(true);
+      setTransferError(null);
+
+      try {
+        const result = await api.adminApplyTransferPackage({
+          package: transferPackageText,
+          entryResolution: request.entryResolution,
+          assetResolutions: request.assetResolutions,
+        });
+
+        setTransferInspectOpen(false);
+        setTransferImportOpen(false);
+        setTransferImportAutoOpenFilePicker(false);
+        setTransferInspectResult(null);
+        setTransferPackageText("");
+        toast.success("Transfer package imported");
+
+        if (result.appliedUid && nav?.goToEdit) {
+          nav.goToEdit(result.appliedUid);
+          return;
+        }
+
+        await load();
+      } catch (err: any) {
+        const message = err?.message || "Failed to import transfer package";
+        setTransferError(message);
+        toast.error(message);
+      } finally {
+        setTransferBusy(false);
+      }
+    },
+    [api, load, nav, toast, transferPackageText],
+  );
 
   // ── Bulk operations ───────────────────────────────────────────────────
   const handleBulkRestore = async () => {
@@ -234,13 +378,69 @@ const CmsListPage: React.FC<CmsListPageProps> = ({
               <RefreshIcon />
             </IconButton>
           </Tooltip>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => nav?.goToCreate?.()}
-          >
-            New
-          </Button>
+          {hasTransferImport ? (
+            <>
+              <ButtonGroup
+                variant="contained"
+                ref={newButtonGroupRef}
+                aria-label="New CMS item actions"
+              >
+                <Button
+                  startIcon={<AddIcon />}
+                  onClick={() => nav?.goToCreate?.()}
+                >
+                  New
+                </Button>
+                <Button
+                  size="small"
+                  aria-label="Open new item import options"
+                  aria-controls={newMenuOpen ? "cms-new-import-menu" : undefined}
+                  aria-expanded={newMenuOpen ? "true" : undefined}
+                  aria-haspopup="menu"
+                  onClick={handleToggleNewMenu}
+                >
+                  <ArrowDropDownIcon />
+                </Button>
+              </ButtonGroup>
+              <Popper
+                open={newMenuOpen}
+                anchorEl={newButtonGroupRef.current}
+                placement="bottom-end"
+                transition
+                disablePortal
+                sx={{ zIndex: 1300 }}
+              >
+                {({ TransitionProps }) => (
+                  <Grow {...TransitionProps}>
+                    <Paper elevation={8} sx={{ mt: 0.5 }}>
+                      <ClickAwayListener onClickAway={handleCloseNewMenu}>
+                        <MenuList id="cms-new-import-menu" autoFocusItem={newMenuOpen}>
+                          <MenuItem
+                            onClick={() => handleOpenTransferImport("paste")}
+                          >
+                            Import: Paste JSON
+                          </MenuItem>
+                          <MenuItem
+                            onClick={() => handleOpenTransferImport("upload")}
+                          >
+                            Import: Upload JSON File
+                          </MenuItem>
+                        </MenuList>
+                      </ClickAwayListener>
+                    </Paper>
+                  </Grow>
+                )}
+              </Popper>
+            </>
+          ) : (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => nav?.goToCreate?.()}
+            >
+              New
+            </Button>
+          )}
         </Stack>
       </Stack>
 
@@ -431,6 +631,33 @@ const CmsListPage: React.FC<CmsListPageProps> = ({
       >
         Showing {items.length} of {totalCount} item(s)
       </Typography>
+
+      {transferUi?.renderImportDialog?.({
+        open: transferImportOpen,
+        busy: transferBusy,
+        autoOpenFilePicker: transferImportAutoOpenFilePicker,
+        defaultPackageText: transferPackageText,
+        error: transferError,
+        onClose: handleCloseTransferImport,
+        onInspectPackageText: handleInspectTransferPackageText,
+        onInspectFileText: (packageText: string) => {
+          return handleInspectTransferPackageText(packageText);
+        },
+      })}
+
+      {transferUi?.renderInspectDialog?.({
+        open: transferInspectOpen,
+        busy: transferBusy,
+        error: transferError,
+        summary: transferInspectResult?.packageSummary ?? null,
+        entryConflict: transferInspectResult?.entryConflict ?? null,
+        assetConflicts: transferInspectResult?.assetConflicts ?? [],
+        publicEligibility: transferInspectResult?.publicEligibility ?? null,
+        validationErrors: transferInspectResult?.validationErrors ?? [],
+        warnings: transferInspectResult?.warnings ?? [],
+        onClose: handleCloseTransferInspect,
+        onApply: handleApplyTransferPackage,
+      })}
     </Container>
   );
 };

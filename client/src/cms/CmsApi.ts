@@ -29,6 +29,136 @@ export type CmsAdminListParams = {
   includeTrash?: boolean;
 };
 
+export type CmsTransferAssetRole =
+  | "body_content_reference"
+  | "featured_image"
+  | "og_image"
+  | "attachment";
+
+export interface CmsTransferReferenceLocation {
+  kind: CmsTransferAssetRole;
+  path: string;
+  originalValue?: string | null;
+}
+
+export interface CmsTransferPackagedAsset {
+  assetId: string;
+  role: CmsTransferAssetRole;
+  targetFolderPath: string;
+  targetFileName: string;
+  mimeType: string;
+  byteLength: number;
+  sha256: string;
+  bytesBase64: string;
+  referenceLocations: CmsTransferReferenceLocation[];
+  sourceFileUid?: string | null;
+}
+
+export interface CmsTransferPortableEntry {
+  title: string;
+  slug: string;
+  contentType: string;
+  content: string;
+  tags: string[];
+  options: unknown;
+  metadata: unknown;
+  publishedAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface CmsTransferPackage {
+  schemaVersion: string;
+  exportedAt: string;
+  sourceEnvironment: string | null;
+  sourceCmsUid: string;
+  postType: string;
+  locale: string;
+  cmsEntry: CmsTransferPortableEntry;
+  assets: CmsTransferPackagedAsset[];
+  hostExtensions: Record<string, unknown>;
+  warnings: string[];
+}
+
+export type CmsTransferEntryResolutionMode =
+  | "update_existing"
+  | "create_copy";
+
+export type CmsTransferAssetResolutionMode =
+  | "reuse_existing_asset"
+  | "upload_packaged_asset"
+  | "rename_upload";
+
+export interface CmsTransferEntryResolution {
+  mode: CmsTransferEntryResolutionMode;
+  slug?: string;
+}
+
+export interface CmsTransferAssetResolution {
+  assetId: string;
+  mode: CmsTransferAssetResolutionMode;
+}
+
+export interface CmsTransferPackageSummary {
+  schemaVersion?: string;
+  sourceCmsUid?: string;
+  postType: string;
+  locale: string;
+  slug: string;
+  assetCount?: number;
+  warningCount?: number;
+}
+
+export interface CmsTransferEntryConflict {
+  kind: "entry_slug_conflict";
+  existingUid: string;
+  existingSlug?: string;
+  allowedResolutions: CmsTransferEntryResolutionMode[];
+  suggestedCopySlug: string | null;
+}
+
+export interface CmsTransferAssetConflict {
+  kind?: string;
+  assetId: string;
+  targetFolderPath: string;
+  targetFileName: string;
+  sameContent: boolean;
+  blocking: boolean;
+  allowedResolutions: CmsTransferAssetResolutionMode[];
+  existingFileUid?: string | null;
+  existingSha256?: string | null;
+}
+
+export interface CmsTransferPublicEligibility {
+  eligible: boolean;
+  warnings: string[];
+  reason?: string | null;
+  routeKey?: string | null;
+}
+
+export interface CmsTransferInspectResult {
+  packageSummary: CmsTransferPackageSummary;
+  entryConflict: CmsTransferEntryConflict | null;
+  assetConflicts: CmsTransferAssetConflict[];
+  publicEligibility?: CmsTransferPublicEligibility | null;
+  validationErrors: string[];
+  warnings: string[];
+}
+
+export interface CmsTransferApplyResult {
+  row: CmsHeadRow;
+  appliedUid: string;
+  entryResolution?: Record<string, unknown> | null;
+  assetResolutions?: unknown[];
+  publicEligibility?: CmsTransferPublicEligibility | null;
+  warnings?: string[];
+}
+
+export interface CmsTransferDownloadResult {
+  fileName: string;
+  packageText: string;
+  package: CmsTransferPackage | null;
+}
+
 export interface CmsApi {
   // ── Admin CRUD ──────────────────────────────────────────────────────
 
@@ -106,6 +236,25 @@ export interface CmsApi {
     uid: string,
     collaborators: Array<{ user_uid: string; role: string }>,
   ): Promise<CmsCollaboratorRow[]>;
+
+  // ── Admin transfer ───────────────────────────────────────────────────
+
+  adminGetTransferPackage(input: {
+    uid: string;
+    includeAssets?: boolean;
+  }): Promise<CmsTransferPackage>;
+  adminDownloadTransferPackage(input: {
+    uid: string;
+    includeAssets?: boolean;
+  }): Promise<CmsTransferDownloadResult>;
+  adminInspectTransferPackage(input: {
+    packageText: string;
+  }): Promise<CmsTransferInspectResult>;
+  adminApplyTransferPackage(input: {
+    package: CmsTransferPackage | string;
+    entryResolution?: CmsTransferEntryResolution | null;
+    assetResolutions?: CmsTransferAssetResolution[];
+  }): Promise<CmsTransferApplyResult>;
 
   // ── Public ──────────────────────────────────────────────────────────
 

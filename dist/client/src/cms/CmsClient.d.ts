@@ -6,7 +6,7 @@
  * history, lock/unlock, and collaborators.
  */
 import type { CmsHeadRow, CmsHistoryRow, CmsListResponse, CmsCreateRequest, CmsUpdateRequest, CmsCollaboratorRow, CmsMetadata } from "../../../utils/src/cms/types.js";
-import type { CmsApi, CmsAdminListParams, CmsPublicGetResult, CmsPublicUnlockResult } from "./CmsApi.js";
+import type { CmsApi, CmsAdminListParams, CmsTransferApplyResult, CmsTransferDownloadResult, CmsTransferInspectResult, CmsTransferPackage, CmsPublicGetResult, CmsPublicUnlockResult } from "./CmsApi.js";
 export declare class CmsClientError extends Error {
     readonly statusCode?: number;
     readonly code?: string;
@@ -93,6 +93,28 @@ export declare class CmsClient implements CmsApi {
         user_uid: string;
         role: string;
     }>): Promise<CmsCollaboratorRow[]>;
+    adminGetTransferPackage(input: {
+        uid: string;
+        includeAssets?: boolean;
+    }): Promise<CmsTransferPackage>;
+    adminDownloadTransferPackage(input: {
+        uid: string;
+        includeAssets?: boolean;
+    }): Promise<CmsTransferDownloadResult>;
+    adminInspectTransferPackage(input: {
+        packageText: string;
+    }): Promise<CmsTransferInspectResult>;
+    adminApplyTransferPackage(input: {
+        package: CmsTransferPackage | string;
+        entryResolution?: {
+            mode: "update_existing" | "create_copy";
+            slug?: string;
+        } | null;
+        assetResolutions?: Array<{
+            assetId: string;
+            mode: string;
+        }>;
+    }): Promise<CmsTransferApplyResult>;
     publicGet(params: {
         postType: string;
         locale: string;

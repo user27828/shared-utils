@@ -70,7 +70,7 @@ import type {
   CmsContentNote,
 } from "../../../../utils/src/cms/types.js";
 import { CmsClient } from "../CmsClient.js";
-import type { CmsApi } from "../CmsApi.js";
+import type { CmsApi, CmsTransferInspectResult } from "../CmsApi.js";
 import type {
   CmsAdminUiConfig,
   CmsEditorPreference,
@@ -103,6 +103,23 @@ const safeJsonParse = (input: string): { value: any; error: string | null } => {
   } catch (err: any) {
     return { value: null, error: err?.message || "Invalid JSON" };
   }
+};
+
+const CMS_UNCATEGORIZED_CATEGORY = "uncategorized";
+
+const firstNonEmptyString = (...values: unknown[]): string | null => {
+  for (const value of values) {
+    if (typeof value !== "string") {
+      continue;
+    }
+
+    const trimmed = value.trim();
+    if (trimmed) {
+      return trimmed;
+    }
+  }
+
+  return null;
 };
 
 const slugify = (str: string): string =>
@@ -155,6 +172,28 @@ const formatIsoDateTime = (iso: unknown): string | null => {
   }).format(date);
 };
 
+const downloadTextFile = (
+  fileName: string,
+  text: string,
+  mimeType: string = "application/json",
+): void => {
+  if (typeof document === "undefined" || typeof URL === "undefined") {
+    return;
+  }
+
+  const blob = new Blob([text], {
+    type: `${mimeType};charset=utf-8`,
+  });
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(objectUrl);
+};
+
 // ─── Types ────────────────────────────────────────────────────────────────
 
 type ConflictKind =
@@ -195,6 +234,7 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   const api: CmsApi = config?.api ?? defaultApi;
   const toast = config?.toast ?? defaultToast;
   const nav = config?.navigation;
+  const transferUi = config?.transfer;
 
   // Stable refs so callbacks never depend on api/toast/nav identity.
   // This prevents parent re-renders (e.g. auth context refresh) from
@@ -205,6 +245,9 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   toastRef.current = toast;
   const navRef = useRef(nav);
   navRef.current = nav;
+  const loadRef = useRef<(opts?: { silent?: boolean }) => Promise<void>>(
+    async () => undefined,
+  );
   const localeOptions = useMemo(
     () => config?.localeOptions ?? [{ label: "English", value: "en" }],
     [config?.localeOptions],
@@ -265,6 +308,13 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
   const [loadedRevisionId, setLoadedRevisionId] = useState<number | null>(null);
   const [pendingContentType, setPendingContentType] =
     useState<CmsEditorContentType | null>(null);
+  const [transferBusy, setTransferBusy] = useState(false);
+  const [transferError, setTransferError] = useState<string | null>(null);
+  const [transferImportOpen, setTransferImportOpen] = useState(false);
+  const [transferInspectOpen, setTransferInspectOpen] = useState(false);
+  const [transferPackageText, setTransferPackageText] = useState("");
+  const [transferInspectResult, setTransferInspectResult] =
+    useState<CmsTransferInspectResult | null>(null);
 
   // ── Metadata / version-notes state ────────────────────────────────────
   const [metadata, setMetadata] = useState<CmsMetadata>({});
@@ -344,6 +394,47 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
       ],
     [config?.postTypeOptions],
   );
+
+  const categoryOptions = useMemo(() => {
+    return config?.categoryOptionsByPostType?.[postType] ?? [];
+  }, [config?.categoryOptionsByPostType, postType]);
+
+  const selectedCategory = useMemo(() => {
+    const optionsValue = optionsParse.value;
+    const optionsRecord =
+      optionsValue && typeof optionsValue === "object" && !Array.isArray(optionsValue)
+        ? (optionsValue as Record<string, unknown>)
+        : {};
+    const publicContent =
+      optionsRecord.publicContent &&
+      typeof optionsRecord.publicContent === "object" &&
+      !Array.isArray(optionsRecord.publicContent)
+        ? (optionsRecord.publicContent as Record<string, unknown>)
+        : {};
+    const publicEntry =
+      optionsRecord.publicContentEntry &&
+      typeof optionsRecord.publicContentEntry === "object" &&
+      !Array.isArray(optionsRecord.publicContentEntry)
+        ? (optionsRecord.publicContentEntry as Record<string, unknown>)
+        : {};
+
+    const value = firstNonEmptyString(
+      optionsRecord.category,
+      optionsRecord.public_category,
+      publicContent.category,
+      publicEntry.category,
+    );
+
+    if (value) {
+      return value;
+    }
+
+    if (postType === "blog" || postType === "faq") {
+      return CMS_UNCATEGORIZED_CATEGORY;
+    }
+
+    return "";
+  }, [optionsParse.value, postType]);
 
   const hasVisualMode = contentType === "html" || contentType === "markdown";
   const effectiveContentType: CmsEditorContentType =
@@ -536,6 +627,180 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     announceErr("Copy failed");
   }, [announce, announceErr, copyToClipboard, slugPath]);
 
+  const handleOpenTransferImport = useCallback(() => {
+    setTransferError(null);
+    setTransferImportOpen(true);
+  }, []);
+
+  const handleCloseTransferImport = useCallback(() => {
+    if (transferBusy) {
+      return;
+    }
+
+    setTransferImportOpen(false);
+    setTransferError(null);
+  }, [transferBusy]);
+
+  const handleCloseTransferInspect = useCallback(() => {
+    if (transferBusy) {
+      return;
+    }
+
+    setTransferInspectOpen(false);
+    setTransferError(null);
+  }, [transferBusy]);
+
+  const handleTransferExportCopy = useCallback(async () => {
+    if (isNew || !propUid) {
+      toastRef.current.info("Save the item before exporting it.");
+      return;
+    }
+
+    setTransferBusy(true);
+    setTransferError(null);
+
+    try {
+      const pkg = await apiRef.current.adminGetTransferPackage({
+        uid: propUid,
+        includeAssets: transferUi?.includeAssetsByDefault !== false,
+      });
+      const packageText = `${JSON.stringify(pkg, null, 2)}\n`;
+      const copied = await copyToClipboard(packageText);
+
+      if (!copied) {
+        throw new Error("Unable to copy export JSON to the clipboard.");
+      }
+
+      toastRef.current.success("Export package copied");
+      announce("Export package copied");
+    } catch (err: any) {
+      const message = err?.message || "Failed to copy export package";
+      setTransferError(message);
+      toastRef.current.error(message);
+      announceErr(message);
+    } finally {
+      setTransferBusy(false);
+    }
+  }, [
+    announce,
+    announceErr,
+    copyToClipboard,
+    isNew,
+    propUid,
+    transferUi?.includeAssetsByDefault,
+  ]);
+
+  const handleTransferExportDownload = useCallback(async () => {
+    if (isNew || !propUid) {
+      toastRef.current.info("Save the item before exporting it.");
+      return;
+    }
+
+    setTransferBusy(true);
+    setTransferError(null);
+
+    try {
+      const download = await apiRef.current.adminDownloadTransferPackage({
+        uid: propUid,
+        includeAssets: transferUi?.includeAssetsByDefault !== false,
+      });
+
+      downloadTextFile(download.fileName, download.packageText);
+      toastRef.current.success("Export package downloaded");
+      announce("Export package downloaded");
+    } catch (err: any) {
+      const message = err?.message || "Failed to download export package";
+      setTransferError(message);
+      toastRef.current.error(message);
+      announceErr(message);
+    } finally {
+      setTransferBusy(false);
+    }
+  }, [announce, announceErr, isNew, propUid, transferUi?.includeAssetsByDefault]);
+
+  const handleInspectTransferPackageText = useCallback(
+    async (packageText: string) => {
+      setTransferBusy(true);
+      setTransferError(null);
+
+      try {
+        const result = await apiRef.current.adminInspectTransferPackage({
+          packageText,
+        });
+
+        setTransferPackageText(packageText);
+        setTransferInspectResult(result);
+        setTransferImportOpen(false);
+        setTransferInspectOpen(true);
+        toastRef.current.success("Transfer package inspected");
+      } catch (err: any) {
+        const message = err?.message || "Failed to inspect transfer package";
+        setTransferError(message);
+        toastRef.current.error(message);
+      } finally {
+        setTransferBusy(false);
+      }
+    },
+    [],
+  );
+
+  const handleApplyTransferPackage = useCallback(
+    async (request: {
+      entryResolution: {
+        mode: "update_existing" | "create_copy";
+        slug?: string;
+      };
+      assetResolutions: Array<{
+        assetId: string;
+        mode:
+          | "reuse_existing_asset"
+          | "upload_packaged_asset"
+          | "rename_upload";
+      }>;
+    }) => {
+      if (!transferPackageText) {
+        setTransferError("No transfer package is loaded.");
+        return;
+      }
+
+      setTransferBusy(true);
+      setTransferError(null);
+
+      try {
+        const result = await apiRef.current.adminApplyTransferPackage({
+          package: transferPackageText,
+          entryResolution: request.entryResolution,
+          assetResolutions: request.assetResolutions,
+        });
+
+        setTransferInspectOpen(false);
+        setTransferImportOpen(false);
+        setTransferInspectResult(null);
+        setTransferPackageText("");
+        toastRef.current.success("Transfer package imported");
+        announce("Transfer package imported");
+
+        const nextUid = result.appliedUid || (result.row as any)?.uid;
+        if (nextUid && navRef.current?.goToEdit) {
+          navRef.current.goToEdit(nextUid);
+          return;
+        }
+
+        if (nextUid && nextUid === propUid) {
+          await loadRef.current({ silent: true });
+        }
+      } catch (err: any) {
+        const message = err?.message || "Failed to import transfer package";
+        setTransferError(message);
+        toastRef.current.error(message);
+        announceErr(message);
+      } finally {
+        setTransferBusy(false);
+      }
+    },
+    [announce, announceErr, propUid, transferPackageText],
+  );
+
   const handleStartSlugEdit = useCallback(() => {
     slugBeforeEditRef.current = slug;
     setIsSlugEditing(true);
@@ -626,6 +891,8 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     },
     [propUid, isNew, defaultLocale, defaultPostType],
   );
+
+  loadRef.current = load;
 
   useEffect(() => {
     void load();
@@ -1327,6 +1594,21 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
     setOptionsJson(JSON.stringify(clone, null, 2));
   };
 
+  const handleCategoryChange = useCallback(
+    (nextCategory: string) => {
+      const normalized = nextCategory.trim();
+      updateOptionsJson((o) => {
+        if (!normalized) {
+          delete o.category;
+          return;
+        }
+
+        o.category = normalized;
+      });
+    },
+    [updateOptionsJson],
+  );
+
   // ── Featured image helpers ────────────────────────────────────────────
   const featuredImageUid = optionsParse.value?.featured_image_file_uid;
   const ogImageUid = optionsParse.value?.seo?.og_image_file_uid;
@@ -1571,6 +1853,17 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                       Preview
                     </Button>
                   )}
+                  {transferUi?.renderActions?.({
+                    disabled: isLoading || isSaving,
+                    busy: transferBusy,
+                    onExportCopy: !isNew
+                      ? handleTransferExportCopy
+                      : undefined,
+                    onExportDownload: !isNew
+                      ? handleTransferExportDownload
+                      : undefined,
+                    onImport: handleOpenTransferImport,
+                  })}
                   {/* Split Save / Save Version button */}
                   <ButtonGroup
                     variant="contained"
@@ -1812,6 +2105,25 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                         ))}
                       </Select>
                     </FormControl>
+
+                    {categoryOptions.length > 0 && (
+                      <FormControl size="small" sx={{ minWidth: 150 }}>
+                        <InputLabel>Category</InputLabel>
+                        <Select
+                          value={selectedCategory}
+                          label="Category"
+                          onChange={(e) => {
+                            handleCategoryChange(String(e.target.value || ""));
+                          }}
+                        >
+                          {categoryOptions.map((opt) => (
+                            <MenuItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    )}
 
                     {/* Dev-only WYSIWYG editor switcher */}
                     {devMode && contentType === "html" && (
@@ -2391,6 +2703,30 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
         }}
         onOverwrite={handleConflictOverwrite}
       />
+      {transferUi?.renderImportDialog?.({
+        open: transferImportOpen,
+        busy: transferBusy,
+        defaultPackageText: transferPackageText,
+        error: transferError,
+        onClose: handleCloseTransferImport,
+        onInspectPackageText: (packageText) =>
+          void handleInspectTransferPackageText(packageText),
+        onInspectFileText: (packageText) =>
+          void handleInspectTransferPackageText(packageText),
+      })}
+      {transferUi?.renderInspectDialog?.({
+        open: transferInspectOpen,
+        busy: transferBusy,
+        error: transferError,
+        summary: transferInspectResult?.packageSummary ?? null,
+        entryConflict: transferInspectResult?.entryConflict ?? null,
+        assetConflicts: transferInspectResult?.assetConflicts ?? [],
+        publicEligibility: transferInspectResult?.publicEligibility ?? null,
+        validationErrors: transferInspectResult?.validationErrors ?? [],
+        warnings: transferInspectResult?.warnings ?? [],
+        onClose: handleCloseTransferInspect,
+        onApply: (request) => void handleApplyTransferPackage(request),
+      })}
       {/* Content type change confirmation */}
       <Dialog
         open={!!pendingContentType}

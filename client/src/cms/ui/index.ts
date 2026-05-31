@@ -39,11 +39,16 @@ export type { CmsContentNotesProps } from "./CmsContentNotes.js";
 
 export type {
   CmsAdminUiConfig,
+  CmsCategoryOption,
   CmsEditorPreference,
   CmsImageUploadContext,
   CmsImageUploadHandler,
   CmsImageUploadSource,
   CmsMediaPickerProps,
+  CmsTransferActionRenderProps,
+  CmsTransferImportDialogRenderProps,
+  CmsTransferInspectDialogRenderProps,
+  CmsTransferUiConfig,
   CmsToastAdapter,
   CmsNavigationAdapter,
 } from "./CmsAdminUiConfig.js";

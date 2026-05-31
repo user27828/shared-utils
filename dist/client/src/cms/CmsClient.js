@@ -16,6 +16,13 @@ const withParams = (base, params) => {
     }
     return `${url.pathname}${url.search}`;
 };
+const parseContentDispositionFilename = (value) => {
+    if (!value) {
+        return null;
+    }
+    const match = value.match(/filename="?([^";]+)"?/i);
+    return match?.[1]?.trim() || null;
+};
 // ─── Client ───────────────────────────────────────────────────────────────
 export class CmsClient {
     constructor(config) {
@@ -156,6 +163,61 @@ export class CmsClient {
         return this.adminRequest(`/${encodeURIComponent(uid)}/collaborators`, {
             method: "PUT",
             body: JSON.stringify({ collaborators }),
+        });
+    }
+    async adminGetTransferPackage(input) {
+        const path = withParams(`/${encodeURIComponent(input.uid)}/transfer-package`, {
+            includeAssets: input.includeAssets === false ? 0 : 1,
+        });
+        const result = await this.adminRequest(path);
+        return result.package;
+    }
+    async adminDownloadTransferPackage(input) {
+        const path = withParams(`${this.adminBaseUrl}/${encodeURIComponent(input.uid)}/transfer-package`, {
+            includeAssets: input.includeAssets === false ? 0 : 1,
+            download: 1,
+        });
+        const resp = await this.fetchFn(path, {
+            credentials: "include",
+            headers: {
+                Accept: "application/json",
+            },
+        });
+        const packageText = await resp.text();
+        if (!resp.ok) {
+            throw new CmsClientError(packageText || resp.statusText, resp.status);
+        }
+        let parsedPackage = null;
+        try {
+            parsedPackage = packageText ? JSON.parse(packageText) : null;
+        }
+        catch {
+            parsedPackage = null;
+        }
+        return {
+            fileName: parseContentDispositionFilename(resp.headers.get("Content-Disposition")) ||
+                `${input.uid}.transfer.json`,
+            packageText,
+            package: parsedPackage,
+        };
+    }
+    async adminInspectTransferPackage(input) {
+        return this.adminRequest("/transfer-package/inspect", {
+            method: "POST",
+            body: JSON.stringify({ packageText: input.packageText }),
+        });
+    }
+    async adminApplyTransferPackage(input) {
+        const packageValue = typeof input.package === "string" ? undefined : input.package;
+        const packageText = typeof input.package === "string" ? input.package : undefined;
+        return this.adminRequest("/transfer-package/apply", {
+            method: "POST",
+            body: JSON.stringify({
+                package: packageValue,
+                packageText,
+                entryResolution: input.entryResolution || undefined,
+                assetResolutions: input.assetResolutions || [],
+            }),
         });
     }
     // ─── Public ─────────────────────────────────────────────────────────

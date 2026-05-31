@@ -301,9 +301,9 @@
     "yarn-upgrade-interactive": "./bin/package-upgrades.sh"
   },
   "devDependencies": {
-    "@babel/core": "^7.29.0",
-    "@babel/preset-env": "^7.29.5",
-    "@babel/preset-typescript": "^7.28.5",
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.29.7",
+    "@babel/preset-typescript": "^7.29.7",
     "@testing-library/jest-dom": "^6.9.1",
     "@types/jest": "^30.0.0",
     "@types/nanoid": "^3.0.0",
@@ -327,18 +327,18 @@
     "@emotion/styled": "11.14.1"
   },
   "dependencies": {
-    "@aws-sdk/client-sesv2": "^3.1053.0",
+    "@aws-sdk/client-sesv2": "^3.1054.0",
     "@tinymce/tinymce-react": "^6.3.0",
     "date-fns": "^4.3.0",
     "date-fns-tz": "^3.2.0",
-    "dompurify": "^3.4.5",
+    "dompurify": "^3.4.7",
     "dotenv": "^17.4.2",
     "dotenv-expand": "^13.0.0",
     "express": "^5.2.1",
     "lodash-es": "^4.18.1",
     "marked": "^18.0.4",
     "nanoid": "^5.1.11",
-    "nodemailer": "^8.0.8",
+    "nodemailer": "^8.0.9",
     "papaparse": "^5.5.3",
     "prismjs": "^1.30.0",
     "tinymce": "^8.5.1"

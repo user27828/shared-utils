@@ -5,6 +5,7 @@
  * The host provides media picker, navigation, and toast functionality.
  */
 import type { CmsApi } from "../CmsApi.js";
+import type { CmsTransferAssetConflict, CmsTransferAssetResolution, CmsTransferEntryConflict, CmsTransferEntryResolution, CmsTransferPackageSummary, CmsTransferPublicEligibility } from "../CmsApi.js";
 import type { FmApi } from "../../fm/FmApi.js";
 export interface CmsMediaPickerProps {
     open: boolean;
@@ -22,6 +23,10 @@ export interface CmsMediaPickerProps {
         /** MIME type of the selected file (e.g. "video/mp4", "image/png"). */
         mimeType?: string;
     }) => void;
+}
+export interface CmsCategoryOption {
+    value: string;
+    label: string;
 }
 export interface CmsToastAdapter {
     success: (message: string) => void;
@@ -43,6 +48,45 @@ export type CmsImageUploadContext = {
     source: CmsImageUploadSource;
 };
 export type CmsImageUploadHandler = (file: File, context?: CmsImageUploadContext) => Promise<string | null>;
+export interface CmsTransferActionRenderProps {
+    disabled?: boolean;
+    busy?: boolean;
+    onExportCopy?: () => void | Promise<void>;
+    onExportDownload?: () => void | Promise<void>;
+    onImport?: () => void;
+}
+export interface CmsTransferImportDialogRenderProps {
+    open: boolean;
+    busy?: boolean;
+    autoOpenFilePicker?: boolean;
+    defaultPackageText?: string;
+    error?: string | null;
+    onClose: () => void;
+    onInspectPackageText?: (packageText: string) => void | Promise<void>;
+    onInspectFileText?: (packageText: string, fileName: string) => void | Promise<void>;
+}
+export interface CmsTransferInspectDialogRenderProps {
+    open: boolean;
+    busy?: boolean;
+    error?: string | null;
+    summary?: CmsTransferPackageSummary | null;
+    entryConflict?: CmsTransferEntryConflict | null;
+    assetConflicts?: CmsTransferAssetConflict[];
+    publicEligibility?: CmsTransferPublicEligibility | null;
+    validationErrors?: string[];
+    warnings?: string[];
+    onClose: () => void;
+    onApply?: (request: {
+        entryResolution: CmsTransferEntryResolution;
+        assetResolutions: CmsTransferAssetResolution[];
+    }) => void | Promise<void>;
+}
+export interface CmsTransferUiConfig {
+    includeAssetsByDefault?: boolean;
+    renderActions?: (props: CmsTransferActionRenderProps) => React.ReactNode;
+    renderImportDialog?: (props: CmsTransferImportDialogRenderProps) => React.ReactNode;
+    renderInspectDialog?: (props: CmsTransferInspectDialogRenderProps) => React.ReactNode;
+}
 export interface CmsAdminUiConfig {
     /** CMS API implementation (defaults to CmsClient with default URLs). */
     api?: CmsApi;
@@ -58,6 +102,8 @@ export interface CmsAdminUiConfig {
         value: string;
         label: string;
     }>;
+    /** Optional category options by post type for the editor category selector. */
+    categoryOptionsByPostType?: Record<string, CmsCategoryOption[]>;
     /** Toast adapter for showing notifications (defaults to console). */
     toast?: CmsToastAdapter;
     /** Navigation adapter. */
@@ -112,6 +158,8 @@ export interface CmsAdminUiConfig {
      * is used automatically.
      */
     onUploadImage?: CmsImageUploadHandler;
+    /** Optional host-provided CMS transfer UI integrations. */
+    transfer?: CmsTransferUiConfig;
 }
 export declare const defaultToast: CmsToastAdapter;
 //# sourceMappingURL=CmsAdminUiConfig.d.ts.map

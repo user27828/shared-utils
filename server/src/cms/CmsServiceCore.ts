@@ -961,18 +961,28 @@ export class CmsServiceCore {
 
     // Stamp version meta
     if (meta.version && typeof meta.version === "object") {
+      const versionMeta = meta.version as Record<string, unknown>;
       meta.version = {
-        ...(meta.version as Record<string, unknown>),
-        user_uid: uid,
+        ...versionMeta,
+        ...(Object.prototype.hasOwnProperty.call(versionMeta, "user_uid")
+          ? {}
+          : { user_uid: uid }),
       };
     }
 
-    // Stamp notes entries that lack user_uid
+    // Stamp notes entries that do not define user_uid at all.
     if (Array.isArray(meta.notes)) {
       meta.notes = meta.notes.map((n: unknown) => {
-        if (n && typeof n === "object" && !(n as any).user_uid) {
-          return { ...(n as Record<string, unknown>), user_uid: uid };
+        if (n && typeof n === "object") {
+          const note = n as Record<string, unknown>;
+
+          if (!Object.prototype.hasOwnProperty.call(note, "user_uid")) {
+            return { ...note, user_uid: uid };
+          }
+
+          return { ...note };
         }
+
         return n;
       });
     }

@@ -18,6 +18,10 @@ import type {
 import type {
   CmsApi,
   CmsAdminListParams,
+  CmsTransferApplyResult,
+  CmsTransferDownloadResult,
+  CmsTransferInspectResult,
+  CmsTransferPackage,
   CmsPublicGetResult,
   CmsPublicUnlockResult,
 } from "./CmsApi.js";
@@ -64,6 +68,15 @@ const withParams = (base: string, params: Record<string, unknown>): string => {
     }
   }
   return `${url.pathname}${url.search}`;
+};
+
+const parseContentDispositionFilename = (value: string | null): string | null => {
+  if (!value) {
+    return null;
+  }
+
+  const match = value.match(/filename="?([^";]+)"?/i);
+  return match?.[1]?.trim() || null;
 };
 
 // ─── Client ───────────────────────────────────────────────────────────────
@@ -321,6 +334,101 @@ export class CmsClient implements CmsApi {
       {
         method: "PUT",
         body: JSON.stringify({ collaborators }),
+      },
+    );
+  }
+
+  async adminGetTransferPackage(input: {
+    uid: string;
+    includeAssets?: boolean;
+  }): Promise<CmsTransferPackage> {
+    const path = withParams(
+      `/${encodeURIComponent(input.uid)}/transfer-package`,
+      {
+        includeAssets: input.includeAssets === false ? 0 : 1,
+      },
+    );
+    const result = await this.adminRequest<{ package: CmsTransferPackage }>(
+      path,
+    );
+    return result.package;
+  }
+
+  async adminDownloadTransferPackage(input: {
+    uid: string;
+    includeAssets?: boolean;
+  }): Promise<CmsTransferDownloadResult> {
+    const path = withParams(
+      `${this.adminBaseUrl}/${encodeURIComponent(input.uid)}/transfer-package`,
+      {
+        includeAssets: input.includeAssets === false ? 0 : 1,
+        download: 1,
+      },
+    );
+
+    const resp = await this.fetchFn(path, {
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    const packageText = await resp.text();
+    if (!resp.ok) {
+      throw new CmsClientError(packageText || resp.statusText, resp.status);
+    }
+
+    let parsedPackage: CmsTransferPackage | null = null;
+    try {
+      parsedPackage = packageText ? (JSON.parse(packageText) as CmsTransferPackage) : null;
+    } catch {
+      parsedPackage = null;
+    }
+
+    return {
+      fileName:
+        parseContentDispositionFilename(resp.headers.get("Content-Disposition")) ||
+        `${input.uid}.transfer.json`,
+      packageText,
+      package: parsedPackage,
+    };
+  }
+
+  async adminInspectTransferPackage(input: {
+    packageText: string;
+  }): Promise<CmsTransferInspectResult> {
+    return this.adminRequest<CmsTransferInspectResult>(
+      "/transfer-package/inspect",
+      {
+        method: "POST",
+        body: JSON.stringify({ packageText: input.packageText }),
+      },
+    );
+  }
+
+  async adminApplyTransferPackage(input: {
+    package: CmsTransferPackage | string;
+    entryResolution?: {
+      mode: "update_existing" | "create_copy";
+      slug?: string;
+    } | null;
+    assetResolutions?: Array<{ assetId: string; mode: string }>;
+  }): Promise<CmsTransferApplyResult> {
+    const packageValue =
+      typeof input.package === "string" ? undefined : input.package;
+    const packageText =
+      typeof input.package === "string" ? input.package : undefined;
+
+    return this.adminRequest<CmsTransferApplyResult>(
+      "/transfer-package/apply",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          package: packageValue,
+          packageText,
+          entryResolution: input.entryResolution || undefined,
+          assetResolutions: input.assetResolutions || [],
+        }),
       },
     );
   }
