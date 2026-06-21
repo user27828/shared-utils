@@ -94,7 +94,7 @@ Primary source anchors used for tracing:
 - Build output: compiled artifacts emitted into `dist/` and published from the
   root package.
 - Client runtime: React 19 plus MUI-based UI components.
-- Server runtime: Node 18+ with Express 5 and optional Cloudflare Worker
+- Server runtime: Node ^22.18.0 || >=24.11.0 with Express 5 and optional Cloudflare Worker
   deployment for Turnstile.
 
 ### Tooling

@@ -103,7 +103,7 @@ Implications:
 
 - Yarn is the canonical package manager. `npm` and `pnpm` workflows are not
   authoritative for repository development.
-- The supported baseline is Node.js 18+ with TypeScript ESM builds emitted to
+- The supported baseline is Node.js ^22.18.0 || >=24.11.0 with TypeScript ESM builds emitted to
   `dist/`.
 - Cross-utility configuration belongs in `optionsManager`; configuration should
   not be split across hidden globals or undocumented channels.

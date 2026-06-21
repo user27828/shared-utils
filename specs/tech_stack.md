@@ -27,7 +27,7 @@ Spec-Kit planning phase. It complements:
 | Package manager     | Yarn 4 workspaces                                                            |
 | Language            | TypeScript source with ES module output                                      |
 | Module pattern      | Native ESM with `.js` import suffixes in source                              |
-| Root runtime target | Node.js 18+                                                                  |
+| Root runtime target | Node.js ^22.18.0 or >=24.11.0                                                |
 | Client runtime      | React 19                                                                     |
 | Client UI toolkit   | MUI 7 plus optional MUI X and editor peer dependencies                       |
 | Server HTTP layer   | Express 5                                                                    |

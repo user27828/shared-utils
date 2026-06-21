@@ -16,7 +16,7 @@ export default {
       {
         presets: [
           ["@babel/preset-env", { targets: { node: "current" } }],
-          ["@babel/preset-typescript", { allowDeclareFields: true }],
+          ["@babel/preset-typescript"],
         ],
       },
     ],
@@ -25,14 +25,15 @@ export default {
     "^@shared-utils/utils$": "<rootDir>/../dist/utils/index.js",
     "^shared-utils/utils$": "<rootDir>/../dist/utils/index.js",
     "^shared-utils$": "<rootDir>/../dist/utils/index.js",
-    // Specific mappers for detectFormat source imports (strip .js to resolve to .ts)
-    "^\\./options-manager\\.js$": "<rootDir>/src/options-manager.ts",
-    // For source imports like '../src/*.js' -> '../src/*' (resolves to .ts)
-    "^(\\.{1,2}/src/.*)\\.js$": "$1",
-    // For detectFormat/types.js -> types.ts
-    "^\\./types\\.js$": "<rootDir>/src/detectFormat/types.ts",
-    // For detectFormat/formats/*.js -> formats/*.ts
-    "^\\./formats/([a-z]+)\\.js$": "<rootDir>/src/detectFormat/formats/$1.ts",
+    "^\.\./src/detectFormat$":
+      "<rootDir>/../dist/utils/src/detectFormat/index.js",
+    "^\.\./\.\./src/detectFormat$":
+      "<rootDir>/../dist/utils/src/detectFormat/index.js",
+    // Resolve test imports from utils src to built dist JS artifacts.
+    "^\.\./src/(.*)\.js$": "<rootDir>/../dist/utils/src/$1.js",
+    "^\.\./\.\./src/(.*)\.js$": "<rootDir>/../dist/utils/src/$1.js",
+    "^\.\./src/(.*)\.ts$": "<rootDir>/../dist/utils/src/$1.js",
+    "^\.\./\.\./src/(.*)\.ts$": "<rootDir>/../dist/utils/src/$1.js",
   },
   transformIgnorePatterns: [
     "<rootDir>/../dist/.*",

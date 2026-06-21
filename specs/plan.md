@@ -28,11 +28,11 @@ verification through root `yarn test` after the targeted regression suites run.
 
 ## Technical Context
 
-**Language/Version**: TypeScript 6 ESM on Node.js 18+  
+**Language/Version**: TypeScript 6 ESM on Node.js ^22.18.0 || >=24.11.0  
 **Primary Dependencies**: Existing server email provider abstractions, built-in `fetch`, `requestWithTimeout()`, shared email address and attachment helpers, root package export maps, Cloudflare Email Service REST send endpoint, and the documented `GET /zones/{zone_id}/email/sending/subdomains` endpoint for a read-only health probe  
 **Storage**: N/A for provider runtime; request and response only  
 **Testing**: `cd server && NODE_OPTIONS="--experimental-vm-modules" yarn jest __tests__/email-providers.test.js --runInBand`, `NODE_OPTIONS="--experimental-vm-modules" yarn jest --config jest.config.mjs --runTestsByPath __tests__/package-imports.test.js __tests__/package-structure.test.js __tests__/server-package-distribution.test.js --runInBand`, plus explicit `yarn build` and supplemental root `yarn test` validation  
-**Target Platform**: Published server package consumers running on Node.js 18+  
+**Target Platform**: Published server package consumers running on Node.js ^22.18.0 || >=24.11.0  
 **Project Type**: Yarn workspaces library monorepo with published subpath exports  
 **Performance Goals**: Preserve existing provider ergonomics, keep outbound requests under the existing timeout discipline, and avoid regressions in published package consumption  
 **Constraints**: Yarn-only workflow, `.js` import suffixes, server-only implementation, Cloudflare Email Service beta on a Workers Paid plan, Cloudflare DNS/domain onboarding, transactional-email-only positioning, explicit recipient and header rules, a conservative 5 MiB total message limit, and a zone-scoped read-only Cloudflare probe for `healthCheck()`  

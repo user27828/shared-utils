@@ -11,26 +11,30 @@ export default {
   testPathIgnorePatterns: ["/node_modules/", "\\.d\\.ts$"],
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   moduleNameMapper: {
-    "^(\\.{1,2}/.*)\\.js$": "$1",
+    // Resolve test imports from server src to built dist JS artifacts.
+    "^\.\./src/(.*)\.js$": "<rootDir>/../dist/server/src/$1.js",
+    "^\.\./\.\./src/(.*)\.js$": "<rootDir>/../dist/server/src/$1.js",
+    "^\.\./src/(.*)\.ts$": "<rootDir>/../dist/server/src/$1.js",
+    "^\.\./\.\./src/(.*)\.ts$": "<rootDir>/../dist/server/src/$1.js",
     // Map all imports from the utils package to the compiled JS output
     "^@shared-utils/utils(.*)$": "<rootDir>/../dist/utils$1",
     "^@user27828/shared-utils/utils(.*)$": "<rootDir>/../dist/utils$1",
     // Map any direct imports from utils/src/ to compiled JS
-    "^../utils/src/(.*)$": "<rootDir>/../dist/utils/$1",
-    "^.*utils/src/(.*)$": "<rootDir>/../dist/utils/$1",
+    "^../utils/src/(.*)\\.js$": "<rootDir>/../dist/utils/src/$1.js",
+    "^../utils/src/(.*)\\.ts$": "<rootDir>/../dist/utils/src/$1.js",
+    "^.*utils/src/(.*)\\.js$": "<rootDir>/../dist/utils/src/$1.js",
+    "^.*utils/src/(.*)\\.ts$": "<rootDir>/../dist/utils/src/$1.js",
     // Map relative utils imports from server source to compiled JS
     "^../../../utils/index\\.js$": "<rootDir>/../dist/utils/index.js",
     // Map the specific utils folder import that's causing issues
     "^../../../utils/(.*)$": "<rootDir>/../dist/utils/$1",
   },
   transform: {
-    "^.+\\.(ts|tsx|js|jsx)$": [
-      "babel-jest",
+    "^.+\\.(ts|tsx)$": [
+      "ts-jest",
       {
-        presets: [
-          ["@babel/preset-env", { targets: { node: "current" } }],
-          ["@babel/preset-typescript", { allowDeclareFields: true }],
-        ],
+        useESM: true,
+        tsconfig: "<rootDir>/tsconfig.jest.json",
       },
     ],
   },
