@@ -8,7 +8,7 @@ import path from "path";
 import fs from "fs";
 import crypto from "crypto";
 import { createRequire } from "module";
-import { isEmpty } from "lodash-es";
+import isEmpty from "lodash-es/isEmpty.js";
 // Create a singleton for environment variables
 let envCache = null;
 // Forward-declare optionsManager so helper functions that run before the
@@ -120,7 +120,10 @@ const getLogger = () => {
         if (!pkg) {
             try {
                 // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-                pkg = require("../utils/index.js");
+                pkg = require("../../utils/src/log.js");
+                if (pkg && !pkg.log && pkg.default) {
+                    pkg = { log: pkg.default };
+                }
             }
             catch (e) {
                 // ignore
@@ -205,7 +208,7 @@ if (typeof globalThis !== "undefined") {
             catch (e) {
                 try {
                     // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-                    pkg = require("../utils/index.js");
+                    pkg = require("../../utils/src/options-manager.js");
                 }
                 catch (e2) {
                     // ignore

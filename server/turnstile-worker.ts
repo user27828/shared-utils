@@ -4,9 +4,8 @@
  * Deploy this to Cloudflare Workers and use the URL for server-side verification
  */
 
-import { createTurnstileWorker } from "./src/turnstile/index.js";
+import { createTurnstileWorker } from "./src/turnstile/worker-factory.js";
+export { createTurnstileWorker } from "./src/turnstile/worker-factory.js";
+export type { TurnstileWorkerConfig } from "./src/turnstile/worker-factory.js";
 
 export default createTurnstileWorker();
-
-// Re-export main functionality for Node.js usage
-export * from "./src/turnstile/index.js";

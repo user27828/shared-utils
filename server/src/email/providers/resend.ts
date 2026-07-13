@@ -1,4 +1,4 @@
-import { log } from "../../../../utils/index.js";
+import log from "../../../../utils/src/log.js";
 import {
   getAttachmentContentBase64,
   getAttachmentContentType,

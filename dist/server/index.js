@@ -39,7 +39,7 @@ export { getAllowedOrigin } from "./src/turnstile/index.js";
 export { getClientIp } from "./src/ip.js";
 // Helper functions
 export { isDev } from "./src/functions.js";
-import { log } from "../utils/index.js";
+import log from "../utils/src/log.js";
 // Attach log to globalThis if not already set
 if (typeof globalThis !== "undefined" &&
     typeof globalThis.log === "undefined") {

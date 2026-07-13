@@ -1,1 +1,1 @@
-{"version":3,"file":"turnstile-worker.js","sourceRoot":"","sources":["../../server/turnstile-worker.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH,OAAO,EAAE,qBAAqB,EAAE,MAAM,0BAA0B,CAAC;AAEjE,eAAe,qBAAqB,EAAE,CAAC;AAEvC,iDAAiD;AACjD,cAAc,0BAA0B,CAAC"}
+{"version":3,"file":"turnstile-worker.js","sourceRoot":"","sources":["../../server/turnstile-worker.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH,OAAO,EAAE,qBAAqB,EAAE,MAAM,mCAAmC,CAAC;AAC1E,OAAO,EAAE,qBAAqB,EAAE,MAAM,mCAAmC,CAAC;AAG1E,eAAe,qBAAqB,EAAE,CAAC"}

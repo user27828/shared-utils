@@ -1,5 +1,5 @@
 import nodemailer, { type Transporter } from "nodemailer";
-import { log } from "../../../../utils/index.js";
+import log from "../../../../utils/src/log.js";
 import {
   getAttachmentContentBuffer,
   getAttachmentContentType,

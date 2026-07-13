@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Button, Box, Typography, Alert, Chip, Stack } from "@mui/material";
+import Button from "@mui/material/Button";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Alert from "@mui/material/Alert";
+import Chip from "@mui/material/Chip";
+import Stack from "@mui/material/Stack";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 import TestSuiteLayout from "./TestSuiteLayout";
 import {

@@ -50,7 +50,13 @@ import TodayIcon from "@mui/icons-material/Today";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import EditIcon from "@mui/icons-material/Edit";
-import { format, isToday, isYesterday, subDays, startOfDay, startOfMonth, endOfMonth, } from "date-fns";
+import { endOfMonth } from "date-fns/endOfMonth";
+import { format } from "date-fns/format";
+import { isToday } from "date-fns/isToday";
+import { isYesterday } from "date-fns/isYesterday";
+import { startOfDay } from "date-fns/startOfDay";
+import { startOfMonth } from "date-fns/startOfMonth";
+import { subDays } from "date-fns/subDays";
 import CmsVersionNotesForm from "./CmsVersionNotesForm.js";
 // ─── Constants ────────────────────────────────────────────────────────────
 /** Drawer width in pixels. Exported so the parent can coordinate layout. */

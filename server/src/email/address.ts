@@ -1,4 +1,4 @@
-import { isValidEmail } from "../../../utils/index.js";
+import { isValidEmail } from "../../../utils/src/functions.js";
 import { EmailError } from "./errors.js";
 
 export interface EmailAddressLike {

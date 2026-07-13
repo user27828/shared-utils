@@ -1,5 +1,6 @@
 import { CreateContactCommand, CreateContactListCommand, GetContactCommand, GetContactListCommand, SESv2Client, UpdateContactCommand, UpdateContactListCommand, } from "@aws-sdk/client-sesv2";
-import { log, optionsManager } from "../../../utils/index.js";
+import log from "../../../utils/src/log.js";
+import { optionsManager } from "../../../utils/src/options-manager.js";
 import env from "../env.js";
 import { formatCompactLogLine, formatHierarchicalLog, formatCompactLogText, formatCompactLogValue, } from "./logFormat.js";
 import { requestWithTimeout } from "./requestTimeout.js";

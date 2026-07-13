@@ -1,4 +1,4 @@
-import { isValidEmail } from "../../../utils/index.js";
+import { isValidEmail } from "../../../utils/src/functions.js";
 import { EmailError } from "./errors.js";
 const EMAIL_CONTROL_CHARACTER_REGEX = /[\u0000-\u001F\u007F]/;
 const trimToDefinedString = (value) => {

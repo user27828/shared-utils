@@ -5,7 +5,7 @@
 import React, { useRef, useEffect } from "react";
 import "./ensurePrismGlobal.js";
 import { Editor } from "@tinymce/tinymce-react";
-import { merge } from "lodash-es";
+import merge from "lodash-es/merge.js";
 // TinyMCE so the global var exists
 import "tinymce/tinymce";
 // DOM model

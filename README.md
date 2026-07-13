@@ -27,6 +27,10 @@ Collection of common utilities for web applications. Features centralized config
   - [Command Line Tools](#command-line-tools)
     - [Dependency Manager](#dependency-manager)
     - [Package Scripts Integration](#package-scripts-integration)
+  - [Graphify Knowledge Graph](#graphify-knowledge-graph)
+    - [Install Graphify](#install-graphify)
+    - [Build and query the graph](#build-and-query-the-graph)
+    - [Update the graph](#update-the-graph)
   - [Usage Examples](#usage-examples)
   - [Deployment Guide](#deployment-guide)
     - [📖 Documentation](#-documentation)
@@ -695,6 +699,58 @@ Add useful scripts to your `package.json`:
   }
 }
 ```
+
+[🔝 Back to Top](#shared-utils)
+
+## Graphify Knowledge Graph
+
+This repository maintains a navigable codebase graph in [`graphify-out/`](./graphify-out/). The graph is useful for finding architecture relationships, tracing callers, and orienting yourself before editing unfamiliar code. Generated graph files are disposable outputs; do not edit them manually.
+
+### Install Graphify
+
+The `graphify` command is provided by the `graphifyy` Python package. Install it with `uv` when available:
+
+```bash
+uv tool install --upgrade graphifyy
+```
+
+Or install it into the current user's Python environment:
+
+```bash
+python3 -m pip install --user --upgrade graphifyy
+```
+
+The repository's code graph does not require an API key. `GEMINI_API_KEY` or `GOOGLE_API_KEY` is optional when richer semantic extraction is wanted for documents, papers, or images.
+
+### Build and query the graph
+
+Run a full graph build from the repository root when `graphify-out/graph.json` does not exist or a clean rebuild is needed:
+
+```bash
+graphify .
+```
+
+The build writes `graph.json`, `graph.html`, and `GRAPH_REPORT.md` under `graphify-out/`. Use the existing graph for focused navigation:
+
+```bash
+# Broad relationship traversal
+graphify query "How does the CMS client reach the server service core?"
+
+# Focused traversal and shortest-path analysis
+graphify query "How are test consumer suites run?" --dfs
+graphify path "App.tsx" "testSuiteAutomation.ts"
+graphify explain "OptionsManager"
+```
+
+### Update the graph
+
+After adding or modifying source files, run the incremental update from the repository root:
+
+```bash
+graphify update .
+```
+
+This re-extracts changed files and refreshes the graph outputs while preserving the existing manifest. Run it after code changes so `graphify-out/` stays aligned with the working tree. If the graph does not exist yet, use `graphify .` first.
 
 [🔝 Back to Top](#shared-utils)
 

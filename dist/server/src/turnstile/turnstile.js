@@ -1,7 +1,7 @@
 /**
  * Turnstile server-side verification helpers.
  */
-import { OptionsManager, optionsManager as globalOptionsManager, } from "../../../utils/index.js";
+import { OptionsManager, optionsManager as globalOptionsManager, } from "../../../utils/src/options-manager.js";
 const defaultServerOptions = {
     secretKey: "",
     apiUrl: "https://challenges.cloudflare.com/turnstile/v0/siteverify",

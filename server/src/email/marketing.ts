@@ -9,7 +9,8 @@ import {
   type Topic as SesTopic,
   type TopicPreference as SesTopicPreference,
 } from "@aws-sdk/client-sesv2";
-import { log, optionsManager } from "../../../utils/index.js";
+import log from "../../../utils/src/log.js";
+import { optionsManager } from "../../../utils/src/options-manager.js";
 import env from "../env.js";
 import {
   formatCompactLogLine,

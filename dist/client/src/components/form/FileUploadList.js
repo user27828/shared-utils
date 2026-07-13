@@ -5,7 +5,12 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
  * Features ability to list files that were uploaded/existing, and initiate new uploads
  */
 import { useEffect, useState, useRef, useCallback, } from "react";
-import { get, isArray, isFunction, isNumber, isString, size } from "lodash-es";
+import get from "lodash-es/get.js";
+import isArray from "lodash-es/isArray.js";
+import isFunction from "lodash-es/isFunction.js";
+import isNumber from "lodash-es/isNumber.js";
+import isString from "lodash-es/isString.js";
+import size from "lodash-es/size.js";
 import { formatFileSize } from "../../../../utils/src/functions.js";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";

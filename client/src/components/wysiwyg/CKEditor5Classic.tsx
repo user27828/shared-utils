@@ -14,7 +14,7 @@ import React, {
   useState,
 } from "react";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
-import { mergeWith } from "lodash-es";
+import mergeWith from "lodash-es/mergeWith.js";
 
 import {
   Alignment,

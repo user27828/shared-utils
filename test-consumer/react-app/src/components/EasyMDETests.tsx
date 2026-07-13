@@ -5,20 +5,18 @@ import WysiwygEditor, {
   type WysiwygPickResult,
   type WysiwygImageUploadRequest,
 } from "@user27828/shared-utils/client/wysiwyg";
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Chip from "@mui/material/Chip";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import { TestProgress, type TestItem } from "./TestProgress";
 import TestSuiteLayout from "./TestSuiteLayout";
 import {

@@ -19,7 +19,7 @@
     "./*": "./dist/*"
   },
   "scripts": {
-    "build": "rm -f tsconfig.tsbuildinfo && (yarn --version > /dev/null 2>&1 && yarn tsc --build || npx tsc --build)",
+    "build": "rm -f tsconfig.tsbuildinfo && yarn tsc --build",
     "build:clean": "rm -f tsconfig.tsbuildinfo && rm -rf ../dist/client && yarn build",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -70,19 +70,19 @@
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
     "dompurify": "^3.4.11",
-    "papaparse": "^5.5.3",
+    "papaparse": "^5.5.4",
     "prismjs": "^1.30.0"
   },
   "devDependencies": {
     "@babel/core": "^8.0.1",
-    "@babel/preset-env": "^8.0.1",
+    "@babel/preset-env": "^8.0.2",
     "@babel/preset-react": "^8.0.1",
     "@babel/preset-typescript": "^8.0.1",
-    "@mui/icons-material": "^9.1.1",
-    "@mui/lab": "^9.0.0-beta.5",
-    "@mui/material": "^9.1.1",
-    "@mui/system": "^9.1.1",
-    "@mui/x-date-pickers": "^9.5.0",
+    "@mui/icons-material": "^9.2.0",
+    "@mui/lab": "^9.0.0-beta.6",
+    "@mui/material": "^9.2.0",
+    "@mui/system": "^9.2.0",
+    "@mui/x-date-pickers": "^9.8.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -92,15 +92,15 @@
     "@types/papaparse": "^5.5.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "@vitest/coverage-v8": "^4.1.9",
-    "@vitest/ui": "^4.1.9",
+    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/ui": "^4.1.10",
     "babel-jest": "^30.4.1",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.10"
   },
   "files": [
     "dist"

@@ -9,7 +9,7 @@ import {
   type MessageTag,
   type SendEmailCommandInput,
 } from "@aws-sdk/client-sesv2";
-import { log } from "../../../../utils/index.js";
+import log from "../../../../utils/src/log.js";
 import {
   getAttachmentContentBuffer,
   getAttachmentContentType,

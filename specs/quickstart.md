@@ -18,7 +18,7 @@ and documentation levels.
 
 ## Prerequisites
 
-- Node.js ^22.18.0 or >=24.11.0
+- Node.js 20+
 - Yarn 4
 - Repository dependencies installed
 - Optional Cloudflare account credentials, zone ID, and onboarded sender domain

@@ -1,11 +1,8 @@
 import React from "react";
-import {
-  Box,
-  Container,
-  Divider,
-  Typography,
-  type ContainerProps,
-} from "@mui/material";
+import Box from "@mui/material/Box";
+import Container, { type ContainerProps } from "@mui/material/Container";
+import Divider from "@mui/material/Divider";
+import Typography from "@mui/material/Typography";
 
 interface TestSuiteLayoutProps {
   title: string;

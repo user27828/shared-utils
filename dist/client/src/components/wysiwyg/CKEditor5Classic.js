@@ -9,7 +9,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  */
 import { useCallback, useEffect, useMemo, useRef, useState, } from "react";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
-import { mergeWith } from "lodash-es";
+import mergeWith from "lodash-es/mergeWith.js";
 import { Alignment, Autoformat, Base64UploadAdapter, BlockQuote, Bold, ClassicEditor, Code, CodeBlock, Essentials, FontBackgroundColor, FontColor, FontFamily, FontSize, Fullscreen, GeneralHtmlSupport, Heading, HorizontalLine, Image, ImageCaption, ImageResize, ImageStyle, ImageToolbar, ImageUpload, Indent, Italic, Link, List, ListProperties, MediaEmbed, Paragraph, PasteFromOffice, PasteFromMarkdownExperimental, Plugin, ButtonView, Table, TableCellProperties, TableProperties, TableToolbar, Underline, Widget, WidgetResize, WordCount, toWidget, } from "ckeditor5";
 import "ckeditor5/ckeditor5.css";
 import { pickLocalFile } from "./wysiwyg-common.js";

@@ -1,5 +1,5 @@
 import { AttachmentContentDisposition, AttachmentContentTransferEncoding, GetAccountCommand, SESv2Client, SendEmailCommand, } from "@aws-sdk/client-sesv2";
-import { log } from "../../../../utils/index.js";
+import log from "../../../../utils/src/log.js";
 import { getAttachmentContentBuffer, getAttachmentContentType, } from "../attachments.js";
 import { formatEmailAddress, normalizeEmailAddress } from "../address.js";
 import { EmailProviderError } from "../errors.js";

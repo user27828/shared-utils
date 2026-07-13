@@ -8,8 +8,10 @@
  * These are the canonical implementations; UI components (CalendarAdd,
  * ContactActions) delegate here for all URL/file generation.
  */
-import { formatISO, format, addMinutes } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
+import { addMinutes } from "date-fns/addMinutes";
+import { format } from "date-fns/format";
+import { formatISO } from "date-fns/formatISO";
+import { toZonedTime } from "date-fns-tz/toZonedTime";
 /** Default calendar configuration */
 export const DEFAULT_CALENDAR_CONFIG = {
     timezone: "America/New_York",

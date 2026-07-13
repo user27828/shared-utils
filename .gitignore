@@ -81,6 +81,10 @@ lerna-debug.log*
 *.sln
 *.sw?
 
+# Graphify
+graphify-out/*
+!graphify-out/.gitkeep
+
 # VS Code settings (ignore workspace configs, keep non-sensitive files)
 .vscode/
 !.vscode/extensions.json

@@ -26,7 +26,11 @@
  * });
  */
 
-import { mergeWith, cloneDeep, get, has, set } from "lodash-es";
+import cloneDeep from "lodash-es/cloneDeep.js";
+import get from "lodash-es/get.js";
+import has from "lodash-es/has.js";
+import mergeWith from "lodash-es/mergeWith.js";
+import set from "lodash-es/set.js";
 
 type UtilityName =
   | "log"

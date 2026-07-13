@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
-import { log, optionsManager } from "../../../../utils/index.js";
+import log from "../../../../utils/src/log.js";
+import { optionsManager } from "../../../../utils/src/options-manager.js";
 import env from "../../env.js";
 import { formatCompactLogLine, formatHierarchicalLog, formatCompactLogText, } from "../logFormat.js";
 const PROVIDER_NAME = "resend";

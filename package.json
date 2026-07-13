@@ -12,7 +12,7 @@
   ],
   "packageManager": "yarn@4.12.0",
   "engines": {
-    "node": "^22.18.0 || >=24.11.0"
+    "node": ">=20.0.0"
   },
   "workspaces": [
     "client",
@@ -288,7 +288,7 @@
     "test:consumer": "[ -d test-consumer ] && cd test-consumer && yarn dev || echo '❌ test-consumer directory not found - this script is only available in the main shared-utils repository'",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "upgrade": "npx yarn-upgrade-interactive",
+    "upgrade": "yarn upgrade-interactive",
     "update:data": "./bin/update-source-data.sh",
     "compare:data": "./bin/compare-data.cjs"
   },
@@ -302,32 +302,32 @@
   },
   "devDependencies": {
     "@babel/core": "^8.0.1",
-    "@babel/preset-env": "^8.0.1",
+    "@babel/preset-env": "^8.0.2",
     "@babel/preset-typescript": "^8.0.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@types/jest": "^30.0.0",
     "@types/nanoid": "^3.0.0",
     "@types/nodemailer": "^8.0.1",
     "@types/supertest": "^7.2.0",
-    "@vitest/coverage-v8": "^4.1.9",
-    "@vitest/ui": "^4.1.9",
+    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/ui": "^4.1.10",
     "babel-jest": "^30.4.1",
     "jest": "^30.4.2",
     "jest-environment-node": "^30.4.1",
     "jsdom": "^29.1.1",
-    "prettier": "^3.8.4",
+    "prettier": "^3.9.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "supertest": "^7.2.2",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.10"
   },
   "resolutions": {
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1"
   },
   "dependencies": {
-    "@aws-sdk/client-sesv2": "^3.1070.0",
+    "@aws-sdk/client-sesv2": "^3.1083.0",
     "@tinymce/tinymce-react": "^6.3.0",
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
@@ -337,11 +337,11 @@
     "express": "^5.2.1",
     "lodash-es": "^4.18.1",
     "marked": "^18.0.5",
-    "nanoid": "^5.1.11",
-    "nodemailer": "^9.0.1",
-    "papaparse": "^5.5.3",
+    "nanoid": "^5.1.16",
+    "nodemailer": "^9.0.3",
+    "papaparse": "^5.5.4",
     "prismjs": "^1.30.0",
-    "tinymce": "^8.6.0"
+    "tinymce": "^8.7.0"
   },
   "peerDependencies": {
     "@aws-sdk/client-s3": ">=3.0.0",

@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { log } from "../../../../utils/index.js";
+import log from "../../../../utils/src/log.js";
 import { getAttachmentContentBuffer, getAttachmentContentType, } from "../attachments.js";
 import { extractEmailAddress, formatEmailAddress, normalizeEmailAddressValue, } from "../address.js";
 import { EmailProviderError } from "../errors.js";

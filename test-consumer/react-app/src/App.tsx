@@ -1,32 +1,50 @@
 import React from "react";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { CssBaseline, IconButton, Box } from "@mui/material";
-import { Brightness4, Brightness7 } from "@mui/icons-material";
-import TestIndex from "./components/TestIndex";
-import TurnstileTests from "./components/TurnstileTests";
-import LogTests from "./components/LogTests";
-import OptionsManagerTests from "./components/OptionsManagerTests";
-import ClientComponentTests from "./components/ClientComponentTests";
-import TinyMCETests from "./components/TinyMCETests";
-import MDXEditorTests from "./components/MDXEditorTests";
-import CKEditorTests from "./components/CKEditorTests";
-import EasyMDETests from "./components/EasyMDETests";
-import ServerIntegrationTests from "./components/ServerIntegrationTests";
-import CmsTests from "./components/CmsTests";
-import FmTests from "./components/FmTests";
+import CssBaseline from "@mui/material/CssBaseline";
+import IconButton from "@mui/material/IconButton";
+import Box from "@mui/material/Box";
+import Brightness4 from "@mui/icons-material/Brightness4";
+import Brightness7 from "@mui/icons-material/Brightness7";
+import TestIndex from "./components/TestIndex.js";
 import {
   AUTOMATED_SUITE_VIEWS,
   TEST_NAV_ITEMS,
   type TestSuiteView,
   type TestView,
-} from "./components/testSuiteRegistry";
+} from "./components/testSuiteRegistry.js";
 import {
   applySuiteAutomationResult,
   createInitialSuiteSnapshots,
   type SuiteAutomationProps,
   type SuiteAutomationResult,
   type SuiteRunSnapshot,
-} from "./components/testSuiteAutomation";
+} from "./components/testSuiteAutomation.js";
+
+const TurnstileTests = React.lazy(
+  () => import("./components/TurnstileTests.js"),
+);
+const LogTests = React.lazy(() => import("./components/LogTests.js"));
+const OptionsManagerTests = React.lazy(
+  () => import("./components/OptionsManagerTests.js"),
+);
+const ClientComponentTests = React.lazy(
+  () => import("./components/ClientComponentTests.js"),
+);
+const TinyMCETests = React.lazy(() => import("./components/TinyMCETests.js"));
+const MDXEditorTests = React.lazy(
+  () => import("./components/MDXEditorTests.js"),
+);
+const CKEditorTests = React.lazy(
+  () => import("./components/CKEditorTests.js"),
+);
+const EasyMDETests = React.lazy(
+  () => import("./components/EasyMDETests.js"),
+);
+const ServerIntegrationTests = React.lazy(
+  () => import("./components/ServerIntegrationTests.js"),
+);
+const CmsTests = React.lazy(() => import("./components/CmsTests.js"));
+const FmTests = React.lazy(() => import("./components/FmTests.js"));
 
 // Create light theme
 const lightTheme = createTheme({
@@ -94,6 +112,31 @@ type ActiveAutomationState = {
   index: number;
 };
 
+type AppAutomationState = {
+  currentView: TestView;
+  suiteRunSnapshots: Record<TestSuiteView, SuiteRunSnapshot>;
+  activeAutomation: ActiveAutomationState | null;
+};
+
+type AppAutomationAction =
+  | {
+      type: "run-all";
+      runId: number;
+      queue: TestSuiteView[];
+    }
+  | {
+      type: "navigate";
+      view: TestView;
+    }
+  | {
+      type: "suite-complete";
+      result: SuiteAutomationResult;
+    };
+
+const SuiteLoadingState: React.FC = () => {
+  return <div role="status">Loading test suite...</div>;
+};
+
 const createQueuedSnapshots = (
   runId: number,
   activeView: TestSuiteView,
@@ -112,85 +155,127 @@ const createQueuedSnapshots = (
   return snapshots;
 };
 
+const createInitialAutomationState = (): AppAutomationState => {
+  return {
+    currentView: "index",
+    suiteRunSnapshots: createInitialSuiteSnapshots(),
+    activeAutomation: null,
+  };
+};
+
+const appAutomationReducer = (
+  state: AppAutomationState,
+  action: AppAutomationAction,
+): AppAutomationState => {
+  switch (action.type) {
+    case "run-all": {
+      if (state.activeAutomation || action.queue.length === 0) {
+        return state;
+      }
+
+      const firstView = action.queue[0];
+      return {
+        currentView: firstView,
+        suiteRunSnapshots: createQueuedSnapshots(action.runId, firstView),
+        activeAutomation: {
+          runId: action.runId,
+          queue: action.queue,
+          index: 0,
+        },
+      };
+    }
+    case "navigate": {
+      if (state.activeAutomation) {
+        return state;
+      }
+
+      return {
+        ...state,
+        currentView: action.view,
+      };
+    }
+    case "suite-complete": {
+      const { result } = action;
+      const currentAutomation = state.activeAutomation;
+
+      if (
+        !currentAutomation ||
+        currentAutomation.runId !== result.runId ||
+        currentAutomation.queue[currentAutomation.index] !== result.view
+      ) {
+        return state;
+      }
+
+      const nextSnapshots = {
+        ...state.suiteRunSnapshots,
+        [result.view]: applySuiteAutomationResult(
+          state.suiteRunSnapshots[result.view],
+          result,
+        ),
+      };
+      const nextIndex = currentAutomation.index + 1;
+
+      if (nextIndex >= currentAutomation.queue.length) {
+        return {
+          currentView: "index",
+          suiteRunSnapshots: nextSnapshots,
+          activeAutomation: null,
+        };
+      }
+
+      const nextView = currentAutomation.queue[nextIndex];
+      nextSnapshots[nextView] = {
+        ...nextSnapshots[nextView],
+        status: "running",
+        lastRunId: result.runId,
+        message: "Running suite",
+      };
+
+      return {
+        currentView: nextView,
+        suiteRunSnapshots: nextSnapshots,
+        activeAutomation: {
+          ...currentAutomation,
+          index: nextIndex,
+        },
+      };
+    }
+  }
+};
+
 const App: React.FC = () => {
-  const [currentView, setCurrentView] = React.useState<TestView>("index");
-  const [suiteRunSnapshots, setSuiteRunSnapshots] = React.useState<
-    Record<TestSuiteView, SuiteRunSnapshot>
-  >(() => createInitialSuiteSnapshots());
-  const [activeAutomation, setActiveAutomation] =
-    React.useState<ActiveAutomationState | null>(null);
+  const [automationState, dispatchAutomation] = React.useReducer(
+    appAutomationReducer,
+    undefined,
+    createInitialAutomationState,
+  );
 
   // Theme state - default to dark mode
   const [isDarkMode, setIsDarkMode] = React.useState(true);
 
+  const { currentView, suiteRunSnapshots, activeAutomation } = automationState;
   const isRunningAllSuites = activeAutomation !== null;
   const activeSuite = activeAutomation
     ? activeAutomation.queue[activeAutomation.index]
     : null;
 
   const handleNavigate = (view: TestView) => {
-    if (isRunningAllSuites) {
-      return;
-    }
-    setCurrentView(view);
+    dispatchAutomation({ type: "navigate", view });
   };
 
   const handleRunAllSuites = () => {
     const queue = [...AUTOMATED_SUITE_VIEWS];
-    const firstView = queue[0];
     const runId = Date.now();
 
-    setSuiteRunSnapshots(createQueuedSnapshots(runId, firstView));
-    setActiveAutomation({ runId, queue, index: 0 });
-    setCurrentView(firstView);
+    dispatchAutomation({ type: "run-all", runId, queue });
   };
 
-  const handleSuiteAutomationComplete = (result: SuiteAutomationResult) => {
-    const currentAutomation = activeAutomation;
-
-    setSuiteRunSnapshots((current) => {
-      const nextSnapshots = {
-        ...current,
-        [result.view]: applySuiteAutomationResult(current[result.view], result),
-      };
-
-      if (currentAutomation && currentAutomation.runId === result.runId) {
-        const nextView = currentAutomation.queue[currentAutomation.index + 1];
-        if (nextView) {
-          nextSnapshots[nextView] = {
-            ...nextSnapshots[nextView],
-            status: "running",
-            lastRunId: result.runId,
-            message: "Running suite",
-          };
-        }
-      }
-
-      return nextSnapshots;
-    });
-
-    if (!currentAutomation || currentAutomation.runId !== result.runId) {
-      return;
-    }
-
-    if (currentAutomation.queue[currentAutomation.index] !== result.view) {
-      return;
-    }
-
-    const nextIndex = currentAutomation.index + 1;
-    if (nextIndex >= currentAutomation.queue.length) {
-      setActiveAutomation(null);
-      setCurrentView("index");
-      return;
-    }
-
-    const nextView = currentAutomation.queue[nextIndex];
-    setActiveAutomation({
-      ...currentAutomation,
-      index: nextIndex,
-    });
-    setCurrentView(nextView);
-  };
+  const handleSuiteAutomationComplete = React.useCallback(
+    (result: SuiteAutomationResult) => {
+      dispatchAutomation({ type: "suite-complete", result });
+    },
+    [],
+  );
 
   const getAutomationProps = (view: TestSuiteView): SuiteAutomationProps => {
     if (!activeAutomation || activeSuite !== view) {
@@ -270,47 +355,53 @@ const App: React.FC = () => {
               suiteRunSnapshots={suiteRunSnapshots}
             />
           )}
-          {currentView === "turnstile" && (
-            <TurnstileTests {...getAutomationProps("turnstile")} />
-          )}
-          {currentView === "log" && <LogTests {...getAutomationProps("log")} />}
-          {currentView === "options" && (
-            <OptionsManagerTests {...getAutomationProps("options")} />
-          )}
-          {currentView === "client" && (
-            <ClientComponentTests {...getAutomationProps("client")} />
-          )}
-          {currentView === "tinymce" && (
-            <TinyMCETests
-              darkMode={isDarkMode}
-              {...getAutomationProps("tinymce")}
-            />
-          )}
-          {currentView === "easymde" && (
-            <EasyMDETests
-              darkMode={isDarkMode}
-              {...getAutomationProps("easymde")}
-            />
-          )}
-          {currentView === "mdxeditor" && (
-            <MDXEditorTests
-              darkMode={isDarkMode}
-              {...getAutomationProps("mdxeditor")}
-            />
-          )}
-          {currentView === "ckeditor" && (
-            <CKEditorTests
-              darkMode={isDarkMode}
-              {...getAutomationProps("ckeditor")}
-            />
-          )}
-          {currentView === "cms" && (
-            <CmsTests darkMode={isDarkMode} {...getAutomationProps("cms")} />
-          )}
-          {currentView === "fm" && <FmTests {...getAutomationProps("fm")} />}
-          {currentView === "server" && (
-            <ServerIntegrationTests {...getAutomationProps("server")} />
-          )}
+          <React.Suspense fallback={<SuiteLoadingState />}>
+            {currentView === "turnstile" && (
+              <TurnstileTests {...getAutomationProps("turnstile")} />
+            )}
+            {currentView === "log" && (
+              <LogTests {...getAutomationProps("log")} />
+            )}
+            {currentView === "options" && (
+              <OptionsManagerTests {...getAutomationProps("options")} />
+            )}
+            {currentView === "client" && (
+              <ClientComponentTests {...getAutomationProps("client")} />
+            )}
+            {currentView === "tinymce" && (
+              <TinyMCETests
+                darkMode={isDarkMode}
+                {...getAutomationProps("tinymce")}
+              />
+            )}
+            {currentView === "easymde" && (
+              <EasyMDETests
+                darkMode={isDarkMode}
+                {...getAutomationProps("easymde")}
+              />
+            )}
+            {currentView === "mdxeditor" && (
+              <MDXEditorTests
+                darkMode={isDarkMode}
+                {...getAutomationProps("mdxeditor")}
+              />
+            )}
+            {currentView === "ckeditor" && (
+              <CKEditorTests
+                darkMode={isDarkMode}
+                {...getAutomationProps("ckeditor")}
+              />
+            )}
+            {currentView === "cms" && (
+              <CmsTests darkMode={isDarkMode} {...getAutomationProps("cms")} />
+            )}
+            {currentView === "fm" && (
+              <FmTests {...getAutomationProps("fm")} />
+            )}
+            {currentView === "server" && (
+              <ServerIntegrationTests {...getAutomationProps("server")} />
+            )}
+          </React.Suspense>
         </main>
       </div>
     </ThemeProvider>

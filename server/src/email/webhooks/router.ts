@@ -1,5 +1,5 @@
 import { Router, raw, type Request, type Response } from "express";
-import { log } from "../../../../utils/index.js";
+import log from "../../../../utils/src/log.js";
 import {
   formatCompactLogLine,
   formatCompactLogList,

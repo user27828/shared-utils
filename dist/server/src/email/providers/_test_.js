@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { log } from "../../../../utils/index.js";
+import log from "../../../../utils/src/log.js";
 import { getAttachmentByteLength, getAttachmentContentType, } from "../attachments.js";
 import { formatEmailAddress } from "../address.js";
 import { EmailProviderError } from "../errors.js";

@@ -1,5 +1,5 @@
 import { Router, raw } from "express";
-import { log } from "../../../../utils/index.js";
+import log from "../../../../utils/src/log.js";
 import { formatCompactLogLine, formatCompactLogList, formatHierarchicalLog, formatCompactLogText, formatCompactLogValue, } from "../logFormat.js";
 import { createMailerliteWebhookHandler } from "./mailerlite.js";
 import { createResendWebhookHandler } from "./resend.js";

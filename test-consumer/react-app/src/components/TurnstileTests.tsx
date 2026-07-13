@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Typography, Box, Button, Stack } from "@mui/material";
+import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 import TestSuiteLayout from "./TestSuiteLayout";
 import {

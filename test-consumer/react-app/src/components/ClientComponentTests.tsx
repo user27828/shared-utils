@@ -29,7 +29,10 @@ import {
   type ModeUploadFileProps,
 } from "@user27828/shared-utils/client";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
-import { Typography, Box, Button, Stack } from "@mui/material";
+import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
 import TestSuiteLayout from "./TestSuiteLayout";
 import {
   type SuiteAutomationProps,

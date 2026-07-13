@@ -5,7 +5,7 @@
 import {
   OptionsManager,
   optionsManager as globalOptionsManager,
-} from "../../../utils/index.js";
+} from "../../../utils/src/options-manager.js";
 import type {
   GlobalTurnstileOptions,
   TurnstileServerOptions,

@@ -1,5 +1,9 @@
 import React, { useState } from "react";
-import { Card, CardContent, Typography, Button, Stack } from "@mui/material";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
 
 // Example of using the new WYSIWYG import pattern
 const loadWysiwygComponents = async () => {

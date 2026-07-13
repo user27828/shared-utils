@@ -8,7 +8,7 @@ import path from "path";
 import fs from "fs";
 import crypto from "crypto";
 import { createRequire } from "module";
-import { isEmpty } from "lodash-es";
+import isEmpty from "lodash-es/isEmpty.js";
 
 // Avoid a hard dependency on express at runtime — accept a light-typed Request
 type MaybeRequest =
@@ -134,7 +134,10 @@ const getLogger = () => {
     if (!pkg) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-        pkg = require("../utils/index.js");
+        pkg = require("../../utils/src/log.js");
+        if (pkg && !pkg.log && pkg.default) {
+          pkg = { log: pkg.default };
+        }
       } catch (e) {
         // ignore
       }
@@ -220,12 +223,12 @@ if (typeof globalThis !== "undefined") {
         // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
         pkg = require("@user27828/shared-utils/utils");
       } catch (e) {
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-          pkg = require("../utils/index.js");
-        } catch (e2) {
-          // ignore
-        }
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
+        pkg = require("../../utils/src/options-manager.js");
+      } catch (e2) {
+        // ignore
+      }
       }
 
       if (pkg && pkg.optionsManager) {

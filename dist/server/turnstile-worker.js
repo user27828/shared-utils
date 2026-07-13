@@ -3,8 +3,7 @@
  * This worker provides a secure endpoint for verifying Turnstile tokens
  * Deploy this to Cloudflare Workers and use the URL for server-side verification
  */
-import { createTurnstileWorker } from "./src/turnstile/index.js";
+import { createTurnstileWorker } from "./src/turnstile/worker-factory.js";
+export { createTurnstileWorker } from "./src/turnstile/worker-factory.js";
 export default createTurnstileWorker();
-// Re-export main functionality for Node.js usage
-export * from "./src/turnstile/index.js";
 //# sourceMappingURL=turnstile-worker.js.map

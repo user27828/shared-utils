@@ -1,29 +1,23 @@
 import React from "react";
-import {
-  Timeline,
-  TimelineItem,
-  TimelineSeparator,
-  TimelineConnector,
-  TimelineContent,
-  TimelineDot,
-  TimelineOppositeContent,
-} from "@mui/lab";
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  LinearProgress,
-  Chip,
-  Stack,
-} from "@mui/material";
-import {
-  CheckCircle,
-  Cancel,
-  HourglassEmpty,
-  PlayArrow,
-  Pending,
-} from "@mui/icons-material";
+import Timeline from "@mui/lab/Timeline";
+import TimelineItem from "@mui/lab/TimelineItem";
+import TimelineSeparator from "@mui/lab/TimelineSeparator";
+import TimelineConnector from "@mui/lab/TimelineConnector";
+import TimelineContent from "@mui/lab/TimelineContent";
+import TimelineDot from "@mui/lab/TimelineDot";
+import TimelineOppositeContent from "@mui/lab/TimelineOppositeContent";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import LinearProgress from "@mui/material/LinearProgress";
+import Chip from "@mui/material/Chip";
+import Stack from "@mui/material/Stack";
+import CheckCircle from "@mui/icons-material/CheckCircle";
+import Cancel from "@mui/icons-material/Cancel";
+import HourglassEmpty from "@mui/icons-material/HourglassEmpty";
+import PlayArrow from "@mui/icons-material/PlayArrow";
+import Pending from "@mui/icons-material/Pending";
 
 export type TestStatus = "pending" | "running" | "pass" | "fail" | "skipped";
 

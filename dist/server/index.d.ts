@@ -30,5 +30,5 @@ export { getAllowedOrigin } from "./src/turnstile/index.js";
 export { getClientIp } from "./src/ip.js";
 export { isDev } from "./src/functions.js";
 export type { TurnstileVerifyRequest, TurnstileVerifyResponse, Environment, TurnstileServerOptions, TurnstileVerificationOptions, TurnstileOptions, GlobalTurnstileOptions, TurnstileWorkerConfig, } from "./src/turnstile/index.js";
-export type { IsDevOptions } from "../utils/index.js";
+export type { IsDevOptions } from "../utils/src/functions.js";
 //# sourceMappingURL=index.d.ts.map

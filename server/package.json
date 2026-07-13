@@ -24,7 +24,7 @@
   ],
   "private": true,
   "scripts": {
-    "build": "rm -f tsconfig.tsbuildinfo && (yarn --version > /dev/null 2>&1 && yarn tsc --outDir ../dist/server || npx tsc --outDir ../dist/server)",
+    "build": "rm -f tsconfig.tsbuildinfo && yarn tsc --outDir ../dist/server",
     "build:clean": "rm -f tsconfig.tsbuildinfo && rm -rf ../dist/server && yarn build",
     "dev": "yarn tsc --outDir ../dist/server --watch",
     "cf:deploy": "./deploy-turnstile-worker.sh",
@@ -37,27 +37,27 @@
     "test:coverage": "yarn build && NODE_OPTIONS=\"--experimental-vm-modules\" yarn jest --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1070.0",
-    "@aws-sdk/client-sesv2": "^3.1070.0",
-    "@aws-sdk/s3-request-presigner": "^3.1070.0",
+    "@aws-sdk/client-s3": "^3.1083.0",
+    "@aws-sdk/client-sesv2": "^3.1083.0",
+    "@aws-sdk/s3-request-presigner": "^3.1083.0",
     "@shared-utils/utils": "workspace:*",
     "express": "^5.2.1",
-    "nodemailer": "^9.0.1"
+    "nodemailer": "^9.0.3"
   },
   "devDependencies": {
     "@babel/core": "^8.0.1",
-    "@babel/preset-env": "^8.0.1",
+    "@babel/preset-env": "^8.0.2",
     "@babel/preset-typescript": "^8.0.1",
-    "@cloudflare/workers-types": "^4.20260617.1",
+    "@cloudflare/workers-types": "^5.20260708.1",
     "@jest/globals": "^30.4.1",
     "@types/express": "^5.0.6",
-    "@types/node": "^25.9.3",
+    "@types/node": "^26.1.1",
     "@types/nodemailer": "^8.0.1",
     "babel-jest": "^30.4.1",
     "jest": "^30.4.2",
     "ts-jest": "^29.4.11",
-    "tsx": "^4.22.4",
+    "tsx": "^4.23.0",
     "typescript": "^6.0.3",
-    "wrangler": "^4.101.0"
+    "wrangler": "^4.108.0"
   }
 }

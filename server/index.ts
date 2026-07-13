@@ -64,9 +64,9 @@ export type {
   TurnstileWorkerConfig,
 } from "./src/turnstile/index.js";
 
-export type { IsDevOptions } from "../utils/index.js";
+export type { IsDevOptions } from "../utils/src/functions.js";
 
-import { log } from "../utils/index.js";
+import log from "../utils/src/log.js";
 
 // Attach log to globalThis if not already set
 if (

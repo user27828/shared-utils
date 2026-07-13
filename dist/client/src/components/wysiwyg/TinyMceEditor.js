@@ -6,7 +6,7 @@ import { jsx as _jsx } from "react/jsx-runtime";
 import { useRef, useEffect } from "react";
 import "./ensurePrismGlobal.js";
 import { Editor } from "@tinymce/tinymce-react";
-import { merge } from "lodash-es";
+import merge from "lodash-es/merge.js";
 // TinyMCE so the global var exists
 import "tinymce/tinymce";
 // DOM model

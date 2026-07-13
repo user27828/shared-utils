@@ -10,7 +10,12 @@ import React, {
   useRef,
   useCallback,
 } from "react";
-import { get, isArray, isFunction, isNumber, isString, size } from "lodash-es";
+import get from "lodash-es/get.js";
+import isArray from "lodash-es/isArray.js";
+import isFunction from "lodash-es/isFunction.js";
+import isNumber from "lodash-es/isNumber.js";
+import isString from "lodash-es/isString.js";
+import size from "lodash-es/size.js";
 import { formatFileSize } from "../../../../utils/src/functions.js";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";

@@ -79,17 +79,29 @@ vi.mock("./components/ServerIntegrationTests", () => {
 });
 
 import App from "./App";
+import { AUTOMATED_SUITE_VIEWS } from "./components/testSuiteRegistry.js";
 
 describe("App Run All flow", () => {
-  it("advances through the automated suite queue and returns to the dashboard", async () => {
+  it("advances through the automated suite queue and retains the results on the dashboard", async () => {
     render(<App />);
 
     fireEvent.click(screen.getByRole("button", { name: "Run All" }));
 
-    await waitFor(() => {
-      expect(screen.getByText("Integration Test Suite")).toBeTruthy();
-      expect(screen.getAllByText("PASSED").length).toBeGreaterThan(0);
-      expect(screen.getAllByText("1/1 passed").length).toBeGreaterThan(0);
+    await waitFor(
+      () => {
+        expect(screen.getByText("Integration Test Suite")).toBeTruthy();
+      },
+      { timeout: 5000 },
+    );
+
+    expect({
+      passed: screen.queryAllByText("PASSED").length,
+      idle: screen.queryAllByText("IDLE").length,
+      completed: screen.queryAllByText("1/1 completed").length,
+    }).toEqual({
+      passed: AUTOMATED_SUITE_VIEWS.length * 2,
+      idle: 0,
+      completed: AUTOMATED_SUITE_VIEWS.length,
     });
   });
 });

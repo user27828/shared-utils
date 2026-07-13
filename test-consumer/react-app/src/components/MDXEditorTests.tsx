@@ -3,15 +3,13 @@ import {
   MDXEditor,
   type MDXEditorMethods,
 } from "@user27828/shared-utils/client/wysiwyg";
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  Stack,
-  Typography,
-} from "@mui/material";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Chip from "@mui/material/Chip";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 import TestSuiteLayout from "./TestSuiteLayout";
 import {

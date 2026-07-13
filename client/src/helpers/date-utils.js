@@ -1,4 +1,4 @@
-import { getTimezoneOffset as getTimezoneOffsetMs } from "date-fns-tz";
+import { getTimezoneOffset as getTimezoneOffsetMs } from "date-fns-tz/getTimezoneOffset";
 
 /**
  * Date utilities for formatting, parsing, and manipulation

@@ -11,10 +11,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "🚀 Deploying Turnstile Worker to $ENVIRONMENT environment..."
 
-# Check if wrangler is installed
-if ! command -v wrangler &> /dev/null; then
-    echo "❌ Wrangler CLI not found. Installing..."
-    npm install -g wrangler
+# Check if the project-local Wrangler is available. The repository pins the
+# supported version in server/package.json, so a global install would bypass
+# the lockfile and could deploy with a different CLI version.
+if ! yarn exec wrangler --version &> /dev/null; then
+    echo "❌ Project-local Wrangler CLI not found. Run 'yarn install' first."
+    exit 1
 fi
 
 # Change to server directory
@@ -35,13 +37,13 @@ fi
 
 # Verify secret key is set
 echo "🔑 Checking if TURNSTILE_SECRET_KEY is configured..."
-if ! wrangler secret list | grep -q "TURNSTILE_SECRET_KEY"; then
+if ! yarn exec wrangler secret list | grep -q "TURNSTILE_SECRET_KEY"; then
     echo "⚠️  TURNSTILE_SECRET_KEY not found."
-    echo "Please set it using: wrangler secret put TURNSTILE_SECRET_KEY"
+    echo "Please set it using: yarn exec wrangler secret put TURNSTILE_SECRET_KEY"
     read -p "Do you want to set it now? (y/n): " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        wrangler secret put TURNSTILE_SECRET_KEY
+        yarn exec wrangler secret put TURNSTILE_SECRET_KEY
     else
         echo "❌ Deployment cancelled. Secret key is required."
         exit 1
@@ -50,7 +52,7 @@ fi
 
 # Deploy the worker
 echo "📦 Deploying worker..."
-DEPLOY_OUTPUT=$(wrangler deploy 2>&1)
+DEPLOY_OUTPUT=$(yarn exec wrangler deploy 2>&1)
 echo "$DEPLOY_OUTPUT"
 
 echo "✅ Deployment complete!"
@@ -61,7 +63,7 @@ WORKER_URL=$(echo "$DEPLOY_OUTPUT" | grep -o "https://[^[:space:]]*\.workers\.de
 
 if [ -z "$WORKER_URL" ]; then
     # Fallback: try to get subdomain from wrangler whoami
-    SUBDOMAIN=$(wrangler whoami 2>/dev/null | grep -o "[^[:space:]]*\.workers\.dev" | head -1 | cut -d'.' -f1)
+    SUBDOMAIN=$(yarn exec wrangler whoami 2>/dev/null | grep -o "[^[:space:]]*\.workers\.dev" | head -1 | cut -d'.' -f1)
     if [ ! -z "$SUBDOMAIN" ] && [ ! -z "$WORKER_NAME" ]; then
         WORKER_URL="https://${SUBDOMAIN}.workers.dev"
     fi

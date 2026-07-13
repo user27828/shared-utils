@@ -85,13 +85,15 @@ export const generateImageVariants = async (input) => {
     const useWorker = input.useWorker !== false;
     // ── Worker path ──────────────────────────────────────────────────────
     if (useWorker && canUseWorker() && supportsOffscreenCanvas()) {
+        let worker = null;
         try {
-            const worker = new Worker(new URL("../workers/imageVariantWorker.js", import.meta.url), { type: "module" });
+            const activeWorker = new Worker(new URL("../workers/imageVariantWorker.js", import.meta.url), { type: "module" });
+            worker = activeWorker;
             const result = await new Promise((resolve, reject) => {
                 const timeout = window.setTimeout(() => {
                     reject(new Error("Image worker timed out"));
                 }, 30000);
-                worker.onmessage = (ev) => {
+                activeWorker.onmessage = (ev) => {
                     const data = ev.data;
                     window.clearTimeout(timeout);
                     if (!data || !data.ok) {
@@ -100,11 +102,11 @@ export const generateImageVariants = async (input) => {
                     }
                     resolve(data.result);
                 };
-                worker.onerror = () => {
+                activeWorker.onerror = () => {
                     window.clearTimeout(timeout);
                     reject(new Error("Worker error"));
                 };
-                worker.postMessage({
+                activeWorker.postMessage({
                     blob: input.file,
                     widths: Array.from(widths),
                     maxCanvasDimension: MAX_CANVAS_DIMENSION,
@@ -112,11 +114,13 @@ export const generateImageVariants = async (input) => {
                     quality,
                 });
             });
-            worker.terminate();
             return result;
         }
         catch {
             // Fall through to main-thread path.
+        }
+        finally {
+            worker?.terminate();
         }
     }
     // ── Main-thread fallback ─────────────────────────────────────────────
@@ -130,55 +134,61 @@ export const generateImageVariants = async (input) => {
     const sourceWidth = bitmap.width;
     const sourceHeight = bitmap.height;
     const constrained = constrainToCanvasLimits(sourceWidth, sourceHeight);
-    const targetWidths = chooseTargetWidths({
-        widths,
-        sourceWidth: constrained.width,
-    });
-    if (constrained.wasConstrained) {
-        // eslint-disable-next-line no-console
-        console.warn("Image exceeded canvas limits; constrained before variant generation", {
+    let baseBitmap = bitmap;
+    try {
+        const targetWidths = chooseTargetWidths({
+            widths,
+            sourceWidth: constrained.width,
+        });
+        if (constrained.wasConstrained) {
+            // eslint-disable-next-line no-console
+            console.warn("Image exceeded canvas limits; constrained before variant generation", {
+                sourceWidth,
+                sourceHeight,
+                constrainedWidth: constrained.width,
+                constrainedHeight: constrained.height,
+            });
+        }
+        // If we had to constrain, redraw to a safe-sized bitmap first.
+        if (constrained.wasConstrained) {
+            const oc = new OffscreenCanvas(constrained.width, constrained.height);
+            const ctx = oc.getContext("2d");
+            if (!ctx) {
+                throw new Error("Unable to get canvas context");
+            }
+            ctx.drawImage(bitmap, 0, 0, constrained.width, constrained.height);
+            baseBitmap = oc.transferToImageBitmap();
+        }
+        const variants = [];
+        for (const w of targetWidths) {
+            const h = Math.max(1, Math.round((baseBitmap.height * w) / baseBitmap.width));
+            const oc = new OffscreenCanvas(w, h);
+            const ctx = oc.getContext("2d");
+            if (!ctx) {
+                continue;
+            }
+            ctx.drawImage(baseBitmap, 0, 0, w, h);
+            const encoded = await tryEncodeType({ canvas: oc, preferWebp, quality });
+            variants.push({
+                targetWidth: w,
+                targetHeight: h,
+                mimeType: encoded.mimeType,
+                blob: encoded.blob,
+            });
+        }
+        return {
             sourceWidth,
             sourceHeight,
             constrainedWidth: constrained.width,
             constrainedHeight: constrained.height,
-        });
+            wasConstrained: constrained.wasConstrained,
+            variants,
+        };
     }
-    // If we had to constrain, redraw to a safe-sized bitmap first.
-    let baseBitmap = bitmap;
-    if (constrained.wasConstrained) {
-        const oc = new OffscreenCanvas(constrained.width, constrained.height);
-        const ctx = oc.getContext("2d");
-        if (!ctx) {
-            throw new Error("Unable to get canvas context");
+    finally {
+        baseBitmap.close();
+        if (baseBitmap !== bitmap) {
+            bitmap.close();
         }
-        ctx.drawImage(bitmap, 0, 0, constrained.width, constrained.height);
-        baseBitmap = oc.transferToImageBitmap();
-        bitmap.close();
     }
-    const variants = [];
-    for (const w of targetWidths) {
-        const h = Math.max(1, Math.round((baseBitmap.height * w) / baseBitmap.width));
-        const oc = new OffscreenCanvas(w, h);
-        const ctx = oc.getContext("2d");
-        if (!ctx) {
-            continue;
-        }
-        ctx.drawImage(baseBitmap, 0, 0, w, h);
-        const encoded = await tryEncodeType({ canvas: oc, preferWebp, quality });
-        variants.push({
-            targetWidth: w,
-            targetHeight: h,
-            mimeType: encoded.mimeType,
-            blob: encoded.blob,
-        });
-    }
-    baseBitmap.close();
-    return {
-        sourceWidth,
-        sourceHeight,
-        constrainedWidth: constrained.width,
-        constrainedHeight: constrained.height,
-        wasConstrained: constrained.wasConstrained,
-        variants,
-    };
 };
