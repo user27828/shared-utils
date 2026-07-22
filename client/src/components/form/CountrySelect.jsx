@@ -195,7 +195,10 @@ const CountrySelect = ({
               country.iso3166_1_numeric === option.iso3166_1_numeric,
           );
           return (
-            <MenuItem
+            // Autocomplete options are listbox items, not menu items. MUI 9
+            // MenuItem requires a MenuListContext that Autocomplete does not provide.
+            <Box
+              component="li"
               {...props}
               key={`country-${option.iso3166_1_alpha2}-${option.iso3166_1_alpha3}-${option.iso3166_1_numeric}-${optionIndex}`}
               sx={{ display: "flex", alignItems: "center" }}
@@ -219,7 +222,7 @@ const CountrySelect = ({
                   option.nameLocal !== option.name ? option.nameLocal : null
                 }
               />
-            </MenuItem>
+            </Box>
           );
         }}
         renderValue={

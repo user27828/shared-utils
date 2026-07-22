@@ -133,7 +133,7 @@ const CountrySelect = ({ value, onChange, multiple = false, topCountries = [], s
                 const optionIndex = countryOptions.findIndex((country) => country.iso3166_1_alpha2 === option.iso3166_1_alpha2 &&
                     country.iso3166_1_alpha3 === option.iso3166_1_alpha3 &&
                     country.iso3166_1_numeric === option.iso3166_1_numeric);
-                return (_createElement(MenuItem, { ...props, key: `country-${option.iso3166_1_alpha2}-${option.iso3166_1_alpha3}-${option.iso3166_1_numeric}-${optionIndex}`, sx: { display: "flex", alignItems: "center" } },
+                return (_createElement(Box, { component: "li", ...props, key: `country-${option.iso3166_1_alpha2}-${option.iso3166_1_alpha3}-${option.iso3166_1_numeric}-${optionIndex}`, sx: { display: "flex", alignItems: "center" } },
                     multiple && _jsx(Checkbox, { checked: selected, sx: { mr: 1 } }),
                     _jsx(ListItemText, { primary: _jsxs(Box, { sx: { display: "flex", justifyContent: "space-between" }, children: [_jsx("span", { children: option.name }), _jsxs(Typography, { variant: "caption", color: "text.secondary", children: [option.iso3166_1_alpha2, showTelCode && option.telCountryCode
                                             ? ` +${option.telCountryCode}`

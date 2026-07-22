@@ -140,7 +140,7 @@ const LanguageSelect = ({ value, onChange, name = "languages", id = "language-se
                     lang.iso639_2 === option.iso639_2 &&
                     lang.iso639_3 === option.iso639_3 &&
                     lang.lcid === option.lcid);
-                return (_createElement(MenuItem, { ...props, key: `language-${option.iso639_1}-${option.iso639_2}-${option.iso639_3}-${option.lcid || "unknown"}-${optionIndex}`, sx: { display: "flex", alignItems: "center" } },
+                return (_createElement(Box, { component: "li", ...props, key: `language-${option.iso639_1}-${option.iso639_2}-${option.iso639_3}-${option.lcid || "unknown"}-${optionIndex}`, sx: { display: "flex", alignItems: "center" } },
                     multiple && _jsx(Checkbox, { checked: selected, sx: { mr: 1 } }),
                     _jsx(ListItemText, { primary: _jsxs(Box, { sx: { display: "flex", justifyContent: "space-between" }, children: [_jsx("span", { children: option.name }), _jsx(Typography, { variant: "caption", color: "text.secondary", children: option.ietf || option.iso639_1 })] }), secondary: option.nameLocal !== option.name ? option.nameLocal : null })));
             }, renderValue: multiple

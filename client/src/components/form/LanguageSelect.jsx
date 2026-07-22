@@ -200,7 +200,10 @@ const LanguageSelect = ({
               lang.lcid === option.lcid,
           );
           return (
-            <MenuItem
+            // Autocomplete options are listbox items, not menu items. MUI 9
+            // MenuItem requires a MenuListContext that Autocomplete does not provide.
+            <Box
+              component="li"
               {...props}
               key={`language-${option.iso639_1}-${option.iso639_2}-${option.iso639_3}-${option.lcid || "unknown"}-${optionIndex}`}
               sx={{ display: "flex", alignItems: "center" }}
@@ -221,7 +224,7 @@ const LanguageSelect = ({
                   option.nameLocal !== option.name ? option.nameLocal : null
                 }
               />
-            </MenuItem>
+            </Box>
           );
         }}
         renderValue={
