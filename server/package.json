@@ -48,7 +48,7 @@
     "@babel/core": "^8.0.1",
     "@babel/preset-env": "^8.0.2",
     "@babel/preset-typescript": "^8.0.1",
-    "@cloudflare/workers-types": "^5.20260717.1",
+    "@cloudflare/workers-types": "^5.20260719.1",
     "@jest/globals": "^30.4.1",
     "@types/express": "^5.0.6",
     "@types/node": "^26.1.1",
