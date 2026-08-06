@@ -27,6 +27,7 @@ Collection of common utilities for web applications. Features centralized config
   - [Command Line Tools](#command-line-tools)
     - [Dependency Manager](#dependency-manager)
     - [Package Scripts Integration](#package-scripts-integration)
+    - [Shared Spec-Kit and Codex synchronization](#shared-spec-kit-and-codex-synchronization)
   - [Graphify Knowledge Graph](#graphify-knowledge-graph)
     - [Install Graphify](#install-graphify)
     - [Build and query the graph](#build-and-query-the-graph)
@@ -699,6 +700,48 @@ Add useful scripts to your `package.json`:
   }
 }
 ```
+
+### Shared Spec-Kit and Codex synchronization
+
+The package owns the synchronization implementation in
+`scripts/speckit-sync.sh` and publishes it as the
+`shared-utils-speckit-sync` executable. Consuming repositories should invoke
+that package executable instead of copying the script.
+
+Add a folder-open task to a consuming repository's `.vscode/tasks.json`:
+
+```json
+{
+  "label": "sync-speckit-bridge",
+  "type": "shell",
+  "command": "yarn",
+  "args": ["exec", "shared-utils-speckit-sync"],
+  "runOptions": {
+    "runOn": "folderOpen"
+  },
+  "problemMatcher": [],
+  "presentation": {
+    "reveal": "silent",
+    "panel": "dedicated",
+    "close": true
+  }
+}
+```
+
+The consuming repository must also enable automatic tasks with
+`"task.allowAutomaticTasks": "on"` in `.vscode/settings.json`. The runner
+uses the consuming repository as its Git root and reads its Spec-Kit prompts.
+Before syncing, it detects whether GitHub Copilot or Codex is installed. If
+neither client is available, the task exits without creating or changing any
+bridge, prompt, or skill files.
+It mirrors all discovered prompts into `CODEX_HOME/prompts`; global VS Code
+user prompts are additionally exposed as bare Codex skills under
+`CODEX_HOME/skills/<prompt-id>/SKILL.md`. Therefore a global
+`yarn-upgrade.prompt.md` is available as `/yarn-upgrade`, just as the existing
+`/implement` and `/audit` skills are. The generated adapters read the source
+prompt at invocation time, so the source prompt remains authoritative.
+
+Within this repository, the equivalent command is `yarn speckit:sync`.
 
 [🔝 Back to Top](#shared-utils)
 
