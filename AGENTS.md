@@ -107,6 +107,28 @@ Do not treat `AGENTS.md` as the only repository truth. This project also maintai
 
 Note: `yarn test:consumer` starts Vite (React dev server) which does not exit on its own; automated runs should execute with a timeout or use a forced stop. This prevents automation from hanging.
 
+### Package upgrade helper for consuming projects
+
+When a consuming project has the `/yarn-upgrade` GHCP/Codex prompt or skill,
+use the installed `@user27828/shared-utils` package's `package-upgrade` binary
+from the target project's directory. Start with the read-only plan:
+
+```bash
+yarn exec package-upgrade --json
+```
+
+Use the consuming project's manager when it is not Yarn:
+`npm exec -- package-upgrade --manager npm --json` or
+`pnpm exec package-upgrade --manager pnpm --json`. Review release notes,
+actual usage, downstream impact, and the current JSON audit before applying
+anything. Apply only reviewed exact specs, never `rejected-age-gate`
+candidates, and use `--verify test`, `--verify lint`, or `--verify build` for
+standard verification. Major upgrades need a confirmed compatibility plan or
+the user's decision; do not apply them automatically. The `/yarn-upgrade`
+workflow is authoritative, and `package-upgrade` is its package-owned
+execution mechanism. Do not use the legacy interactive wrapper for this
+workflow.
+
 ## OptionsManager Architecture
 
 - **Registration Pattern**: Each utility creates an `OptionsManager` instance and registers with global `optionsManager`: `optionsManager.registerManager("log", this.optionsManager)`

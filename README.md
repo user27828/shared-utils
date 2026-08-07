@@ -775,6 +775,23 @@ audit document.
 `yarn upgrade-interactive`. Use it when selecting upgrades manually; use
 `package-upgrade` for repeatable, audit-first automation.
 
+### Using `/yarn-upgrade` in consuming projects
+
+When a consuming project has the `/yarn-upgrade` GHCP/Codex prompt or skill,
+the agent should use the `package-upgrade` binary provided by the installed
+`@user27828/shared-utils` package from the target project's directory. If the
+binary is not available, add or link this package using the consuming
+project's normal package-manager workflow before planning upgrades.
+
+The agent should begin with a read-only plan, review each eligible candidate's
+release notes, actual usage, downstream impact, and current audit, then apply
+only the reviewed exact specs. It must not apply `rejected-age-gate`
+candidates. Patch and minor upgrades may use `--apply --verify test` (or an
+equivalent trusted verification); major upgrades require a confirmed
+compatibility plan or the user's decision before application. The prompt's
+workflow is the authority for this process; the package-owned CLI is the
+execution mechanism.
+
 ### Shared Spec-Kit and Codex synchronization
 
 The package owns the synchronization implementation in
