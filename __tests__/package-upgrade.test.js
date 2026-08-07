@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "@jest/globals";
 import {
   parseArgs,
@@ -8,6 +10,8 @@ import {
   packageSpecsFromManifest,
   parseAgeGate,
   createInspection,
+  ageGateStatusFor,
+  assertNoAgeGateRejectionsForApply,
   parseRegistryMetadata,
   registryInfoArgs,
   resolveProjectRoot,
@@ -16,6 +20,27 @@ import {
 } from "../scripts/package-upgrade.mjs";
 
 describe("package-upgrade", () => {
+  it("runs when invoked through a package-manager bin symlink", () => {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), "shared-utils-package-upgrade-test-"),
+    );
+    const binPath = path.join(root, "package-upgrade");
+    const scriptPath = fileURLToPath(
+      new URL("../scripts/package-upgrade.mjs", import.meta.url),
+    );
+    fs.symlinkSync(scriptPath, binPath);
+
+    try {
+      expect(
+        execFileSync(process.execPath, [binPath, "--help"], {
+          encoding: "utf8",
+        }),
+      ).toContain("Usage: package-upgrade");
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("accepts only concrete registry package specifications", () => {
     expect(parsePackageSpec("@scope/example@1.2.3")).toEqual({
       name: "@scope/example",
@@ -34,14 +59,42 @@ describe("package-upgrade", () => {
     );
   });
 
+  it("reports age-gated candidates in plans and rejects only apply requests", () => {
+    const rejected = {
+      name: "example",
+      version: "1.2.3",
+      status: ageGateStatusFor(60, 5760),
+    };
+
+    expect(rejected.status).toBe("rejected-age-gate");
+    expect(ageGateStatusFor(60, 5760, true)).toBe(
+      "eligible-security-exception",
+    );
+    expect(() =>
+      assertNoAgeGateRejectionsForApply([rejected], false),
+    ).not.toThrow();
+    expect(() => assertNoAgeGateRejectionsForApply([rejected], true)).toThrow(
+      "Age gate rejected: example@1.2.3",
+    );
+  });
+
   it("rejects manager and verification injection attempts before commands run", () => {
     expect(() => parseArgs(["--manager", "yarn;id"])).toThrow("must be yarn");
     expect(() => parseArgs(["--verify", "test;id"])).toThrow("only accepts");
     expect(() => parseArgs(["--unknown"])).toThrow("Unknown option");
-    expect(parseArgs(["--inspect", "example@1.2.3"]).inspect).toBe(true);
-    expect(() => parseArgs(["--inspect", "example", "other"])).toThrow(
-      "exactly one",
+    expect(() => parseArgs(["--summary"])).toThrow("requires --inspect");
+    expect(
+      parseArgs(["--inspect", "example@1.2.3", "other@2.3.4"]).inspect,
+    ).toBe(true);
+    expect(() => parseArgs(["--inspect", "example"])).toThrow(
+      "exact package versions",
     );
+    expect(() =>
+      parseArgs([
+        "--inspect",
+        ...Array.from({ length: 33 }, (_, index) => `example-${index}@1.2.3`),
+      ]),
+    ).toThrow("between one and 32");
     expect(() => parseArgs(["--audit", "example"])).toThrow(
       "cannot be combined",
     );
@@ -186,6 +239,25 @@ describe("package-upgrade", () => {
     );
     expect(inspection).not.toHaveProperty("description");
     expect(JSON.stringify(inspection)).not.toContain("tarball");
+    const summary = createInspection(
+      {
+        name: "example",
+        version: "1.2.3",
+        publishedAt: "2025-01-01T00:00:00.000Z",
+      },
+      { dependencies, peerDependencies: { react: "^19.0.0" } },
+      5760,
+      6000,
+      true,
+    );
+    expect(summary).toEqual(
+      expect.objectContaining({
+        dependencyCount: "64+",
+        peerDependencyCount: 1,
+      }),
+    );
+    expect(summary).not.toHaveProperty("dependencies");
+    expect(summary).not.toHaveProperty("dist");
   });
 
   it("summarizes audits without returning their full untrusted payload", () => {

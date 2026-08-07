@@ -723,7 +723,10 @@ yarn exec package-upgrade --project-dir packages/web
 # Plan specific packages with compact machine-readable output.
 yarn exec package-upgrade --json vite @types/node
 
-# Inspect one selected version's bounded compatibility and provenance metadata.
+# Triage selected exact versions in one low-token compatibility summary request.
+yarn exec package-upgrade --inspect --summary --json typescript@7.0.2 vite@8.2.0
+
+# Request full bounded compatibility and provenance metadata only when needed.
 yarn exec package-upgrade --inspect --json typescript@7.0.2
 
 # Summarize current advisories without returning the full audit payload.
@@ -763,13 +766,18 @@ Only `test`, `lint`, and `build` are allowed after `--verify`; this prevents
 arbitrary command text from being executed by the CLI. The project commands
 themselves remain trusted code selected by the caller.
 
-`--inspect` is read-only and requires exactly one package. Its output includes
-only the selected version's publication time, age-gate result, deprecation
-status, engines, bounded dependency/peer-dependency maps, and validated
-integrity hashes. It excludes descriptions, maintainers, repository/tarball
-URLs, and other free-form registry text. `--audit` is also read-only and emits
-severity counts plus high/critical CVE and GHSA identifiers instead of the raw
-audit document.
+`--inspect` is read-only and accepts one to 32 exact package versions. A
+single result is returned as `inspection`; a batch is returned as
+`inspections`. `--summary` omits dependency maps and integrity hashes, returning
+only compact compatibility signals and bounded dependency counts; use it for
+the first pass. Full results include publication time, age-gate outcome,
+deprecation status, engines, bounded dependency/peer-dependency maps, and
+validated integrity hashes. Every result includes the active Node version to
+evaluate engine requirements without a separate environment command. All
+inspection forms exclude descriptions, maintainers, repository/tarball URLs,
+and other free-form registry text.
+`--audit` is also read-only and emits severity counts plus high/critical CVE
+and GHSA identifiers instead of the raw audit document.
 
 `yarn upgrade` remains the interactive Yarn workflow and calls
 `yarn upgrade-interactive`. Use it when selecting upgrades manually; use
