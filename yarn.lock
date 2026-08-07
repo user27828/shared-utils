@@ -8433,6 +8433,7 @@ __metadata:
     dependency-manager: ./scripts/dependency-manager.js
     docker-build: ./bin/docker-build.sh
     killnode: ./bin/killnode.sh
+    package-upgrade: ./scripts/package-upgrade.mjs
     shared-utils-speckit-sync: ./scripts/speckit-sync.mjs
     vite-preview-envs: ./bin/vite-preview-envs.sh
     yarn-upgrade-interactive: ./bin/package-upgrades.sh

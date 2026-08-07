@@ -620,7 +620,7 @@ optionsManager.setGlobalOptions({
 ## Command Line Tools
 
 - **`killnode`** - Kills Express server node processes (ignores VS Code, Electron, etc.)
-- **`yarn-upgrade`** - Interactive yarn upgrade with Cloudflare Pages compatibility
+- **`package-upgrade`** - Audit-first, age-gated dependency upgrade planning for Yarn, npm, and pnpm
 - **`dependency-manager`** - Manages portal: resolutions for local development vs. production builds
 
 ### Dependency Manager
@@ -693,13 +693,87 @@ Add useful scripts to your `package.json`:
 {
   "scripts": {
     "kill": "npx killnode -9",
-    "upgrade": "npx yarn-upgrade-interactive --skip-server",
+    "upgrade:plan": "yarn exec package-upgrade --json",
+    "upgrade:apply": "yarn exec package-upgrade --apply --verify test",
     "dev": "dependency-manager && npx killnode && your-dev-command",
     "build": "dependency-manager && your-build-command",
     "cf:deploy": "dependency-manager && wrangler deploy"
   }
 }
 ```
+
+### Package upgrade safety
+
+`package-upgrade` is a project-aware companion to the legacy interactive
+`yarn upgrade` workflow. It resolves the nearest caller `package.json`, never
+changes files without `--apply`, and only accepts registry package names plus
+exact published versions. It uses argument-array process execution, disables
+dependency lifecycle scripts, reads only structured registry/audit JSON, and
+keeps its output compact for automated upgrade workflows.
+
+The default manager is Yarn. Yarn 3/4, npm 10/11, and pnpm 9/10 are supported;
+newer compatible major releases are accepted. For an age-gated Yarn project,
+the tool reads `npmMinimalAgeGate` from that caller project's `.yarnrc.yml` and
+rejects newer packages before any write.
+
+```bash
+# Plan every direct dependency upgrade from a nested directory; no files change.
+yarn exec package-upgrade --project-dir packages/web
+
+# Plan specific packages with compact machine-readable output.
+yarn exec package-upgrade --json vite @types/node
+
+# Inspect one selected version's bounded compatibility and provenance metadata.
+yarn exec package-upgrade --inspect --json typescript@7.0.2
+
+# Summarize current advisories without returning the full audit payload.
+yarn exec package-upgrade --audit --json
+
+# Apply exact, eligible upgrades, audit afterwards, then run a trusted project test.
+yarn exec package-upgrade --apply --verify test vite@8.2.0
+
+# Use npm or pnpm in projects that use them.
+npm exec -- package-upgrade --manager npm --apply --verify test eslint
+pnpm exec package-upgrade --manager pnpm --apply --verify lint typescript
+
+# Upgrade only the caller project's Corepack package-manager pin after its age check.
+yarn exec package-upgrade --upgrade-package-manager --apply
+```
+
+The package-manager flag updates only `package.json`'s `packageManager` field;
+it does not alter a global package-manager installation. Corepack obtains the
+pinned manager on the next project invocation.
+
+An age-gated package may be allowed only for a previously discovered major
+security issue. Supply the exact candidate and advisory identifier; the current
+audit must contain that high/critical CVE or GHSA, and the post-upgrade audit
+must no longer contain it or the tool restores the original package manifest
+and lockfile.
+
+```bash
+yarn exec package-upgrade --apply \
+  --security-exception dompurify@3.4.12=CVE-2025-12345 \
+  dompurify@3.4.12
+```
+
+Replace the example CVE with the exact high/critical advisory reported by the
+current project audit; the example is syntax only, not a security claim.
+
+Only `test`, `lint`, and `build` are allowed after `--verify`; this prevents
+arbitrary command text from being executed by the CLI. The project commands
+themselves remain trusted code selected by the caller.
+
+`--inspect` is read-only and requires exactly one package. Its output includes
+only the selected version's publication time, age-gate result, deprecation
+status, engines, bounded dependency/peer-dependency maps, and validated
+integrity hashes. It excludes descriptions, maintainers, repository/tarball
+URLs, and other free-form registry text. `--audit` is also read-only and emits
+severity counts plus high/critical CVE and GHSA identifiers instead of the raw
+audit document.
+
+`yarn upgrade` remains the interactive Yarn workflow and calls
+`yarn upgrade-interactive`. Use it when selecting upgrades manually; use
+`package-upgrade` for repeatable, audit-first automation.
 
 ### Shared Spec-Kit and Codex synchronization
 
