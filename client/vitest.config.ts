@@ -13,6 +13,9 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
+    // MUI/jsdom integration tests can exceed Vitest's 5-second default while
+    // cold workers transform and render the component tree in parallel.
+    testTimeout: 10_000,
     server: {
       deps: {
         inline: ["@mui/material", "@mui/system", "react-transition-group"],

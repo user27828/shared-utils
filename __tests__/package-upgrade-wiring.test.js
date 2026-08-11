@@ -10,6 +10,10 @@ const repositoryRoot = path.resolve(
 const packageJson = JSON.parse(
   fs.readFileSync(path.join(repositoryRoot, "package.json"), "utf8"),
 );
+const legacyUpgradeScript = fs.readFileSync(
+  path.join(repositoryRoot, "bin/package-upgrades.sh"),
+  "utf8",
+);
 
 describe("package-upgrade command wiring", () => {
   it("keeps yarn upgrade on the legacy interactive workflow", () => {
@@ -22,6 +26,15 @@ describe("package-upgrade command wiring", () => {
   it("exposes the safe automation workflow separately", () => {
     expect(packageJson.bin["package-upgrade"]).toBe(
       "./scripts/package-upgrade.mjs",
+    );
+  });
+
+  it("uses Yarn's built-in interactive command before importing a plugin", () => {
+    expect(legacyUpgradeScript).toContain(
+      'yarn --cwd "$project_root" upgrade-interactive --help',
+    );
+    expect(legacyUpgradeScript).toContain(
+      "elif [[ -f \"$yarnrc_file\" ]] && grep -Fq 'plugin-interactive-tools' \"$yarnrc_file\"; then",
     );
   });
 });

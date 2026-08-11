@@ -38,9 +38,15 @@ cleanup_plugin() {
   fi
 }
 
+upgrade_interactive_available() {
+  yarn --cwd "$project_root" upgrade-interactive --help >/dev/null 2>&1
+}
+
 trap cleanup_plugin EXIT
 
-if [[ -f "$yarnrc_file" ]] && grep -Fq 'plugin-interactive-tools' "$yarnrc_file"; then
+if upgrade_interactive_available; then
+  printf 'Using Yarn built-in upgrade-interactive command.\n'
+elif [[ -f "$yarnrc_file" ]] && grep -Fq 'plugin-interactive-tools' "$yarnrc_file"; then
   plugin_was_present=true
 else
   yarn --cwd "$project_root" plugin import interactive-tools
