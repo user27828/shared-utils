@@ -129,6 +129,27 @@ workflow is authoritative, and `package-upgrade` is its package-owned
 execution mechanism. Do not use the legacy interactive wrapper for this
 workflow.
 
+### Shared Spec-Kit and Codex synchronization
+
+Use the package-owned `shared-utils-speckit-sync`; do not copy the script into
+consuming projects. A repository's prompt source is `.github/prompts/`, with
+optional agent bodies in `.github/agents/`; generated adapters resolve these
+files at invocation time.
+
+- Repository prompts default to local `.agents/skills/`.
+- User-global VS Code prompts populate `CODEX_HOME/prompts/` and
+  `CODEX_HOME/skills/` for cross-project commands.
+- Use `yarn exec shared-utils-speckit-sync --no-global` for automation and
+  routine project-only sync. It never changes `CODEX_HOME`.
+- Use `--global-repository` only as an explicit fallback when local skills are
+  unavailable. Use `--prune` or `--prune-global` only for deliberate cleanup;
+  normal sync does not prune.
+- Global sync is locked and owner-aware; preserve unmanaged, conflicting,
+  symlink, non-file, and unverifiable legacy entries.
+
+See the [sync details](README.md#shared-spec-kit-and-codex-synchronization)
+and [Spec-Kit bridge](.specify/spec-kit-bridge.md).
+
 ## OptionsManager Architecture
 
 - **Registration Pattern**: Each utility creates an `OptionsManager` instance and registers with global `optionsManager`: `optionsManager.registerManager("log", this.optionsManager)`

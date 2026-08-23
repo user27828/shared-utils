@@ -7,16 +7,19 @@ This file is the shared Spec-Kit instruction bridge for both GitHub Copilot Chat
 - `AGENTS.md` remains the repository-wide instruction layer.
 - `.specify/` remains the Spec-Kit runtime and workflow layer.
 - `.github/copilot-instructions.md` should stay as a thin Copilot shim.
-- Codex should use the native Spec-Kit Codex integration when the repo can write `.agents/skills`.
-- If `.agents/skills` is unavailable or read-only, Codex should use the global `spec-kit-bridge` skill and this bridge file.
+- Repository prompts are mirrored into the active repository's `.agents/skills` when that directory is writable, keeping project commands out of the shared global namespace.
+- If `.agents/skills` is unavailable or read-only, Codex should use the global `spec-kit-bridge` skill and this bridge file, or explicitly opt into the legacy global repository fallback with `--global-repository`.
 - Global VS Code prompts are mirrored into `CODEX_HOME/skills/<prompt-id>/SKILL.md` so they work as bare Codex skills such as `/implement` and `/audit`.
-- The native Codex prompt mirror in `CODEX_HOME/prompts/<prompt-id>.md` is retained for clients that use the `/prompts:<prompt-id>` namespace.
+- The native Codex prompt mirror in `CODEX_HOME/prompts/<prompt-id>.md` is retained for user-global prompts and explicit repository fallback only.
+- Generated global mirrors carry an owner identity. A repository sync cannot overwrite another owner, unmanaged file, symlink, or legacy generated file without ownership metadata.
+- A legacy global mirror is adopted only when its recorded source is an existing prompt in a detected global VS Code prompt directory; repository-derived legacy mirrors remain protected because their ownership cannot be proven.
+- Normal sync does not prune global mirrors. Use `--prune` to remove only this repository's generated entries, or explicitly use `--prune-global` for global-source cleanup.
 
 ## Preferred bootstrap
 
 - New Spec-Kit projects should start with `specify init --here --integration copilot`.
 - Add Codex with `specify integration install codex` on repositories where `.agents/skills` is writable.
-- If Codex installation fails because `.agents/skills` cannot be written, keep the global Codex skill as the fallback.
+- If Codex installation fails because `.agents/skills` cannot be written, keep the global `spec-kit-bridge` skill as the fallback; do not claim generic global prompt IDs unless `--global-repository` is explicitly requested.
 
 ## Shared workflow
 
@@ -42,4 +45,4 @@ Codex does not expose GitHub Copilot slash commands directly. Use the equivalent
 
 ## Sync path
 
-In this repository, run `yarn speckit:sync`; in consuming repositories, run `yarn exec shared-utils-speckit-sync` after Spec-Kit metadata or prompt changes to keep the Copilot shim, Codex prompt aliases, and global Codex skill adapters aligned. This package-owned runner reads the current repository's `.github/prompts/speckit.*` files as that project's Spec-Kit sources.
+In this repository, run `yarn speckit:sync`; in consuming repositories, run `yarn exec shared-utils-speckit-sync` after Spec-Kit metadata or prompt changes to keep the Copilot shim, project Codex skills, and user-global Codex adapters aligned. This package-owned runner reads the current repository's `.github/prompts/speckit.*` files as that project's Spec-Kit sources. Automatic folder-open tasks should pass `--no-global`; that mode updates project skills without mutating user-level Codex state.

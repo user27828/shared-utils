@@ -5,7 +5,7 @@
       "label": "sync-speckit-bridge",
       "type": "shell",
       "command": "yarn",
-      "args": ["speckit:sync"],
+      "args": ["speckit:sync", "--no-global"],
       "runOptions": {
         "runOn": "folderOpen"
       },

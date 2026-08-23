@@ -814,7 +814,7 @@ Add a folder-open task to a consuming repository's `.vscode/tasks.json`:
   "label": "sync-speckit-bridge",
   "type": "shell",
   "command": "yarn",
-  "args": ["exec", "shared-utils-speckit-sync"],
+  "args": ["exec", "shared-utils-speckit-sync", "--no-global"],
   "runOptions": {
     "runOn": "folderOpen"
   },
@@ -833,12 +833,33 @@ uses the consuming repository as its Git root and reads its Spec-Kit prompts.
 Before syncing, it detects whether GitHub Copilot or Codex is installed. If
 neither client is available, the task exits without creating or changing any
 bridge, prompt, or skill files.
-It mirrors all discovered prompts into `CODEX_HOME/prompts`; global VS Code
-user prompts are additionally exposed as bare Codex skills under
-`CODEX_HOME/skills/<prompt-id>/SKILL.md`. Therefore a global
-`yarn-upgrade.prompt.md` is available as `/yarn-upgrade`, just as the existing
-`/implement` and `/audit` skills are. The generated adapters read the source
-prompt at invocation time, so the source prompt remains authoritative.
+The runner has separate repository and user-global scopes:
+
+- Repository prompts under `.github/prompts/` are written to the repository's
+  `.agents/skills/` when that directory is writable. This is the default and
+  keeps project commands out of the shared global namespace.
+- User-global VS Code prompts are mirrored into `CODEX_HOME/prompts/` and are
+  exposed as bare Codex skills under `CODEX_HOME/skills/<prompt-id>/SKILL.md`.
+  This is how a global `yarn-upgrade.prompt.md` becomes `/yarn-upgrade`, along
+  with existing global `/implement` and `/audit` adapters.
+- If project-local `.agents/skills/` is unavailable, repository prompts are
+  skipped unless `--global-repository` is explicitly supplied. That flag is a
+  deliberate compatibility fallback and may update `CODEX_HOME`.
+
+Use `--no-global` for automatic or project-only synchronization. It updates
+repository bridge files and project-local skills without changing `CODEX_HOME`.
+Normal synchronization never prunes generated entries. Use `--prune` to remove
+only entries owned by the current repository, or add `--prune-global` when
+intentionally cleaning entries generated from global VS Code prompts.
+
+Global writes are serialized with a lock under `CODEX_HOME`. Generated entries
+carry owner and source metadata; the runner preserves unmanaged files,
+symlinks, non-file collisions, entries owned by another repository or scope,
+and legacy entries whose ownership cannot be proven. A legacy global mirror is
+adopted only when its recorded source is an existing prompt in a detected
+global VS Code prompt directory. The generated adapters read their source
+prompt at invocation time, so the source prompt remains authoritative and
+repository instructions remain in force.
 
 Within this repository, the equivalent command is `yarn speckit:sync`.
 
