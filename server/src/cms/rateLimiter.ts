@@ -126,6 +126,8 @@ export class CmsRateLimiter {
     try {
       const Redis = (await import("ioredis")).default;
       this.redis = new Redis(this.redisUrl, {
+        // Preserve the v5 RESP2 wire protocol while adopting ioredis v6.
+        protocol: 2,
         maxRetriesPerRequest: 1,
         enableOfflineQueue: false,
         connectTimeout: 2000,
