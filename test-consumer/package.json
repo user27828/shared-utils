@@ -30,7 +30,7 @@
     "@user27828/shared-utils": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^26.5.1",
+    "@types/node": "^26.6.2",
     "concurrently": "^10.0.5",
     "typescript": "^6.0.3"
   }

@@ -1,4 +1,4 @@
-import nodemailer, { type Transporter } from "nodemailer";
+import nodemailer, { type SendMailOptions, type Transporter } from "nodemailer";
 import log from "../../../../utils/src/log.js";
 import {
   getAttachmentContentBuffer,
@@ -243,8 +243,8 @@ export class GmailEmailProvider implements IEmailProvider {
     }
   }
 
-  private buildMailOptions(message: EmailMessage): nodemailer.SendMailOptions {
-    const options: nodemailer.SendMailOptions = {
+  private buildMailOptions(message: EmailMessage): SendMailOptions {
+    const options: SendMailOptions = {
       from: formatEmailAddress(message.from),
       to: message.to.map(formatEmailAddress),
       subject: message.subject,
