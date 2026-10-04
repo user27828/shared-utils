@@ -10,7 +10,7 @@
  *
  * Consumers who need S3:
  *   - Import directly: `import { FmStorageS3 } from "@user27828/shared-utils/fm/server/s3"`
- *   - Or use the async factory: `createFmStorage(config)` which dynamically imports this module
+ *   - Or inject createFmS3Storage into createFmStorage(config, createFmS3Storage)
  *
  * @aws-sdk/client-s3 and @aws-sdk/s3-request-presigner are listed as optional
  * peer dependencies in shared-utils package.json.
@@ -27,6 +27,9 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Readable } from "stream";
+import { assertValidFmServerConfig } from "../config.js";
+import type { FmServerConfig } from "../config.js";
+import { FmValidationError } from "../../../../utils/src/fm/errors.js";
 import type {
   FmCopyObjectInput,
   FmDeleteObjectInput,
@@ -38,6 +41,24 @@ import type {
   FmStorageCapabilities,
   FmWriteObjectInput,
 } from "./FmStorageAdapter.js";
+
+/** Config-based S3 factory. Import only in applications installing the AWS peers. */
+export const createFmS3Storage = (config: FmServerConfig): FmStorageS3 => {
+  assertValidFmServerConfig(config);
+  if (config.provider !== "s3") {
+    throw new FmValidationError(
+      "createFmS3Storage requires an S3 configuration.",
+    );
+  }
+  return new FmStorageS3({
+    endpoint: config.s3Endpoint!,
+    region: config.s3Region,
+    accessKeyId: config.s3AccessKeyId!,
+    secretAccessKey: config.s3SecretAccessKey!,
+    forcePathStyle: config.s3ForcePathStyle,
+    publicBaseUrl: config.s3PublicBaseUrl,
+  });
+};
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 

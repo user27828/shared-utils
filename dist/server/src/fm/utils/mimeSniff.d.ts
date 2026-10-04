@@ -19,4 +19,3 @@
  * Returns null if the format is not recognized.
  */
 export declare const sniffMimeFromHeader: (buf: Buffer) => string | null;
-//# sourceMappingURL=mimeSniff.d.ts.map

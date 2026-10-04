@@ -292,10 +292,13 @@ class GlobalOptionsManager {
         }
         if (path !== undefined) {
             // Pattern: (utilityName, categoryKey, path)
-            return manager.getOption(categoryKeyOrPath, path);
+            // Clone only the requested value so callers cannot mutate registered
+            // configuration and unrelated managers are not read or cloned.
+            return cloneDeep(manager.getOption(categoryKeyOrPath, path));
         }
         // If categoryKeyOrPath contains a dot, let manager handle it as a full path
-        return manager.getOption(categoryKeyOrPath);
+        // Clone only the requested value to preserve defensive-copy semantics.
+        return cloneDeep(manager.getOption(categoryKeyOrPath));
     }
 }
 // Create or reuse a singleton instance for cross-utility configuration.

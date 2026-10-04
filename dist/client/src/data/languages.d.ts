@@ -14,4 +14,3 @@ interface Language {
 }
 declare const languages: Language[];
 export default languages;
-//# sourceMappingURL=languages.d.ts.map

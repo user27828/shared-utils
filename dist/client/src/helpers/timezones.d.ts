@@ -13,4 +13,3 @@ export interface GetTimezoneOptionsArgs {
 export declare const DEFAULT_PRIORITY_TIMEZONES: string[];
 export declare const getSupportedTimezones: ({ topTimezones, currentValue, }?: Pick<GetTimezoneOptionsArgs, "topTimezones" | "currentValue">) => string[];
 export declare const getTimezoneOptions: ({ topTimezones, currentValue, referenceDate, }?: GetTimezoneOptionsArgs) => TimezoneOption[];
-//# sourceMappingURL=timezones.d.ts.map

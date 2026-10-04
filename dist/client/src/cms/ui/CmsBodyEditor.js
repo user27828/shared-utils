@@ -3,13 +3,13 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  * CMS Body Editor — shared-utils
  *
  * Multi-format content editor that switches between:
- * - HTML: TinyMCE or CKEditor (from shared-utils/client/wysiwyg)
- * - Markdown: MDXEditor (from shared-utils/client/wysiwyg)
+ * - HTML: a host-injected TinyMCE or CKEditor adapter
+ * - Markdown: a host-injected MDXEditor adapter
  * - JSON/Text: Plain textarea
  *
  * Media picker integration is injectable via callbacks.
  */
-import React, { useMemo, useRef, useState, Suspense, useCallback, useEffect, } from "react";
+import React, { useMemo, useRef, Suspense, useCallback, useEffect, } from "react";
 import Box from "@mui/material/Box";
 import LinearProgress from "@mui/material/LinearProgress";
 import Typography from "@mui/material/Typography";
@@ -86,8 +86,7 @@ export const mimeToContentType = (mime) => {
     }
 };
 // ─── Component ────────────────────────────────────────────────────────────
-const CmsBodyEditor = React.memo(({ contentType, value, onChange, height = 500, label, editor = "ckeditor", onPickAsset, onUploadImage, }) => {
-    const [editorLoading, setEditorLoading] = useState(true);
+const CmsBodyEditor = React.memo(({ contentType, value, onChange, height = 500, label, editor = "ckeditor", editorAdapters, editorProps, onPickAsset, onUploadImage, }) => {
     const latestHtmlRef = useRef(value);
     const htmlNormalizationRunRef = useRef(0);
     const mountedRef = useRef(true);
@@ -172,10 +171,10 @@ const CmsBodyEditor = React.memo(({ contentType, value, onChange, height = 500, 
         overflow: "hidden",
     }), [height]);
     if (contentType === "html") {
-        return (_jsxs(Box, { children: [label && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: { mb: 0.5 }, children: label })), _jsxs(Box, { sx: containerSx, children: [_jsx(Suspense, { fallback: _jsx(LinearProgress, {}), children: _jsx(HtmlEditor, { value: value, onChange: handleHtmlEditorChange, height: height, editor: editor, onPickAsset: onPickAsset, onUploadImage: onUploadImage, onReady: () => setEditorLoading(false) }) }), editorLoading && _jsx(LinearProgress, {})] })] }));
+        return (_jsxs(Box, { children: [label && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: { mb: 0.5 }, children: label })), _jsx(Box, { sx: containerSx, children: _jsx(Suspense, { fallback: _jsx(LinearProgress, {}), children: _jsx(HtmlEditor, { value: value, onChange: handleHtmlEditorChange, height: height, editor: editor, editorAdapters: editorAdapters, editorProps: editorProps, onPickAsset: onPickAsset, onUploadImage: onUploadImage }) }) })] }));
     }
     if (contentType === "markdown") {
-        return (_jsxs(Box, { children: [label && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: { mb: 0.5 }, children: label })), _jsx(Box, { sx: containerSx, children: _jsx(Suspense, { fallback: _jsx(LinearProgress, {}), children: _jsx(MarkdownEditor, { value: value, onChange: onChange, onPickAsset: onPickAsset, onUploadImage: onUploadImage }) }) })] }));
+        return (_jsxs(Box, { children: [label && (_jsx(Typography, { variant: "caption", color: "text.secondary", sx: { mb: 0.5 }, children: label })), _jsx(Box, { sx: containerSx, children: _jsx(Suspense, { fallback: _jsx(LinearProgress, {}), children: _jsx(MarkdownEditor, { value: value, onChange: onChange, editorAdapter: editorAdapters?.mdx, editorProps: editorProps?.mdx, onPickAsset: onPickAsset, onUploadImage: onUploadImage }) }) })] }));
     }
     // JSON or Plain text — use a simple textarea
     return (_jsxs(Box, { children: [label && (_jsxs(Typography, { variant: "caption", color: "text.secondary", sx: { mb: 0.5 }, children: [label, " (", contentType === "json" ? "JSON" : "Plain text", ")"] })), _jsx(Box, { component: "textarea", value: value, onChange: (e) => onChange(e.target.value), sx: {
@@ -190,37 +189,89 @@ const CmsBodyEditor = React.memo(({ contentType, value, onChange, height = 500, 
                     color: "text.primary",
                 } })] }));
 });
-// ─── Sub-editors (lazy-loaded) ────────────────────────────────────────────
-/**
- * HTML editor — loads TinyMCE or CKEditor from shared-utils/client/wysiwyg
- * based on the `editor` prop. Falls back to textarea if the import fails.
- */
-const HtmlEditor = ({ value, onChange, height, editor, onPickAsset, onUploadImage, onReady, }) => {
-    const [EditorComponent, setEditorComponent] = useState(null);
-    const loadedRef = useRef(null);
+// ─── Injected editor adapters ─────────────────────────────────────────────
+const DEFAULT_CMS_TINYMCE_PROPS = {
+    init: {
+        license_key: "gpl",
+        menubar: true,
+        plugins: [
+            "advlist",
+            "autolink",
+            "lists",
+            "link",
+            "image",
+            "charmap",
+            "preview",
+            "anchor",
+            "searchreplace",
+            "visualblocks",
+            "code",
+            "fullscreen",
+            "insertdatetime",
+            "media",
+            "table",
+            "help",
+            "wordcount",
+        ],
+        toolbar: "undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | code fullscreen",
+        paste_data_images: true,
+        automatic_uploads: true,
+        paste_preprocess: (_pluginApi, data) => {
+            data.content = stripLocalFileImages(data.content);
+        },
+    },
+};
+const useCmsEditorHandlers = (onPickAsset, onUploadImage) => {
+    const pickAsset = useCallback(async (request) => {
+        if (!onPickAsset) {
+            return null;
+        }
+        const picked = await onPickAsset();
+        if (!picked?.url) {
+            return null;
+        }
+        return {
+            url: picked.url,
+            kind: request.kind,
+            title: picked.name,
+            text: picked.name,
+            alt: picked.name,
+            mimeType: picked.mimeType,
+        };
+    }, [onPickAsset]);
+    const uploadImage = useCallback(async (request) => {
+        if (!onUploadImage) {
+            throw new Error("CMS image upload requires an onUploadImage handler");
+        }
+        const file = request.file ??
+            (request.blob
+                ? new File([request.blob], request.filename, {
+                    type: request.mimeType || "application/octet-stream",
+                })
+                : undefined);
+        if (!file) {
+            throw new Error("CMS image upload requires a file or blob");
+        }
+        const url = await onUploadImage(file, { source: "editor-upload" });
+        if (!url) {
+            throw new Error("Upload failed");
+        }
+        return { url };
+    }, [onUploadImage]);
+    return {
+        pickAsset: onPickAsset ? pickAsset : undefined,
+        uploadImage: onUploadImage ? uploadImage : undefined,
+    };
+};
+const HtmlEditor = ({ value, onChange, height, editor, editorAdapters, editorProps, onPickAsset, onUploadImage, }) => {
     const { mode, systemMode } = useColorScheme();
     const isDark = (mode === "system" ? systemMode : mode) === "dark";
-    // Re-load when editor preference changes
-    React.useEffect(() => {
-        if (loadedRef.current === editor) {
-            return;
-        }
-        loadedRef.current = editor;
-        setEditorComponent(null);
-        const editorImport = editor === "tinymce"
-            ? import("../../components/wysiwyg/TinyMceEditor.js")
-            : import("../../components/wysiwyg/CKEditor5Classic.js");
-        editorImport
-            .then((mod) => {
-            setEditorComponent(() => mod.default);
-            onReady?.();
-        })
-            .catch(() => {
-            onReady?.();
-        });
-    }, [editor, onReady]);
-    if (!EditorComponent) {
-        return (_jsx(Box, { component: "textarea", value: value, onChange: (e) => onChange(e.target.value), sx: {
+    const Adapter = editorAdapters?.[editor];
+    const editorSpecificProps = editorProps?.[editor] ??
+        (editor === "tinymce" ? DEFAULT_CMS_TINYMCE_PROPS : undefined);
+    const handlers = useCmsEditorHandlers(onPickAsset, onUploadImage);
+    if (!Adapter) {
+        return (_jsx(Box, { component: "textarea", value: value, onChange: (event) => onChange(event.target.value), sx: {
                 width: "100%",
                 height,
                 fontFamily: "monospace",
@@ -233,134 +284,14 @@ const HtmlEditor = ({ value, onChange, height, editor, onPickAsset, onUploadImag
                 color: "text.primary",
             } }));
     }
-    if (editor === "tinymce") {
-        // Adapt CmsImageUploadHandler → TinyMceImageUploadRequest so we reuse
-        // TinyMceEditor's own blobInfo extraction (filename, mimeType, progress).
-        const tinyMceUploadImage = onUploadImage
-            ? async (request) => {
-                const file = new File([request.blob], request.filename, {
-                    type: request.mimeType || "application/octet-stream",
-                });
-                const url = await onUploadImage(file, { source: "editor-upload" });
-                if (!url) {
-                    throw new Error("Upload failed");
-                }
-                return { url };
-            }
-            : undefined;
-        // Adapt onPickAsset → TinyMceEditor's onPickFile prop to reuse its
-        // file_picker_callback wiring (including per-filetype meta handling).
-        const tinyMcePickFile = onPickAsset
-            ? async (_request) => {
-                const result = await onPickAsset();
-                if (!result?.url) {
-                    return null;
-                }
-                return {
-                    url: result.url,
-                    title: result.name || "",
-                    alt: result.name || "",
-                };
-            }
-            : undefined;
-        return (_jsx(EditorComponent, { data: value, onChange: (_event, helpers) => onChange(helpers.getData()), darkMode: isDark, onPickFile: tinyMcePickFile, onUploadImage: tinyMceUploadImage, init: {
-                license_key: "gpl",
-                height,
-                menubar: true,
-                plugins: [
-                    "advlist",
-                    "autolink",
-                    "lists",
-                    "link",
-                    "image",
-                    "charmap",
-                    "preview",
-                    "anchor",
-                    "searchreplace",
-                    "visualblocks",
-                    "code",
-                    "fullscreen",
-                    "insertdatetime",
-                    "media",
-                    "table",
-                    "help",
-                    "wordcount",
-                ],
-                toolbar: "undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | code fullscreen",
-                // Allow pasted data-URI blobs to land in the editor so they can
-                // be picked up by images_upload_handler and sent to FM.
-                paste_data_images: true,
-                // Upload images immediately on paste rather than deferring.
-                automatic_uploads: true,
-                // Strip unresolvable local-file image references from pasted content
-                // BEFORE they enter the editor DOM.  This covers Microsoft Word
-                // "Insert > Copy HTML" pastes which embed
-                // file:///C:/Users/.../msohtmlclip.../clip_image*.jpg paths that the
-                // browser can never fetch from a web origin — removing them prevents
-                // broken-image placeholders from being saved into CMS content.
-                paste_preprocess: (_pluginApi, data) => {
-                    data.content = stripLocalFileImages(data.content);
-                },
-            } }));
-    }
-    // CKEditor — onChange receives (event, { getData }) per CKEditor5Classic API
-    return (_jsx(EditorComponent, { data: value, darkMode: isDark, height: height, onChange: (_event, helpers) => onChange(helpers.getData()), onPickFile: onPickAsset
-            ? async (request) => {
-                const result = await onPickAsset();
-                if (!result?.url) {
-                    return null;
-                }
-                return {
-                    url: result.url,
-                    title: result.name || "",
-                    alt: result.name || "",
-                    width: result.width,
-                    height: result.height,
-                    mimeType: result.mimeType,
-                };
-            }
-            : undefined, onUploadImage: onUploadImage
-            ? async (request) => {
-                const file = request?.file instanceof File
-                    ? request.file
-                    : request instanceof File
-                        ? request
-                        : new File([request?.file || request], request?.filename || "image", {
-                            type: request?.mimeType || "application/octet-stream",
-                        });
-                const url = await onUploadImage(file, {
-                    source: "editor-upload",
-                });
-                if (!url) {
-                    throw new Error("Upload failed");
-                }
-                return { url };
-            }
-            : undefined }, `ck-${editor}`));
+    return (_jsx(Adapter, { value: value, height: height, darkMode: isDark, editorProps: editorSpecificProps, onChange: onChange, onPickAsset: handlers.pickAsset, onUploadImage: handlers.uploadImage }));
 };
-/**
- * Markdown editor using MDXEditor from shared-utils/client/wysiwyg.
- */
-const MarkdownEditor = ({ value, onChange, onPickAsset, onUploadImage }) => {
-    const [MdEditor, setMdEditor] = useState(null);
-    const loadedRef = useRef(false);
+const MarkdownEditor = ({ value, onChange, editorAdapter: Adapter, editorProps, onPickAsset, onUploadImage, }) => {
     const { mode, systemMode } = useColorScheme();
     const isDark = (mode === "system" ? systemMode : mode) === "dark";
-    React.useEffect(() => {
-        if (loadedRef.current) {
-            return;
-        }
-        loadedRef.current = true;
-        import("../../components/wysiwyg/MDXEditor.js")
-            .then((mod) => {
-            setMdEditor(() => mod.default);
-        })
-            .catch(() => {
-            // Fallback
-        });
-    }, []);
-    if (!MdEditor) {
-        return (_jsx(Box, { component: "textarea", value: value, onChange: (e) => onChange(e.target.value), sx: {
+    const handlers = useCmsEditorHandlers(onPickAsset, onUploadImage);
+    if (!Adapter) {
+        return (_jsx(Box, { component: "textarea", value: value, onChange: (event) => onChange(event.target.value), sx: {
                 width: "100%",
                 minHeight: 400,
                 fontFamily: "monospace",
@@ -372,17 +303,7 @@ const MarkdownEditor = ({ value, onChange, onPickAsset, onUploadImage }) => {
                 color: "text.primary",
             } }));
     }
-    return (_jsx(MdEditor, { data: value, darkMode: isDark, onChange: (_event, helpers) => onChange(helpers.getData()), onUploadImage: onUploadImage
-            ? async (request) => {
-                const url = await onUploadImage(request.file, {
-                    source: "editor-upload",
-                });
-                if (!url) {
-                    throw new Error("Upload failed");
-                }
-                return { url };
-            }
-            : undefined }));
+    return (_jsx(Adapter, { value: value, height: 400, darkMode: isDark, editorProps: editorProps, onChange: onChange, onPickAsset: handlers.pickAsset, onUploadImage: handlers.uploadImage }));
 };
 CmsBodyEditor.displayName = "CmsBodyEditor";
 export default CmsBodyEditor;

@@ -145,4 +145,3 @@ export interface FmApiFunctions {
  * module, so consuming code can switch with minimal changes.
  */
 export declare function createFmApiFunctions(api: FmApi): FmApiFunctions;
-//# sourceMappingURL=createFmApiFunctions.d.ts.map

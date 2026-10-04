@@ -58,4 +58,3 @@ export declare function extractExtension(filename: string): string;
  * @returns Normalized MIME type, or empty string if invalid/empty
  */
 export declare function normalizeMimeType(mime: string | null | undefined): string;
-//# sourceMappingURL=validation.d.ts.map

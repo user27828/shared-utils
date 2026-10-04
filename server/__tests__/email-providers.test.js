@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { jest } from "@jest/globals";
 
-import { log } from "../../dist/utils/index.js";
+import { log } from "../../dist/utils/src/log.js";
 import { EmailError, EmailProviderError } from "../src/email/errors.js";
 import { formatEmailAddress } from "../src/email/address.js";
 import { formatHierarchicalLog } from "../src/email/logFormat.js";

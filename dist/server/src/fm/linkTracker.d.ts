@@ -143,4 +143,3 @@ export interface CmsFmLinkTracker {
  * @returns An object with the `onAfterWrite` callback and standalone helpers.
  */
 export declare const createCmsFmLinkTracker: (config: CmsFmLinkTrackerConfig) => CmsFmLinkTracker;
-//# sourceMappingURL=linkTracker.d.ts.map

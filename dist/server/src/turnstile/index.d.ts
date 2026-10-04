@@ -9,4 +9,3 @@ export type { TurnstileWorkerConfig } from "./worker-factory.js";
 export { verifyTurnstileToken } from "./verification.js";
 export { getAllowedOrigin } from "./utils.js";
 export type { TurnstileVerifyRequest, TurnstileVerifyResponse, Environment, TurnstileServerOptions, TurnstileVerificationOptions, TurnstileOptions, GlobalTurnstileOptions, } from "./types.js";
-//# sourceMappingURL=index.d.ts.map

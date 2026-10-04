@@ -1,0 +1,20 @@
+import React from "react";
+import "./tinymce/features/full.js";
+import { type WysiwygEditorProps } from "../wysiwyg.js";
+export declare const ALL_WYSIWYG_EDITOR_ADAPTERS: {
+    readonly tinymce: React.FC<import("./ckeditor.js").WysiwygEditorAdapterProps>;
+    readonly ckeditor: React.FC<import("./ckeditor.js").WysiwygEditorAdapterProps>;
+    readonly easymde: React.FC<import("./ckeditor.js").WysiwygEditorAdapterProps>;
+    readonly mdx: React.FC<import("./ckeditor.js").WysiwygEditorAdapterProps>;
+};
+export declare const WysiwygEditor: React.FC<WysiwygEditorProps>;
+export type { WysiwygEditorProps } from "../wysiwyg.js";
+export { CKEditor5Classic, CKEditorWysiwygAdapter } from "./ckeditor.js";
+export type { CKEditor5ClassicProps, CKEditor5FilePickerMeta, CKEditor5ImageUploadRequest, CKEditor5ImageUploadResult, CKEditor5PickRequest, CKEditor5PickResult, CKEditor5ProgressFn, } from "./ckeditor.js";
+export { EasyMDEEditor, EasyMDEWysiwygAdapter } from "./easymde.js";
+export type { EasyMDEEditorProps } from "./easymde.js";
+export { MDXEditor, MDXWysiwygAdapter } from "./mdx.js";
+export type { MDXEditorComponentProps, MDXEditorImageUploadRequest, MDXEditorImageUploadResult, MDXEditorMethods, } from "./mdx.js";
+export { TinyMceEditor, TinyMceWysiwygAdapter } from "./tinymce.js";
+export type { TinyMceEditorProps, TinyMceFilePickerMeta, TinyMceImageUploadRequest, TinyMceImageUploadResult, TinyMcePickRequest, TinyMcePickResult, TinyMceProgressFn, } from "./tinymce.js";
+export default WysiwygEditor;

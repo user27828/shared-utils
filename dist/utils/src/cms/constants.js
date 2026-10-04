@@ -1,0 +1,20 @@
+/** Dependency-free CMS values shared by schemas and consumers. */
+export const CMS_POST_TYPES = [
+    "post",
+    "page",
+    "general",
+    "faq",
+    "blog",
+    "embed",
+    "data",
+    "docs",
+    "kb",
+    "other",
+];
+export const CMS_STATUS = ["draft", "published", "trash"];
+export const CMS_CONTENT_TYPES = [
+    "text/html",
+    "text/markdown",
+    "application/json",
+    "text/plain",
+];

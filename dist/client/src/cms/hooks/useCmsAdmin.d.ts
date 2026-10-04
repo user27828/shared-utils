@@ -16,4 +16,3 @@ export interface UseCmsAdminResult {
     reload: () => void;
 }
 export declare const useCmsAdmin: (params?: UseCmsAdminOptions) => UseCmsAdminResult;
-//# sourceMappingURL=useCmsAdmin.d.ts.map

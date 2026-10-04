@@ -188,4 +188,3 @@ export interface FmApi {
      */
     getPublicMediaUrl(fileUid: string): string;
 }
-//# sourceMappingURL=FmApi.d.ts.map

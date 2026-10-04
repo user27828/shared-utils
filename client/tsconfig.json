@@ -6,10 +6,26 @@
     "allowJs": true,
     "skipLibCheck": true,
     "declaration": true,
-    "declarationMap": true,
+    "declarationMap": false,
     "outDir": "../dist/client"
   },
-  "include": ["src/**/*", "index.ts", "wysiwyg.ts", "src/data/*.js"],
-  "exclude": ["node_modules", "dist", "__tests__"],
-  "references": [{ "path": "../utils" }]
+  "include": [
+    "src/**/*",
+    "index.ts",
+    "wysiwyg.ts",
+    "wysiwyg/**/*",
+    "src/data/*.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/__tests__/**",
+    "**/*.test.*",
+    "**/*.spec.*"
+  ],
+  "references": [
+    {
+      "path": "../utils"
+    }
+  ]
 }

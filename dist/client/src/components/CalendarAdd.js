@@ -2,8 +2,8 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
 /**
  * Component for adding calendar items from a menu.  Supports the major calendar platforms.
  *
- * Delegates URL/ICS generation to the shared `contact` utility
- * (`utils/src/contact.ts`) — this component is purely presentational.
+ * Delegates URL/ICS generation to the shared calendar utility
+ * (`utils/src/calendar.ts`) - this component is purely presentational.
  */
 import React, { useId, useState } from "react";
 import Button from "@mui/material/Button";
@@ -25,12 +25,12 @@ import CalendarIcon from "@mui/icons-material/CalendarMonth";
 import InfoIcon from "@mui/icons-material/Info";
 import LockIcon from "@mui/icons-material/Lock";
 import DownloadIcon from "@mui/icons-material/Download";
-import { openCalendarEvent, DEFAULT_CALENDAR_CONFIG, } from "../../../utils/src/contact.js";
+import { openCalendarEvent, DEFAULT_CALENDAR_CONFIG, } from "../../../utils/src/calendar.js";
 /**
  * Re-export DEFAULT_CALENDAR_CONFIG for backwards compatibility.
- * @deprecated Import from `@user27828/shared-utils` (utils) instead.
+ * @deprecated Import from `@user27828/shared-utils/utils/calendar` instead.
  */
-export { DEFAULT_CALENDAR_CONFIG } from "../../../utils/src/contact.js";
+export { DEFAULT_CALENDAR_CONFIG } from "../../../utils/src/calendar.js";
 /**
  * Adding events to various calendar services
  *

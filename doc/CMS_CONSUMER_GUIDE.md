@@ -94,6 +94,7 @@ import {
   createCmsAdminRateLimitMiddleware,
   createCmsPublicRateLimitMiddleware,
 } from "@user27828/shared-utils/cms/server";
+import { createCmsRedisClient } from "@user27828/shared-utils/cms/server/redis";
 
 const getUserKey = (req) => {
   const uid = req.user?.profile?.uid || req.user?.auth?.id;
@@ -101,7 +102,8 @@ const getUserKey = (req) => {
 };
 
 export const cmsAdminRateLimit = createCmsAdminRateLimitMiddleware({
-  redisUrl: process.env.REDIS_URL, // optional; falls back to in-memory
+  redisUrl: process.env.REDIS_URL,
+  redisFactory: createCmsRedisClient, // optional; falls back to in-memory
   getUserKey,
   adminRules: {
     read: { maxRequests: 240, windowMs: 60_000 },
@@ -111,6 +113,7 @@ export const cmsAdminRateLimit = createCmsAdminRateLimitMiddleware({
 
 export const cmsPublicRateLimit = createCmsPublicRateLimitMiddleware({
   redisUrl: process.env.REDIS_URL,
+  redisFactory: createCmsRedisClient,
   getUserKey,
   publicRules: {
     read: { maxRequests: 120, windowMs: 60_000 },
@@ -196,9 +199,7 @@ let _router: express.Router | null = null;
 
 const getRouter = (): express.Router => {
   if (!_router) {
-    const cmsSvc = new CmsService({
-      /* ... */
-    });
+    const cmsSvc = new CmsService({/* ... */});
     _router = createCmsAdminRouter({
       service: cmsSvc.cmsServiceCore,
       authz: cmsAuthz,
@@ -365,9 +366,10 @@ Build a config object that provides app-specific adapters:
 ```tsx
 import {
   CmsClient,
-  CMS_POST_TYPES,
   type CmsAdminUiConfig,
 } from "@user27828/shared-utils/cms/client";
+import { CMS_POST_TYPES } from "@user27828/shared-utils/cms/constants";
+import { CKEditorWysiwygAdapter } from "@user27828/shared-utils/client/wysiwyg/ckeditor";
 
 const config: CmsAdminUiConfig = {
   // API client (defaults to CmsClient with default URLs)
@@ -382,7 +384,7 @@ const config: CmsAdminUiConfig = {
     { value: "es", label: "Spanish" },
   ],
 
-  // Post type selector options (falls back to CMS_POST_TYPES)
+  // Post type selector options (default UI offers page and post)
   postTypeOptions: CMS_POST_TYPES.map((t) => ({ value: t, label: t })),
 
   // Toast notifications (defaults to console)
@@ -413,8 +415,18 @@ const config: CmsAdminUiConfig = {
 
   // WYSIWYG editor preference: "ckeditor" | "tinymce"
   editorPreference: "ckeditor",
+
+  // Import only the editor engine installed by the host application.
+  editorAdapters: { ckeditor: CKEditorWysiwygAdapter },
 };
 ```
+
+Import `CKEditorWysiwygAdapter` from
+`@user27828/shared-utils/client/wysiwyg/ckeditor`. For TinyMCE with the CMS
+toolbar plugins, import `TinyMceWysiwygAdapter` from
+`@user27828/shared-utils/client/wysiwyg/tinymce/full`. Markdown content uses
+the `mdx` key with the adapter from `client/wysiwyg/mdx`. `CmsBodyEditor` falls
+back to a textarea when the configured adapter is absent or cannot load.
 
 #### Automatic image paste/drop upload
 
@@ -559,7 +571,7 @@ export const useCmsAdminUiConfig = (): CmsAdminUiConfig => {
 
 ### 3.5 Additional shared components
 
-- **`CmsBodyEditor`** -- multi-format content editor (HTML via TinyMCE/CKEditor, Markdown via MDXEditor, JSON/plain text via Monaco). Reuses `@user27828/shared-utils/client/wysiwyg` primitives.
+- **`CmsBodyEditor`** -- multi-format content editor (HTML via injected TinyMCE/CKEditor adapters, Markdown via an injected MDXEditor adapter, JSON/plain text via textarea). The CMS UI entry has no static editor-engine imports; supply the installed adapters through `CmsAdminUiConfig.editorAdapters`. See [WYSIWYG Setup](./WYSIWYG_SETUP.md#configure-cms-body-editors).
 - **`CmsConflictDialog`** -- ETag 412 resolution dialog offering reload/overwrite/keep-editing choices.
 
 Both are exported from `@user27828/shared-utils/cms/client` and used internally by `CmsEditPage`.
@@ -582,17 +594,41 @@ import type {
   CmsPublicHead,
   CmsCollaboratorRow,
   CmsAfterWriteEvent,
-} from "@user27828/shared-utils/cms";
+} from "@user27828/shared-utils/cms/types";
 
 import {
   CmsCreateRequestSchema,
   CmsUpdateRequestSchema,
   CmsHeadRowSchema,
+} from "@user27828/shared-utils/cms/schemas";
+
+import {
   CMS_POST_TYPES,
   CMS_STATUS,
   CMS_CONTENT_TYPES,
-} from "@user27828/shared-utils/cms";
+} from "@user27828/shared-utils/cms/constants";
 ```
+
+Constants are dependency-free. Types are erased at runtime and retain the
+canonical Zod-derived DTOs. The shared `cms` barrel remains available for
+runtime contracts, validation, errors, and concurrency.
+
+Password hashing and HTML/Markdown sanitization now use server-only paths:
+
+```ts
+import {
+  hashCmsPassword,
+  verifyCmsPassword,
+} from "@user27828/shared-utils/cms/server/password";
+import {
+  sanitizeCmsHtml,
+  renderMarkdownToSanitizedHtml,
+} from "@user27828/shared-utils/cms/server/sanitization";
+```
+
+Migrate these helpers from old `cms` or raw `utils/src/cms` imports. Install
+`bcryptjs` and `sanitize-html` for the server feature; the shared browser
+contracts require neither. Service and router security checks remain in place.
 
 ### 4.2 Error classes
 

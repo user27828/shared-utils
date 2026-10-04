@@ -90,4 +90,3 @@ export interface CKEditor5ClassicProps {
 }
 declare const CKEditor5Classic: React.FC<CKEditor5ClassicProps>;
 export default CKEditor5Classic;
-//# sourceMappingURL=CKEditor5Classic.d.ts.map

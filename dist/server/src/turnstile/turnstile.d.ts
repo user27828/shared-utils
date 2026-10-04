@@ -13,4 +13,3 @@ export declare const getTurnstileServerOptions: () => TurnstileServerOptions;
  * This allows the same API pattern: setGlobalOptions({ 'turnstile-server': { ... } })
  */
 export declare const setGlobalOptions: (options: GlobalTurnstileOptions) => void;
-//# sourceMappingURL=turnstile.d.ts.map

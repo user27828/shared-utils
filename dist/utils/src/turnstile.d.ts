@@ -73,6 +73,5 @@ declare class Turnstile {
     cleanup(): void;
 }
 declare const turnstile: Turnstile;
-export { Turnstile };
+export { turnstile, Turnstile };
 export default turnstile;
-//# sourceMappingURL=turnstile.d.ts.map

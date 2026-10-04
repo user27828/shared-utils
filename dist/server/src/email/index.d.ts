@@ -5,4 +5,3 @@ export type { MarketingProviderName, ResendMarketingProviderConfig, MailerliteMa
 export { resolveMarketingSettings, resolveManagedAudienceKeys, syncMarketingSubscriptions, setMarketingRuntimeOverrides, resetMarketingRuntimeOverrides, } from "./marketing.js";
 export type { WebhookEventType, BounceType, WebhookEventBase, BounceEvent, ComplaintEvent, UnsubscribeEvent, DeliveryEvent, OpenEvent, ClickEvent, WebhookEvent, IWebhookHandler, WebhookEventCallback, WebhookEventHandlers, } from "./webhooks/index.js";
 export { createWebhookRouter, registerWebhookHandlers, MailerliteWebhookHandler, createMailerliteWebhookHandler, ResendWebhookHandler, createResendWebhookHandler, SesWebhookHandler, createSesWebhookHandler, } from "./webhooks/index.js";
-//# sourceMappingURL=index.d.ts.map

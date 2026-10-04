@@ -30,7 +30,8 @@ If you are writing your own connector, implement the `FmConnector` interface (se
 
 ### 1.2 Create storage adapter
 
-FM supports local disk and S3-compatible storage. Use the async factory:
+FM supports local disk and S3-compatible storage. Local storage needs no AWS
+peers. S3 apps explicitly inject the optional factory:
 
 ```ts
 import {
@@ -40,13 +41,15 @@ import {
   resolveFmLocalUploadRootAbsPath,
 } from "@user27828/shared-utils/fm/server";
 
+import { createFmS3Storage } from "@user27828/shared-utils/fm/server/s3";
+
 // Parse config from environment variables
 const fmConfig = parseFmServerConfig(process.env);
 
 // Async factory — auto-detects local vs. S3 from config
 let storage;
 try {
-  storage = await createFmStorage(fmConfig);
+  storage = await createFmStorage(fmConfig, createFmS3Storage);
 } catch {
   // Fallback to local in development
   storage = new FmStorageLocal({
@@ -701,17 +704,20 @@ const storage = new FmStorageS3({
 
 ### Async factory
 
-The `createFmStorage()` factory reads config and dynamically imports the appropriate adapter:
+The `createFmStorage()` factory uses local storage by default. Supply
+`createFmS3Storage` from `fm/server/s3` for an S3 configuration; the local
+entrypoint has no literal S3 import and requires no AWS packages.
 
 ```ts
 import {
   createFmStorage,
   parseFmServerConfig,
 } from "@user27828/shared-utils/fm/server";
+import { createFmS3Storage } from "@user27828/shared-utils/fm/server/s3";
 
 const config = parseFmServerConfig(process.env);
-const storage = await createFmStorage(config);
-// Returns FmStorageLocal or FmStorageS3 based on config
+// Local-only applications use createFmStorage(config).
+const storage = await createFmStorage(config, createFmS3Storage);
 ```
 
 ## 9. Environment Variables
@@ -728,3 +734,12 @@ Key FM-related environment variables:
 | `FM_S3_BUCKET`              | S3 bucket name                                             |
 | `FM_S3_REGION`              | S3 region                                                  |
 | `FM_S3_ENDPOINT`            | S3-compatible endpoint URL (for MinIO, R2, etc.)           |
+
+## Focused shared contracts
+
+Use `@user27828/shared-utils/fm/constants` for `FM_PURPOSES`, `FM_VISIBILITY`,
+and `FM_VARIANT_KINDS` without loading Zod. Import DTOs with `import type` from
+`@user27828/shared-utils/fm/types`; these retain the canonical schema-derived
+types. Runtime schemas, pure validation helpers, and errors are available from
+`fm/schemas`, `fm/validation`, and `fm/errors`. The existing `fm` root continues
+to expose the full shared contract surface.

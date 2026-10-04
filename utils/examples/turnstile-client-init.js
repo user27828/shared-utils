@@ -2,7 +2,7 @@
  * Client-side Turnstile initialization example
  * Include this in your main client entry point (e.g., src/main.js, src/index.js)
  */
-import { turnstile } from "@shared-utils/utils";
+import { turnstile } from "@user27828/shared-utils/utils/turnstile";
 
 // Configure Turnstile for client-side
 turnstile.setOptions({

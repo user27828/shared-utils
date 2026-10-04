@@ -1,4 +1,7 @@
-"use strict";
+// The options singleton must evaluate before the logger so log registers with
+// the canonical manager regardless of the consumer's import order.
+import "../../utils/src/options-manager.js";
+import log from "../../utils/src/log.js";
 /**
  * Client-side initialization: disables MUI X telemetry and attaches the
  * shared-utils logger to window.log. Import this module once in your app entry
@@ -14,7 +17,5 @@ Object.defineProperty(globalThis, "__MUI_X_TELEMETRY_DISABLED__", {
 });
 if (typeof window !== "undefined" &&
     typeof window.log === "undefined") {
-    import("../../utils/src/log.js").then(({ default: log }) => {
-        window.log = log;
-    });
+    window.log = log;
 }

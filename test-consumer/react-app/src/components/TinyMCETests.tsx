@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import WysiwygEditor from "@user27828/shared-utils/client/wysiwyg";
+import WysiwygEditor from "@user27828/shared-utils/client/wysiwyg/all";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";

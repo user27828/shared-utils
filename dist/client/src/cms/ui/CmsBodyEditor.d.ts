@@ -2,14 +2,14 @@
  * CMS Body Editor — shared-utils
  *
  * Multi-format content editor that switches between:
- * - HTML: TinyMCE or CKEditor (from shared-utils/client/wysiwyg)
- * - Markdown: MDXEditor (from shared-utils/client/wysiwyg)
+ * - HTML: a host-injected TinyMCE or CKEditor adapter
+ * - Markdown: a host-injected MDXEditor adapter
  * - JSON/Text: Plain textarea
  *
  * Media picker integration is injectable via callbacks.
  */
 import React from "react";
-import type { CmsEditorPreference, CmsImageUploadHandler } from "./CmsAdminUiConfig.js";
+import type { CmsBodyEditorAdapterMap, CmsBodyEditorEngineProps, CmsEditorPreference, CmsImageUploadHandler } from "./CmsAdminUiConfig.js";
 /**
  * Parse `html` and replace any `<img>` tags whose `src` is a local-file URL
  * with a visible inline text placeholder.  The browser can never load these
@@ -32,6 +32,10 @@ export interface CmsBodyEditorProps {
     label?: string;
     /** Which WYSIWYG editor to use for HTML content. Defaults to "ckeditor". */
     editor?: CmsEditorPreference;
+    /** Optional explicit engine adapters supplied by the host application. */
+    editorAdapters?: CmsBodyEditorAdapterMap;
+    /** Optional engine-specific props passed to the selected adapter. */
+    editorProps?: CmsBodyEditorEngineProps;
     /** Callback to pick a media file (opens host-provided media picker). */
     onPickAsset?: () => Promise<{
         uid: string;
@@ -47,4 +51,3 @@ export interface CmsBodyEditorProps {
 }
 declare const CmsBodyEditor: React.FC<CmsBodyEditorProps>;
 export default CmsBodyEditor;
-//# sourceMappingURL=CmsBodyEditor.d.ts.map

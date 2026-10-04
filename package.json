@@ -1,14 +1,27 @@
 {
   "name": "@user27828/shared-utils",
   "description": "Collection of common utilities I use for various projects",
-  "version": "0.70.69",
+  "version": "0.71.69",
   "type": "module",
   "sideEffects": [
     "dist/utils/src/log.js",
     "dist/utils/src/options-manager.js",
     "dist/utils/src/turnstile.js",
-    "dist/utils/index.js",
-    "dist/client/src/init.js"
+    "dist/utils/src/files.js",
+    "dist/utils/src/dates.js",
+    "dist/client/src/components/wysiwyg/TinyMceEditor.js",
+    "dist/client/src/components/wysiwyg/CKEditor5Classic.js",
+    "dist/client/src/components/wysiwyg/EasyMDEEditor.js",
+    "dist/client/src/components/wysiwyg/MDXEditor.js",
+    "dist/client/src/components/wysiwyg/ensurePrismGlobal.js",
+    "dist/client/src/components/wysiwyg/tinymce/minimal.js",
+    "dist/client/src/components/wysiwyg/tinymce/features/*.js",
+    "dist/client/wysiwyg/tinymce/full.js",
+    "dist/client/wysiwyg/tinymce/features/*.js",
+    "dist/client/src/init.js",
+    "dist/server/src/init.js",
+    "dist/server/src/env.js",
+    "**/*.css"
   ],
   "packageManager": "yarn@4.12.0",
   "engines": {
@@ -34,167 +47,573 @@
   "exports": {
     ".": {
       "types": "./dist/utils/index.d.ts",
-      "import": "./dist/utils/index.js",
-      "require": "./dist/utils/index.js",
-      "default": "./dist/utils/index.js"
+      "module-sync": "./dist/utils/index.js",
+      "import": "./dist/utils/index.js"
     },
     "./client": {
       "types": "./dist/client/index.d.ts",
-      "import": "./dist/client/index.js",
-      "require": "./dist/client/index.js",
-      "default": "./dist/client/index.js"
+      "module-sync": "./dist/client/index.js",
+      "import": "./dist/client/index.js"
     },
     "./client/components/CopyButton": {
       "types": "./dist/client/src/components/CopyButton.d.ts",
-      "import": "./dist/client/src/components/CopyButton.js",
-      "require": "./dist/client/src/components/CopyButton.js",
-      "default": "./dist/client/src/components/CopyButton.js"
+      "module-sync": "./dist/client/src/components/CopyButton.js",
+      "import": "./dist/client/src/components/CopyButton.js"
     },
     "./client/components/layout/SelectChip": {
       "types": "./dist/client/src/components/layout/SelectChip.d.ts",
-      "import": "./dist/client/src/components/layout/SelectChip.js",
-      "require": "./dist/client/src/components/layout/SelectChip.js",
-      "default": "./dist/client/src/components/layout/SelectChip.js"
+      "module-sync": "./dist/client/src/components/layout/SelectChip.js",
+      "import": "./dist/client/src/components/layout/SelectChip.js"
     },
     "./client/components/layout/CheckChip": {
       "types": "./dist/client/src/components/layout/CheckChip.d.ts",
-      "import": "./dist/client/src/components/layout/CheckChip.js",
-      "require": "./dist/client/src/components/layout/CheckChip.js",
-      "default": "./dist/client/src/components/layout/CheckChip.js"
+      "module-sync": "./dist/client/src/components/layout/CheckChip.js",
+      "import": "./dist/client/src/components/layout/CheckChip.js"
+    },
+    "./client/components/CalendarAdd": {
+      "types": "./dist/client/src/components/CalendarAdd.d.ts",
+      "module-sync": "./dist/client/src/components/CalendarAdd.js",
+      "import": "./dist/client/src/components/CalendarAdd.js"
+    },
+    "./client/components/ContactActions": {
+      "types": "./dist/client/src/components/ContactActions.d.ts",
+      "module-sync": "./dist/client/src/components/ContactActions.js",
+      "import": "./dist/client/src/components/ContactActions.js"
+    },
+    "./client/components/FileIcon": {
+      "types": "./dist/client/src/components/FileIcon.d.ts",
+      "module-sync": "./dist/client/src/components/FileIcon.js",
+      "import": "./dist/client/src/components/FileIcon.js"
+    },
+    "./client/components/PasteButton": {
+      "types": "./dist/client/src/components/PasteButton.d.ts",
+      "module-sync": "./dist/client/src/components/PasteButton.js",
+      "import": "./dist/client/src/components/PasteButton.js"
+    },
+    "./client/components/StatCard": {
+      "types": "./dist/client/src/components/StatCard.d.ts",
+      "module-sync": "./dist/client/src/components/StatCard.js",
+      "import": "./dist/client/src/components/StatCard.js"
+    },
+    "./client/components/form/CountrySelect": {
+      "types": "./dist/client/src/components/form/CountrySelect.d.ts",
+      "module-sync": "./dist/client/src/components/form/CountrySelect.js",
+      "import": "./dist/client/src/components/form/CountrySelect.js"
+    },
+    "./client/components/form/CountrySelect/custom-data": {
+      "types": "./dist/client/src/components/form/CountrySelectCore.d.ts",
+      "module-sync": "./dist/client/src/components/form/CountrySelectCore.js",
+      "import": "./dist/client/src/components/form/CountrySelectCore.js"
+    },
+    "./client/components/form/FileUploadList": {
+      "types": "./dist/client/src/components/form/FileUploadList.d.ts",
+      "module-sync": "./dist/client/src/components/form/FileUploadList.js",
+      "import": "./dist/client/src/components/form/FileUploadList.js"
+    },
+    "./client/components/form/LanguageSelect": {
+      "types": "./dist/client/src/components/form/LanguageSelect.d.ts",
+      "module-sync": "./dist/client/src/components/form/LanguageSelect.js",
+      "import": "./dist/client/src/components/form/LanguageSelect.js"
+    },
+    "./client/components/form/LanguageSelect/custom-data": {
+      "types": "./dist/client/src/components/form/LanguageSelectCore.d.ts",
+      "module-sync": "./dist/client/src/components/form/LanguageSelectCore.js",
+      "import": "./dist/client/src/components/form/LanguageSelectCore.js"
+    },
+    "./client/components/form/TagsInput": {
+      "types": "./dist/client/src/components/form/TagsInput.d.ts",
+      "module-sync": "./dist/client/src/components/form/TagsInput.js",
+      "import": "./dist/client/src/components/form/TagsInput.js"
+    },
+    "./client/components/form/TimezoneSelect": {
+      "types": "./dist/client/src/components/form/TimezoneSelect.d.ts",
+      "module-sync": "./dist/client/src/components/form/TimezoneSelect.js",
+      "import": "./dist/client/src/components/form/TimezoneSelect.js"
+    },
+    "./client/components/layout/BackdropLoader": {
+      "types": "./dist/client/src/components/layout/BackdropLoader.d.ts",
+      "module-sync": "./dist/client/src/components/layout/BackdropLoader.js",
+      "import": "./dist/client/src/components/layout/BackdropLoader.js"
+    },
+    "./client/components/layout/Disconnected": {
+      "types": "./dist/client/src/components/layout/Disconnected.d.ts",
+      "module-sync": "./dist/client/src/components/layout/Disconnected.js",
+      "import": "./dist/client/src/components/layout/Disconnected.js"
+    },
+    "./client/components/layout/ProcessStatusChip": {
+      "types": "./dist/client/src/components/layout/ProcessStatusChip.d.ts",
+      "module-sync": "./dist/client/src/components/layout/ProcessStatusChip.js",
+      "import": "./dist/client/src/components/layout/ProcessStatusChip.js"
+    },
+    "./client/components/layout/SplitChip": {
+      "types": "./dist/client/src/components/layout/SplitChip.d.ts",
+      "module-sync": "./dist/client/src/components/layout/SplitChip.js",
+      "import": "./dist/client/src/components/layout/SplitChip.js"
+    },
+    "./client/debounce": {
+      "types": "./dist/client/src/helpers/debounce.d.ts",
+      "module-sync": "./dist/client/src/helpers/debounce.js",
+      "import": "./dist/client/src/helpers/debounce.js"
+    },
+    "./client/csv": {
+      "types": "./dist/client/src/helpers/csv.d.ts",
+      "module-sync": "./dist/client/src/helpers/csv.js",
+      "import": "./dist/client/src/helpers/csv.js"
+    },
+    "./client/countries": {
+      "types": "./dist/client/src/helpers/countries.d.ts",
+      "module-sync": "./dist/client/src/helpers/countries.js",
+      "import": "./dist/client/src/helpers/countries.js"
+    },
+    "./client/countries/core": {
+      "types": "./dist/client/src/helpers/countries-core.d.ts",
+      "module-sync": "./dist/client/src/helpers/countries-core.js",
+      "import": "./dist/client/src/helpers/countries-core.js"
+    },
+    "./client/languages": {
+      "types": "./dist/client/src/helpers/languages.d.ts",
+      "module-sync": "./dist/client/src/helpers/languages.js",
+      "import": "./dist/client/src/helpers/languages.js"
+    },
+    "./client/languages/core": {
+      "types": "./dist/client/src/helpers/languages-core.d.ts",
+      "module-sync": "./dist/client/src/helpers/languages-core.js",
+      "import": "./dist/client/src/helpers/languages-core.js"
+    },
+    "./client/timezones": {
+      "types": "./dist/client/src/helpers/timezones.d.ts",
+      "module-sync": "./dist/client/src/helpers/timezones.js",
+      "import": "./dist/client/src/helpers/timezones.js"
+    },
+    "./client/dates": {
+      "types": "./dist/client/src/helpers/date-utils.d.ts",
+      "module-sync": "./dist/client/src/helpers/date-utils.js",
+      "import": "./dist/client/src/helpers/date-utils.js"
     },
     "./client/wysiwyg": {
       "types": "./dist/client/wysiwyg.d.ts",
-      "import": "./dist/client/wysiwyg.js",
-      "require": "./dist/client/wysiwyg.js",
-      "default": "./dist/client/wysiwyg.js"
+      "module-sync": "./dist/client/wysiwyg.js",
+      "import": "./dist/client/wysiwyg.js"
+    },
+    "./client/wysiwyg/all": {
+      "types": "./dist/client/wysiwyg/all.d.ts",
+      "module-sync": "./dist/client/wysiwyg/all.js",
+      "import": "./dist/client/wysiwyg/all.js"
+    },
+    "./client/wysiwyg/tinymce": {
+      "types": "./dist/client/wysiwyg/tinymce.d.ts",
+      "module-sync": "./dist/client/wysiwyg/tinymce.js",
+      "import": "./dist/client/wysiwyg/tinymce.js"
+    },
+    "./client/wysiwyg/tinymce/full": {
+      "types": "./dist/client/wysiwyg/tinymce/full.d.ts",
+      "module-sync": "./dist/client/wysiwyg/tinymce/full.js",
+      "import": "./dist/client/wysiwyg/tinymce/full.js"
+    },
+    "./client/wysiwyg/tinymce/features/code": {
+      "types": "./dist/client/wysiwyg/tinymce/features/code.d.ts",
+      "module-sync": "./dist/client/wysiwyg/tinymce/features/code.js",
+      "import": "./dist/client/wysiwyg/tinymce/features/code.js"
+    },
+    "./client/wysiwyg/tinymce/features/media": {
+      "types": "./dist/client/wysiwyg/tinymce/features/media.d.ts",
+      "module-sync": "./dist/client/wysiwyg/tinymce/features/media.js",
+      "import": "./dist/client/wysiwyg/tinymce/features/media.js"
+    },
+    "./client/wysiwyg/tinymce/features/extended": {
+      "types": "./dist/client/wysiwyg/tinymce/features/extended.d.ts",
+      "module-sync": "./dist/client/wysiwyg/tinymce/features/extended.js",
+      "import": "./dist/client/wysiwyg/tinymce/features/extended.js"
+    },
+    "./client/wysiwyg/tinymce/features/full": {
+      "types": "./dist/client/wysiwyg/tinymce/features/full.d.ts",
+      "module-sync": "./dist/client/wysiwyg/tinymce/features/full.js",
+      "import": "./dist/client/wysiwyg/tinymce/features/full.js"
+    },
+    "./client/wysiwyg/ckeditor": {
+      "types": "./dist/client/wysiwyg/ckeditor.d.ts",
+      "module-sync": "./dist/client/wysiwyg/ckeditor.js",
+      "import": "./dist/client/wysiwyg/ckeditor.js"
+    },
+    "./client/wysiwyg/easymde": {
+      "types": "./dist/client/wysiwyg/easymde.d.ts",
+      "module-sync": "./dist/client/wysiwyg/easymde.js",
+      "import": "./dist/client/wysiwyg/easymde.js"
+    },
+    "./client/wysiwyg/mdx": {
+      "types": "./dist/client/wysiwyg/mdx.d.ts",
+      "module-sync": "./dist/client/wysiwyg/mdx.js",
+      "import": "./dist/client/wysiwyg/mdx.js"
+    },
+    "./cms/client/api": {
+      "types": "./dist/client/src/cms/api.d.ts",
+      "module-sync": "./dist/client/src/cms/api.js",
+      "import": "./dist/client/src/cms/api.js"
+    },
+    "./cms/client/hooks": {
+      "types": "./dist/client/src/cms/hooks/index.d.ts",
+      "module-sync": "./dist/client/src/cms/hooks/index.js",
+      "import": "./dist/client/src/cms/hooks/index.js"
+    },
+    "./cms/client/ui": {
+      "types": "./dist/client/src/cms/ui/index.d.ts",
+      "module-sync": "./dist/client/src/cms/ui/index.js",
+      "import": "./dist/client/src/cms/ui/index.js"
+    },
+    "./fm/client/api": {
+      "types": "./dist/client/src/fm/api.d.ts",
+      "module-sync": "./dist/client/src/fm/api.js",
+      "import": "./dist/client/src/fm/api.js"
+    },
+    "./fm/client/hooks": {
+      "types": "./dist/client/src/fm/hooks/index.d.ts",
+      "module-sync": "./dist/client/src/fm/hooks/index.js",
+      "import": "./dist/client/src/fm/hooks/index.js"
+    },
+    "./fm/client/ui": {
+      "types": "./dist/client/src/fm/ui/index.d.ts",
+      "module-sync": "./dist/client/src/fm/ui/index.js",
+      "import": "./dist/client/src/fm/ui/index.js"
+    },
+    "./email/client/api": {
+      "types": "./dist/client/src/email/api.d.ts",
+      "module-sync": "./dist/client/src/email/api.js",
+      "import": "./dist/client/src/email/api.js"
+    },
+    "./email/client/hooks": {
+      "types": "./dist/client/src/email/hooks/index.d.ts",
+      "module-sync": "./dist/client/src/email/hooks/index.js",
+      "import": "./dist/client/src/email/hooks/index.js"
+    },
+    "./email/client/ui": {
+      "types": "./dist/client/src/email/ui/index.d.ts",
+      "module-sync": "./dist/client/src/email/ui/index.js",
+      "import": "./dist/client/src/email/ui/index.js"
     },
     "./utils": {
       "types": "./dist/utils/index.d.ts",
-      "import": "./dist/utils/index.js",
-      "require": "./dist/utils/index.js",
-      "default": "./dist/utils/index.js"
+      "module-sync": "./dist/utils/index.js",
+      "import": "./dist/utils/index.js"
+    },
+    "./utils/environment": {
+      "types": "./dist/utils/src/environment.d.ts",
+      "module-sync": "./dist/utils/src/environment.js",
+      "import": "./dist/utils/src/environment.js"
+    },
+    "./utils/validation": {
+      "types": "./dist/utils/src/validation.d.ts",
+      "module-sync": "./dist/utils/src/validation.js",
+      "import": "./dist/utils/src/validation.js"
+    },
+    "./utils/files": {
+      "types": "./dist/utils/src/files.d.ts",
+      "module-sync": "./dist/utils/src/files.js",
+      "import": "./dist/utils/src/files.js"
+    },
+    "./utils/dates": {
+      "types": "./dist/utils/src/dates.d.ts",
+      "module-sync": "./dist/utils/src/dates.js",
+      "import": "./dist/utils/src/dates.js"
+    },
+    "./utils/json": {
+      "types": "./dist/utils/src/json.d.ts",
+      "module-sync": "./dist/utils/src/json.js",
+      "import": "./dist/utils/src/json.js"
+    },
+    "./utils/options": {
+      "types": "./dist/utils/src/options-manager.d.ts",
+      "module-sync": "./dist/utils/src/options-manager.js",
+      "import": "./dist/utils/src/options-manager.js"
+    },
+    "./utils/log": {
+      "types": "./dist/utils/src/log.d.ts",
+      "module-sync": "./dist/utils/src/log.js",
+      "import": "./dist/utils/src/log.js"
+    },
+    "./utils/turnstile": {
+      "types": "./dist/utils/src/turnstile.d.ts",
+      "module-sync": "./dist/utils/src/turnstile.js",
+      "import": "./dist/utils/src/turnstile.js"
+    },
+    "./utils/contact": {
+      "types": "./dist/utils/src/contact.d.ts",
+      "module-sync": "./dist/utils/src/contact.js",
+      "import": "./dist/utils/src/contact.js"
+    },
+    "./utils/calendar": {
+      "types": "./dist/utils/src/calendar.d.ts",
+      "module-sync": "./dist/utils/src/calendar.js",
+      "import": "./dist/utils/src/calendar.js"
+    },
+    "./utils/meeting-providers": {
+      "types": "./dist/utils/src/meetingProviders.d.ts",
+      "module-sync": "./dist/utils/src/meetingProviders.js",
+      "import": "./dist/utils/src/meetingProviders.js"
+    },
+    "./utils/detect-format": {
+      "types": "./dist/utils/src/detectFormat/index.d.ts",
+      "module-sync": "./dist/utils/src/detectFormat/index.js",
+      "import": "./dist/utils/src/detectFormat/index.js"
     },
     "./server": {
       "types": "./dist/server/index.d.ts",
-      "import": "./dist/server/index.js",
-      "require": "./dist/server/index.js",
-      "default": "./dist/server/index.js"
+      "module-sync": "./dist/server/index.js",
+      "import": "./dist/server/index.js"
+    },
+    "./server/env": {
+      "types": "./dist/server/src/env.d.ts",
+      "module-sync": "./dist/server/src/env.js",
+      "import": "./dist/server/src/env.js"
+    },
+    "./server/init": {
+      "types": "./dist/server/src/init.d.ts",
+      "module-sync": "./dist/server/src/init.js",
+      "import": "./dist/server/src/init.js"
+    },
+    "./server/turnstile/worker": {
+      "types": "./dist/server/src/turnstile/worker-factory.d.ts",
+      "module-sync": "./dist/server/src/turnstile/worker-factory.js",
+      "import": "./dist/server/src/turnstile/worker-factory.js"
+    },
+    "./server/turnstile/middleware": {
+      "types": "./dist/server/src/turnstile/middleware.d.ts",
+      "module-sync": "./dist/server/src/turnstile/middleware.js",
+      "import": "./dist/server/src/turnstile/middleware.js"
     },
     "./cms": {
       "types": "./dist/utils/src/cms/index.d.ts",
-      "import": "./dist/utils/src/cms/index.js",
-      "require": "./dist/utils/src/cms/index.js",
-      "default": "./dist/utils/src/cms/index.js"
+      "module-sync": "./dist/utils/src/cms/index.js",
+      "import": "./dist/utils/src/cms/index.js"
     },
     "./cms/server": {
       "types": "./dist/server/src/cms/index.d.ts",
-      "import": "./dist/server/src/cms/index.js",
-      "require": "./dist/server/src/cms/index.js",
-      "default": "./dist/server/src/cms/index.js"
+      "module-sync": "./dist/server/src/cms/index.js",
+      "import": "./dist/server/src/cms/index.js"
+    },
+    "./cms/server/core": {
+      "types": "./dist/server/src/cms/core.d.ts",
+      "module-sync": "./dist/server/src/cms/core.js",
+      "import": "./dist/server/src/cms/core.js"
+    },
+    "./cms/server/express": {
+      "types": "./dist/server/src/cms/express/index.d.ts",
+      "module-sync": "./dist/server/src/cms/express/index.js",
+      "import": "./dist/server/src/cms/express/index.js"
     },
     "./cms/client": {
       "types": "./dist/client/src/cms/index.d.ts",
-      "import": "./dist/client/src/cms/index.js",
-      "require": "./dist/client/src/cms/index.js",
-      "default": "./dist/client/src/cms/index.js"
+      "module-sync": "./dist/client/src/cms/index.js",
+      "import": "./dist/client/src/cms/index.js"
     },
     "./cms/client/public": {
       "types": "./dist/client/src/cms/public.d.ts",
-      "import": "./dist/client/src/cms/public.js",
-      "require": "./dist/client/src/cms/public.js",
-      "default": "./dist/client/src/cms/public.js"
+      "module-sync": "./dist/client/src/cms/public.js",
+      "import": "./dist/client/src/cms/public.js"
     },
     "./email": {
       "types": "./dist/utils/src/email/index.d.ts",
-      "import": "./dist/utils/src/email/index.js",
-      "require": "./dist/utils/src/email/index.js",
-      "default": "./dist/utils/src/email/index.js"
+      "module-sync": "./dist/utils/src/email/index.js",
+      "import": "./dist/utils/src/email/index.js"
     },
     "./email/server": {
       "types": "./dist/server/src/email/index.d.ts",
-      "import": "./dist/server/src/email/index.js",
-      "require": "./dist/server/src/email/index.js",
-      "default": "./dist/server/src/email/index.js"
+      "module-sync": "./dist/server/src/email/index.js",
+      "import": "./dist/server/src/email/index.js"
+    },
+    "./email/server/registry": {
+      "types": "./dist/server/src/email/registry.d.ts",
+      "module-sync": "./dist/server/src/email/registry.js",
+      "import": "./dist/server/src/email/registry.js"
+    },
+    "./email/server/attachments": {
+      "types": "./dist/server/src/email/attachments.d.ts",
+      "module-sync": "./dist/server/src/email/attachments.js",
+      "import": "./dist/server/src/email/attachments.js"
+    },
+    "./email/server/marketing": {
+      "types": "./dist/server/src/email/marketing.d.ts",
+      "module-sync": "./dist/server/src/email/marketing.js",
+      "import": "./dist/server/src/email/marketing.js"
+    },
+    "./email/server/webhooks": {
+      "types": "./dist/server/src/email/webhooks/index.d.ts",
+      "module-sync": "./dist/server/src/email/webhooks/index.js",
+      "import": "./dist/server/src/email/webhooks/index.js"
+    },
+    "./email/server/webhooks/resend": {
+      "types": "./dist/server/src/email/webhooks/resend.d.ts",
+      "module-sync": "./dist/server/src/email/webhooks/resend.js",
+      "import": "./dist/server/src/email/webhooks/resend.js"
+    },
+    "./email/server/webhooks/mailerlite": {
+      "types": "./dist/server/src/email/webhooks/mailerlite.d.ts",
+      "module-sync": "./dist/server/src/email/webhooks/mailerlite.js",
+      "import": "./dist/server/src/email/webhooks/mailerlite.js"
+    },
+    "./email/server/webhooks/ses": {
+      "types": "./dist/server/src/email/webhooks/ses.d.ts",
+      "module-sync": "./dist/server/src/email/webhooks/ses.js",
+      "import": "./dist/server/src/email/webhooks/ses.js"
+    },
+    "./email/server/providers/contracts": {
+      "types": "./dist/server/src/email/providers/types.d.ts",
+      "module-sync": "./dist/server/src/email/providers/types.js",
+      "import": "./dist/server/src/email/providers/types.js"
     },
     "./email/server/errors": {
       "types": "./dist/server/src/email/errors.d.ts",
-      "import": "./dist/server/src/email/errors.js",
-      "require": "./dist/server/src/email/errors.js",
-      "default": "./dist/server/src/email/errors.js"
+      "module-sync": "./dist/server/src/email/errors.js",
+      "import": "./dist/server/src/email/errors.js"
     },
     "./email/server/providers": {
       "types": "./dist/server/src/email/providers/index.d.ts",
-      "import": "./dist/server/src/email/providers/index.js",
-      "require": "./dist/server/src/email/providers/index.js",
-      "default": "./dist/server/src/email/providers/index.js"
+      "module-sync": "./dist/server/src/email/providers/index.js",
+      "import": "./dist/server/src/email/providers/index.js"
     },
     "./email/server/providers/_test_": {
       "types": "./dist/server/src/email/providers/_test_.d.ts",
-      "import": "./dist/server/src/email/providers/_test_.js",
-      "require": "./dist/server/src/email/providers/_test_.js",
-      "default": "./dist/server/src/email/providers/_test_.js"
+      "module-sync": "./dist/server/src/email/providers/_test_.js",
+      "import": "./dist/server/src/email/providers/_test_.js"
     },
     "./email/server/providers/gmail": {
       "types": "./dist/server/src/email/providers/gmail.d.ts",
-      "import": "./dist/server/src/email/providers/gmail.js",
-      "require": "./dist/server/src/email/providers/gmail.js",
-      "default": "./dist/server/src/email/providers/gmail.js"
+      "module-sync": "./dist/server/src/email/providers/gmail.js",
+      "import": "./dist/server/src/email/providers/gmail.js"
     },
     "./email/server/providers/cloudflare": {
       "types": "./dist/server/src/email/providers/cloudflare.d.ts",
-      "import": "./dist/server/src/email/providers/cloudflare.js",
-      "require": "./dist/server/src/email/providers/cloudflare.js",
-      "default": "./dist/server/src/email/providers/cloudflare.js"
+      "module-sync": "./dist/server/src/email/providers/cloudflare.js",
+      "import": "./dist/server/src/email/providers/cloudflare.js"
     },
     "./email/server/providers/resend": {
       "types": "./dist/server/src/email/providers/resend.d.ts",
-      "import": "./dist/server/src/email/providers/resend.js",
-      "require": "./dist/server/src/email/providers/resend.js",
-      "default": "./dist/server/src/email/providers/resend.js"
+      "module-sync": "./dist/server/src/email/providers/resend.js",
+      "import": "./dist/server/src/email/providers/resend.js"
     },
     "./email/server/providers/ses": {
       "types": "./dist/server/src/email/providers/ses.d.ts",
-      "import": "./dist/server/src/email/providers/ses.js",
-      "require": "./dist/server/src/email/providers/ses.js",
-      "default": "./dist/server/src/email/providers/ses.js"
+      "module-sync": "./dist/server/src/email/providers/ses.js",
+      "import": "./dist/server/src/email/providers/ses.js"
     },
     "./email/client": {
       "types": "./dist/client/src/email/index.d.ts",
-      "import": "./dist/client/src/email/index.js",
-      "require": "./dist/client/src/email/index.js",
-      "default": "./dist/client/src/email/index.js"
+      "module-sync": "./dist/client/src/email/index.js",
+      "import": "./dist/client/src/email/index.js"
     },
     "./fm": {
       "types": "./dist/utils/src/fm/index.d.ts",
-      "import": "./dist/utils/src/fm/index.js",
-      "require": "./dist/utils/src/fm/index.js",
-      "default": "./dist/utils/src/fm/index.js"
+      "module-sync": "./dist/utils/src/fm/index.js",
+      "import": "./dist/utils/src/fm/index.js"
     },
     "./fm/server": {
       "types": "./dist/server/src/fm/index.d.ts",
-      "import": "./dist/server/src/fm/index.js",
-      "require": "./dist/server/src/fm/index.js",
-      "default": "./dist/server/src/fm/index.js"
+      "module-sync": "./dist/server/src/fm/index.js",
+      "import": "./dist/server/src/fm/index.js"
+    },
+    "./fm/server/core": {
+      "types": "./dist/server/src/fm/core.d.ts",
+      "module-sync": "./dist/server/src/fm/core.js",
+      "import": "./dist/server/src/fm/core.js"
+    },
+    "./fm/server/express": {
+      "types": "./dist/server/src/fm/express/index.d.ts",
+      "module-sync": "./dist/server/src/fm/express/index.js",
+      "import": "./dist/server/src/fm/express/index.js"
     },
     "./fm/client": {
       "types": "./dist/client/src/fm/index.d.ts",
-      "import": "./dist/client/src/fm/index.js",
-      "require": "./dist/client/src/fm/index.js",
-      "default": "./dist/client/src/fm/index.js"
+      "module-sync": "./dist/client/src/fm/index.js",
+      "import": "./dist/client/src/fm/index.js"
     },
     "./fm/server/s3": {
       "types": "./dist/server/src/fm/storage/FmStorageS3.d.ts",
-      "import": "./dist/server/src/fm/storage/FmStorageS3.js",
-      "require": "./dist/server/src/fm/storage/FmStorageS3.js",
-      "default": "./dist/server/src/fm/storage/FmStorageS3.js"
+      "module-sync": "./dist/server/src/fm/storage/FmStorageS3.js",
+      "import": "./dist/server/src/fm/storage/FmStorageS3.js"
     },
     "./client/init": {
       "types": "./dist/client/src/init.d.ts",
-      "import": "./dist/client/src/init.js",
-      "require": "./dist/client/src/init.js",
-      "default": "./dist/client/src/init.js"
+      "module-sync": "./dist/client/src/init.js",
+      "import": "./dist/client/src/init.js"
     },
-    "./utils/*": "./dist/utils/*"
+    "./utils/*": {
+      "module-sync": "./dist/utils/*",
+      "import": "./dist/utils/*"
+    },
+    "./cms/constants": {
+      "types": "./dist/utils/src/cms/constants.d.ts",
+      "module-sync": "./dist/utils/src/cms/constants.js",
+      "import": "./dist/utils/src/cms/constants.js"
+    },
+    "./cms/types": {
+      "types": "./dist/utils/src/cms/contracts.d.ts",
+      "module-sync": "./dist/utils/src/cms/contracts.js",
+      "import": "./dist/utils/src/cms/contracts.js"
+    },
+    "./cms/schemas": {
+      "types": "./dist/utils/src/cms/types.d.ts",
+      "module-sync": "./dist/utils/src/cms/types.js",
+      "import": "./dist/utils/src/cms/types.js"
+    },
+    "./cms/validation": {
+      "types": "./dist/utils/src/cms/validation.d.ts",
+      "module-sync": "./dist/utils/src/cms/validation.js",
+      "import": "./dist/utils/src/cms/validation.js"
+    },
+    "./cms/errors": {
+      "types": "./dist/utils/src/cms/errors.d.ts",
+      "module-sync": "./dist/utils/src/cms/errors.js",
+      "import": "./dist/utils/src/cms/errors.js"
+    },
+    "./fm/constants": {
+      "types": "./dist/utils/src/fm/constants.d.ts",
+      "module-sync": "./dist/utils/src/fm/constants.js",
+      "import": "./dist/utils/src/fm/constants.js"
+    },
+    "./fm/types": {
+      "types": "./dist/utils/src/fm/contracts.d.ts",
+      "module-sync": "./dist/utils/src/fm/contracts.js",
+      "import": "./dist/utils/src/fm/contracts.js"
+    },
+    "./fm/schemas": {
+      "types": "./dist/utils/src/fm/types.d.ts",
+      "module-sync": "./dist/utils/src/fm/types.js",
+      "import": "./dist/utils/src/fm/types.js"
+    },
+    "./fm/validation": {
+      "types": "./dist/utils/src/fm/validation.d.ts",
+      "module-sync": "./dist/utils/src/fm/validation.js",
+      "import": "./dist/utils/src/fm/validation.js"
+    },
+    "./fm/errors": {
+      "types": "./dist/utils/src/fm/errors.d.ts",
+      "module-sync": "./dist/utils/src/fm/errors.js",
+      "import": "./dist/utils/src/fm/errors.js"
+    },
+    "./cms/server/password": {
+      "types": "./dist/server/src/cms/password.d.ts",
+      "module-sync": "./dist/server/src/cms/password.js",
+      "import": "./dist/server/src/cms/password.js"
+    },
+    "./cms/server/sanitization": {
+      "types": "./dist/server/src/cms/sanitization.d.ts",
+      "module-sync": "./dist/server/src/cms/sanitization.js",
+      "import": "./dist/server/src/cms/sanitization.js"
+    },
+    "./fm/server/storage": {
+      "types": "./dist/server/src/fm/storage/index.d.ts",
+      "module-sync": "./dist/server/src/fm/storage/index.js",
+      "import": "./dist/server/src/fm/storage/index.js"
+    },
+    "./cms/server/rate-limiter": {
+      "types": "./dist/server/src/cms/rateLimiter.d.ts",
+      "module-sync": "./dist/server/src/cms/rateLimiter.js",
+      "import": "./dist/server/src/cms/rateLimiter.js"
+    },
+    "./cms/server/redis": {
+      "types": "./dist/server/src/cms/redis.d.ts",
+      "module-sync": "./dist/server/src/cms/redis.js",
+      "import": "./dist/server/src/cms/redis.js"
+    }
   },
   "typesVersions": {
     "*": {
@@ -210,14 +629,164 @@
       "client/components/layout/CheckChip": [
         "dist/client/src/components/layout/CheckChip.d.ts"
       ],
+      "client/components/CalendarAdd": [
+        "dist/client/src/components/CalendarAdd.d.ts"
+      ],
+      "client/components/ContactActions": [
+        "dist/client/src/components/ContactActions.d.ts"
+      ],
+      "client/components/FileIcon": [
+        "dist/client/src/components/FileIcon.d.ts"
+      ],
+      "client/components/PasteButton": [
+        "dist/client/src/components/PasteButton.d.ts"
+      ],
+      "client/components/StatCard": [
+        "dist/client/src/components/StatCard.d.ts"
+      ],
+      "client/components/form/CountrySelect": [
+        "dist/client/src/components/form/CountrySelect.d.ts"
+      ],
+      "client/components/form/CountrySelect/custom-data": [
+        "dist/client/src/components/form/CountrySelectCore.d.ts"
+      ],
+      "client/components/form/FileUploadList": [
+        "dist/client/src/components/form/FileUploadList.d.ts"
+      ],
+      "client/components/form/LanguageSelect": [
+        "dist/client/src/components/form/LanguageSelect.d.ts"
+      ],
+      "client/components/form/LanguageSelect/custom-data": [
+        "dist/client/src/components/form/LanguageSelectCore.d.ts"
+      ],
+      "client/components/form/TagsInput": [
+        "dist/client/src/components/form/TagsInput.d.ts"
+      ],
+      "client/components/form/TimezoneSelect": [
+        "dist/client/src/components/form/TimezoneSelect.d.ts"
+      ],
+      "client/components/layout/BackdropLoader": [
+        "dist/client/src/components/layout/BackdropLoader.d.ts"
+      ],
+      "client/components/layout/Disconnected": [
+        "dist/client/src/components/layout/Disconnected.d.ts"
+      ],
+      "client/components/layout/ProcessStatusChip": [
+        "dist/client/src/components/layout/ProcessStatusChip.d.ts"
+      ],
+      "client/components/layout/SplitChip": [
+        "dist/client/src/components/layout/SplitChip.d.ts"
+      ],
+      "client/debounce": [
+        "dist/client/src/helpers/debounce.d.ts"
+      ],
+      "client/csv": [
+        "dist/client/src/helpers/csv.d.ts"
+      ],
+      "client/countries": [
+        "dist/client/src/helpers/countries.d.ts"
+      ],
+      "client/countries/core": [
+        "dist/client/src/helpers/countries-core.d.ts"
+      ],
+      "client/languages": [
+        "dist/client/src/helpers/languages.d.ts"
+      ],
+      "client/languages/core": [
+        "dist/client/src/helpers/languages-core.d.ts"
+      ],
+      "client/timezones": [
+        "dist/client/src/helpers/timezones.d.ts"
+      ],
+      "client/dates": [
+        "dist/client/src/helpers/date-utils.d.ts"
+      ],
       "client/wysiwyg": [
         "dist/client/wysiwyg.d.ts"
+      ],
+      "client/wysiwyg/all": [
+        "dist/client/wysiwyg/all.d.ts"
+      ],
+      "client/wysiwyg/tinymce": [
+        "dist/client/wysiwyg/tinymce.d.ts"
+      ],
+      "client/wysiwyg/tinymce/full": [
+        "dist/client/wysiwyg/tinymce/full.d.ts"
+      ],
+      "client/wysiwyg/tinymce/features/code": [
+        "dist/client/wysiwyg/tinymce/features/code.d.ts"
+      ],
+      "client/wysiwyg/tinymce/features/media": [
+        "dist/client/wysiwyg/tinymce/features/media.d.ts"
+      ],
+      "client/wysiwyg/tinymce/features/extended": [
+        "dist/client/wysiwyg/tinymce/features/extended.d.ts"
+      ],
+      "client/wysiwyg/tinymce/features/full": [
+        "dist/client/wysiwyg/tinymce/features/full.d.ts"
+      ],
+      "client/wysiwyg/ckeditor": [
+        "dist/client/wysiwyg/ckeditor.d.ts"
+      ],
+      "client/wysiwyg/easymde": [
+        "dist/client/wysiwyg/easymde.d.ts"
+      ],
+      "client/wysiwyg/mdx": [
+        "dist/client/wysiwyg/mdx.d.ts"
       ],
       "utils": [
         "dist/utils/index.d.ts"
       ],
+      "utils/environment": [
+        "dist/utils/src/environment.d.ts"
+      ],
+      "utils/validation": [
+        "dist/utils/src/validation.d.ts"
+      ],
+      "utils/files": [
+        "dist/utils/src/files.d.ts"
+      ],
+      "utils/dates": [
+        "dist/utils/src/dates.d.ts"
+      ],
+      "utils/json": [
+        "dist/utils/src/json.d.ts"
+      ],
+      "utils/options": [
+        "dist/utils/src/options-manager.d.ts"
+      ],
+      "utils/log": [
+        "dist/utils/src/log.d.ts"
+      ],
+      "utils/turnstile": [
+        "dist/utils/src/turnstile.d.ts"
+      ],
+      "utils/contact": [
+        "dist/utils/src/contact.d.ts"
+      ],
+      "utils/calendar": [
+        "dist/utils/src/calendar.d.ts"
+      ],
+      "utils/meeting-providers": [
+        "dist/utils/src/meetingProviders.d.ts"
+      ],
+      "utils/detect-format": [
+        "dist/utils/src/detectFormat/index.d.ts"
+      ],
       "server": [
         "dist/server/index.d.ts"
+      ],
+      "server/env": [
+        "dist/server/src/env.d.ts"
+      ],
+      "server/init": [
+        "dist/server/src/init.d.ts"
+      ],
+      "server/turnstile/worker": [
+        "dist/server/src/turnstile/worker-factory.d.ts"
+      ],
+      "server/turnstile/middleware": [
+        "dist/server/src/turnstile/middleware.d.ts"
       ],
       "cms": [
         "dist/utils/src/cms/index.d.ts"
@@ -225,8 +794,23 @@
       "cms/server": [
         "dist/server/src/cms/index.d.ts"
       ],
+      "cms/server/core": [
+        "dist/server/src/cms/core.d.ts"
+      ],
+      "cms/server/express": [
+        "dist/server/src/cms/express/index.d.ts"
+      ],
       "cms/client": [
         "dist/client/src/cms/index.d.ts"
+      ],
+      "cms/client/api": [
+        "dist/client/src/cms/api.d.ts"
+      ],
+      "cms/client/hooks": [
+        "dist/client/src/cms/hooks/index.d.ts"
+      ],
+      "cms/client/ui": [
+        "dist/client/src/cms/ui/index.d.ts"
       ],
       "email": [
         "dist/utils/src/email/index.d.ts"
@@ -234,8 +818,32 @@
       "email/server": [
         "dist/server/src/email/index.d.ts"
       ],
+      "email/server/registry": [
+        "dist/server/src/email/registry.d.ts"
+      ],
+      "email/server/attachments": [
+        "dist/server/src/email/attachments.d.ts"
+      ],
+      "email/server/marketing": [
+        "dist/server/src/email/marketing.d.ts"
+      ],
+      "email/server/webhooks": [
+        "dist/server/src/email/webhooks/index.d.ts"
+      ],
+      "email/server/webhooks/resend": [
+        "dist/server/src/email/webhooks/resend.d.ts"
+      ],
+      "email/server/webhooks/mailerlite": [
+        "dist/server/src/email/webhooks/mailerlite.d.ts"
+      ],
+      "email/server/webhooks/ses": [
+        "dist/server/src/email/webhooks/ses.d.ts"
+      ],
       "email/server/errors": [
         "dist/server/src/email/errors.d.ts"
+      ],
+      "email/server/providers/contracts": [
+        "dist/server/src/email/providers/types.d.ts"
       ],
       "email/server/providers": [
         "dist/server/src/email/providers/index.d.ts"
@@ -258,20 +866,89 @@
       "email/client": [
         "dist/client/src/email/index.d.ts"
       ],
+      "email/client/api": [
+        "dist/client/src/email/api.d.ts"
+      ],
+      "email/client/hooks": [
+        "dist/client/src/email/hooks/index.d.ts"
+      ],
+      "email/client/ui": [
+        "dist/client/src/email/ui/index.d.ts"
+      ],
       "fm": [
         "dist/utils/src/fm/index.d.ts"
       ],
       "fm/server": [
         "dist/server/src/fm/index.d.ts"
       ],
+      "fm/server/core": [
+        "dist/server/src/fm/core.d.ts"
+      ],
+      "fm/server/express": [
+        "dist/server/src/fm/express/index.d.ts"
+      ],
       "fm/client": [
         "dist/client/src/fm/index.d.ts"
+      ],
+      "fm/client/api": [
+        "dist/client/src/fm/api.d.ts"
+      ],
+      "fm/client/hooks": [
+        "dist/client/src/fm/hooks/index.d.ts"
+      ],
+      "fm/client/ui": [
+        "dist/client/src/fm/ui/index.d.ts"
       ],
       "fm/server/s3": [
         "dist/server/src/fm/storage/FmStorageS3.d.ts"
       ],
       "client/init": [
         "dist/client/src/init.d.ts"
+      ],
+      "cms/constants": [
+        "dist/utils/src/cms/constants.d.ts"
+      ],
+      "cms/types": [
+        "dist/utils/src/cms/contracts.d.ts"
+      ],
+      "cms/schemas": [
+        "dist/utils/src/cms/types.d.ts"
+      ],
+      "cms/validation": [
+        "dist/utils/src/cms/validation.d.ts"
+      ],
+      "cms/errors": [
+        "dist/utils/src/cms/errors.d.ts"
+      ],
+      "fm/constants": [
+        "dist/utils/src/fm/constants.d.ts"
+      ],
+      "fm/types": [
+        "dist/utils/src/fm/contracts.d.ts"
+      ],
+      "fm/schemas": [
+        "dist/utils/src/fm/types.d.ts"
+      ],
+      "fm/validation": [
+        "dist/utils/src/fm/validation.d.ts"
+      ],
+      "fm/errors": [
+        "dist/utils/src/fm/errors.d.ts"
+      ],
+      "cms/server/password": [
+        "dist/server/src/cms/password.d.ts"
+      ],
+      "cms/server/sanitization": [
+        "dist/server/src/cms/sanitization.d.ts"
+      ],
+      "fm/server/storage": [
+        "dist/server/src/fm/storage/index.d.ts"
+      ],
+      "cms/server/rate-limiter": [
+        "dist/server/src/cms/rateLimiter.d.ts"
+      ],
+      "cms/server/redis": [
+        "dist/server/src/cms/redis.d.ts"
       ]
     }
   },
@@ -286,7 +963,7 @@
     "prepack": "yarn build",
     "clean": "rm -fr ./node_modules/{*,.*} .yarn/cache || true",
     "test": "cd client && yarn test && cd ../utils && yarn test && cd ../server && yarn test && cd ..",
-    "test:consumer": "[ -d test-consumer ] && cd test-consumer && yarn dev || echo '❌ test-consumer directory not found - this script is only available in the main shared-utils repository'",
+    "test:consumer": "[ -d test-consumer ] && cd test-consumer && yarn dev || echo '\u274c test-consumer directory not found - this script is only available in the main shared-utils repository'",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "upgrade": "yarn upgrade-interactive",
@@ -304,6 +981,7 @@
     "yarn-upgrade-interactive": "./bin/package-upgrades.sh"
   },
   "devDependencies": {
+    "@aws-sdk/client-sesv2": "^3.1136.0",
     "@babel/core": "^8.0.6",
     "@babel/preset-env": "^8.0.6",
     "@babel/preset-typescript": "^8.0.1",
@@ -313,12 +991,25 @@
     "@vitest/coverage-v8": "5.0.1",
     "@vitest/ui": "5.0.1",
     "babel-jest": "^30.5.2",
+    "bcryptjs": "^3.0.3",
+    "date-fns": "^4.4.0",
+    "date-fns-tz": "^3.2.0",
+    "dompurify": "^3.4.15",
+    "dotenv": "18.0.1",
+    "dotenv-expand": "^13.0.0",
+    "esbuild": "0.28.0",
+    "express": "^5.2.1",
     "jest": "^30.5.2",
     "jest-environment-node": "^30.5.2",
     "jsdom": "^29.1.1",
+    "marked": "^18.0.13",
+    "nodemailer": "10.0.10",
+    "papaparse": "^5.7.0",
     "prettier": "^3.9.8",
+    "prismjs": "^1.30.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "sanitize-html": "2.17.7",
     "supertest": "^7.2.2",
     "typescript": "^6.0.3",
     "vite": "8.3.0",
@@ -329,33 +1020,123 @@
     "@emotion/styled": "11.14.1"
   },
   "dependencies": {
+    "lodash-es": "^4.18.1",
+    "nanoid": "^6.0.1",
+    "zod": "~4.1.12"
+  },
+  "peerDependencies": {
+    "@aws-sdk/client-s3": ">=3.0.0",
     "@aws-sdk/client-sesv2": "^3.1136.0",
-    "@tinymce/tinymce-react": "^6.3.0",
+    "@aws-sdk/s3-request-presigner": ">=3.0.0",
+    "@ckeditor/ckeditor5-react": ">=9.0.0",
+    "@emotion/react": "^11.5.0",
+    "@emotion/styled": "^11.3.0",
+    "@mdxeditor/editor": ">=3.0.0 <5.0.0",
+    "@mui/icons-material": "^9.0.0",
+    "@mui/lab": "^9.0.0-beta.3",
+    "@mui/material": "^9.0.0",
+    "@mui/x-date-pickers": "^9.0.0",
+    "@tinymce/tinymce-react": ">=5.0.0",
+    "bcryptjs": "^3.0.3",
+    "ckeditor5": ">=44.0.0",
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
     "dompurify": "^3.4.15",
     "dotenv": "18.0.1",
     "dotenv-expand": "^13.0.0",
+    "easymde": ">=2.0.0",
     "express": "^5.2.1",
-    "lodash-es": "^4.18.1",
+    "ioredis": "^6.0.0",
     "marked": "^18.0.13",
-    "nanoid": "^6.0.1",
     "nodemailer": "10.0.10",
     "papaparse": "^5.7.0",
     "prismjs": "^1.30.0",
-    "tinymce": "^8.9.1"
-  },
-  "peerDependencies": {
-    "@aws-sdk/client-s3": ">=3.0.0",
-    "@aws-sdk/s3-request-presigner": ">=3.0.0",
+    "prop-types": "^15.8.1",
     "react": ">=16.8.0",
-    "react-dom": ">=16.8.0"
+    "react-dom": ">=16.8.0",
+    "sanitize-html": "^2.17.7",
+    "tinymce": ">=6.0.0"
   },
   "peerDependenciesMeta": {
     "@aws-sdk/client-s3": {
       "optional": true
     },
+    "@aws-sdk/client-sesv2": {
+      "optional": true
+    },
     "@aws-sdk/s3-request-presigner": {
+      "optional": true
+    },
+    "@ckeditor/ckeditor5-react": {
+      "optional": true
+    },
+    "@emotion/react": {
+      "optional": true
+    },
+    "@emotion/styled": {
+      "optional": true
+    },
+    "@mdxeditor/editor": {
+      "optional": true
+    },
+    "@mui/icons-material": {
+      "optional": true
+    },
+    "@mui/lab": {
+      "optional": true
+    },
+    "@mui/material": {
+      "optional": true
+    },
+    "@mui/x-date-pickers": {
+      "optional": true
+    },
+    "@tinymce/tinymce-react": {
+      "optional": true
+    },
+    "bcryptjs": {
+      "optional": true
+    },
+    "ckeditor5": {
+      "optional": true
+    },
+    "date-fns": {
+      "optional": true
+    },
+    "date-fns-tz": {
+      "optional": true
+    },
+    "dompurify": {
+      "optional": true
+    },
+    "dotenv": {
+      "optional": true
+    },
+    "dotenv-expand": {
+      "optional": true
+    },
+    "easymde": {
+      "optional": true
+    },
+    "express": {
+      "optional": true
+    },
+    "ioredis": {
+      "optional": true
+    },
+    "marked": {
+      "optional": true
+    },
+    "nodemailer": {
+      "optional": true
+    },
+    "papaparse": {
+      "optional": true
+    },
+    "prismjs": {
+      "optional": true
+    },
+    "prop-types": {
       "optional": true
     },
     "react": {
@@ -363,14 +1144,43 @@
     },
     "react-dom": {
       "optional": true
+    },
+    "sanitize-html": {
+      "optional": true
+    },
+    "tinymce": {
+      "optional": true
     }
   },
   "files": [
-    "dist/**/*",
+    "dist/{utils,client,server}/**/*.js",
+    "dist/{utils,client,server}/**/*.d.ts",
+    "dist/{utils,client,server}/**/*.js.map",
+    "dist/{utils,client,server}/**/*.css",
+    "dist/{utils,client,server}/**/*.json",
+    "!dist/**/__tests__/**",
+    "!dist/**/*.test.*",
+    "!dist/**/*.spec.*",
     "package.json",
     "README.md",
     "LICENSE",
-    "scripts/**/*",
-    "bin/**/*"
+    "./scripts/setup-turnstile-worker.sh",
+    "./scripts/dependency-manager.js",
+    "./bin/docker-build.sh",
+    "./bin/killnode.sh",
+    "./scripts/package-upgrade.mjs",
+    "./scripts/speckit-sync.mjs",
+    "./bin/vite-preview-envs.sh",
+    "./bin/package-upgrades.sh",
+    "scripts/ensure-dist.js",
+    "scripts/artifact-contract.mjs",
+    "scripts/speckit-sync.sh",
+    "dist/server/deploy-turnstile-worker.sh",
+    "bin/update-source-data.sh",
+    "bin/compare-data.cjs",
+    "bin/convert-bigint-ids.py",
+    "!.specify/**",
+    "!data/**",
+    "!examples/**"
   ]
 }

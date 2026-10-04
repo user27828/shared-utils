@@ -6,7 +6,7 @@
 describe("Package Import Test", () => {
   it("should import OptionsManager from package", async () => {
     const { OptionsManager, optionsManager } = await import(
-      "@shared-utils/utils"
+      "@shared-utils/utils/options"
     );
 
     expect(OptionsManager).toBeDefined();

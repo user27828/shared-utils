@@ -37,4 +37,3 @@ export declare const assertAllowedPostType: (postType: string) => void;
  * @throws CmsValidationError
  */
 export declare const assertAllowedStatus: (status: string) => void;
-//# sourceMappingURL=validation.d.ts.map

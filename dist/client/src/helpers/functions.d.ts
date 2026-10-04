@@ -2,7 +2,7 @@
  * Shared functions
  */
 /**
- * @deprecated Use the consolidated `isDev` from '@shared-utils/utils' instead.
+ * @deprecated Use the consolidated `isDev` from '@user27828/shared-utils/utils/environment' instead.
  * This version will be removed in a future release.
  */
 export declare const isDev: ({ xCriteria, }?: {
@@ -36,4 +36,3 @@ export declare const isValidUrl: (url: string, options?: UrlValidationOptions) =
  * @returns Formatted date string in YYYY/MM/DD format or "N/A" if invalid
  */
 export declare const formatDateYYMMDD: (dateString: string) => string;
-//# sourceMappingURL=functions.d.ts.map

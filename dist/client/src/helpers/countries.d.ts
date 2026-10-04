@@ -1,10 +1,9 @@
-export function getCountryByCode(code: string): Object | undefined;
-export function getCountryOptions({ includeEmpty, topCountries, sortBy, order, }?: {
-    includeEmpty: boolean;
-    topCountries: string | string[] | Object;
-    sortBy: string;
-    order: string;
-}): any[];
+export function getCountryByCode(code: string | number): Object | undefined;
+export function getCountryOptions(options?: {
+    includeEmpty?: boolean | undefined;
+    topCountries?: string | string[] | undefined;
+    sortBy?: string | undefined;
+    order?: string | undefined;
+}): Array<Object>;
 export default countries;
 import countries from "../data/countries.js";
-//# sourceMappingURL=countries.d.ts.map

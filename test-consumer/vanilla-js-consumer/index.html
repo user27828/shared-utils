@@ -84,7 +84,7 @@
           "⏳ Log utility test not yet implemented. Check console for import attempts.";
 
         // Try to import and test
-        import("@user27828/shared-utils/utils")
+        import("@user27828/shared-utils/utils/log")
           .then((module) => {
             const { log } = module;
             log.info("Vanilla JS test successful!");
@@ -105,7 +105,7 @@
         resultDiv.innerHTML = "⏳ Turnstile utility test starting...";
 
         // Try to import and test turnstile
-        import("@user27828/shared-utils/utils")
+        import("@user27828/shared-utils/utils/turnstile")
           .then((module) => {
             const { turnstile } = module;
 

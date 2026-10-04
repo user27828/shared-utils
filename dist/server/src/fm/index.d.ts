@@ -25,6 +25,7 @@ export type { FmPurposePolicy, FmUploadValidationResult, } from "./policy/index.
 export type { FmStorageProvider, FmStorageCapabilities, FmPresignedGet, FmHeadObjectResult, FmWriteObjectInput, FmCopyObjectInput, FmDeleteObjectInput, FmStorageAdapter, } from "./storage/index.js";
 export { FmStorageLocal } from "./storage/index.js";
 export { createFmStorage } from "./storage/index.js";
+export type { FmS3StorageFactory } from "./storage/index.js";
 export { sniffMimeFromHeader } from "./utils/mimeSniff.js";
 export { extractImageDimensionsFromHeader } from "./utils/imageDimensions.js";
 export { FmServiceCore } from "./FmServiceCore.js";
@@ -41,4 +42,3 @@ export { runFmConnectorConformanceTests } from "./test/fmConformance.js";
 export type { FmConformanceConfig } from "./test/fmConformance.js";
 export { extractFmFileUids, reconcileFmLinks, createCmsFmLinkTracker, } from "./linkTracker.js";
 export type { FmLinkReconcileResult, CmsFmLinkTrackerConfig, CmsFmLinkTracker, } from "./linkTracker.js";
-//# sourceMappingURL=index.d.ts.map

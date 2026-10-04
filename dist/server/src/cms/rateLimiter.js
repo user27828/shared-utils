@@ -1,3 +1,4 @@
+import { CmsValidationError } from "../../../utils/src/cms/errors.js";
 // ─── Defaults ─────────────────────────────────────────────────────────────
 const DEFAULT_ADMIN_READ = {
     maxRequests: 240,
@@ -35,12 +36,20 @@ const defaultGetUserKey = (req) => {
 };
 // ─── Rate limiter class ───────────────────────────────────────────────────
 export class CmsRateLimiter {
+    redisFactory;
     redis = null;
     memoryStore = new Map();
     cleanupInterval = null;
     initialized = false;
+    initialization = null;
+    disposed = false;
     redisUrl;
-    constructor(redisUrl) {
+    constructor(redisUrl, redisFactory) {
+        this.redisFactory = redisFactory;
+        if (redisUrl && !redisFactory) {
+            throw new CmsValidationError("redisUrl requires redisFactory: import createCmsRedisClient from " +
+                "@user27828/shared-utils/cms/server/redis and install ioredis with yarn add ioredis.");
+        }
         this.redisUrl = redisUrl;
         this.startMemoryCleanup();
     }
@@ -61,6 +70,9 @@ export class CmsRateLimiter {
         }
     }
     async ensureInitialized() {
+        if (this.initialization) {
+            return this.initialization;
+        }
         if (this.initialized) {
             return;
         }
@@ -68,26 +80,40 @@ export class CmsRateLimiter {
         if (!this.redisUrl) {
             return;
         }
+        this.initialization = this.initializeRedis(this.redisUrl);
+        return this.initialization;
+    }
+    async initializeRedis(url) {
+        let client;
         try {
-            const Redis = (await import("ioredis")).default;
-            this.redis = new Redis(this.redisUrl, {
-                // Preserve the v5 RESP2 wire protocol while adopting ioredis v6.
-                protocol: 2,
-                maxRetriesPerRequest: 1,
-                enableOfflineQueue: false,
-                connectTimeout: 2000,
+            client = await this.redisFactory(url);
+            client.on("error", () => {
+                // Connection failures retain the existing memory fallback.
             });
-            this.redis.on("error", () => {
-                // Fail quietly; fall back to memory.
-            });
-            await this.redis.ping();
+            if (this.disposed) {
+                client.disconnect();
+                return;
+            }
+            await client.ping();
+            if (this.disposed) {
+                client.disconnect();
+            }
+            else {
+                this.redis = client;
+            }
         }
         catch {
-            this.redis = null;
+            client?.disconnect();
         }
     }
     async checkLimit(key, rule) {
+        if (this.disposed) {
+            throw new CmsValidationError("The CMS rate limiter has been cleaned up.");
+        }
         await this.ensureInitialized();
+        if (this.disposed) {
+            throw new CmsValidationError("The CMS rate limiter has been cleaned up.");
+        }
         const now = Date.now();
         const resetTime = now + rule.windowMs;
         if (this.redis) {
@@ -138,6 +164,7 @@ export class CmsRateLimiter {
         return { allowed: false, remaining: 0, resetTime: entry.resetTime };
     }
     cleanup() {
+        this.disposed = true;
         if (this.cleanupInterval) {
             clearInterval(this.cleanupInterval);
             this.cleanupInterval = null;
@@ -160,7 +187,7 @@ const setRateLimitHeaders = (res, rule, result) => {
  * Create CMS admin rate limit middleware.
  */
 export const createCmsAdminRateLimitMiddleware = (config) => {
-    const limiter = new CmsRateLimiter(config.redisUrl);
+    const limiter = new CmsRateLimiter(config.redisUrl, config.redisFactory);
     const readRule = config.adminRules?.read ?? DEFAULT_ADMIN_READ;
     const writeRule = config.adminRules?.write ?? DEFAULT_ADMIN_WRITE;
     const getUserKey = config.getUserKey ?? defaultGetUserKey;
@@ -181,7 +208,7 @@ export const createCmsAdminRateLimitMiddleware = (config) => {
  * Create CMS public rate limit middleware.
  */
 export const createCmsPublicRateLimitMiddleware = (config) => {
-    const limiter = new CmsRateLimiter(config.redisUrl);
+    const limiter = new CmsRateLimiter(config.redisUrl, config.redisFactory);
     const readRule = config.publicRules?.read ?? DEFAULT_PUBLIC_READ;
     const writeRule = config.publicRules?.write ?? DEFAULT_PUBLIC_WRITE;
     const unlockRule = config.publicRules?.unlock ?? DEFAULT_PUBLIC_UNLOCK;

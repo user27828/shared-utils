@@ -12,4 +12,3 @@ export interface EmailTemplateDetailPageProps {
 }
 declare const EmailTemplateDetailPage: React.FC<EmailTemplateDetailPageProps>;
 export default EmailTemplateDetailPage;
-//# sourceMappingURL=EmailTemplateDetailPage.d.ts.map

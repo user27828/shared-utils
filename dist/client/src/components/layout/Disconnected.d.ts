@@ -10,4 +10,3 @@ export interface DisconnectedProps {
 }
 declare const Disconnected: React.FC<DisconnectedProps>;
 export default Disconnected;
-//# sourceMappingURL=Disconnected.d.ts.map

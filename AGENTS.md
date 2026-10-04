@@ -13,6 +13,7 @@ Every change — no matter how small — must follow first-principles logic and 
 
 - **Monorepo Structure**: TypeScript-compiled utilities distributed from `dist/`. Source in `utils/src/`, `client/src/`, `server/src/` with individual `package.json` configs and TypeScript project references.
 - **ES Module Native**: Everything uses `.js` extensions in imports (TypeScript ES module pattern). Critical: imports must end with `.js` even for `.ts` files (e.g., `"./options-manager.js"`).
+- **Package Interoperability**: Root package exports map `types`, then `module-sync`, then `import` to ESM targets. Keep `module-sync` before `import`; do not add `require` or `default` conditions that point to ESM files. Native synchronous CommonJS loading requires Node 22.12+ and a dependency graph without top-level `await`; older Node CJS consumers need dynamic `import()` or a real CommonJS build.
 - **Tree-Shaking**: The root `package.json` declares `"sideEffects"` so bundlers can eliminate unused code. The client barrel (`client/index.ts`) is side-effect-free — all `export *` wildcards have been replaced with explicit named re-exports. `window.log` initialization lives in a separate `client/src/init.ts` module.
 - **Centralized Configuration**: `OptionsManager` is the architectural centerpiece. Each utility registers with the global `optionsManager` singleton, enabling cross-utility configuration via `setGlobalOptions()`.
 - **Environment Auto-Detection**: Use the consolidated `isDev()` function for development environment detection. Log and Turnstile utilities auto-detect client vs server context. Never hardcode environment checks — use `isDev()` or the provided detection patterns from existing utilities.
@@ -23,7 +24,7 @@ Every change — no matter how small — must follow first-principles logic and 
 - **TypeScript Build**: Compiles to `../dist/{utils|client|server}/` with `--outDir` flag (utils, server) or `--build` (client, project references). Each workspace clears `tsconfig.tsbuildinfo` before compilation.
 - **Lodash-ES**: Uses ES module version (`lodash-es`). Import: `import { mergeWith, cloneDeep } from "lodash-es"`
 - **Zod**: Used for schema validation in `utils/src/fm/types.ts`, `utils/src/cms/types.ts`, and `server/src/fm/policy/allowlists.ts`. Import: `import { z } from "zod"`. All request/response shapes and enums are defined as Zod schemas; derive TypeScript types with `z.infer<>`.
-- **nanoid**: Used for UID generation in service cores (`FmServiceCore`, `CmsServiceCore`) and `utils/src/functions.ts`. Import: `import { nanoid } from "nanoid"`
+- **nanoid**: Used for UID generation in service cores (`FmServiceCore`, `CmsServiceCore`) and `utils/src/files.ts`. Import: `import { nanoid } from "nanoid"`
 
 ## FM & CMS Subsystem Architecture
 
@@ -76,24 +77,56 @@ Do not treat `AGENTS.md` as the only repository truth. This project also maintai
 ### Package export paths
 
 ```
-@user27828/shared-utils          → utils (log, optionsManager, turnstile, etc.)
+@user27828/shared-utils          → dependency-free utility helpers
 @user27828/shared-utils/utils    → same as above
+@user27828/shared-utils/utils/environment → environment detection
+@user27828/shared-utils/utils/validation  → pure validation and URL/path helpers
+@user27828/shared-utils/utils/files       → configured file helpers
+@user27828/shared-utils/utils/dates       → configured date helpers
+@user27828/shared-utils/utils/json        → JSON merge/storage helpers
+@user27828/shared-utils/utils/options     → OptionsManager class and singleton
+@user27828/shared-utils/utils/log         → logger
+@user27828/shared-utils/utils/turnstile   → browser Turnstile helper
+@user27828/shared-utils/utils/contact     → contact CSV and vCard serialization
+@user27828/shared-utils/utils/calendar    → date-backed calendar URL and ICS helpers
+@user27828/shared-utils/utils/meeting-providers → meeting provider data/helpers
+@user27828/shared-utils/utils/detect-format → text format detection
 @user27828/shared-utils/client   → client (components, data, helpers) — side-effect-free, fully tree-shakeable
+@user27828/shared-utils/client/debounce, @user27828/shared-utils/client/csv, @user27828/shared-utils/client/countries, @user27828/shared-utils/client/languages, @user27828/shared-utils/client/timezones, @user27828/shared-utils/client/dates → focused client helpers
+@user27828/shared-utils/client/countries/core, @user27828/shared-utils/client/languages/core → data-driven helper cores that accept host-provided rows
+Direct @user27828/shared-utils/client component subpaths → individually mapped implementation modules; no wildcard export
+@user27828/shared-utils/client/components/form/{CountrySelect,LanguageSelect}/custom-data → selectors that require host-provided rows
 @user27828/shared-utils/client/init → client-side window.log initialization (side-effectful — import once in app entry)
-@user27828/shared-utils/client/wysiwyg → WYSIWYG editors (CKEditor5, TinyMCE, EasyMDE, MDXEditor)
-@user27828/shared-utils/server   → server (env loader, middleware, turnstile worker)
+@user27828/shared-utils/client/wysiwyg → engine-neutral WYSIWYG switcher and adapter types
+@user27828/shared-utils/client/wysiwyg/{tinymce,ckeditor,easymde,mdx} → separate lazy engine adapters and components
+@user27828/shared-utils/client/wysiwyg/tinymce/full and /tinymce/features/{code,media,extended,full} → explicit TinyMCE presets
+@user27828/shared-utils/client/wysiwyg/all → convenience switcher that includes every engine
+@user27828/shared-utils/server   → server middleware, Turnstile worker, IP and general utilities; no env or logger bootstrap
+@user27828/shared-utils/server/env → explicit server environment loading
+@user27828/shared-utils/server/init → explicit globalThis.log initialization
+@user27828/shared-utils/server/turnstile/worker, @user27828/shared-utils/server/turnstile/middleware → focused server modules
 @user27828/shared-utils/email    → shared email preview/request/response types and validation helpers
 @user27828/shared-utils/email/server → email template registry, attachment helpers, marketing sync, and webhook router factories
+@user27828/shared-utils/email/server/registry, @user27828/shared-utils/email/server/attachments, @user27828/shared-utils/email/server/marketing, @user27828/shared-utils/email/server/webhooks → focused email server modules
 @user27828/shared-utils/email/server/errors → email/provider error helpers
 @user27828/shared-utils/email/server/providers → provider contracts plus built-in Gmail, Resend, SES, and _test_ providers (deep provider subpaths also exported)
+@user27828/shared-utils/email/server/providers/contracts → provider types without provider implementations
 @user27828/shared-utils/email/client → email template preview client, hooks, and preview/admin UI
-@user27828/shared-utils/cms      → CMS shared types/errors/validation
+@user27828/shared-utils/email/client/api, @user27828/shared-utils/email/client/hooks, @user27828/shared-utils/email/client/ui → separated email SDK, hooks, and UI
+@user27828/shared-utils/cms      → Browser-safe CMS types/schemas/errors/validation/concurrency
+@user27828/shared-utils/cms/{constants,types,schemas,validation,errors} → Focused shared CMS contracts
+@user27828/shared-utils/cms/server/{password,sanitization} → CMS server security helpers
 @user27828/shared-utils/cms/server → CMS service core, connectors, Express routers
+@user27828/shared-utils/cms/server/core, @user27828/shared-utils/cms/server/express → separated CMS core and router entrypoints
 @user27828/shared-utils/cms/client → CMS client API, hooks, UI components
+@user27828/shared-utils/cms/client/api, @user27828/shared-utils/cms/client/hooks, @user27828/shared-utils/cms/client/ui → separated CMS SDK, hooks, and UI
 @user27828/shared-utils/cms/client/public → public CMS client API, hook, and render/password-gate components without admin/editor UI
-@user27828/shared-utils/fm       → FM shared types/errors/validation
+@user27828/shared-utils/fm       → FM shared types/schemas/errors/validation
+@user27828/shared-utils/fm/{constants,types,schemas,validation,errors} → Focused shared FM contracts
 @user27828/shared-utils/fm/server → FM service core, connectors, Express routers
+@user27828/shared-utils/fm/server/core, @user27828/shared-utils/fm/server/express → separated FM core and router entrypoints
 @user27828/shared-utils/fm/client → FM client API, hooks, components
+@user27828/shared-utils/fm/client/api, @user27828/shared-utils/fm/client/hooks, @user27828/shared-utils/fm/client/ui → separated FM SDK, hooks, and UI
 @user27828/shared-utils/fm/server/s3 → FM S3 storage adapter
 ```
 
@@ -106,6 +139,18 @@ Do not treat `AGENTS.md` as the only repository truth. This project also maintai
 - **Development Servers**: `test-consumer/` provides isolated test environments. Use `yarn kill:all` to terminate all background processes.
 
 Note: `yarn test:consumer` starts Vite (React dev server) which does not exit on its own; automated runs should execute with a timeout or use a forced stop. This prevents automation from hanging.
+
+### Optional integrations and release builds
+
+Root runtime dependencies are `lodash-es`, `nanoid`, and `zod`. Feature
+integrations are optional peers; keep complete install recipes in README.
+Local FM uses `fm/server/storage`; S3 callers inject `createFmS3Storage` from
+`fm/server/s3`. CMS Redis callers inject `createCmsRedisClient` from
+`cms/server/redis`. Do not add vendor imports to the local/in-memory factories.
+Workspace builds clean only their own generated dist tree and build cache.
+Keep tests/dev scripts and declaration maps out of the archive; server JS maps
+include their source content. Keep export/bin targets and CLI support files
+covered by the artifact contract and packed consumer verifier.
 
 ### Package upgrade helper for consuming projects
 
@@ -303,7 +348,9 @@ Always use deep imports for large UI libraries, icon sets, and heavy utility pac
 
 ```ts
 // Importing utilities
-import { log, turnstile, optionsManager } from "@user27828/shared-utils/utils";
+import { log } from "@user27828/shared-utils/utils/log";
+import { turnstile } from "@user27828/shared-utils/utils/turnstile";
+import { optionsManager } from "@user27828/shared-utils/utils/options";
 
 // Importing CMS server
 import {
@@ -344,8 +391,13 @@ yarn update:data
 
 ## Key Files & Directories
 
+- `utils/src/environment.ts`, `validation.ts`, `files.ts`, `dates.ts`, `json.ts` — dependency-specific utility helpers
+- `utils/src/functions.ts` — compatibility barrel for the legacy deep import
 - `utils/src/options-manager.ts` — OptionsManager implementation
 - `utils/src/fm/types.ts`, `utils/src/cms/types.ts` — Zod schemas and core types
+- `utils/src/fm/constants.ts`, `utils/src/cms/constants.ts` - Dependency-free enum values
+- `utils/src/fm/contracts.ts`, `utils/src/cms/contracts.ts` - Erased public type exports
+- `server/src/cms/password.ts`, `server/src/cms/sanitization.ts` - Server security helpers
 - `utils/src/fm/errors.ts`, `utils/src/cms/errors.ts` — Typed error hierarchies
 - `server/src/fm/FmServiceCore.ts`, `server/src/cms/CmsServiceCore.ts` — Service cores
 - `server/src/fm/FmConnector.ts`, `server/src/cms/connector.ts` — DB connector interfaces

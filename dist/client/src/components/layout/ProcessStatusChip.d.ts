@@ -28,4 +28,3 @@ export interface ProcessStatusChipProps extends Omit<ChipProps, "label"> {
 }
 declare const ProcessStatusChip: React.FC<ProcessStatusChipProps>;
 export default ProcessStatusChip;
-//# sourceMappingURL=ProcessStatusChip.d.ts.map

@@ -46,7 +46,8 @@ import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import LinkIcon from "@mui/icons-material/Link";
 import VideoCallIcon from "@mui/icons-material/VideoCall";
-import { canGenerateVCard, canScheduleMeeting, downloadVCard, buildMeetingEvent, openCalendarEvent, } from "../../../utils/src/contact.js";
+import { buildMeetingEvent, openCalendarEvent, } from "../../../utils/src/calendar.js";
+import { canGenerateVCard, canScheduleMeeting, downloadVCard, } from "../../../utils/src/contact.js";
 const CALENDAR_PROVIDERS = [
     {
         key: "google",

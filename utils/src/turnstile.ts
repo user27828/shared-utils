@@ -282,5 +282,5 @@ class Turnstile {
 
 const turnstile = new Turnstile();
 
-export { Turnstile };
+export { turnstile, Turnstile };
 export default turnstile;

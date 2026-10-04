@@ -23,4 +23,3 @@ export interface CmsContentNotesProps {
 }
 declare const CmsContentNotes: React.FC<CmsContentNotesProps>;
 export default CmsContentNotes;
-//# sourceMappingURL=CmsContentNotes.d.ts.map

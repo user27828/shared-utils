@@ -2,8 +2,8 @@
  * CMS Body Editor — shared-utils
  *
  * Multi-format content editor that switches between:
- * - HTML: TinyMCE or CKEditor (from shared-utils/client/wysiwyg)
- * - Markdown: MDXEditor (from shared-utils/client/wysiwyg)
+ * - HTML: a host-injected TinyMCE or CKEditor adapter
+ * - Markdown: a host-injected MDXEditor adapter
  * - JSON/Text: Plain textarea
  *
  * Media picker integration is injectable via callbacks.
@@ -11,8 +11,6 @@
 import React, {
   useMemo,
   useRef,
-  useState,
-  lazy,
   Suspense,
   useCallback,
   useEffect,
@@ -22,9 +20,15 @@ import LinearProgress from "@mui/material/LinearProgress";
 import Typography from "@mui/material/Typography";
 import { useColorScheme } from "@mui/material/styles";
 import type {
+  CmsBodyEditorAdapterMap,
+  CmsBodyEditorEngineProps,
   CmsEditorPreference,
   CmsImageUploadHandler,
 } from "./CmsAdminUiConfig.js";
+import type {
+  WysiwygImageUploadRequest,
+  WysiwygPickRequest,
+} from "../../components/wysiwyg/WysiwygEditor.js";
 import {
   hasEmbeddedBase64Image,
   normalizeEmbeddedHtmlImages,
@@ -132,6 +136,10 @@ export interface CmsBodyEditorProps {
   label?: string;
   /** Which WYSIWYG editor to use for HTML content. Defaults to "ckeditor". */
   editor?: CmsEditorPreference;
+  /** Optional explicit engine adapters supplied by the host application. */
+  editorAdapters?: CmsBodyEditorAdapterMap;
+  /** Optional engine-specific props passed to the selected adapter. */
+  editorProps?: CmsBodyEditorEngineProps;
   /** Callback to pick a media file (opens host-provided media picker). */
   onPickAsset?: () => Promise<{
     uid: string;
@@ -156,10 +164,11 @@ const CmsBodyEditor: React.FC<CmsBodyEditorProps> = React.memo(
     height = 500,
     label,
     editor = "ckeditor",
+    editorAdapters,
+    editorProps,
     onPickAsset,
     onUploadImage,
   }) => {
-    const [editorLoading, setEditorLoading] = useState(true);
     const latestHtmlRef = useRef(value);
     const htmlNormalizationRunRef = useRef(0);
     const mountedRef = useRef(true);
@@ -291,12 +300,12 @@ const CmsBodyEditor: React.FC<CmsBodyEditorProps> = React.memo(
                 onChange={handleHtmlEditorChange}
                 height={height}
                 editor={editor}
+                editorAdapters={editorAdapters}
+                editorProps={editorProps}
                 onPickAsset={onPickAsset}
                 onUploadImage={onUploadImage}
-                onReady={() => setEditorLoading(false)}
               />
             </Suspense>
-            {editorLoading && <LinearProgress />}
           </Box>
         </Box>
       );
@@ -319,6 +328,8 @@ const CmsBodyEditor: React.FC<CmsBodyEditorProps> = React.memo(
               <MarkdownEditor
                 value={value}
                 onChange={onChange}
+                editorAdapter={editorAdapters?.mdx}
+                editorProps={editorProps?.mdx}
                 onPickAsset={onPickAsset}
                 onUploadImage={onUploadImage}
               />
@@ -359,65 +370,130 @@ const CmsBodyEditor: React.FC<CmsBodyEditorProps> = React.memo(
   },
 );
 
-// ─── Sub-editors (lazy-loaded) ────────────────────────────────────────────
+// ─── Injected editor adapters ─────────────────────────────────────────────
 
-/**
- * HTML editor — loads TinyMCE or CKEditor from shared-utils/client/wysiwyg
- * based on the `editor` prop. Falls back to textarea if the import fails.
- */
+const DEFAULT_CMS_TINYMCE_PROPS: Record<string, unknown> = {
+  init: {
+    license_key: "gpl",
+    menubar: true,
+    plugins: [
+      "advlist",
+      "autolink",
+      "lists",
+      "link",
+      "image",
+      "charmap",
+      "preview",
+      "anchor",
+      "searchreplace",
+      "visualblocks",
+      "code",
+      "fullscreen",
+      "insertdatetime",
+      "media",
+      "table",
+      "help",
+      "wordcount",
+    ],
+    toolbar:
+      "undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | code fullscreen",
+    paste_data_images: true,
+    automatic_uploads: true,
+    paste_preprocess: (_pluginApi: unknown, data: { content: string }) => {
+      data.content = stripLocalFileImages(data.content);
+    },
+  },
+};
+
+const useCmsEditorHandlers = (
+  onPickAsset: CmsBodyEditorProps["onPickAsset"],
+  onUploadImage: CmsBodyEditorProps["onUploadImage"],
+) => {
+  const pickAsset = useCallback(
+    async (request: WysiwygPickRequest) => {
+      if (!onPickAsset) {
+        return null;
+      }
+      const picked = await onPickAsset();
+      if (!picked?.url) {
+        return null;
+      }
+      return {
+        url: picked.url,
+        kind: request.kind,
+        title: picked.name,
+        text: picked.name,
+        alt: picked.name,
+        mimeType: picked.mimeType,
+      };
+    },
+    [onPickAsset],
+  );
+
+  const uploadImage = useCallback(
+    async (request: WysiwygImageUploadRequest) => {
+      if (!onUploadImage) {
+        throw new Error("CMS image upload requires an onUploadImage handler");
+      }
+      const file =
+        request.file ??
+        (request.blob
+          ? new File([request.blob], request.filename, {
+              type: request.mimeType || "application/octet-stream",
+            })
+          : undefined);
+      if (!file) {
+        throw new Error("CMS image upload requires a file or blob");
+      }
+      const url = await onUploadImage(file, { source: "editor-upload" });
+      if (!url) {
+        throw new Error("Upload failed");
+      }
+      return { url };
+    },
+    [onUploadImage],
+  );
+
+  return {
+    pickAsset: onPickAsset ? pickAsset : undefined,
+    uploadImage: onUploadImage ? uploadImage : undefined,
+  };
+};
+
 const HtmlEditor: React.FC<{
   value: string;
-  onChange: (v: string) => void;
+  onChange: (value: string) => void;
   height: number;
   editor: CmsEditorPreference;
+  editorAdapters?: CmsBodyEditorAdapterMap;
+  editorProps?: CmsBodyEditorProps["editorProps"];
   onPickAsset?: CmsBodyEditorProps["onPickAsset"];
   onUploadImage?: CmsBodyEditorProps["onUploadImage"];
-  onReady?: () => void;
 }> = ({
   value,
   onChange,
   height,
   editor,
+  editorAdapters,
+  editorProps,
   onPickAsset,
   onUploadImage,
-  onReady,
 }) => {
-  const [EditorComponent, setEditorComponent] =
-    useState<React.ComponentType<any> | null>(null);
-  const loadedRef = useRef<CmsEditorPreference | null>(null);
   const { mode, systemMode } = useColorScheme();
   const isDark = (mode === "system" ? systemMode : mode) === "dark";
+  const Adapter = editorAdapters?.[editor];
+  const editorSpecificProps =
+    editorProps?.[editor] ??
+    (editor === "tinymce" ? DEFAULT_CMS_TINYMCE_PROPS : undefined);
+  const handlers = useCmsEditorHandlers(onPickAsset, onUploadImage);
 
-  // Re-load when editor preference changes
-  React.useEffect(() => {
-    if (loadedRef.current === editor) {
-      return;
-    }
-    loadedRef.current = editor;
-    setEditorComponent(null);
-
-    const editorImport =
-      editor === "tinymce"
-        ? import("../../components/wysiwyg/TinyMceEditor.js")
-        : import("../../components/wysiwyg/CKEditor5Classic.js");
-
-    editorImport
-      .then((mod) => {
-        setEditorComponent(() => mod.default);
-        onReady?.();
-      })
-      .catch(() => {
-        onReady?.();
-      });
-  }, [editor, onReady]);
-
-  if (!EditorComponent) {
+  if (!Adapter) {
     return (
       <Box
         component="textarea"
         value={value}
-        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-          onChange(e.target.value)
+        onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
+          onChange(event.target.value)
         }
         sx={{
           width: "100%",
@@ -435,194 +511,45 @@ const HtmlEditor: React.FC<{
     );
   }
 
-  if (editor === "tinymce") {
-    // Adapt CmsImageUploadHandler → TinyMceImageUploadRequest so we reuse
-    // TinyMceEditor's own blobInfo extraction (filename, mimeType, progress).
-    const tinyMceUploadImage = onUploadImage
-      ? async (request: {
-          blob: Blob;
-          filename: string;
-          mimeType: string;
-          progress?: (pct: number) => void;
-        }) => {
-          const file = new File([request.blob], request.filename, {
-            type: request.mimeType || "application/octet-stream",
-          });
-          const url = await onUploadImage(file, { source: "editor-upload" });
-          if (!url) {
-            throw new Error("Upload failed");
-          }
-          return { url };
-        }
-      : undefined;
-
-    // Adapt onPickAsset → TinyMceEditor's onPickFile prop to reuse its
-    // file_picker_callback wiring (including per-filetype meta handling).
-    const tinyMcePickFile = onPickAsset
-      ? async (_request: { value: string; meta: { filetype?: string } }) => {
-          const result = await onPickAsset();
-          if (!result?.url) {
-            return null;
-          }
-          return {
-            url: result.url,
-            title: result.name || "",
-            alt: result.name || "",
-          };
-        }
-      : undefined;
-
-    return (
-      <EditorComponent
-        data={value}
-        onChange={(_event: any, helpers: { getData: () => string }) =>
-          onChange(helpers.getData())
-        }
-        darkMode={isDark}
-        onPickFile={tinyMcePickFile}
-        onUploadImage={tinyMceUploadImage}
-        init={{
-          license_key: "gpl",
-          height,
-          menubar: true,
-          plugins: [
-            "advlist",
-            "autolink",
-            "lists",
-            "link",
-            "image",
-            "charmap",
-            "preview",
-            "anchor",
-            "searchreplace",
-            "visualblocks",
-            "code",
-            "fullscreen",
-            "insertdatetime",
-            "media",
-            "table",
-            "help",
-            "wordcount",
-          ],
-          toolbar:
-            "undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | code fullscreen",
-          // Allow pasted data-URI blobs to land in the editor so they can
-          // be picked up by images_upload_handler and sent to FM.
-          paste_data_images: true,
-          // Upload images immediately on paste rather than deferring.
-          automatic_uploads: true,
-          // Strip unresolvable local-file image references from pasted content
-          // BEFORE they enter the editor DOM.  This covers Microsoft Word
-          // "Insert > Copy HTML" pastes which embed
-          // file:///C:/Users/.../msohtmlclip.../clip_image*.jpg paths that the
-          // browser can never fetch from a web origin — removing them prevents
-          // broken-image placeholders from being saved into CMS content.
-          paste_preprocess: (
-            _pluginApi: unknown,
-            data: { content: string },
-          ) => {
-            data.content = stripLocalFileImages(data.content);
-          },
-        }}
-      />
-    );
-  }
-
-  // CKEditor — onChange receives (event, { getData }) per CKEditor5Classic API
   return (
-    <EditorComponent
-      key={`ck-${editor}`}
-      data={value}
-      darkMode={isDark}
+    <Adapter
+      value={value}
       height={height}
-      onChange={(_event: any, helpers: { getData: () => string }) =>
-        onChange(helpers.getData())
-      }
-      onPickFile={
-        onPickAsset
-          ? async (request: any) => {
-              const result = await onPickAsset();
-              if (!result?.url) {
-                return null;
-              }
-              return {
-                url: result.url,
-                title: result.name || "",
-                alt: result.name || "",
-                width: result.width,
-                height: result.height,
-                mimeType: result.mimeType,
-              };
-            }
-          : undefined
-      }
-      onUploadImage={
-        onUploadImage
-          ? async (request: any) => {
-              const file: File =
-                request?.file instanceof File
-                  ? request.file
-                  : request instanceof File
-                    ? request
-                    : new File(
-                        [request?.file || request],
-                        request?.filename || "image",
-                        {
-                          type: request?.mimeType || "application/octet-stream",
-                        },
-                      );
-              const url = await onUploadImage(file, {
-                source: "editor-upload",
-              });
-              if (!url) {
-                throw new Error("Upload failed");
-              }
-              return { url };
-            }
-          : undefined
-      }
+      darkMode={isDark}
+      editorProps={editorSpecificProps}
+      onChange={onChange}
+      onPickAsset={handlers.pickAsset}
+      onUploadImage={handlers.uploadImage}
     />
   );
 };
 
-/**
- * Markdown editor using MDXEditor from shared-utils/client/wysiwyg.
- */
 const MarkdownEditor: React.FC<{
   value: string;
-  onChange: (v: string) => void;
+  onChange: (value: string) => void;
+  editorAdapter?: CmsBodyEditorAdapterMap["mdx"];
+  editorProps?: CmsBodyEditorEngineProps["mdx"];
   onPickAsset?: CmsBodyEditorProps["onPickAsset"];
   onUploadImage?: CmsBodyEditorProps["onUploadImage"];
-}> = ({ value, onChange, onPickAsset, onUploadImage }) => {
-  const [MdEditor, setMdEditor] = useState<React.ComponentType<any> | null>(
-    null,
-  );
-  const loadedRef = useRef(false);
+}> = ({
+  value,
+  onChange,
+  editorAdapter: Adapter,
+  editorProps,
+  onPickAsset,
+  onUploadImage,
+}) => {
   const { mode, systemMode } = useColorScheme();
   const isDark = (mode === "system" ? systemMode : mode) === "dark";
+  const handlers = useCmsEditorHandlers(onPickAsset, onUploadImage);
 
-  React.useEffect(() => {
-    if (loadedRef.current) {
-      return;
-    }
-    loadedRef.current = true;
-
-    import("../../components/wysiwyg/MDXEditor.js")
-      .then((mod) => {
-        setMdEditor(() => mod.default);
-      })
-      .catch(() => {
-        // Fallback
-      });
-  }, []);
-
-  if (!MdEditor) {
+  if (!Adapter) {
     return (
       <Box
         component="textarea"
         value={value}
-        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-          onChange(e.target.value)
+        onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
+          onChange(event.target.value)
         }
         sx={{
           width: "100%",
@@ -640,30 +567,14 @@ const MarkdownEditor: React.FC<{
   }
 
   return (
-    <MdEditor
-      data={value}
+    <Adapter
+      value={value}
+      height={400}
       darkMode={isDark}
-      onChange={(_event: any, helpers: { getData: () => string }) =>
-        onChange(helpers.getData())
-      }
-      onUploadImage={
-        onUploadImage
-          ? async (request: {
-              file: File;
-              filename: string;
-              mimeType: string;
-              sizeBytes: number;
-            }) => {
-              const url = await onUploadImage(request.file, {
-                source: "editor-upload",
-              });
-              if (!url) {
-                throw new Error("Upload failed");
-              }
-              return { url };
-            }
-          : undefined
-      }
+      editorProps={editorProps}
+      onChange={onChange}
+      onPickAsset={handlers.pickAsset}
+      onUploadImage={handlers.uploadImage}
     />
   );
 };

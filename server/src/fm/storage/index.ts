@@ -10,11 +10,9 @@
  * To use FmStorageS3 directly:
  *   import { FmStorageS3 } from "@user27828/shared-utils/fm/server/s3";
  *
- * Or use the async factory which dynamically imports FmStorageS3:
- *   import { createFmStorage } from "@user27828/shared-utils/fm/server";
+ * For config-based S3 creation, inject createFmS3Storage into createFmStorage.
  */
 
-// ── Interface + types ────────────────────────────────────────────────────
 export type {
   FmStorageProvider,
   FmStorageCapabilities,
@@ -29,8 +27,7 @@ export type {
   FmPresignedPut,
 } from "./FmStorageAdapter.js";
 
-// ── Local adapter (no external deps) ─────────────────────────────────────
 export { FmStorageLocal } from "./FmStorageLocal.js";
 
-// ── Async factory (dynamically imports S3 when needed) ───────────────────
 export { createFmStorage } from "./storageFactory.js";
+export type { FmS3StorageFactory } from "./storageFactory.js";

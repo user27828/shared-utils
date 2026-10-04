@@ -17,7 +17,8 @@
  * Automatically disables actions when minimum required contact info is missing.
  */
 import React from "react";
-import type { ContactInfo, CalendarProvider } from "../../../utils/src/contact.js";
+import type { CalendarProvider } from "../../../utils/src/calendar.js";
+import type { ContactInfo } from "../../../utils/src/contact.js";
 import type { MeetingLinkEntry } from "../../../utils/src/meetingProviders.js";
 export type ContactActionsVariant = "speedDial" | "iconButton" | "menuItems";
 export interface ContactActionsProps {
@@ -59,4 +60,3 @@ export interface ContactActionsProps {
 }
 declare const ContactActions: React.FC<ContactActionsProps>;
 export default ContactActions;
-//# sourceMappingURL=ContactActions.d.ts.map

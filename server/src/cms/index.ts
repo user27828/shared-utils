@@ -13,10 +13,7 @@ export { CmsServiceCore } from "./CmsServiceCore.js";
 export type { CmsServiceCoreConfig } from "./CmsServiceCore.js";
 
 // ── Connector (port) ──────────────────────────────────────────────────────
-export type {
-  CmsConnector,
-  CmsConnectorWithPublicHead,
-} from "./connector.js";
+export type { CmsConnector, CmsConnectorWithPublicHead } from "./connector.js";
 export { hasPublicHead } from "./connector.js";
 
 // ── Auth / Authz ──────────────────────────────────────────────────────────
@@ -28,6 +25,12 @@ export {
   CmsRateLimiter,
   createCmsAdminRateLimitMiddleware,
   createCmsPublicRateLimitMiddleware,
+} from "./rateLimiter.js";
+export type {
+  CmsRateLimiterConfig,
+  CmsRateLimitRule,
+  CmsRedisClient,
+  CmsRedisFactory,
 } from "./rateLimiter.js";
 
 // ── Cache control ─────────────────────────────────────────────────────────

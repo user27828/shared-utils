@@ -70,12 +70,12 @@ interface LogOptions {
   };
 }
 
+type ResolvedLogOptions = Required<Omit<LogOptions, "interceptor">> & {
+  interceptor?: LogOptions["interceptor"];
+};
+
 class Log {
-  private readonly optionsManager: OptionsManager<
-    Required<Omit<LogOptions, "interceptor">> & {
-      interceptor?: LogOptions["interceptor"];
-    }
-  >;
+  private readonly optionsManager: OptionsManager<ResolvedLogOptions>;
   private isProduction = this.detectProductionMode();
   public readonly ORIGINAL_CONSOLE_METHODS: OriginalConsoleMethods; // Made public for tests, instance property
   private interceptors: Array<(level: LogLevel, args: any[]) => void> = [];
@@ -130,7 +130,11 @@ class Log {
     this.error = this.error.bind(this);
     this.debug = this.debug.bind(this);
 
-    if (this.options.type === "client" && this.options.client.attachWindow) {
+    if (
+      this.options.type === "client" &&
+      this.options.client.attachWindow &&
+      typeof (globalThis as any).log === "undefined"
+    ) {
       // Attach to window.log for easy access in client-side code
       (globalThis as any).log = this;
     }
@@ -182,8 +186,9 @@ class Log {
   /**
    * Check localStorage override for client-side logging
    */
-  private getLocalStorageOverride(): LogLevel[] | boolean | null {
-    const options = this.options;
+  private getLocalStorageOverride(
+    options: ResolvedLogOptions,
+  ): LogLevel[] | boolean | null {
     if (options.type !== "client" || typeof localStorage === "undefined") {
       return null;
     }
@@ -242,8 +247,7 @@ class Log {
   /**
    * Check if a log level should be output
    */
-  private shouldLog(level: LogLevel): boolean {
-    const options = this.options;
+  private shouldLog(level: LogLevel, options: ResolvedLogOptions): boolean {
     const config = options[options.type];
 
     // Always log in development
@@ -253,7 +257,7 @@ class Log {
 
     // Check localStorage override for client
     if (options.type === "client") {
-      const override = this.getLocalStorageOverride();
+      const override = this.getLocalStorageOverride(options);
       if (override === true) {
         return true;
       }
@@ -269,8 +273,11 @@ class Log {
   /**
    * Format log message with namespace and timestamp
    */
-  private formatMessage(level: LogLevel, args: any[]): any[] {
-    const options = this.options;
+  private formatMessage(
+    level: LogLevel,
+    args: any[],
+    options: ResolvedLogOptions,
+  ): any[] {
     const config = options[options.type];
     const timestamp = new Date().toISOString();
     const namespace = config.namespace;
@@ -318,12 +325,12 @@ class Log {
     }
 
     // Check if we should actually log
-    if (!this.shouldLog(level)) {
+    if (!this.shouldLog(level, options)) {
       return;
     }
 
     // Format message and log
-    const formattedArgs = this.formatMessage(level, args);
+    const formattedArgs = this.formatMessage(level, args, options);
 
     // In test environment, use current console methods to allow mocking
     // Otherwise use original methods to preserve call stack
@@ -489,7 +496,10 @@ class Log {
    * @param {Function} interceptor - Function that receives (level, args) parameters
    */
   addInterceptor(interceptor: (level: LogLevel, args: any[]) => void): void {
-    if (typeof interceptor === "function" && !this.interceptors.includes(interceptor)) {
+    if (
+      typeof interceptor === "function" &&
+      !this.interceptors.includes(interceptor)
+    ) {
       this.interceptors.push(interceptor);
     }
   }
@@ -510,5 +520,5 @@ class Log {
 const log = new Log();
 
 // Export both the instance and the class
-export { Log, ORIGINAL_CONSOLE_METHODS };
+export { log, Log, ORIGINAL_CONSOLE_METHODS };
 export default log;

@@ -3,7 +3,8 @@
  */
 
 import express from "express";
-import { log, optionsManager } from "../../utils/index.js";
+import { log } from "../../utils/src/log.js";
+import { optionsManager } from "../../utils/src/options-manager.js";
 import { createTurnstileMiddleware, verifyTurnstileToken } from "../index.js";
 
 const app = express();

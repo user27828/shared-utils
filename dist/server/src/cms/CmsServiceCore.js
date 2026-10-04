@@ -11,8 +11,8 @@ import { CmsCreateRequestSchema, CmsUpdateRequestSchema, CmsListRequestSchema, }
 import { CmsNotFoundError, CmsConflictError, CmsLockedError, CmsValidationError, } from "../../../utils/src/cms/errors.js";
 import { normalizeLocale, canonicalizeSlug, assertValidSlug, assertAllowedContentType, assertAllowedPostType, } from "../../../utils/src/cms/validation.js";
 import { assertIfMatchSatisfied, computeCmsEtag, } from "../../../utils/src/cms/concurrency.js";
-import { hashCmsPassword } from "../../../utils/src/cms/password.js";
-import { sanitizeCmsHtml, renderMarkdownToSanitizedHtml, } from "../../../utils/src/cms/sanitization.js";
+import { hashCmsPassword } from "./password.js";
+import { sanitizeCmsHtml, renderMarkdownToSanitizedHtml, } from "./sanitization.js";
 // ─── Default lock TTL ─────────────────────────────────────────────────────
 const DEFAULT_LOCK_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const CMS_MAX_LIST_LIMIT = 200;

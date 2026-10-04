@@ -6,4 +6,3 @@
  */
 export type ExpressParamValue = string | string[] | undefined;
 export declare const getSingleParam: (value: ExpressParamValue) => string | null;
-//# sourceMappingURL=params.d.ts.map

@@ -1,5 +1,5 @@
 /**
- * Load environment variables for the server
+ * Load environment variables for the server when `server/env` is imported.
  * This module intentionally avoids forcing consumers to install express
  * or dotenv at runtime. It will only attempt to load dotenv when a
  * sensible .env file is discovered near the calling project.
@@ -9,11 +9,14 @@ import fs from "fs";
 import crypto from "crypto";
 import { createRequire } from "module";
 import isEmpty from "lodash-es/isEmpty.js";
+import {
+  OptionsManager,
+  optionsManager as canonicalOptionsManager,
+} from "../../utils/src/options-manager.js";
 
 // Avoid a hard dependency on express at runtime — accept a light-typed Request
 type MaybeRequest =
-  | { headers?: Record<string, any>; secure?: boolean }
-  | unknown;
+  { headers?: Record<string, any>; secure?: boolean } | unknown;
 
 // Create a singleton for environment variables
 let envCache: Record<string, any> | null = null;
@@ -94,7 +97,6 @@ const EXCLUDE_WHEN_NO_ENV = new Set(
 // fall back to a console logger.
 const getLogger = () => {
   // Use a global log if the calling project provided one
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const g: any = globalThis as any;
   if (g && g.log && typeof g.log.info === "function") {
     return g.log;
@@ -111,29 +113,17 @@ const getLogger = () => {
   };
 
   try {
-    // Try common package import specifiers first (works when this package
-    // is installed into a consumer project), then fall back to the relative
-    // path used in development/monorepo layouts.
+    // Prefer the explicit logger subpath in consumer projects, then use the
+    // relative monorepo path when this package is being developed in-place.
     let pkg: any = undefined;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-      pkg = require("@user27828/shared-utils");
+      pkg = require("@user27828/shared-utils/utils/log");
     } catch (e) {
       // ignore
     }
 
-    if (!pkg) {
+    if (!pkg || !pkg.log) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-        pkg = require("@user27828/shared-utils/utils");
-      } catch (e) {
-        // ignore
-      }
-    }
-
-    if (!pkg) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
         pkg = require("../../utils/src/log.js");
         if (pkg && !pkg.log && pkg.default) {
           pkg = { log: pkg.default };
@@ -203,92 +193,10 @@ const buildBaseEnv = (opts?: { excludePlatform?: boolean }) => {
   return out;
 };
 
-// Integrate with OptionsManager if available
-// Use a global registry approach to ensure singleton behavior across modules
-
-// Check if optionsManager is already registered globally
-if (typeof globalThis !== "undefined") {
-  const g = globalThis as any;
-  // Support test-injected package shim: some tests attach a mock package
-  // to globalThis.__shared_utils_pkg = { optionsManager } so detect that
-  // and prefer it before attempting to require the real package.
-  if (g.__shared_utils_pkg && g.__shared_utils_pkg.optionsManager) {
-    g.__shared_utils_optionsManager = g.__shared_utils_pkg.optionsManager;
-  }
-  if (!g.__shared_utils_optionsManager) {
-    // Try to load the real optionsManager and register it globally
-    try {
-      let pkg: any = undefined;
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-        pkg = require("@user27828/shared-utils/utils");
-      } catch (e) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-        pkg = require("../../utils/src/options-manager.js");
-      } catch (e2) {
-        // ignore
-      }
-      }
-
-      if (pkg && pkg.optionsManager) {
-        g.__shared_utils_optionsManager = pkg.optionsManager;
-      }
-    } catch (e) {
-      // ignore import errors during early module evaluation
-    }
-  }
-
-  // Use the globally registered optionsManager
-  optionsManager = g.__shared_utils_optionsManager;
-}
-
-// If we still don't have optionsManager, create a minimal one that will be replaced later
-if (!optionsManager) {
-  // Create a minimal in-memory optionsManager to avoid hard failures in
-  // consumers that don't install @user27828/shared-utils/utils.
-  const _managers = new Map<string, any>();
-
-  optionsManager = {
-    registerManager(name: string, manager: any) {
-      _managers.set(name, manager);
-    },
-    getManager(name: string) {
-      return _managers.get(name);
-    },
-    // allow consumers to set global options if needed
-    setGlobalOptions(_opts: any) {
-      // noop for minimal implementation
-    },
-  } as any;
-
-  // Provide a tiny local OptionsManager class used when the real module
-  // isn't available. It supports the small API used in this file.
-  class LocalOptionsManager {
-    name: string;
-    options: Record<string, any>;
-    constructor(name: string, initial: Record<string, any> = {}) {
-      this.name = name;
-      this.options = { ...(initial || {}) };
-    }
-    getOption(key: string) {
-      return this.options[key];
-    }
-    setOption(obj: Record<string, any>) {
-      for (const [k, v] of Object.entries(obj || {})) {
-        this.options[k] = v;
-      }
-    }
-    getOptions() {
-      return { ...this.options };
-    }
-  }
-
-  // Attach LocalOptionsManager constructor so other code that attempts to
-  // require the options-manager module can still construct a manager when
-  // needed via our internal registration flow.
-  (optionsManager as any).__LocalOptionsManager = LocalOptionsManager;
-}
+// Use the package-owned ESM singleton. Preserve the existing test injection seam.
+optionsManager =
+  (globalThis as any).__shared_utils_pkg?.optionsManager ??
+  canonicalOptionsManager;
 
 const findEnvFile = (): string | null => {
   // If an options manager exists, allow callers to override the dotenv path
@@ -428,7 +336,7 @@ const loadEnvironmentVariables = (): Record<string, any> => {
                 let envManagerRegistered = false;
 
                 // Try LocalOptionsManager first
-                const LocalCtor = (optionsManager as any).__LocalOptionsManager;
+                const LocalCtor = OptionsManager;
                 if (typeof LocalCtor === "function") {
                   try {
                     const m = new LocalCtor("ENV", { ...base });
@@ -513,7 +421,6 @@ const loadEnvironmentVariables = (): Record<string, any> => {
       // package.json path ensures modules are resolved relative to the
       // calling project.
       const req = createRequire(path.resolve(process.cwd(), "package.json"));
-      // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
       const dotenv = req("dotenv");
       const dotenvExpand = req("dotenv-expand");
       const dotenvProcessEnv = { ...process.env };
@@ -706,7 +613,7 @@ const loadEnvironmentVariables = (): Record<string, any> => {
           let envManagerRegistered = false;
 
           // Prefer a provided LocalOptionsManager constructor when available
-          const LocalCtor = (optionsManager as any).__LocalOptionsManager;
+          const LocalCtor = OptionsManager;
           if (typeof LocalCtor === "function") {
             try {
               const m = new LocalCtor("ENV", { ...(envCache || {}) });
@@ -816,7 +723,6 @@ export const getClientUrl = (req: MaybeRequest) => {
     try {
       const url = new URL(referer);
       return `${url.protocol}//${url.host}`;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
       // Invalid URL in referer
     }

@@ -45,4 +45,3 @@ export interface CmsAuthzMiddleware {
  * Create CMS authorization middleware bound to the host app's ACL system.
  */
 export declare const createCmsAuthz: (config: CmsAuthzConfig) => CmsAuthzMiddleware;
-//# sourceMappingURL=authz.d.ts.map

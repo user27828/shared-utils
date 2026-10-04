@@ -8,7 +8,6 @@ import React, {
   useImperativeHandle,
   forwardRef,
 } from "react";
-import "./ensurePrismGlobal.js";
 import {
   MDXEditor as BaseMDXEditor,
   type MDXEditorMethods,

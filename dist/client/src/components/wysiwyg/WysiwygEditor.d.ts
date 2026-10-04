@@ -1,38 +1,38 @@
 import React from "react";
-import type { TinyMceEditorProps } from "./TinyMceEditor.js";
-import type { CKEditor5ClassicProps } from "./CKEditor5Classic.js";
-import type { EasyMDEEditorProps } from "./EasyMDEEditor.js";
-import { type WysiwygEditorKind, type WysiwygImageUploadRequest, type WysiwygImageUploadResult, type WysiwygPickRequest, type WysiwygPickResult } from "./wysiwyg-common.js";
-export type { WysiwygAssetKind, WysiwygEditorKind } from "./wysiwyg-common.js";
-export type { WysiwygImageUploadRequest, WysiwygImageUploadResult, WysiwygPickRequest, WysiwygPickResult, WysiwygProgressFn, } from "./wysiwyg-common.js";
+import { type WysiwygEditorAdapterMap, type WysiwygEditorKind, type WysiwygPickRequest, type WysiwygPickResult, type WysiwygImageUploadRequest, type WysiwygImageUploadResult } from "./wysiwyg-common.js";
+export type { WysiwygAssetKind, WysiwygEditorAdapter, WysiwygEditorAdapterMap, WysiwygEditorAdapterProps, WysiwygEditorKind, WysiwygImageUploadRequest, WysiwygImageUploadResult, WysiwygPickRequest, WysiwygPickResult, WysiwygProgressFn, } from "./wysiwyg-common.js";
 export type WysiwygChangeContext = {
     editor: WysiwygEditorKind;
-    instance: any;
-    rawEvent?: any;
+    instance: unknown;
+    rawEvent?: unknown;
 };
-export type WysiwygTinymceOverrides = Omit<TinyMceEditorProps, "data" | "onChange" | "onEditorInstance" | "onPickFile" | "onUploadImage" | "canonicalizeUrl">;
-export type WysiwygCkeditorOverrides = Omit<CKEditor5ClassicProps, "data" | "onChange" | "onEditorInstance" | "onPickFile" | "onUploadImage" | "canonicalizeUrl" | "readOnly" | "height">;
-export type WysiwygEasyMdeOverrides = Omit<EasyMDEEditorProps, "value" | "onChange" | "onEditorInstance" | "onPickAsset" | "onUploadImage" | "canonicalizeUrl" | "readOnly" | "height">;
 export interface WysiwygEditorProps {
+    /** Editor kind selected from the explicitly supplied adapter map. */
     editor?: WysiwygEditorKind;
+    /** Stable adapter components imported by the host application. */
+    adapters?: WysiwygEditorAdapterMap;
     value?: string;
     readOnly?: boolean;
     height?: string | number;
+    darkMode?: boolean;
     onChange?: (value: string, ctx: WysiwygChangeContext) => void;
-    onEditorInstance?: (instance: any, ctx: {
+    onEditorInstance?: (instance: unknown, ctx: {
         editor: WysiwygEditorKind;
     }) => void;
     onPickAsset?: (request: WysiwygPickRequest) => Promise<WysiwygPickResult | null>;
     onUploadImage?: (request: WysiwygImageUploadRequest) => Promise<WysiwygImageUploadResult>;
     canonicalizeUrl?: (url: string) => string;
-    tinymce?: WysiwygTinymceOverrides;
-    ckeditor?: WysiwygCkeditorOverrides;
-    easymde?: WysiwygEasyMdeOverrides;
-    /**
-     * Suspense fallback used while lazily loading editor implementations.
-     */
+    /** Opaque engine-specific props, read only by the selected adapter. */
+    editorProps?: Partial<Record<WysiwygEditorKind, Record<string, unknown>>>;
+    /** @deprecated Use `editorProps.tinymce`. */
+    tinymce?: Record<string, unknown>;
+    /** @deprecated Use `editorProps.ckeditor`. */
+    ckeditor?: Record<string, unknown>;
+    /** @deprecated Use `editorProps.easymde`. */
+    easymde?: Record<string, unknown>;
+    /** @deprecated Use `editorProps.mdx`. */
+    mdx?: Record<string, unknown>;
     suspenseFallback?: React.ReactNode;
 }
 declare const WysiwygEditor: React.FC<WysiwygEditorProps>;
 export default WysiwygEditor;
-//# sourceMappingURL=WysiwygEditor.d.ts.map

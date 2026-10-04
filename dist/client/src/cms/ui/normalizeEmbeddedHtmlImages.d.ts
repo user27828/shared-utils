@@ -10,4 +10,3 @@ export type NormalizeEmbeddedHtmlImagesOptions = {
 export declare const hasEmbeddedBase64Image: (html: string | undefined | null) => boolean;
 export declare const normalizeEmbeddedHtmlImages: (options: NormalizeEmbeddedHtmlImagesOptions) => Promise<string>;
 export {};
-//# sourceMappingURL=normalizeEmbeddedHtmlImages.d.ts.map

@@ -34,4 +34,3 @@ export interface CmsVersionNotesFormProps {
 }
 declare const CmsVersionNotesForm: React.FC<CmsVersionNotesFormProps>;
 export default CmsVersionNotesForm;
-//# sourceMappingURL=CmsVersionNotesForm.d.ts.map

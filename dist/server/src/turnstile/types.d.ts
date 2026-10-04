@@ -43,4 +43,3 @@ export interface GlobalTurnstileOptions {
     "turnstile-server"?: TurnstileServerOptions;
     [key: string]: any;
 }
-//# sourceMappingURL=types.d.ts.map

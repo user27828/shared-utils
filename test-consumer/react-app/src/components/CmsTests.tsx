@@ -13,6 +13,8 @@ import {
   type CmsContentType,
   type CmsEditorPreference,
 } from "@user27828/shared-utils/cms/client";
+import { ALL_WYSIWYG_EDITOR_ADAPTERS } from
+  "@user27828/shared-utils/client/wysiwyg/all";
 import { TestProgress, type TestItem, type TestStatus } from "./TestProgress";
 import TestSuiteLayout from "./TestSuiteLayout";
 import {
@@ -402,6 +404,7 @@ const CmsTests: React.FC<CmsTestsProps> = ({
               value={value}
               onChange={setValue}
               editor={editorPref}
+              editorAdapters={ALL_WYSIWYG_EDITOR_ADAPTERS}
               label="Body"
               onPickAsset={simulatePickAsset}
               onUploadImage={onUploadImage}

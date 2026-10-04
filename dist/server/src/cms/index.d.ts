@@ -9,11 +9,12 @@
  */
 export { CmsServiceCore } from "./CmsServiceCore.js";
 export type { CmsServiceCoreConfig } from "./CmsServiceCore.js";
-export type { CmsConnector, CmsConnectorWithPublicHead, } from "./connector.js";
+export type { CmsConnector, CmsConnectorWithPublicHead } from "./connector.js";
 export { hasPublicHead } from "./connector.js";
 export { createCmsAuthz } from "./authz.js";
 export type { CmsActorContext } from "./authz.js";
 export { CmsRateLimiter, createCmsAdminRateLimitMiddleware, createCmsPublicRateLimitMiddleware, } from "./rateLimiter.js";
+export type { CmsRateLimiterConfig, CmsRateLimitRule, CmsRedisClient, CmsRedisFactory, } from "./rateLimiter.js";
 export { getCmsPublicCacheHeaders, applyCmsPublicCacheHeaders, } from "./cacheControl.js";
 export { createCmsUnlockTokenUtils } from "./unlockToken.js";
 export type { CmsUnlockTokenClaims } from "./unlockToken.js";
@@ -25,4 +26,3 @@ export { CMS_TRANSFER_SCHEMA_VERSION, buildCmsTransferAssetTargetFolderPath, bui
 export type { CmsTransferAssetConflict, CmsTransferAssetResolutionMode, CmsTransferAssetRole, CmsTransferEntryConflict, CmsTransferEntryResolutionMode, CmsTransferInspectResult, CmsTransferPackage, CmsTransferPackageSummary, CmsTransferPackagedAsset, CmsTransferPortableEntry, CmsTransferReferenceLocation, } from "./express/index.js";
 export { runCmsConnectorConformanceTests } from "./conformance.js";
 export type { ConformanceTestConfig } from "./conformance.js";
-//# sourceMappingURL=index.d.ts.map

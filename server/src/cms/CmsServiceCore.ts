@@ -44,11 +44,11 @@ import {
   assertIfMatchSatisfied,
   computeCmsEtag,
 } from "../../../utils/src/cms/concurrency.js";
-import { hashCmsPassword } from "../../../utils/src/cms/password.js";
+import { hashCmsPassword } from "./password.js";
 import {
   sanitizeCmsHtml,
   renderMarkdownToSanitizedHtml,
-} from "../../../utils/src/cms/sanitization.js";
+} from "./sanitization.js";
 
 // ─── Configuration ────────────────────────────────────────────────────────
 

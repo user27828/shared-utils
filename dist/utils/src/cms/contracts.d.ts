@@ -1,0 +1,2 @@
+/** Erased public types; schema-derived DTOs remain defined in types.ts. */
+export type { CmsPostType, CmsStatus, CmsContentType, CmsVersionMeta, CmsContentNote, CmsMetadata, CmsHeadRow, CmsHistoryRow, CmsCreateRequest, CmsUpdateRequest, CmsListRequest, CmsListResponse, CmsPublishRequest, CmsPublicPayload, CmsCollaboratorRow, CmsWriteEventType, CmsAfterWriteEvent, CmsPublicHead, } from "./types.js";

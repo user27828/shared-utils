@@ -85,6 +85,7 @@ export type {
 
 export { FmStorageLocal } from "./storage/index.js";
 export { createFmStorage } from "./storage/index.js";
+export type { FmS3StorageFactory } from "./storage/index.js";
 
 // ── MIME / Image Dimension Utilities ──────────────────────────────────────
 export { sniffMimeFromHeader } from "./utils/mimeSniff.js";

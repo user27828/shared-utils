@@ -40,4 +40,3 @@ export interface SelectChipProps {
 }
 export declare const SelectChip: React.ForwardRefExoticComponent<SelectChipProps & React.RefAttributes<HTMLDivElement>>;
 export default SelectChip;
-//# sourceMappingURL=SelectChip.d.ts.map

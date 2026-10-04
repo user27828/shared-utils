@@ -145,6 +145,5 @@ declare class Log {
     removeInterceptor(interceptor: (level: LogLevel, args: any[]) => void): void;
 }
 declare const log: Log;
-export { Log, ORIGINAL_CONSOLE_METHODS };
+export { log, Log, ORIGINAL_CONSOLE_METHODS };
 export default log;
-//# sourceMappingURL=log.d.ts.map

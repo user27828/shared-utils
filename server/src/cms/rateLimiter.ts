@@ -6,6 +6,23 @@
  * CMS admin and public endpoints.
  */
 import type { NextFunction, Request, Response } from "express";
+import { CmsValidationError } from "../../../utils/src/cms/errors.js";
+
+/** The Redis operations used by rate limiting, independent of vendor declarations. */
+export interface CmsRedisClient {
+  on(event: "error", listener: () => void): unknown;
+  ping(): Promise<unknown>;
+  multi(): {
+    incr(key: string): unknown;
+    pexpire(key: string, milliseconds: number): unknown;
+    exec(): Promise<unknown>;
+  };
+  disconnect(): void;
+}
+
+export type CmsRedisFactory = (
+  url: string,
+) => CmsRedisClient | Promise<CmsRedisClient>;
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -23,6 +40,8 @@ export interface CmsRateLimitCheckResult {
 export interface CmsRateLimiterConfig {
   /** Optional Redis URL. If not provided, uses in-memory store only. */
   redisUrl?: string;
+  /** Required with redisUrl. Import createCmsRedisClient from cms/server/redis. */
+  redisFactory?: CmsRedisFactory;
   /** Admin rate limit rules. */
   adminRules?: {
     read?: CmsRateLimitRule;
@@ -82,14 +101,25 @@ const defaultGetUserKey = (req: Request): string => {
 // ─── Rate limiter class ───────────────────────────────────────────────────
 
 export class CmsRateLimiter {
-  private redis: any = null;
+  private redis: CmsRedisClient | null = null;
   private memoryStore: Map<string, { count: number; resetTime: number }> =
     new Map();
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
   private initialized = false;
+  private initialization: Promise<void> | null = null;
+  private disposed = false;
   private redisUrl: string | undefined;
 
-  constructor(redisUrl?: string) {
+  constructor(
+    redisUrl?: string,
+    private readonly redisFactory?: CmsRedisFactory,
+  ) {
+    if (redisUrl && !redisFactory) {
+      throw new CmsValidationError(
+        "redisUrl requires redisFactory: import createCmsRedisClient from " +
+          "@user27828/shared-utils/cms/server/redis and install ioredis with yarn add ioredis.",
+      );
+    }
     this.redisUrl = redisUrl;
     this.startMemoryCleanup();
   }
@@ -114,6 +144,9 @@ export class CmsRateLimiter {
   }
 
   private async ensureInitialized(): Promise<void> {
+    if (this.initialization) {
+      return this.initialization;
+    }
     if (this.initialized) {
       return;
     }
@@ -123,23 +156,29 @@ export class CmsRateLimiter {
       return;
     }
 
+    this.initialization = this.initializeRedis(this.redisUrl);
+    return this.initialization;
+  }
+
+  private async initializeRedis(url: string): Promise<void> {
+    let client: CmsRedisClient | undefined;
     try {
-      const Redis = (await import("ioredis")).default;
-      this.redis = new Redis(this.redisUrl, {
-        // Preserve the v5 RESP2 wire protocol while adopting ioredis v6.
-        protocol: 2,
-        maxRetriesPerRequest: 1,
-        enableOfflineQueue: false,
-        connectTimeout: 2000,
+      client = await this.redisFactory!(url);
+      client.on("error", () => {
+        // Connection failures retain the existing memory fallback.
       });
-
-      this.redis.on("error", () => {
-        // Fail quietly; fall back to memory.
-      });
-
-      await this.redis.ping();
+      if (this.disposed) {
+        client.disconnect();
+        return;
+      }
+      await client.ping();
+      if (this.disposed) {
+        client.disconnect();
+      } else {
+        this.redis = client;
+      }
     } catch {
-      this.redis = null;
+      client?.disconnect();
     }
   }
 
@@ -147,7 +186,13 @@ export class CmsRateLimiter {
     key: string,
     rule: CmsRateLimitRule,
   ): Promise<CmsRateLimitCheckResult> {
+    if (this.disposed) {
+      throw new CmsValidationError("The CMS rate limiter has been cleaned up.");
+    }
     await this.ensureInitialized();
+    if (this.disposed) {
+      throw new CmsValidationError("The CMS rate limiter has been cleaned up.");
+    }
 
     const now = Date.now();
     const resetTime = now + rule.windowMs;
@@ -208,6 +253,7 @@ export class CmsRateLimiter {
   }
 
   cleanup(): void {
+    this.disposed = true;
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = null;
@@ -243,7 +289,7 @@ const setRateLimitHeaders = (
 export const createCmsAdminRateLimitMiddleware = (
   config: CmsRateLimiterConfig,
 ): ((req: Request, res: Response, next: NextFunction) => Promise<void>) => {
-  const limiter = new CmsRateLimiter(config.redisUrl);
+  const limiter = new CmsRateLimiter(config.redisUrl, config.redisFactory);
   const readRule = config.adminRules?.read ?? DEFAULT_ADMIN_READ;
   const writeRule = config.adminRules?.write ?? DEFAULT_ADMIN_WRITE;
   const getUserKey = config.getUserKey ?? defaultGetUserKey;
@@ -271,7 +317,7 @@ export const createCmsAdminRateLimitMiddleware = (
 export const createCmsPublicRateLimitMiddleware = (
   config: CmsRateLimiterConfig,
 ): ((req: Request, res: Response, next: NextFunction) => Promise<void>) => {
-  const limiter = new CmsRateLimiter(config.redisUrl);
+  const limiter = new CmsRateLimiter(config.redisUrl, config.redisFactory);
   const readRule = config.publicRules?.read ?? DEFAULT_PUBLIC_READ;
   const writeRule = config.publicRules?.write ?? DEFAULT_PUBLIC_WRITE;
   const unlockRule = config.publicRules?.unlock ?? DEFAULT_PUBLIC_UNLOCK;

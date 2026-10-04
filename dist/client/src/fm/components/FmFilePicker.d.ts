@@ -24,4 +24,3 @@ export interface FmFilePickerProps {
 /** Dialog wrapper around {@link FmMediaLibrary} for file selection. */
 export declare const FmFilePicker: React.FC<FmFilePickerProps>;
 export default FmFilePicker;
-//# sourceMappingURL=FmFilePicker.d.ts.map

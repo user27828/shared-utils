@@ -37,4 +37,3 @@ export interface CreateFmPublicRouterConfig {
  * @returns An Express Router with the public media endpoint.
  */
 export declare function createFmPublicRouter(config: CreateFmPublicRouterConfig): Router;
-//# sourceMappingURL=publicRouter.d.ts.map

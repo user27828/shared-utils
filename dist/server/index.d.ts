@@ -2,7 +2,9 @@
  * Server-side Turnstile verification utilities
  *
  * This package provides modular Turnstile verification for Node.js servers
- * and Cloudflare Workers with strict server-side validation.
+ * and Cloudflare Workers with strict server-side validation. Environment
+ * loading and global logger setup are explicit opt-ins at `server/env` and
+ * `server/init`.
  *
  * @example
  * ```typescript
@@ -20,8 +22,6 @@
  * ```
  */
 export { getTurnstileServerOptions, setGlobalOptions, } from "./src/turnstile/index.js";
-export { default as env, getClientUrl } from "./src/env.js";
-import "./src/env.js";
 export { apiResponseSecurityHeaders } from "./src/express/apiSecurityHeaders.js";
 export { createTurnstileMiddleware } from "./src/turnstile/index.js";
 export { createTurnstileWorker } from "./src/turnstile/index.js";
@@ -30,5 +30,4 @@ export { getAllowedOrigin } from "./src/turnstile/index.js";
 export { getClientIp } from "./src/ip.js";
 export { isDev } from "./src/functions.js";
 export type { TurnstileVerifyRequest, TurnstileVerifyResponse, Environment, TurnstileServerOptions, TurnstileVerificationOptions, TurnstileOptions, GlobalTurnstileOptions, TurnstileWorkerConfig, } from "./src/turnstile/index.js";
-export type { IsDevOptions } from "../utils/src/functions.js";
-//# sourceMappingURL=index.d.ts.map
+export type { IsDevOptions } from "../utils/src/environment.js";

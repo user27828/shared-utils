@@ -8,31 +8,15 @@
  * Mirrors the CMS types pattern in utils/src/cms/types.ts.
  */
 import { z } from "zod";
+import { FM_PURPOSES, FM_VISIBILITY, FM_VARIANT_KINDS } from "./constants.js";
+export { FM_PURPOSES, FM_VISIBILITY, FM_VARIANT_KINDS } from "./constants.js";
 // =============================================================================
 // Enums & Constants
 // =============================================================================
-/** All recognised upload/file purpose values. */
-export const FM_PURPOSES = [
-    "resume",
-    "job",
-    "cms_asset",
-    "cms_b64",
-    "avatar",
-    "generic",
-];
 /** Zod enum schema for {@link FM_PURPOSES}. */
 export const FmPurposeSchema = z.enum(FM_PURPOSES);
-/** File visibility levels. */
-export const FM_VISIBILITY = ["private", "public"];
 /** Zod enum schema for {@link FM_VISIBILITY}. */
 export const FmVisibilitySchema = z.enum(FM_VISIBILITY);
-/** Recognised variant kinds for image derivatives. */
-export const FM_VARIANT_KINDS = [
-    "original",
-    "thumb",
-    "preview",
-    "web",
-];
 /** Zod enum schema for {@link FM_VARIANT_KINDS}. */
 export const FmVariantKindSchema = z.enum(FM_VARIANT_KINDS);
 // =============================================================================

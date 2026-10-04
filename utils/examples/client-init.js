@@ -2,7 +2,9 @@
  * Complete client-side initialization example
  * Includes both log and turnstile utilities for a complete client setup
  */
-import { log, turnstile, optionsManager } from '@shared-utils/utils';
+import { log } from "@user27828/shared-utils/utils/log";
+import { turnstile } from "@user27828/shared-utils/utils/turnstile";
+import { optionsManager } from "@user27828/shared-utils/utils/options";
 
 // Configuration values would be injected by your application
 const CONFIG = {

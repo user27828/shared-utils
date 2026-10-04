@@ -22,4 +22,3 @@ export interface CmsEditPageProps {
 }
 declare const CmsEditPage: React.FC<CmsEditPageProps>;
 export default CmsEditPage;
-//# sourceMappingURL=CmsEditPage.d.ts.map

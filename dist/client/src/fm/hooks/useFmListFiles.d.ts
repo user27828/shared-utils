@@ -47,4 +47,3 @@ export interface UseFmListFilesResult {
  * a module-level default {@link FmClient}.
  */
 export declare const useFmListFiles: (params?: UseFmListFilesParams) => UseFmListFilesResult;
-//# sourceMappingURL=useFmListFiles.d.ts.map

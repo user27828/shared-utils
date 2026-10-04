@@ -15,4 +15,3 @@ export declare class ResendEmailProvider implements IEmailProvider {
 }
 export declare const isConfigured: () => boolean;
 export declare const createResendProvider: (config: ResendProviderConfig) => IEmailProvider;
-//# sourceMappingURL=resend.d.ts.map

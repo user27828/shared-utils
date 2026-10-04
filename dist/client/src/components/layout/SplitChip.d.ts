@@ -21,4 +21,3 @@ export interface SplitChipProps {
 }
 declare const SplitChip: React.FC<SplitChipProps>;
 export default SplitChip;
-//# sourceMappingURL=SplitChip.d.ts.map

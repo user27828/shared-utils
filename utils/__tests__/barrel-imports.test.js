@@ -1,14 +1,14 @@
 /**
- * Tests for utils barrel file exports (index.js/index.d.ts)
+ * Tests for the explicit log utility entry point.
  * @jest-environment node
  */
 
-import * as utils from "../../dist/utils/index.js";
-import { log, Log } from "../../dist/utils/index.js";
+import * as utils from "../../dist/utils/src/log.js";
+import { log, Log } from "../../dist/utils/src/log.js";
 
-describe("Utils Barrel Exports", () => {
+describe("Explicit Log Entry Point", () => {
   describe("ES Module Imports", () => {
-    it("should export log and Log from barrel file", () => {
+    it("should export log and Log from the log module", () => {
       expect(utils).toHaveProperty("log");
       expect(utils).toHaveProperty("Log");
       expect(typeof utils.Log).toBe("function");
@@ -44,8 +44,8 @@ describe("Utils Barrel Exports", () => {
     });
 
     it("should export a singleton log instance", async () => {
-      const utils1 = await import("../../dist/utils/index.js");
-      const utils2 = await import("../../dist/utils/index.js");
+      const utils1 = await import("../../dist/utils/src/log.js");
+      const utils2 = await import("../../dist/utils/src/log.js");
 
       expect(utils1.log).toBe(utils2.log);
     });
@@ -54,7 +54,7 @@ describe("Utils Barrel Exports", () => {
   describe("Dynamic Import Tests", () => {
     it("should support dynamic import syntax", async () => {
       // Use dynamic import to test ES6 module syntax
-      const utils = await import("../../dist/utils/index.js");
+      const utils = await import("../../dist/utils/src/log.js");
 
       expect(utils).toHaveProperty("log");
       expect(utils).toHaveProperty("Log");
@@ -63,7 +63,7 @@ describe("Utils Barrel Exports", () => {
     });
 
     it("should support dynamic named imports", async () => {
-      const { log, Log } = await import("../../dist/utils/index.js");
+      const { log, Log } = await import("../../dist/utils/src/log.js");
 
       expect(typeof Log).toBe("function");
       expect(typeof log).toBe("object");
@@ -71,7 +71,7 @@ describe("Utils Barrel Exports", () => {
     });
 
     it("should maintain functionality with dynamic imports", async () => {
-      const { log } = await import("../../dist/utils/index.js");
+      const { log } = await import("../../dist/utils/src/log.js");
 
       const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
 
@@ -93,7 +93,7 @@ describe("Utils Barrel Exports", () => {
 
   describe("Export Consistency", () => {
     it("should have consistent exports between static and dynamic imports", async () => {
-      const dynamicUtils = await import("../../dist/utils/index.js");
+      const dynamicUtils = await import("../../dist/utils/src/log.js");
 
       expect(Object.keys(utils).sort()).toEqual(
         Object.keys(dynamicUtils).sort(),
@@ -103,7 +103,7 @@ describe("Utils Barrel Exports", () => {
     });
 
     it("should export the same log instance between import methods", async () => {
-      const dynamicUtils = await import("../../dist/utils/index.js");
+      const dynamicUtils = await import("../../dist/utils/src/log.js");
 
       // Both should reference the same singleton instance
       expect(utils.log).toBe(dynamicUtils.log);

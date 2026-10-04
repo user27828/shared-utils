@@ -71,6 +71,28 @@ describe("TinyMceEditor", () => {
     editorApi.setContent.mockClear();
   });
 
+  it("configures the selected TinyMCE skin, content CSS, and default plugins", () => {
+    render(<TinyMceEditor data="<p>content</p>" />);
+
+    expect(latestEditorProps?.init).toMatchObject({
+      skin_url: "/tinymce/skins/ui/oxide",
+      content_css: "/tinymce/skins/content/default/content.min.css",
+    });
+    expect(latestEditorProps?.init.plugins).toEqual(
+      expect.arrayContaining([
+        "advlist",
+        "anchor",
+        "autolink",
+        "image",
+        "link",
+        "lists",
+        "searchreplace",
+        "table",
+        "wordcount",
+      ]),
+    );
+  });
+
   it("does not emit onChange for programmatic external value sync", async () => {
     const onChange = vi.fn();
 
@@ -113,7 +135,9 @@ describe("TinyMceEditor", () => {
   it("forwards undo and redo events through onChange", () => {
     const onChange = vi.fn();
 
-    const view = render(<TinyMceEditor data="<p>alpha</p>" onChange={onChange} />);
+    const view = render(
+      <TinyMceEditor data="<p>alpha</p>" onChange={onChange} />,
+    );
 
     act(() => {
       currentContent = "<p>beta</p>";

@@ -32,4 +32,3 @@ export declare const FmClientProvider: React.FC<FmClientProviderProps>;
  */
 export declare const useFmApi: () => FmApi;
 export default FmClientProvider;
-//# sourceMappingURL=FmClientProvider.d.ts.map

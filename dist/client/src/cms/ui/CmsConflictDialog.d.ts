@@ -15,4 +15,3 @@ export interface CmsConflictDialogProps {
 }
 declare const CmsConflictDialog: React.FC<CmsConflictDialogProps>;
 export default CmsConflictDialog;
-//# sourceMappingURL=CmsConflictDialog.d.ts.map

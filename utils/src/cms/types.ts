@@ -6,38 +6,22 @@
  * should re-export or reference these.
  */
 import { z } from "zod";
+import { CMS_POST_TYPES, CMS_STATUS, CMS_CONTENT_TYPES } from "./constants.js";
 
-// ─── Enums ────────────────────────────────────────────────────────────────
+export { CMS_POST_TYPES, CMS_STATUS, CMS_CONTENT_TYPES } from "./constants.js";
 
-export const CMS_POST_TYPES = [
-  "post",
-  "page",
-  "general",
-  "faq",
-  "blog",
-  "embed",
-  "data",
-  "docs",
-  "kb",
-  "other",
-] as const;
+// --- Enums -------------------------------------------------------------------
+
 export const CmsPostTypeSchema = z.enum(CMS_POST_TYPES);
 export type CmsPostType = z.infer<typeof CmsPostTypeSchema>;
 
-export const CMS_STATUS = ["draft", "published", "trash"] as const;
 export const CmsStatusSchema = z.enum(CMS_STATUS);
 export type CmsStatus = z.infer<typeof CmsStatusSchema>;
 
-export const CMS_CONTENT_TYPES = [
-  "text/html",
-  "text/markdown",
-  "application/json",
-  "text/plain",
-] as const;
 export const CmsContentTypeSchema = z.enum(CMS_CONTENT_TYPES);
 export type CmsContentType = z.infer<typeof CmsContentTypeSchema>;
 
-// ─── Metadata schemas ─────────────────────────────────────────────────────
+// --- Metadata schemas --------------------------------------------------------
 
 /** Version annotation attached to a specific save/revision. */
 export const CmsVersionMetaSchema = z.object({
@@ -63,7 +47,7 @@ export const CmsMetadataSchema = z.object({
 });
 export type CmsMetadata = z.infer<typeof CmsMetadataSchema>;
 
-// ─── Row schemas ──────────────────────────────────────────────────────────
+// --- Row schemas -------------------------------------------------------------
 
 export const CmsHeadRowSchema = z
   .object({
@@ -113,7 +97,7 @@ export const CmsHistoryRowSchema = z
 
 export type CmsHistoryRow = z.infer<typeof CmsHistoryRowSchema>;
 
-// ─── DTO schemas ──────────────────────────────────────────────────────────
+// --- DTO schemas -------------------------------------------------------------
 
 export const CmsCreateRequestSchema = z
   .object({
@@ -175,7 +159,7 @@ export const CmsPublishRequestSchema = z
 
 export type CmsPublishRequest = z.infer<typeof CmsPublishRequestSchema>;
 
-// ─── Public payload ───────────────────────────────────────────────────────
+// --- Public payload ----------------------------------------------------------
 
 export interface CmsPublicPayload {
   uid: string;
@@ -194,7 +178,7 @@ export interface CmsPublicPayload {
   json?: unknown;
 }
 
-// ─── Collaborator ─────────────────────────────────────────────────────────
+// --- Collaborator ------------------------------------------------------------
 
 export interface CmsCollaboratorRow {
   id: number;
@@ -204,7 +188,7 @@ export interface CmsCollaboratorRow {
   created_at: string;
 }
 
-// ─── After-write event ───────────────────────────────────────────────────
+// --- After-write event -------------------------------------------------------
 
 export type CmsWriteEventType =
   | "create"
@@ -222,7 +206,7 @@ export interface CmsAfterWriteEvent {
   actorUserUid?: string | null;
 }
 
-// ─── Public head (lightweight read for 304/password gating) ──────────────
+// --- Public head (lightweight read for 304/password gating) ------------------
 
 export interface CmsPublicHead {
   uid: string;

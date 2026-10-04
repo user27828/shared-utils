@@ -12,4 +12,3 @@ export interface UseEmailTemplatesResult {
     reload: () => void;
 }
 export declare const useEmailTemplates: (options?: UseEmailTemplatesOptions) => UseEmailTemplatesResult;
-//# sourceMappingURL=useEmailTemplates.d.ts.map

@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import {
   MDXEditor,
   type MDXEditorMethods,
-} from "@user27828/shared-utils/client/wysiwyg";
+} from "@user27828/shared-utils/client/wysiwyg/mdx";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
@@ -258,7 +258,7 @@ const MDXEditorTests: React.FC<MDXEditorTestsProps> = ({
         // Count words roughly
         const wordCount = currentContent
           .split(/\s+/)
-          .filter((w) => w.length > 0).length;
+          .filter((w: string) => w.length > 0).length;
 
         const duration = Date.now() - startTime;
         updateTestStatus(

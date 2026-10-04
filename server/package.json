@@ -24,8 +24,8 @@
   ],
   "private": true,
   "scripts": {
-    "build": "rm -f tsconfig.tsbuildinfo && yarn tsc --outDir ../dist/server",
-    "build:clean": "rm -f tsconfig.tsbuildinfo && rm -rf ../dist/server && yarn build",
+    "build": "node ../scripts/clean-dist.mjs server && yarn tsc --outDir ../dist/server && cp deploy-turnstile-worker.sh ../dist/server/deploy-turnstile-worker.sh",
+    "build:clean": "yarn build",
     "dev": "yarn tsc --outDir ../dist/server --watch",
     "cf:deploy": "./deploy-turnstile-worker.sh",
     "cf:deploy:dev": "./deploy-turnstile-worker.sh dev",
@@ -37,14 +37,12 @@
     "test:coverage": "yarn build && NODE_OPTIONS=\"--experimental-vm-modules\" yarn jest --coverage"
   },
   "dependencies": {
+    "@shared-utils/utils": "workspace:*"
+  },
+  "devDependencies": {
     "@aws-sdk/client-s3": "^3.1136.0",
     "@aws-sdk/client-sesv2": "^3.1136.0",
     "@aws-sdk/s3-request-presigner": "^3.1136.0",
-    "@shared-utils/utils": "workspace:*",
-    "express": "^5.2.1",
-    "nodemailer": "10.0.10"
-  },
-  "devDependencies": {
     "@babel/core": "^8.0.6",
     "@babel/preset-env": "^8.0.6",
     "@babel/preset-typescript": "^8.0.1",
@@ -52,8 +50,15 @@
     "@jest/globals": "^30.5.2",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.2",
+    "@types/sanitize-html": "^2.16.1",
     "babel-jest": "^30.5.2",
+    "bcryptjs": "^3.0.3",
+    "express": "^5.2.1",
+    "ioredis": "6.0.0",
     "jest": "^30.5.2",
+    "marked": "^18.0.13",
+    "nodemailer": "10.0.10",
+    "sanitize-html": "2.17.7",
     "ts-jest": "^29.4.12",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",

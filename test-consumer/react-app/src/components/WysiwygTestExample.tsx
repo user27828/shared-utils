@@ -9,7 +9,7 @@ import Stack from "@mui/material/Stack";
 const loadWysiwygComponents = async () => {
   try {
     const { default: WysiwygEditor } =
-      await import("@user27828/shared-utils/client/wysiwyg");
+      await import("@user27828/shared-utils/client/wysiwyg/all");
     return { WysiwygEditor };
   } catch (error) {
     console.warn("WYSIWYG components not available:", error);

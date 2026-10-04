@@ -17,4 +17,3 @@ interface FileIconProps extends Omit<SvgIconProps, "children"> {
 }
 declare const FileIcon: React.FC<FileIconProps>;
 export default FileIcon;
-//# sourceMappingURL=FileIcon.d.ts.map

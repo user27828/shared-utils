@@ -35,10 +35,10 @@ describe("GitHub Package Analysis", () => {
       console.log('   exports["./server"] exists:', !!pkg.exports["./server"]);
       console.log(
         "   files array includes dist:",
-        pkg.files.includes("dist/**/*"),
+        pkg.files.includes("dist/{utils,client,server}/**/*.js"),
       );
 
-      expect(pkg.files).toContain("dist/**/*");
+      expect(pkg.files).toContain("dist/{utils,client,server}/**/*.js");
       expect(pkg.exports["./server"]).toBeDefined();
       expect(pkg.exports["./server"].import).toBe("./dist/server/index.js");
       expect(pkg.exports["./server"].types).toBe("./dist/server/index.d.ts");

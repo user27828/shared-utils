@@ -8,4 +8,3 @@ export declare const getAttachmentContentBuffer: (attachment: EmailAttachmentLik
 export declare const getAttachmentContentBase64: (attachment: EmailAttachmentLike) => string;
 export declare const getAttachmentContentType: (attachment: EmailAttachmentLike) => string | undefined;
 export declare const getAttachmentByteLength: (attachment: EmailAttachmentLike) => number;
-//# sourceMappingURL=attachments.d.ts.map

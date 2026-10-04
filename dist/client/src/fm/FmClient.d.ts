@@ -180,4 +180,3 @@ export declare class FmClient implements FmApi {
     getVariantProxyUploadUrl(variantUid: string): string;
     getPublicMediaUrl(fileUid: string): string;
 }
-//# sourceMappingURL=FmClient.d.ts.map

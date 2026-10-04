@@ -22,4 +22,3 @@ export declare class SesWebhookHandler implements IWebhookHandler {
 }
 export declare const createSesWebhookHandler: () => IWebhookHandler;
 export {};
-//# sourceMappingURL=ses.d.ts.map

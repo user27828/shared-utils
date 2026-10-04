@@ -5,7 +5,9 @@
  * and can be used by LLM agents to test integration issues.
  */
 
-import { log, optionsManager, turnstile } from "@user27828/shared-utils/utils";
+import { log } from "@user27828/shared-utils/utils/log";
+import { optionsManager } from "@user27828/shared-utils/utils/options";
+import { turnstile } from "@user27828/shared-utils/utils/turnstile";
 import {
   getTurnstileServerOptions,
   verifyTurnstileToken,

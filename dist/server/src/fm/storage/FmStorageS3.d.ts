@@ -1,4 +1,7 @@
+import type { FmServerConfig } from "../config.js";
 import type { FmCopyObjectInput, FmDeleteObjectInput, FmHeadObjectResult, FmObjectRef, FmPresignedGet, FmPresignedPut, FmStorageAdapter, FmStorageCapabilities, FmWriteObjectInput } from "./FmStorageAdapter.js";
+/** Config-based S3 factory. Import only in applications installing the AWS peers. */
+export declare const createFmS3Storage: (config: FmServerConfig) => FmStorageS3;
 /**
  * S3-compatible object storage adapter.
  *
@@ -58,4 +61,3 @@ export declare class FmStorageS3 implements FmStorageAdapter {
         ref: FmObjectRef;
     }): string | null;
 }
-//# sourceMappingURL=FmStorageS3.d.ts.map

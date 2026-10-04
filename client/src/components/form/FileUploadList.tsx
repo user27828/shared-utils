@@ -16,7 +16,7 @@ import isFunction from "lodash-es/isFunction.js";
 import isNumber from "lodash-es/isNumber.js";
 import isString from "lodash-es/isString.js";
 import size from "lodash-es/size.js";
-import { formatFileSize } from "../../../../utils/src/functions.js";
+import { formatFileSize } from "../../../../utils/src/files.js";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";

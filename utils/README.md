@@ -39,7 +39,9 @@ Automatic detection of text-based file formats including Markdown, HTML, JSON, X
 
 ```javascript
 // Import utilities from the published package
-import { log, turnstile, optionsManager } from "@user27828/shared-utils/utils";
+import { log } from "@user27828/shared-utils/utils/log";
+import { turnstile } from "@user27828/shared-utils/utils/turnstile";
+import { optionsManager } from "@user27828/shared-utils/utils/options";
 ```
 
 [🔝 Back to Top](#utils)
@@ -49,7 +51,7 @@ import { log, turnstile, optionsManager } from "@user27828/shared-utils/utils";
 ### Centralized (Recommended)
 
 ```javascript
-import { optionsManager } from "@user27828/shared-utils/utils";
+import { optionsManager } from "@user27828/shared-utils/utils/options";
 
 optionsManager.setGlobalOptions({
   log: { type: "client", client: { production: ["warn", "error"] } },
@@ -70,7 +72,7 @@ turnstile.setOptions({ siteKey: "your-key" });
 Cloudflare Turnstile browser helper for explicit-render flows. Import the widget helper from the utils package and do server-side validation from `@user27828/shared-utils/server`.
 
 ```javascript
-import { turnstile } from "@user27828/shared-utils/utils";
+import { turnstile } from "@user27828/shared-utils/utils/turnstile";
 import { verifyTurnstileToken } from "@user27828/shared-utils/server";
 ```
 
@@ -86,7 +88,7 @@ import { verifyTurnstileToken } from "@user27828/shared-utils/server";
 ### Browser Widget
 
 ```javascript
-import { turnstile } from "@user27828/shared-utils/utils";
+import { turnstile } from "@user27828/shared-utils/utils/turnstile";
 
 turnstile.setOptions({
   siteKey: "YOUR_SITE_KEY",
@@ -174,7 +176,7 @@ turnstile.setOptions({
 
 ```jsx
 import React, { useEffect, useRef, useState } from "react";
-import { turnstile } from "@user27828/shared-utils/utils";
+import { turnstile } from "@user27828/shared-utils/utils/turnstile";
 
 function TurnstileWidget({ onSuccess, onError }) {
   const containerRef = useRef(null);
@@ -224,19 +226,22 @@ function TurnstileWidget({ onSuccess, onError }) {
 
 ## OptionsManager (Centralized Configuration)
 
-The OptionsManager provides a unified configuration system for all utilities while maintaining backward compatibility with existing APIs.
+The OptionsManager provides a unified configuration system for all utilities.
+The logger, Turnstile, options manager, configured file/date helpers, contact
+features, meeting-provider data, and format detection use explicit subpaths;
+the root entrypoint is reserved for dependency-free helpers.
 
 ### Features
 
 - **Cross-Utility Configuration**: Configure multiple utilities simultaneously
-- **Backward Compatibility**: All existing APIs continue to work unchanged
+- **Explicit entrypoints**: Each configured utility can be imported without loading unrelated utility singletons
 - **Type Safety**: Full TypeScript support for all operations
 - **Centralized Management**: Single point for configuration inspection and bulk operations
 
 ### Basic Usage
 
 ````javascript
-import { optionsManager } from "@user27828/shared-utils/utils";
+import { optionsManager } from "@user27828/shared-utils/utils/options";
 
 // Configure multiple utilities at once
 optionsManager.setGlobalOptions({
@@ -267,7 +272,7 @@ The `optionsManager` singleton exposes convenience helpers so consumers can both
 Examples:
 
 ```javascript
-import { optionsManager } from "@user27828/shared-utils/utils";
+import { optionsManager } from "@user27828/shared-utils/utils/options";
 
 // Read all options for a utility
 const siteOptions = optionsManager.getOption('site');
@@ -365,7 +370,8 @@ optionsManager.setGlobalOptions({
 **Before (still works):**
 
 ```javascript
-import { log, turnstile } from "@user27828/shared-utils/utils";
+import { log } from "@user27828/shared-utils/utils/log";
+import { turnstile } from "@user27828/shared-utils/utils/turnstile";
 
 log.setOptions({ type: "client" });
 turnstile.setOptions({ siteKey: "key" });
@@ -374,7 +380,7 @@ turnstile.setOptions({ siteKey: "key" });
 **After (recommended for new projects):**
 
 ```javascript
-import { optionsManager } from "@user27828/shared-utils/utils";
+import { optionsManager } from "@user27828/shared-utils/utils/options";
 
 optionsManager.setGlobalOptions({
   log: { type: "client" },
@@ -390,7 +396,7 @@ optionsManager.setGlobalOptions({
 // app/providers.tsx
 "use client";
 
-import { optionsManager } from "@user27828/shared-utils/utils";
+import { optionsManager } from "@user27828/shared-utils/utils/options";
 import { useEffect } from "react";
 
 export function UtilsProvider({ children }) {
@@ -421,7 +427,7 @@ export function UtilsProvider({ children }) {
 
 ```javascript
 // server.js
-import { optionsManager } from "@user27828/shared-utils/utils";
+import { optionsManager } from "@user27828/shared-utils/utils/options";
 
 // Configure utilities at server startup
 optionsManager.setGlobalOptions({
@@ -447,7 +453,7 @@ app.listen(3000, () => {
 ### TypeScript Support
 
 ```typescript
-import { OptionsManager, optionsManager } from "@user27828/shared-utils/utils";
+import { OptionsManager, optionsManager } from "@user27828/shared-utils/utils/options";
 
 // Type-safe configuration
 optionsManager.setGlobalOptions({
@@ -486,7 +492,7 @@ const customManager = new OptionsManager<CustomUtilityOptions>("custom", {
 Formats a file size in bytes into a human-readable string, with support for binary/decimal units, precision, and style. Reads global options from optionsManager (category: `files.size`).
 
 ```js
-import { formatFileSize } from "@user27828/shared-utils/utils";
+import { formatFileSize } from "@user27828/shared-utils/utils/files";
 
 formatFileSize(1024); // "1 KB"
 formatFileSize(1536, { useBinary: true, precision: 1 }); // "1.5 KiB"
@@ -512,7 +518,7 @@ Normalizes URL-like strings by adding a protocol when the input already looks li
 This is useful when users paste values like `facebook.com/agentmdotcom` (no scheme) and you want to store/display a fully-qualified URL.
 
 ```js
-import { normalizeUrl } from "@user27828/shared-utils/utils";
+import { normalizeUrl } from "@user27828/shared-utils/utils/validation";
 
 normalizeUrl("facebook.com/agentmdotcom");
 // => "https://facebook.com/agentmdotcom"
@@ -526,7 +532,7 @@ normalizeUrl("https://github.com/user27828");
 Formats a date string or Date object into a human-readable string, with support for locale and formatting options. Reads global options from optionsManager (category: `dates`).
 
 ```js
-import { formatDate } from "@user27828/shared-utils/utils";
+import { formatDate } from "@user27828/shared-utils/utils/dates";
 
 formatDate("2025-08-03T12:34:56Z"); // "Aug 3, 2025, 12:34 PM"
 formatDate(new Date(), {
@@ -551,7 +557,7 @@ formatDate("2025-08-03T12:34:56Z"); // "3 August 2025"
 Automatically detects the format of text content by analyzing syntax patterns and structure. Supports multiple text-based formats including Markdown, HTML, JSON, XML, CSV, YAML, LaTeX, and plain text. Uses confidence scoring to determine the most likely format.
 
 ```js
-import { detectFormatFromText } from "@user27828/shared-utils/utils";
+import { detectFormatFromText } from "@user27828/shared-utils/utils/detect-format";
 
 // Detect format from content string
 const result = await detectFormatFromText({
@@ -635,7 +641,7 @@ isDev(options?: IsDevOptions): boolean
 **Example:**
 
 ```javascript
-import { isDev } from "@user27828/shared-utils/utils";
+import { isDev } from "@user27828/shared-utils/utils/environment";
 
 if (isDev()) console.log("Development mode");
 if (isDev({ environment: "server" })) console.log("Server dev");

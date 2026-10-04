@@ -185,6 +185,25 @@ describe("Log Utility", () => {
   });
 
   describe("Interceptors", () => {
+    it("uses one options snapshot and runs interceptors before production filtering", () => {
+      const calls = [];
+      logInstance.isProduction = true;
+      logInstance.setOptions({
+        type: "server",
+        showCaller: false,
+        server: { production: [] },
+        interceptor: () => calls.push("legacy"),
+      });
+      logInstance.addInterceptor(() => calls.push("registered"));
+      const getOptions = jest.spyOn(logInstance.optionsManager, "getOption");
+
+      logInstance.info("filtered message");
+
+      expect(getOptions).toHaveBeenCalledTimes(1);
+      expect(calls).toEqual(["legacy", "registered"]);
+      expect(console.info).not.toHaveBeenCalled();
+    });
+
     it("should support adding interceptors", () => {
       const interceptor = jest.fn();
       logInstance.addInterceptor(interceptor);

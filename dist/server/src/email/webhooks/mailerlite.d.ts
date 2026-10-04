@@ -14,4 +14,3 @@ export declare class MailerliteWebhookHandler implements IWebhookHandler {
     private parseClickEvent;
 }
 export declare const createMailerliteWebhookHandler: () => IWebhookHandler;
-//# sourceMappingURL=mailerlite.d.ts.map

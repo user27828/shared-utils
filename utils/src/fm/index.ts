@@ -5,29 +5,21 @@
  * This is the isomorphic entry point (usable in both server and client).
  */
 
-// ── Types & Schemas ───────────────────────────────────────────────────────
+export { FM_PURPOSES, FM_VISIBILITY, FM_VARIANT_KINDS } from "./constants.js";
+
+// Types & Schemas
 
 export {
-  // Enums / constants
-  FM_PURPOSES,
   FmPurposeSchema,
-  FM_VISIBILITY,
   FmVisibilitySchema,
-  FM_VARIANT_KINDS,
   FmVariantKindSchema,
   FmUploadModeSchema,
   FmStorageLocationSchema,
-
-  // Row schemas
   FmFileRowSchema,
   FmFileVariantRowSchema,
-
-  // Object ref
   FmObjectRefSchema,
   FmPresignedPutSchema,
   FmDestinationHintSchema,
-
-  // Upload request/response schemas
   FmUploadInitRequestSchema,
   FmUploadInitResponseSchema,
   FmUploadFinalizeRequestSchema,
@@ -36,8 +28,6 @@ export {
   FmVariantUploadInitResponseSchema,
   FmVariantUploadFinalizeRequestSchema,
   FmVariantUploadFinalizeResponseSchema,
-
-  // Patch / Move / Link schemas
   FmFilePatchRequestSchema,
   FmMoveRequestSchema,
   FmLinkCreateRequestSchema,
@@ -97,7 +87,7 @@ export type {
   FmUploadProgressCallback,
 } from "./types.js";
 
-// ── Errors ────────────────────────────────────────────────────────────────
+// -- Errors -------------------------------------------------------------------
 
 export {
   FmError,
@@ -113,7 +103,7 @@ export {
   fmErrorToStatus,
 } from "./errors.js";
 
-// ── Validation ────────────────────────────────────────────────────────────
+// -- Validation ---------------------------------------------------------------
 
 export {
   isUuid,

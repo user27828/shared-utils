@@ -17,20 +17,12 @@ let turnstile: any = null;
 // Dynamically import to handle potential import issues
 const loadTurnstile = async () => {
   try {
-    const module = await import("@user27828/shared-utils/utils");
+    const module = await import("@user27828/shared-utils/utils/turnstile");
     console.log("Imported module:", module);
     return (module as any).turnstile;
   } catch (error) {
     console.error("Failed to import turnstile:", error);
-    try {
-      // Try alternative import paths
-      const altModule = await import("@user27828/shared-utils");
-      console.log("Alternative import:", altModule);
-      return (altModule as any).turnstile;
-    } catch (altError) {
-      console.error("Alternative import also failed:", altError);
-      return null;
-    }
+    return null;
   }
 };
 

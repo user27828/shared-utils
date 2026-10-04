@@ -59,7 +59,13 @@ Expected current behavior:
 
 - utilities, client components, server helpers, CMS, FM, and email previewing
   are consumable through stable subpath exports
-- client initialization is opt-in through a dedicated `client/init` entrypoint
+- CMS/FM constants have dependency-free subpaths; erased DTO types and runtime
+  Zod schemas have separate explicit subpaths
+- CMS password and HTML/Markdown sanitization helpers live at server subpaths;
+  shared browser contracts do not resolve these server dependencies
+- browser logger setup is opt-in through `client/init`; server environment
+  loading and global logger setup are opt-in through `server/env` and
+  `server/init`
 - the package can be consumed in browser, server, and mixed full-stack setups
 
 ### Scenario 2: A content administrator manages a CMS catalog
@@ -81,6 +87,9 @@ tags, options, body content, and version notes, then saves or publishes.
 Expected current behavior:
 
 - editing includes both metadata and body-authoring workflows
+- the CMS host supplies only its installed HTML/Markdown editor adapters through
+  `CmsAdminUiConfig.editorAdapters`; missing adapters leave content editable in
+  a textarea without importing an editor engine
 - saved content keeps revision history and version metadata
 - concurrent edits are detected and surfaced as a conflict rather than silently
   overwriting another editor's changes
@@ -249,3 +258,21 @@ Expected current behavior:
   package supplies abstractions and factories instead of enforcing one vendor.
 - Public-facing CMS consumers prefer a lightweight surface that excludes
   editor-only dependencies.
+
+## Consumer installation and release artifacts
+
+The root mandatory dependency contract is limited to `lodash-es`, `nanoid`,
+and `zod`. Date/CSV/HTML helpers, React/MUI/editors, env loading, Express,
+email providers, and Redis/AWS integrations use optional peers documented in
+README. Workspace development dependencies support compilation and tests.
+FM local storage is exported at `fm/server/storage`; S3 config creation uses
+an injected `createFmS3Storage` factory from `fm/server/s3`. CMS Redis usage
+requires `redisFactory` from `cms/server/redis`; the memory limiter entry is
+`cms/server/rate-limiter` and has no Redis import.
+
+Workspace builds clean their compiler-owned output before compilation and
+exclude nested tests. Archives contain generated runtime/declarations/assets,
+explicit CLI files and the Turnstile deployment helper. Declaration maps are
+omitted because source files are not published. Server JS source maps retain
+embedded source for debugging. Install checks derive required artifacts from
+the export/bin contract and perform no network calls or consumer builds.

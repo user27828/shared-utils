@@ -64,4 +64,3 @@ export declare const buildTransferInspectResult: (args: {
     validationErrors?: string[];
     warnings?: string[];
 }) => CmsTransferInspectResult;
-//# sourceMappingURL=transferImport.d.ts.map

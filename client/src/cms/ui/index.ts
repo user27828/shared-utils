@@ -39,6 +39,8 @@ export type { CmsContentNotesProps } from "./CmsContentNotes.js";
 
 export type {
   CmsAdminUiConfig,
+  CmsBodyEditorAdapterMap,
+  CmsBodyEditorEngineProps,
   CmsCategoryOption,
   CmsEditorPreference,
   CmsImageUploadContext,

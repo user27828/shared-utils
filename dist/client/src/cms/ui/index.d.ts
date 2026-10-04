@@ -21,6 +21,5 @@ export { default as CmsVersionNotesForm } from "./CmsVersionNotesForm.js";
 export type { CmsVersionNotesFormProps } from "./CmsVersionNotesForm.js";
 export { default as CmsContentNotes } from "./CmsContentNotes.js";
 export type { CmsContentNotesProps } from "./CmsContentNotes.js";
-export type { CmsAdminUiConfig, CmsCategoryOption, CmsEditorPreference, CmsImageUploadContext, CmsImageUploadHandler, CmsImageUploadSource, CmsMediaPickerProps, CmsTransferActionRenderProps, CmsTransferImportDialogRenderProps, CmsTransferInspectDialogRenderProps, CmsTransferUiConfig, CmsToastAdapter, CmsNavigationAdapter, } from "./CmsAdminUiConfig.js";
+export type { CmsAdminUiConfig, CmsBodyEditorAdapterMap, CmsBodyEditorEngineProps, CmsCategoryOption, CmsEditorPreference, CmsImageUploadContext, CmsImageUploadHandler, CmsImageUploadSource, CmsMediaPickerProps, CmsTransferActionRenderProps, CmsTransferImportDialogRenderProps, CmsTransferInspectDialogRenderProps, CmsTransferUiConfig, CmsToastAdapter, CmsNavigationAdapter, } from "./CmsAdminUiConfig.js";
 export { defaultToast } from "./CmsAdminUiConfig.js";
-//# sourceMappingURL=index.d.ts.map

@@ -28,4 +28,3 @@ export interface EasyMDEEditorProps {
 }
 declare const EasyMDEEditor: React.FC<EasyMDEEditorProps>;
 export default EasyMDEEditor;
-//# sourceMappingURL=EasyMDEEditor.d.ts.map

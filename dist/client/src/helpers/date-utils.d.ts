@@ -21,4 +21,3 @@ declare namespace _default {
     export { getDaysInMonth };
 }
 export default _default;
-//# sourceMappingURL=date-utils.d.ts.map

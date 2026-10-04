@@ -15,4 +15,3 @@ export interface BackdropLoaderProps {
  */
 declare const BackdropLoader: React.FC<BackdropLoaderProps>;
 export default BackdropLoader;
-//# sourceMappingURL=BackdropLoader.d.ts.map

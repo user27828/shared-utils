@@ -50,4 +50,3 @@ export interface ConformanceTestConfig {
     afterAll?: Function;
 }
 export declare function runCmsConnectorConformanceTests(config: ConformanceTestConfig): void;
-//# sourceMappingURL=conformance.d.ts.map

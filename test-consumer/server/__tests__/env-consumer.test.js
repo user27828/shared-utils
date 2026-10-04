@@ -22,11 +22,14 @@ test("consumer reads .env-test via shared-utils server env", async () => {
   }
 
   try {
-    // Import the server barrel which now forces env evaluation
-    const server = require("../../../../server/index.js");
-    // Access exported env
-    const env =
-      server.env || (await import("../../../../server/src/env.js")).default;
+    const path = require("node:path");
+    const { optionsManager } =
+      await import("@user27828/shared-utils/utils/options");
+    optionsManager.setGlobalOptions({
+      DOTENV_PATH: path.resolve(__dirname, "../../.env-test"),
+    });
+
+    const { default: env } = await import("@user27828/shared-utils/server/env");
     expect(env).toBeDefined();
     expect(env.DOTENV_TEST_VALUE).toBe("Hello World!");
   } finally {

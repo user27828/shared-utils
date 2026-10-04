@@ -4,12 +4,12 @@
  * @jest-environment node
  */
 
-import { log, Log } from "../../dist/utils/index.js";
+import { log, Log } from "../../dist/utils/src/log.js";
 import logDirect, { Log as LogDirect } from "../../dist/utils/src/log.js";
 
 describe("Package Import Verification", () => {
   describe("JavaScript ES Module Imports", () => {
-    it("should import from utils barrel file", () => {
+    it("should import from the explicit log module", () => {
       expect(log).toBeDefined();
       expect(typeof log).toBe("object");
       expect(typeof log.info).toBe("function");
@@ -37,7 +37,7 @@ describe("Package Import Verification", () => {
       expect(logDirect).toBeInstanceOf(LogDirect);
     });
 
-    it("should have consistent exports between barrel and direct imports", () => {
+    it("should have consistent exports between named and default log imports", () => {
       // Should be the same constructor
       expect(Log).toBe(LogDirect);
 

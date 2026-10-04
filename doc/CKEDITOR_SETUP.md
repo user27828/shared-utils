@@ -1,6 +1,6 @@
 # CKEditor 5 (GPL) Setup Guide
 
-This guide covers how to use the `CKEditor5Classic` component from `@user27828/shared-utils/client/wysiwyg`.
+This guide covers how to use the `CKEditor5Classic` component from `@user27828/shared-utils/client/wysiwyg/ckeditor`.
 
 This integration is **self-hosted** using npm packages and is configured to use the **GPL** license key. It does not require any CKEditor cloud services.
 
@@ -16,7 +16,7 @@ yarn add ckeditor5 @ckeditor/ckeditor5-react
 
 ```tsx
 import React, { useState } from "react";
-import { CKEditor5Classic } from "@user27828/shared-utils/client/wysiwyg";
+import { CKEditor5Classic } from "@user27828/shared-utils/client/wysiwyg/ckeditor";
 
 export const MyEditor = () => {
   const [html, setHtml] = useState("<p>Hello</p>");

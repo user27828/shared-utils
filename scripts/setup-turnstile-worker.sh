@@ -18,7 +18,7 @@ usage() {
   echo "Setup Turnstile Cloudflare Worker in your project using shared-utils"
   echo ""
   echo "Options:"
-  echo "  -p, --path PATH     Path to shared-utils (default: node_modules/shared-utils)"
+  echo "  -p, --path PATH     Path to shared-utils (default: node_modules/@user27828/shared-utils)"
   echo "  -d, --dir DIR       Target directory for worker (default: workers/turnstile)"
   echo "  -n, --name NAME     Worker name for wrangler.toml (default: PROJECT_NAME-turnstile)"
   echo "  -o, --origins URLS  Comma-separated allowed origins"
@@ -77,19 +77,14 @@ if [[ -z "$SHARED_UTILS_PATH" ]]; then
     echo "❌ Could not find shared-utils. Please specify path with --path"
     echo "💡 Make sure shared-utils is installed:"
     echo "   yarn add @user27828/shared-utils@https://github.com/user27828/shared-utils.git#master"
-    echo "   # or"
-    echo "   npm install @user27828/shared-utils@https://github.com/user27828/shared-utils.git#master"
     exit 1
   fi
 fi
 
-# Determine server path
-if [[ -d "$SHARED_UTILS_PATH/server" ]]; then
-  SERVER_PATH="$SHARED_UTILS_PATH/server"
-elif [[ -d "$SHARED_UTILS_PATH" ]] && [[ -f "$SHARED_UTILS_PATH/turnstile-worker.ts" ]]; then
-  SERVER_PATH="$SHARED_UTILS_PATH"
-else
-  echo "❌ Could not find server directory in $SHARED_UTILS_PATH"
+# Require the installed contract rather than unpublished TypeScript sources.
+if [[ ! -f "$SHARED_UTILS_PATH/dist/server/src/turnstile/worker-factory.js" ]] || \
+   [[ ! -f "$SHARED_UTILS_PATH/dist/server/deploy-turnstile-worker.sh" ]]; then
+  echo "Could not find the built worker and deployment helper in $SHARED_UTILS_PATH"
   exit 1
 fi
 
@@ -104,7 +99,7 @@ if [[ -z "$WORKER_NAME" ]]; then
 fi
 
 echo "🚀 Setting up Turnstile Worker..."
-echo "📂 Source: $SERVER_PATH"
+echo "📂 Source: $SHARED_UTILS_PATH"
 echo "📂 Target: $WORKER_DIR"
 echo "🏷️  Worker Name: $WORKER_NAME"
 
@@ -113,9 +108,11 @@ mkdir -p "$WORKER_DIR"
 
 # Copy worker files
 echo "📋 Copying worker files..."
-cp "$SERVER_PATH/turnstile-worker.ts" "$WORKER_DIR/"
-cp "$SERVER_PATH/deploy-turnstile-worker.sh" "$WORKER_DIR/"
-cp -r "$SERVER_PATH/src" "$WORKER_DIR/"
+cat >"$WORKER_DIR/turnstile-worker.js" <<'EOF'
+import { createTurnstileWorker } from "@user27828/shared-utils/server/turnstile/worker";
+export default createTurnstileWorker();
+EOF
+cp "$SHARED_UTILS_PATH/dist/server/deploy-turnstile-worker.sh" "$WORKER_DIR/"
 
 # Make deployment script executable
 chmod +x "$WORKER_DIR/deploy-turnstile-worker.sh"
@@ -124,7 +121,7 @@ chmod +x "$WORKER_DIR/deploy-turnstile-worker.sh"
 echo "⚙️  Creating wrangler.toml..."
 cat >"$WORKER_DIR/wrangler.toml" <<EOF
 name = "$WORKER_NAME"
-main = "turnstile-worker.ts"
+main = "turnstile-worker.js"
 compatibility_date = "2024-12-01"
 
 # Environment variables (configure these for your app)
@@ -244,10 +241,9 @@ echo ""
 echo "✅ Turnstile Worker setup complete!"
 echo ""
 echo "📂 Files created in: $WORKER_DIR"
-echo "   ├── turnstile-worker.ts"
+echo "   ├── turnstile-worker.js"
 echo "   ├── wrangler.toml"
 echo "   ├── deploy-turnstile-worker.sh"
-echo "   ├── src/"
 echo "   └── README.md"
 echo ""
 echo "🔧 Next steps:"

@@ -92,7 +92,10 @@ const getRuntimeSupportedTimezones = (): string[] => {
   return Array.from(normalizedTimezones);
 };
 
-const sortTimezones = (timezones: string[], topTimezones: string[]): string[] => {
+const sortTimezones = (
+  timezones: string[],
+  topTimezones: string[],
+): string[] => {
   const collator = new Intl.Collator("en");
   const normalizedTopTimezones = topTimezones
     .map((timezone) => normalizeTimezoneValue(timezone))
@@ -121,11 +124,12 @@ const sortTimezones = (timezones: string[], topTimezones: string[]): string[] =>
   });
 };
 
-export const getSupportedTimezones = ({
-  topTimezones = DEFAULT_PRIORITY_TIMEZONES,
-  currentValue,
-}: Pick<GetTimezoneOptionsArgs, "topTimezones" | "currentValue"> = {}): string[] => {
-  const mergedTimezones = new Set<string>(["UTC", ...getRuntimeSupportedTimezones()]);
+const buildSupportedTimezones = (
+  runtimeTimezones: string[],
+  topTimezones: string[],
+  currentValue?: string | null,
+): string[] => {
+  const mergedTimezones = new Set<string>(["UTC", ...runtimeTimezones]);
   const normalizedCurrentValue = normalizeTimezoneValue(currentValue);
 
   if (normalizedCurrentValue) {
@@ -135,23 +139,38 @@ export const getSupportedTimezones = ({
   return sortTimezones(Array.from(mergedTimezones), topTimezones);
 };
 
+export const getSupportedTimezones = ({
+  topTimezones = DEFAULT_PRIORITY_TIMEZONES,
+  currentValue,
+}: Pick<
+  GetTimezoneOptionsArgs,
+  "topTimezones" | "currentValue"
+> = {}): string[] => {
+  return buildSupportedTimezones(
+    getRuntimeSupportedTimezones(),
+    topTimezones,
+    currentValue,
+  );
+};
+
 export const getTimezoneOptions = ({
   topTimezones = DEFAULT_PRIORITY_TIMEZONES,
   currentValue,
   referenceDate = new Date(),
 }: GetTimezoneOptionsArgs = {}): TimezoneOption[] => {
-  const runtimeTimezoneSet = new Set<string>([
-    "UTC",
-    ...getRuntimeSupportedTimezones(),
-  ]);
+  const runtimeTimezones = getRuntimeSupportedTimezones();
+  const runtimeTimezoneSet = new Set<string>(["UTC", ...runtimeTimezones]);
   const normalizedCurrentValue = normalizeTimezoneValue(currentValue);
 
-  return getSupportedTimezones({
+  return buildSupportedTimezones(
+    runtimeTimezones,
     topTimezones,
-    currentValue: normalizedCurrentValue,
-  }).map((timezone) => {
+    normalizedCurrentValue,
+  ).map((timezone) => {
     const offsetLabel = formatUtcOffsetLabel(
-      timezone === "UTC" ? "+00:00" : getTimezoneOffset(referenceDate, timezone),
+      timezone === "UTC"
+        ? "+00:00"
+        : getTimezoneOffset(referenceDate, timezone),
     );
     const friendlyTimezoneName = createFriendlyTimezoneName(timezone);
     const isUnknown =

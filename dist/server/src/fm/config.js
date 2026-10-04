@@ -10,6 +10,7 @@
  * Extracted & refactored from: db-supabase/server/fm/config.ts
  */
 import path from "path";
+import { FmValidationError } from "../../../utils/src/fm/errors.js";
 /**
  * The env keys that `parseFmServerConfig` reads.
  * Callers can use this to request exactly the right keys from their config layer.
@@ -125,23 +126,23 @@ export const parseFmServerConfig = (env) => {
 export const assertValidFmServerConfig = (cfg) => {
     if (cfg.provider === "local") {
         if (!cfg.dataRootPath && !cfg.uploadRootPath) {
-            throw new Error("FM local storage requires DATA_ROOT_PATH or FM_UPLOAD_ROOT_PATH to be set (absolute path recommended)");
+            throw new FmValidationError("FM local storage requires DATA_ROOT_PATH or FM_UPLOAD_ROOT_PATH to be set (absolute path recommended)");
         }
         if (cfg.uploadRootPath &&
             !path.isAbsolute(cfg.uploadRootPath) &&
             !cfg.dataRootPath) {
-            throw new Error("FM local storage: FM_UPLOAD_ROOT_PATH is relative but DATA_ROOT_PATH is not set");
+            throw new FmValidationError("FM local storage: FM_UPLOAD_ROOT_PATH is relative but DATA_ROOT_PATH is not set");
         }
         return;
     }
     if (!cfg.s3Endpoint) {
-        throw new Error("FM s3 storage requires S3_ENDPOINT");
+        throw new FmValidationError("FM s3 storage requires S3_ENDPOINT");
     }
     if (!cfg.s3AccessKeyId) {
-        throw new Error("FM s3 storage requires S3_ACCESS_KEY_ID");
+        throw new FmValidationError("FM s3 storage requires S3_ACCESS_KEY_ID");
     }
     if (!cfg.s3SecretAccessKey) {
-        throw new Error("FM s3 storage requires S3_SECRET_ACCESS_KEY");
+        throw new FmValidationError("FM s3 storage requires S3_SECRET_ACCESS_KEY");
     }
 };
 // ── Path resolution ───────────────────────────────────────────────────────
@@ -168,7 +169,7 @@ const resolveDataRootToAbsolute = (dataRootPath) => {
 export const resolveFmLocalUploadRootAbsPath = (cfg) => {
     assertValidFmServerConfig(cfg);
     if (cfg.provider !== "local") {
-        throw new Error("FM local upload root requested for non-local provider");
+        throw new FmValidationError("FM local upload root requested for non-local provider");
     }
     const dataRootAbs = cfg.dataRootPath
         ? resolveDataRootToAbsolute(cfg.dataRootPath)
@@ -178,12 +179,12 @@ export const resolveFmLocalUploadRootAbsPath = (cfg) => {
             return path.resolve(cfg.uploadRootPath);
         }
         if (!dataRootAbs) {
-            throw new Error("FM_UPLOAD_ROOT_PATH is relative but DATA_ROOT_PATH is not configured");
+            throw new FmValidationError("FM_UPLOAD_ROOT_PATH is relative but DATA_ROOT_PATH is not configured");
         }
         return path.resolve(dataRootAbs, cfg.uploadRootPath);
     }
     if (!dataRootAbs) {
-        throw new Error("DATA_ROOT_PATH is required for local FM storage");
+        throw new FmValidationError("DATA_ROOT_PATH is required for local FM storage");
     }
     return path.resolve(dataRootAbs, "uploads");
 };

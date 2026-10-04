@@ -9,4 +9,3 @@ declare const _default: {
     fetch(request: Request, env: import("./index.js").Environment): Promise<Response>;
 };
 export default _default;
-//# sourceMappingURL=turnstile-worker.d.ts.map

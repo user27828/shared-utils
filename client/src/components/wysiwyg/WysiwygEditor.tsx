@@ -1,37 +1,20 @@
-import React, { Suspense, useEffect, useMemo, useRef } from "react";
-
-import type {
-  TinyMceEditorProps,
-  TinyMceImageUploadRequest,
-  TinyMcePickRequest,
-  TinyMcePickResult,
-} from "./TinyMceEditor.js";
-
-import type {
-  CKEditor5ClassicProps,
-  CKEditor5ImageUploadRequest,
-  CKEditor5PickRequest,
-  CKEditor5PickResult,
-} from "./CKEditor5Classic.js";
-
-import type { EasyMDEEditorProps } from "./EasyMDEEditor.js";
-
+import React, { Suspense, useCallback, useEffect, useRef } from "react";
 import {
+  type WysiwygEditorAdapterMap,
   type WysiwygEditorKind,
-  type WysiwygAssetKind,
-  type WysiwygImageUploadRequest,
-  type WysiwygImageUploadResult,
+  type WysiwygEditorAdapterProps,
   type WysiwygPickRequest,
   type WysiwygPickResult,
-  normalizeCssSize,
+  type WysiwygImageUploadRequest,
+  type WysiwygImageUploadResult,
 } from "./wysiwyg-common.js";
 
-const CKEditor5ClassicLazy = React.lazy(() => import("./CKEditor5Classic.js"));
-const EasyMDEEditorLazy = React.lazy(() => import("./EasyMDEEditor.js"));
-const TinyMceEditorLazy = React.lazy(() => import("./TinyMceEditor.js"));
-
-export type { WysiwygAssetKind, WysiwygEditorKind } from "./wysiwyg-common.js";
 export type {
+  WysiwygAssetKind,
+  WysiwygEditorAdapter,
+  WysiwygEditorAdapterMap,
+  WysiwygEditorAdapterProps,
+  WysiwygEditorKind,
   WysiwygImageUploadRequest,
   WysiwygImageUploadResult,
   WysiwygPickRequest,
@@ -41,316 +24,128 @@ export type {
 
 export type WysiwygChangeContext = {
   editor: WysiwygEditorKind;
-  instance: any;
-  rawEvent?: any;
+  instance: unknown;
+  rawEvent?: unknown;
 };
 
-export type WysiwygTinymceOverrides = Omit<
-  TinyMceEditorProps,
-  | "data"
-  | "onChange"
-  | "onEditorInstance"
-  | "onPickFile"
-  | "onUploadImage"
-  | "canonicalizeUrl"
->;
-
-export type WysiwygCkeditorOverrides = Omit<
-  CKEditor5ClassicProps,
-  | "data"
-  | "onChange"
-  | "onEditorInstance"
-  | "onPickFile"
-  | "onUploadImage"
-  | "canonicalizeUrl"
-  | "readOnly"
-  | "height"
->;
-
-export type WysiwygEasyMdeOverrides = Omit<
-  EasyMDEEditorProps,
-  | "value"
-  | "onChange"
-  | "onEditorInstance"
-  | "onPickAsset"
-  | "onUploadImage"
-  | "canonicalizeUrl"
-  | "readOnly"
-  | "height"
->;
-
 export interface WysiwygEditorProps {
+  /** Editor kind selected from the explicitly supplied adapter map. */
   editor?: WysiwygEditorKind;
-
+  /** Stable adapter components imported by the host application. */
+  adapters?: WysiwygEditorAdapterMap;
   value?: string;
-
   readOnly?: boolean;
-
   height?: string | number;
-
+  darkMode?: boolean;
   onChange?: (value: string, ctx: WysiwygChangeContext) => void;
-
   onEditorInstance?: (
-    instance: any,
+    instance: unknown,
     ctx: { editor: WysiwygEditorKind },
   ) => void;
-
   onPickAsset?: (
     request: WysiwygPickRequest,
   ) => Promise<WysiwygPickResult | null>;
-
   onUploadImage?: (
     request: WysiwygImageUploadRequest,
   ) => Promise<WysiwygImageUploadResult>;
-
   canonicalizeUrl?: (url: string) => string;
-
-  tinymce?: WysiwygTinymceOverrides;
-
-  ckeditor?: WysiwygCkeditorOverrides;
-
-  easymde?: WysiwygEasyMdeOverrides;
-
-  /**
-   * Suspense fallback used while lazily loading editor implementations.
-   */
+  /** Opaque engine-specific props, read only by the selected adapter. */
+  editorProps?: Partial<Record<WysiwygEditorKind, Record<string, unknown>>>;
+  /** @deprecated Use `editorProps.tinymce`. */
+  tinymce?: Record<string, unknown>;
+  /** @deprecated Use `editorProps.ckeditor`. */
+  ckeditor?: Record<string, unknown>;
+  /** @deprecated Use `editorProps.easymde`. */
+  easymde?: Record<string, unknown>;
+  /** @deprecated Use `editorProps.mdx`. */
+  mdx?: Record<string, unknown>;
   suspenseFallback?: React.ReactNode;
 }
 
-const filetypeToAssetKind = (filetype: any): WysiwygAssetKind => {
-  if (filetype === "image") {
-    return "image";
+const legacyEditorProps = (
+  props: WysiwygEditorProps,
+  editor: WysiwygEditorKind,
+): Record<string, unknown> | undefined => {
+  switch (editor) {
+    case "tinymce":
+      return props.tinymce;
+    case "ckeditor":
+      return props.ckeditor;
+    case "easymde":
+      return props.easymde;
+    case "mdx":
+      return props.mdx;
   }
-
-  if (filetype === "media") {
-    return "media";
-  }
-
-  return "file";
-};
-
-const normalizePickResultForTinyMce = (
-  pick: WysiwygPickResult,
-): TinyMcePickResult => {
-  return {
-    url: pick.url,
-    title: pick.title,
-    text: pick.text,
-    alt: pick.alt,
-  };
-};
-
-const normalizePickResultForCkeditor = (
-  pick: WysiwygPickResult,
-): CKEditor5PickResult => {
-  return {
-    url: pick.url,
-    title: pick.title,
-    text: pick.text,
-    alt: pick.alt,
-    kind: pick.kind,
-    mimeType: pick.mimeType,
-  };
 };
 
 const WysiwygEditor: React.FC<WysiwygEditorProps> = (props) => {
   const {
     editor = "tinymce",
+    adapters,
     value,
     readOnly,
     height,
+    darkMode,
     onChange,
     onEditorInstance,
     onPickAsset,
     onUploadImage,
     canonicalizeUrl,
-    tinymce,
-    ckeditor,
-    easymde,
-    suspenseFallback,
+    editorProps,
+    suspenseFallback = null,
   } = props;
+  const instanceRef = useRef<unknown>(null);
+  const Adapter = adapters?.[editor];
 
-  const instanceRef = useRef<any>(null);
-
-  // Clear stale instance ref when editor type changes
   useEffect(() => {
     instanceRef.current = null;
   }, [editor]);
 
-  const normalizedHeight = useMemo(() => {
-    return normalizeCssSize(height);
-  }, [height]);
-
-  const handleInstance = (kind: WysiwygEditorKind) => {
-    return (instance: any) => {
-      instanceRef.current = instance;
-      if (onEditorInstance) {
-        onEditorInstance(instance, { editor: kind });
-      }
-    };
-  };
-
-  const handleChange = (kind: WysiwygEditorKind) => {
-    return (rawEvent: any, editorLike: { getData: () => string }) => {
-      if (!onChange) {
-        return;
-      }
-
-      const nextValue = editorLike?.getData?.() || "";
-      onChange(nextValue, {
-        editor: kind,
+  const handleChange = useCallback(
+    (nextValue: string, rawEvent?: unknown) => {
+      onChange?.(nextValue, {
+        editor,
         instance: instanceRef.current,
         rawEvent,
       });
-    };
+    },
+    [editor, onChange],
+  );
+
+  const handleInstance = useCallback(
+    (instance: unknown) => {
+      instanceRef.current = instance;
+      onEditorInstance?.(instance, { editor });
+    },
+    [editor, onEditorInstance],
+  );
+
+  if (!Adapter) {
+    return (
+      <div role="alert" data-editor-adapter-missing={editor}>
+        No WYSIWYG adapter is configured for {editor}.
+      </div>
+    );
+  }
+
+  const selectedEditorProps =
+    editorProps?.[editor] ?? legacyEditorProps(props, editor);
+  const adapterProps: WysiwygEditorAdapterProps = {
+    value,
+    readOnly,
+    height,
+    darkMode,
+    onChange: handleChange,
+    onEditorInstance: handleInstance,
+    onPickAsset,
+    onUploadImage,
+    canonicalizeUrl,
+    editorProps: selectedEditorProps,
   };
 
-  const tinymcePickFile = useMemo(() => {
-    if (!onPickAsset) {
-      return undefined;
-    }
-
-    return async (
-      request: TinyMcePickRequest,
-    ): Promise<TinyMcePickResult | null> => {
-      const kind = filetypeToAssetKind(request.meta?.filetype);
-
-      const pick = await onPickAsset({
-        value: request.value,
-        kind,
-      });
-
-      if (!pick) {
-        return null;
-      }
-
-      return normalizePickResultForTinyMce(pick);
-    };
-  }, [onPickAsset]);
-
-  const tinymceUploadImage = useMemo(() => {
-    if (!onUploadImage) {
-      return undefined;
-    }
-
-    return async (
-      request: TinyMceImageUploadRequest,
-    ): Promise<WysiwygImageUploadResult> => {
-      return await onUploadImage({
-        blob: request.blob,
-        filename: request.filename,
-        mimeType: request.mimeType,
-        sizeBytes: request.sizeBytes,
-        progress: request.progress,
-      });
-    };
-  }, [onUploadImage]);
-
-  const ckeditorPickFile = useMemo(() => {
-    if (!onPickAsset) {
-      return undefined;
-    }
-
-    return async (
-      request: CKEditor5PickRequest,
-    ): Promise<CKEditor5PickResult | null> => {
-      const kind = filetypeToAssetKind(request.meta?.filetype);
-
-      const pick = await onPickAsset({
-        value: request.value,
-        kind,
-      });
-
-      if (!pick) {
-        return null;
-      }
-
-      return normalizePickResultForCkeditor(pick);
-    };
-  }, [onPickAsset]);
-
-  const ckeditorUploadImage = useMemo(() => {
-    if (!onUploadImage) {
-      return undefined;
-    }
-
-    return async (
-      request: CKEditor5ImageUploadRequest,
-    ): Promise<WysiwygImageUploadResult> => {
-      return await onUploadImage({
-        file: request.file,
-        filename: request.filename,
-        mimeType: request.mimeType,
-        sizeBytes: request.sizeBytes,
-        progress: request.progress,
-      });
-    };
-  }, [onUploadImage]);
-
-  if (editor === "tinymce") {
-    const init = {
-      ...(tinymce?.init || {}),
-      ...(normalizedHeight ? { height: normalizedHeight } : {}),
-      ...(typeof readOnly === "boolean" ? { readonly: readOnly } : {}),
-    };
-
-    return (
-      <Suspense fallback={suspenseFallback || null}>
-        <TinyMceEditorLazy
-          {...(tinymce as any)}
-          init={init}
-          disabled={!!readOnly}
-          data={value}
-          canonicalizeUrl={canonicalizeUrl}
-          onChange={handleChange("tinymce")}
-          onEditorInstance={handleInstance("tinymce")}
-          onPickFile={tinymcePickFile}
-          onUploadImage={tinymceUploadImage as any}
-        />
-      </Suspense>
-    );
-  }
-
-  if (editor === "ckeditor") {
-    return (
-      <Suspense fallback={suspenseFallback || null}>
-        <CKEditor5ClassicLazy
-          {...(ckeditor as any)}
-          data={value}
-          height={normalizedHeight}
-          readOnly={readOnly}
-          canonicalizeUrl={canonicalizeUrl}
-          onChange={handleChange("ckeditor")}
-          onEditorInstance={handleInstance("ckeditor")}
-          onPickFile={ckeditorPickFile}
-          onUploadImage={ckeditorUploadImage}
-        />
-      </Suspense>
-    );
-  }
-
   return (
-    <Suspense fallback={suspenseFallback || null}>
-      <EasyMDEEditorLazy
-        {...(easymde as any)}
-        value={value}
-        height={normalizedHeight}
-        readOnly={readOnly}
-        canonicalizeUrl={canonicalizeUrl}
-        onChange={(next) => {
-          if (!onChange) {
-            return;
-          }
-
-          onChange(next, {
-            editor: "easymde",
-            instance: instanceRef.current,
-          });
-        }}
-        onEditorInstance={handleInstance("easymde")}
-        onPickAsset={onPickAsset}
-        onUploadImage={onUploadImage}
-      />
+    <Suspense fallback={suspenseFallback}>
+      <Adapter key={editor} {...adapterProps} />
     </Suspense>
   );
 };

@@ -6,30 +6,13 @@
  * should re-export or reference these.
  */
 import { z } from "zod";
-// ─── Enums ────────────────────────────────────────────────────────────────
-export const CMS_POST_TYPES = [
-    "post",
-    "page",
-    "general",
-    "faq",
-    "blog",
-    "embed",
-    "data",
-    "docs",
-    "kb",
-    "other",
-];
+import { CMS_POST_TYPES, CMS_STATUS, CMS_CONTENT_TYPES } from "./constants.js";
+export { CMS_POST_TYPES, CMS_STATUS, CMS_CONTENT_TYPES } from "./constants.js";
+// --- Enums -------------------------------------------------------------------
 export const CmsPostTypeSchema = z.enum(CMS_POST_TYPES);
-export const CMS_STATUS = ["draft", "published", "trash"];
 export const CmsStatusSchema = z.enum(CMS_STATUS);
-export const CMS_CONTENT_TYPES = [
-    "text/html",
-    "text/markdown",
-    "application/json",
-    "text/plain",
-];
 export const CmsContentTypeSchema = z.enum(CMS_CONTENT_TYPES);
-// ─── Metadata schemas ─────────────────────────────────────────────────────
+// --- Metadata schemas --------------------------------------------------------
 /** Version annotation attached to a specific save/revision. */
 export const CmsVersionMetaSchema = z.object({
     version: z.string().max(256).nullable().optional(),
@@ -48,7 +31,7 @@ export const CmsMetadataSchema = z.object({
     version: CmsVersionMetaSchema.nullable().optional(),
     notes: z.array(CmsContentNoteSchema).optional(),
 });
-// ─── Row schemas ──────────────────────────────────────────────────────────
+// --- Row schemas -------------------------------------------------------------
 export const CmsHeadRowSchema = z
     .object({
     uid: z.string().min(1),
@@ -91,7 +74,7 @@ export const CmsHistoryRowSchema = z
     created_at: z.string().optional(),
 })
     .passthrough();
-// ─── DTO schemas ──────────────────────────────────────────────────────────
+// --- DTO schemas -------------------------------------------------------------
 export const CmsCreateRequestSchema = z
     .object({
     uid: z.string().min(1).optional(),

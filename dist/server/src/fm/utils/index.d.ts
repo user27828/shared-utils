@@ -8,4 +8,3 @@ export { resolveClientUrl, buildCanonicalMediaUrl, } from "./url.js";
 export type { FmRequestLike } from "./url.js";
 export { sniffMimeFromHeader } from "./mimeSniff.js";
 export { extractImageDimensionsFromHeader } from "./imageDimensions.js";
-//# sourceMappingURL=index.d.ts.map

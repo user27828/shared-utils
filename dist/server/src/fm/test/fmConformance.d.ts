@@ -58,4 +58,3 @@ export interface FmConformanceConfig {
  *  - Link CRUD (create, count, delete, delete-by-field, list)
  */
 export declare function runFmConnectorConformanceTests(config: FmConformanceConfig): void;
-//# sourceMappingURL=fmConformance.d.ts.map

@@ -1,80 +1,93 @@
-# WYSIWYG Setup Guide (Unified `WysiwygEditor`)
+# WYSIWYG Setup Guide
 
-This guide documents the consolidated methodology for using WYSIWYG editors from `@user27828/shared-utils/client/wysiwyg`.
+Editor integrations are split into engine-specific entrypoints. The shared
+switcher at `@user27828/shared-utils/client/wysiwyg` contains only the adapter
+contract and does not import an editor package. Import the engine adapter you
+install and pass it in a stable adapter map.
 
-The recommended integration is the **unified default export**:
+| Entry point               | Contents                                                              |
+| ------------------------- | --------------------------------------------------------------------- |
+| `client/wysiwyg`          | Engine-neutral switcher, adapter contract, shared callbacks and types |
+| `client/wysiwyg/tinymce`  | TinyMCE adapter with the minimal plugin preset                        |
+| `client/wysiwyg/ckeditor` | CKEditor 5 adapter                                                    |
+| `client/wysiwyg/easymde`  | EasyMDE adapter                                                       |
+| `client/wysiwyg/mdx`      | MDXEditor adapter                                                     |
+| `client/wysiwyg/all`      | Convenience adapter map for all engines and TinyMCE's full preset     |
 
-- `WysiwygEditor` (default export): one component with a consistent API
-- Supports `editor="tinymce" | "ckeditor" | "easymde"` (default: `tinymce`)
-- Keeps the **native content format** per editor:
-  - TinyMCE: HTML
-  - CKEditor 5 Classic: HTML
-  - EasyMDE: Markdown
+The `all` path deliberately includes every engine and should be used only when
+the application installs all of those optional packages. It supports the
+previous unified switcher usage without an `adapters` prop.
 
-Named editor components (`TinyMceEditor`, `CKEditor5Classic`, `EasyMDEEditor`, `MDXEditor`) are still exported for backwards compatibility.
+## Install an engine
 
-## Install (peer dependencies)
-
-Only install the editor(s) you actually use.
+Install only the engine used by the application:
 
 ```bash
 # TinyMCE
 yarn add @tinymce/tinymce-react tinymce
 
 # CKEditor 5
-yarn add ckeditor5 @ckeditor/ckeditor5-react
+yarn add @ckeditor/ckeditor5-react ckeditor5
 
 # EasyMDE
 yarn add easymde
 
-# MDXEditor (separate editor, not part of the unified factory)
-yarn add @mdxeditor/editor
+# MDXEditor
+yarn add @mdxeditor/editor @codemirror/language @lezer/highlight yjs
 ```
 
-`shared-utils` initializes Prism internally for TinyMCE and MDXEditor. You do not need to install `prismjs` separately or wire `window.Prism` yourself.
+The package's editor peers are optional. A consumer that imports one engine
+entrypoint does not need to install the other engine packages.
 
-## Basic usage (unified)
+## Use the shared switcher with one engine
+
+Create adapter maps outside the rendering component so their component
+references remain stable:
 
 ```tsx
 import React, { useState } from "react";
 import WysiwygEditor from "@user27828/shared-utils/client/wysiwyg";
+import { TinyMceWysiwygAdapter } from "@user27828/shared-utils/client/wysiwyg/tinymce";
 
-export function Example() {
+const editorAdapters = { tinymce: TinyMceWysiwygAdapter };
+
+export function ArticleEditor() {
   const [value, setValue] = useState("<p>Hello</p>");
 
   return (
     <WysiwygEditor
+      adapters={editorAdapters}
       editor="tinymce"
       value={value}
       height={420}
-      onChange={(nextValue) => {
-        setValue(nextValue);
-      }}
+      onChange={(nextValue) => setValue(nextValue)}
     />
   );
 }
 ```
 
-### Shared props (normalized)
+The switcher supports `tinymce`, `ckeditor`, `easymde`, and `mdx`. If the
+selected engine is absent from the supplied map, it renders a configuration
+alert instead of importing another editor behind the host's back.
 
-- `editor`: which editor implementation to use (`"tinymce" | "ckeditor" | "easymde"`)
-- `value`: the editor content (HTML for TinyMCE/CKEditor, Markdown for EasyMDE)
-- `onChange(value, ctx)`: change handler
-  - `ctx.editor` tells you which editor emitted the change
-  - `ctx.instance` contains the last editor instance received by `onEditorInstance`
-- `readOnly`: read-only mode
-- `height`: string/number height (normalized)
-- `onEditorInstance(instance, ctx)`: get the underlying editor instance
-- `canonicalizeUrl(url)`: applied to inserted URLs returned by pick/upload hooks
-- `onPickAsset(request)`: unified “pick image/file/media” hook
-- `onUploadImage(request)`: unified image upload hook
-- `suspenseFallback`: optional React Suspense fallback while lazy-loading editor modules
+For an application that intentionally uses every engine, import the
+convenience entry:
 
-## Asset insertion (files/images/media)
+```tsx
+import WysiwygEditor from "@user27828/shared-utils/client/wysiwyg/all";
 
-### `onPickAsset`
+<WysiwygEditor editor="ckeditor" value={html} onChange={setHtml} />;
+```
 
-`onPickAsset` is the unified picker hook used by TinyMCE/CKEditor/EasyMDE.
+## Shared callbacks
+
+The shared switcher accepts `value`, `readOnly`, `height`, `darkMode`,
+`onChange`, `onEditorInstance`, `onPickAsset`, and `onUploadImage`. Content
+keeps the selected engine's native format: HTML for TinyMCE/CKEditor and
+Markdown for EasyMDE/MDXEditor.
+
+`onChange(value, context)` reports the engine, latest instance, and raw event.
+TinyMCE, CKEditor, and EasyMDE support the common asset-picker callback:
 
 ```tsx
 import type {
@@ -85,157 +98,131 @@ import type {
 const onPickAsset = async (
   request: WysiwygPickRequest,
 ): Promise<WysiwygPickResult | null> => {
-  // request.kind: "image" | "file" | "media"
-  // request.value: current content (HTML/Markdown depending on editor)
-
-  // Open your picker UI and resolve.
   return {
     kind: request.kind,
-    url: "https://example.com/asset.png",
+    url: "https://example.com/image.png",
     alt: request.kind === "image" ? "Example" : undefined,
-    title: request.kind === "file" ? "Example file" : undefined,
-    text: request.kind === "file" ? "Example file" : undefined,
   };
 };
 ```
 
-Notes:
-
-- For EasyMDE:
-  - `image` inserts Markdown image syntax
-  - `file` inserts Markdown link syntax
-  - `media` inserts a **plain link** (per project requirement)
-
-### `onUploadImage`
-
-`onUploadImage` is used by all supported editors, but the source payload differs:
-
-- TinyMCE typically provides a `blob`
-- CKEditor typically provides a `File`
-- EasyMDE provides a `File`
-
-The unified request supports both:
+The image-upload callback accepts either a `File` or `Blob` because TinyMCE
+and CKEditor expose different source types:
 
 ```tsx
 import type { WysiwygImageUploadRequest } from "@user27828/shared-utils/client/wysiwyg";
 
 const onUploadImage = async (request: WysiwygImageUploadRequest) => {
-  const fileOrBlob = request.file ?? request.blob;
-  if (!fileOrBlob) {
-    throw new Error("No file/blob provided");
+  const source = request.file ?? request.blob;
+  if (!source) {
+    throw new Error("No image data was provided");
   }
-
-  // Upload file/blob to your backend here.
-  // Optionally call request.progress?.(0..100)
-
+  // Upload source and report progress with request.progress?.(percent).
   return { url: "https://example.com/uploaded.png" };
 };
 ```
 
-## Editor-specific configuration
+MDXEditor supports the image-upload callback. Its current wrapper does not
+provide the shared asset-picker callback.
 
-The unified component exposes per-editor configuration via these props:
+## Configure a specific editor
 
-- `tinymce={{ ... }}`
-- `ckeditor={{ ... }}`
-- `easymde={{ ... }}`
-
-These are **overrides** for each underlying editor component (with the unified props removed so you don’t accidentally double-bind).
-
-### TinyMCE (via unified)
+Use `editorProps` for engine-specific component props. The selected adapter
+alone reads its entry:
 
 ```tsx
 <WysiwygEditor
+  adapters={editorAdapters}
   editor="tinymce"
   value={html}
-  onChange={(nextHtml) => {
-    setHtml(nextHtml);
-  }}
-  tinymce={{
-    init: {
-      menubar: false,
-      toolbar: "undo redo | bold italic | link image",
-    },
-  }}
-/>
-```
-
-If you’re using Vite and TinyMCE skins are broken, see [TINYMCE_SETUP.md](./TINYMCE_SETUP.md).
-
-### CKEditor 5 Classic (via unified)
-
-```tsx
-<WysiwygEditor
-  editor="ckeditor"
-  value={html}
-  onChange={(nextHtml) => {
-    setHtml(nextHtml);
-  }}
-  ckeditor={{
-    config: {
-      toolbar: {
-        items: ["undo", "redo", "|", "bold", "italic", "link"],
+  editorProps={{
+    tinymce: {
+      init: {
+        menubar: false,
+        toolbar: "undo redo | bold italic | link image",
       },
     },
   }}
 />
 ```
 
-For CKEditor extensibility notes (plugins/toolbars/config merging), see [CKEDITOR_SETUP.md](./CKEDITOR_SETUP.md).
+The older `tinymce`, `ckeditor`, `easymde`, and `mdx` top-level override props
+remain temporarily accepted by the generic switcher. New code should use
+`editorProps`.
 
-### EasyMDE (via unified)
-
-```tsx
-<WysiwygEditor
-  editor="easymde"
-  value={markdown}
-  onChange={(nextMarkdown) => {
-    setMarkdown(nextMarkdown);
-  }}
-  easymde={{
-    options: {
-      status: false,
-      spellChecker: false,
-    },
-  }}
-/>
-```
-
-## Backwards compatibility (named exports)
-
-You can continue to use the original component exports:
+For direct engine components and engine-specific props, import only that
+engine's path:
 
 ```tsx
-import {
-  TinyMceEditor,
-  CKEditor5Classic,
-  EasyMDEEditor,
-  MDXEditor,
-} from "@user27828/shared-utils/client/wysiwyg";
+import { TinyMceEditor } from "@user27828/shared-utils/client/wysiwyg/tinymce";
+import { CKEditor5Classic } from "@user27828/shared-utils/client/wysiwyg/ckeditor";
+import { EasyMDEEditor } from "@user27828/shared-utils/client/wysiwyg/easymde";
+import { MDXEditor } from "@user27828/shared-utils/client/wysiwyg/mdx";
 ```
 
-When to prefer the unified editor:
+Direct components retain their native APIs. TinyMCE skins and editor CSS,
+CKEditor feature CSS, EasyMDE CSS, and MDXEditor CSS load with the selected
+engine chunk. Runtime import failures are shown with an alert and editable
+textarea fallback; build-time missing-peer errors remain visible to the
+consumer build.
 
-- You want one consistent interface for HTML and Markdown editors.
-- You want one consistent asset picker (`onPickAsset`) and upload hook (`onUploadImage`).
-- You want to switch editors without rewriting parent components.
+## TinyMCE plugin presets
 
-When to prefer direct editors:
+The `tinymce` entry imports only the components, skins, resources, and plugins
+used by `TinyMceEditor`'s default configuration. It supports the existing
+default toolbar and both light and dark skins.
 
-- You rely on editor-specific callback shapes/events.
-- You want to pass through every upstream prop without using the override objects.
-
-## SSR / lazy loading notes
-
-The WYSIWYG entrypoint lazily loads editor implementations so you don’t have to install all peer dependencies. In SSR environments (e.g. Next.js), you may still want to render it client-side only.
-
-Example (Next.js dynamic import):
+Optional groups can be imported as side-effect modules before the editor is
+rendered:
 
 ```tsx
-import dynamic from "next/dynamic";
-
-const WysiwygEditor = dynamic(
-  () => import("@user27828/shared-utils/client/wysiwyg"),
-  { ssr: false },
-);
+import "@user27828/shared-utils/client/wysiwyg/tinymce/features/code";
+import "@user27828/shared-utils/client/wysiwyg/tinymce/features/media";
+import "@user27828/shared-utils/client/wysiwyg/tinymce/features/extended";
 ```
+
+`code` registers the code, code-sample, and visual-debug plugins and initializes
+Prism. `media` registers media, date/time insertion, and quickbars. `extended`
+registers the extra formatting, navigation, and page tools, including the
+Emoticons emoji database and Help keyboard-navigation resource.
+
+Import `client/wysiwyg/tinymce/features/full` to register every plugin group,
+or use the `client/wysiwyg/tinymce/full` entry to get the TinyMCE component and
+adapter with that full preset. The `client/wysiwyg/all` convenience entry also
+registers the full TinyMCE preset. The grouped paths do not silently add
+plugins to TinyMCE's toolbar; configure the corresponding `init.plugins` and
+`init.toolbar` options.
+
+For Vite static skin copying and URL configuration, see
+[TINYMCE_SETUP.md](./TINYMCE_SETUP.md).
+
+## Configure CMS body editors
+
+`CmsBodyEditor` has no built-in editor import. Supply only the adapters used by
+the host in `CmsAdminUiConfig.editorAdapters`:
+
+```tsx
+import { CmsEditPage } from "@user27828/shared-utils/cms/client/ui";
+import { CKEditorWysiwygAdapter } from "@user27828/shared-utils/client/wysiwyg/ckeditor";
+
+const cmsConfig = {
+  editorPreference: "ckeditor",
+  editorAdapters: { ckeditor: CKEditorWysiwygAdapter },
+} satisfies CmsAdminUiConfig;
+
+<CmsEditPage uid={uid} config={cmsConfig} />;
+```
+
+Markdown content uses the `mdx` key. For CMS's existing TinyMCE toolbar and
+plugins, import `TinyMceWysiwygAdapter` from
+`client/wysiwyg/tinymce/full`; the base TinyMCE entry intentionally omits those
+optional plugins. `editorProps` in the CMS config passes engine-specific props
+to the selected adapter. If an adapter is not supplied or its optional package
+fails to load at runtime, CMS remains editable through its textarea fallback.
+
+CMS media picker and image upload callbacks are adapted to TinyMCE and CKEditor
+requests. Pasted data-URI images are still normalized after a debounce, and
+local `file://` image paths pasted from word processors are still removed.
+
+For CKEditor feature configuration, see
+[CKEDITOR_SETUP.md](./CKEDITOR_SETUP.md).

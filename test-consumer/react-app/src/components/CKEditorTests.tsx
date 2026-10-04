@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import WysiwygEditor, {
-  type WysiwygPickRequest,
-  type WysiwygPickResult,
-  type WysiwygAssetKind,
-  type WysiwygImageUploadRequest,
+import WysiwygEditor from "@user27828/shared-utils/client/wysiwyg/all";
+import type {
+  WysiwygPickRequest,
+  WysiwygPickResult,
+  WysiwygAssetKind,
+  WysiwygImageUploadRequest,
 } from "@user27828/shared-utils/client/wysiwyg";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";

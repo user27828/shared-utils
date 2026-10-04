@@ -28,4 +28,3 @@ export interface EmailTemplateRegistry {
     getDetail(uid: string): EmailTemplateDetail;
 }
 export declare const createEmailTemplateRegistry: (descriptors: EmailTemplateDescriptor[]) => EmailTemplateRegistry;
-//# sourceMappingURL=registry.d.ts.map

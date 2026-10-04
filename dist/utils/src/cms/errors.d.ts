@@ -49,4 +49,3 @@ export declare const cmsErrorToResponse: (err: CmsError) => {
     code: string;
     details?: Record<string, string>;
 };
-//# sourceMappingURL=errors.d.ts.map

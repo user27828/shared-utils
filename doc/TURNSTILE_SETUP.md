@@ -22,7 +22,7 @@ The shared-utils package mirrors that split directly:
 Use the browser helper for explicit-render flows such as SPAs and dynamic forms.
 
 ```javascript
-import { turnstile } from "@user27828/shared-utils/utils";
+import { turnstile } from "@user27828/shared-utils/utils/turnstile";
 
 turnstile.setOptions({
   siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
@@ -85,7 +85,7 @@ The verifier adds two library-level failure codes when you opt into extra checks
 If you want a reusable route guard, configure `turnstile-server` once and use the middleware.
 
 ```javascript
-import { optionsManager } from "@user27828/shared-utils/utils";
+import { optionsManager } from "@user27828/shared-utils/utils/options";
 import { createTurnstileMiddleware } from "@user27828/shared-utils/server";
 
 optionsManager.setGlobalOptions({

@@ -26,4 +26,3 @@ export declare const extractImageDimensionsFromHeader: (input: {
     width: number;
     height: number;
 } | null;
-//# sourceMappingURL=imageDimensions.d.ts.map

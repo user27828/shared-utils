@@ -54,4 +54,3 @@ export interface FmAuthzResult {
  * @returns FmAuthzResult with middleware + getActorContext
  */
 export declare function createFmAuthz(config: FmAuthzConfig): FmAuthzResult;
-//# sourceMappingURL=authz.d.ts.map

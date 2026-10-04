@@ -3,12 +3,9 @@
  * @jest-environment node
  */
 
-import {
-  log,
-  turnstile,
-  OptionsManager,
-  optionsManager,
-} from "@shared-utils/utils";
+import { OptionsManager, optionsManager } from "../src/options-manager.js";
+import log from "../src/log.js";
+import turnstile from "../src/turnstile.js";
 import { TEST_VALUES } from "../../__tests__/test-configuration.js";
 
 describe("Hybrid OptionsManager Integration", () => {
@@ -125,16 +122,24 @@ describe("Hybrid OptionsManager Integration", () => {
   });
 
   test("should maintain singleton behavior", async () => {
-    // Multiple imports should get the same instances
-    const utils1 = await import("@shared-utils/utils");
-    const utils2 = await import("@shared-utils/utils");
+    // Explicit subpaths should resolve to the same canonical instances.
+    const [log1, turnstile1, options1] = await Promise.all([
+      import("@shared-utils/utils/log"),
+      import("@shared-utils/utils/turnstile"),
+      import("@shared-utils/utils/options"),
+    ]);
+    const [log2, turnstile2, options2] = await Promise.all([
+      import("@shared-utils/utils/log"),
+      import("@shared-utils/utils/turnstile"),
+      import("@shared-utils/utils/options"),
+    ]);
 
-    expect(utils1.log).toBe(utils2.log);
-    expect(utils1.turnstile).toBe(utils2.turnstile);
-    expect(utils1.optionsManager).toBe(utils2.optionsManager);
+    expect(log1.log).toBe(log2.log);
+    expect(turnstile1.turnstile).toBe(turnstile2.turnstile);
+    expect(options1.optionsManager).toBe(options2.optionsManager);
 
     console.log("✅ Hybrid OptionsManager successfully implemented");
-    console.log("🔄 All existing APIs preserved");
+    console.log("🔄 Explicit utility entrypoints share canonical instances");
     console.log("🌐 Cross-utility configuration enabled");
     console.log("🎯 Implementation complete");
   });

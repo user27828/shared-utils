@@ -14,7 +14,20 @@ import {
 } from "@jest/globals";
 
 const loadUtilsModule = async () => {
-  return import("../dist/utils/index.js");
+  const options = await import("../dist/utils/src/options-manager.js");
+  const [root, log, turnstile, files, dates, json, contact, meetingProviders] =
+    await Promise.all([
+      import("../dist/utils/index.js"),
+      import("../dist/utils/src/log.js"),
+      import("../dist/utils/src/turnstile.js"),
+      import("../dist/utils/src/files.js"),
+      import("../dist/utils/src/dates.js"),
+      import("../dist/utils/src/json.js"),
+      import("../dist/utils/src/contact.js"),
+      import("../dist/utils/src/meetingProviders.js"),
+    ]);
+
+  return { ...root, ...options, ...log, ...turnstile, ...files, ...dates, ...json, ...contact, ...meetingProviders };
 };
 
 describe("Shared Utils Integration Tests", () => {

@@ -18,4 +18,3 @@ export declare class TestEmailProvider implements IEmailProvider {
 }
 export declare const isConfigured: () => boolean;
 export declare const createTestProvider: (config: TestProviderConfig) => IEmailProvider;
-//# sourceMappingURL=_test_.d.ts.map

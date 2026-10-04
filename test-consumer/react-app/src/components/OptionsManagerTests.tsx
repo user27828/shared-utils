@@ -19,7 +19,7 @@ let optionsManager: any = null;
 // Dynamically import to handle potential import issues
 const loadOptionsManager = async () => {
   try {
-    const module = (await import("@user27828/shared-utils/utils")) as any;
+    const module = (await import("@user27828/shared-utils/utils/options")) as any;
     console.log("Imported options-manager module:", module);
     return {
       OptionsManager: module.OptionsManager,

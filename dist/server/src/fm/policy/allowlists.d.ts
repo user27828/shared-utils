@@ -65,4 +65,3 @@ export declare const validateFmUploadInputs: (input: {
     mimeType: string;
     sizeBytes: number;
 }, policies?: Record<string, FmPurposePolicy>) => FmUploadValidationResult;
-//# sourceMappingURL=allowlists.d.ts.map

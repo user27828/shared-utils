@@ -7,4 +7,3 @@ import type { TurnstileVerificationOptions, TurnstileVerifyResponse } from "./ty
  * Verify Turnstile token with Cloudflare API
  */
 export declare const verifyTurnstileToken: (token: string, options: TurnstileVerificationOptions) => Promise<TurnstileVerifyResponse>;
-//# sourceMappingURL=verification.d.ts.map

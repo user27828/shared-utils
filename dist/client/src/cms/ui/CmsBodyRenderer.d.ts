@@ -22,4 +22,3 @@ export declare const renderCmsBody: (payload: CmsPublicPayload) => React.ReactNo
  */
 declare const CmsBodyRenderer: React.FC<CmsBodyRendererProps>;
 export default CmsBodyRenderer;
-//# sourceMappingURL=CmsBodyRenderer.d.ts.map

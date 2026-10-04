@@ -61,4 +61,3 @@ export interface CmsHistoryDrawerProps {
 }
 declare const CmsHistoryDrawer: React.FC<CmsHistoryDrawerProps>;
 export default CmsHistoryDrawer;
-//# sourceMappingURL=CmsHistoryDrawer.d.ts.map

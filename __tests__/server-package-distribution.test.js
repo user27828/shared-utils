@@ -63,7 +63,10 @@ describe("Server Package Distribution", () => {
       const packageJsonPath = path.join(projectRoot, "package.json");
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
 
-      expect(packageJson.files).toContain("dist/**/*");
+      expect(packageJson.files).toContain("dist/{utils,client,server}/**/*.js");
+      expect(packageJson.files).toContain(
+        "dist/{utils,client,server}/**/*.d.ts",
+      );
     });
 
     it("should have proper ./server export configuration", () => {
@@ -436,7 +439,10 @@ describe("Server Package Distribution", () => {
 
       // Check if this version includes the server fixes
       expect(packageJson.exports["./server"]).toBeDefined();
-      expect(packageJson.files).toContain("dist/**/*");
+      expect(packageJson.files).toContain("dist/{utils,client,server}/**/*.js");
+      expect(packageJson.files).toContain(
+        "dist/{utils,client,server}/**/*.d.ts",
+      );
     });
 
     it("should create a test tarball and verify server files are included", async () => {

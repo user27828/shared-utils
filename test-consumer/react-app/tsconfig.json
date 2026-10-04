@@ -26,14 +26,121 @@
     /* Path mapping */
     "paths": {
       "@/*": ["./src/*"],
+      "@user27828/shared-utils/cms/constants": [
+        "../../dist/utils/src/cms/constants.d.ts"
+      ],
+      "@user27828/shared-utils/cms/types": [
+        "../../dist/utils/src/cms/contracts.d.ts"
+      ],
+      "@user27828/shared-utils/cms/schemas": [
+        "../../dist/utils/src/cms/types.d.ts"
+      ],
+      "@user27828/shared-utils/cms/validation": [
+        "../../dist/utils/src/cms/validation.d.ts"
+      ],
+      "@user27828/shared-utils/cms/errors": [
+        "../../dist/utils/src/cms/errors.d.ts"
+      ],
+      "@user27828/shared-utils/fm/constants": [
+        "../../dist/utils/src/fm/constants.d.ts"
+      ],
+      "@user27828/shared-utils/fm/types": [
+        "../../dist/utils/src/fm/contracts.d.ts"
+      ],
+      "@user27828/shared-utils/fm/schemas": [
+        "../../dist/utils/src/fm/types.d.ts"
+      ],
+      "@user27828/shared-utils/fm/validation": [
+        "../../dist/utils/src/fm/validation.d.ts"
+      ],
+      "@user27828/shared-utils/fm/errors": [
+        "../../dist/utils/src/fm/errors.d.ts"
+      ],
       "@user27828/shared-utils/client/init": [
         "../../dist/client/src/init.d.ts"
+      ],
+      "@user27828/shared-utils/client/countries/core": [
+        "../../dist/client/src/helpers/countries-core.d.ts"
+      ],
+      "@user27828/shared-utils/client/languages/core": [
+        "../../dist/client/src/helpers/languages-core.d.ts"
+      ],
+      "@user27828/shared-utils/client/components/form/CountrySelect/custom-data": [
+        "../../dist/client/src/components/form/CountrySelectCore.d.ts"
+      ],
+      "@user27828/shared-utils/client/components/form/LanguageSelect/custom-data": [
+        "../../dist/client/src/components/form/LanguageSelectCore.d.ts"
+      ],
+      "@user27828/shared-utils/client/wysiwyg": [
+        "../../dist/client/wysiwyg.d.ts"
+      ],
+      "@user27828/shared-utils/client/wysiwyg/all": [
+        "../../dist/client/wysiwyg/all.d.ts"
+      ],
+      "@user27828/shared-utils/client/wysiwyg/tinymce": [
+        "../../dist/client/wysiwyg/tinymce.d.ts"
+      ],
+      "@user27828/shared-utils/client/wysiwyg/tinymce/full": [
+        "../../dist/client/wysiwyg/tinymce/full.d.ts"
+      ],
+      "@user27828/shared-utils/client/wysiwyg/tinymce/features/code": [
+        "../../dist/client/wysiwyg/tinymce/features/code.d.ts"
+      ],
+      "@user27828/shared-utils/client/wysiwyg/tinymce/features/media": [
+        "../../dist/client/wysiwyg/tinymce/features/media.d.ts"
+      ],
+      "@user27828/shared-utils/client/wysiwyg/tinymce/features/extended": [
+        "../../dist/client/wysiwyg/tinymce/features/extended.d.ts"
+      ],
+      "@user27828/shared-utils/client/wysiwyg/tinymce/features/full": [
+        "../../dist/client/wysiwyg/tinymce/features/full.d.ts"
+      ],
+      "@user27828/shared-utils/client/wysiwyg/ckeditor": [
+        "../../dist/client/wysiwyg/ckeditor.d.ts"
+      ],
+      "@user27828/shared-utils/client/wysiwyg/easymde": [
+        "../../dist/client/wysiwyg/easymde.d.ts"
+      ],
+      "@user27828/shared-utils/client/wysiwyg/mdx": [
+        "../../dist/client/wysiwyg/mdx.d.ts"
       ],
       "@user27828/shared-utils/cms/client": [
         "../../dist/client/src/cms/index.d.ts"
       ],
       "@user27828/shared-utils/fm/client": [
         "../../dist/client/src/fm/index.d.ts"
+      ],
+      "@user27828/shared-utils/utils/environment": [
+        "../../dist/utils/src/environment.d.ts"
+      ],
+      "@user27828/shared-utils/utils/validation": [
+        "../../dist/utils/src/validation.d.ts"
+      ],
+      "@user27828/shared-utils/utils/files": [
+        "../../dist/utils/src/files.d.ts"
+      ],
+      "@user27828/shared-utils/utils/dates": [
+        "../../dist/utils/src/dates.d.ts"
+      ],
+      "@user27828/shared-utils/utils/json": ["../../dist/utils/src/json.d.ts"],
+      "@user27828/shared-utils/utils/options": [
+        "../../dist/utils/src/options-manager.d.ts"
+      ],
+      "@user27828/shared-utils/utils/log": ["../../dist/utils/src/log.d.ts"],
+      "@user27828/shared-utils/utils/turnstile": [
+        "../../dist/utils/src/turnstile.d.ts"
+      ],
+      "@user27828/shared-utils/utils/contact": [
+        "../../dist/utils/src/contact.d.ts"
+      ],
+      "@user27828/shared-utils/utils/calendar": [
+        "../../dist/utils/src/calendar.d.ts"
+      ],
+      "@user27828/shared-utils/utils/meeting-providers": [
+        "../../dist/utils/src/meetingProviders.d.ts"
+      ],
+      "@user27828/shared-utils/utils/detect-format": [
+        "../../dist/utils/src/detectFormat/index.d.ts"
       ]
     }
   },

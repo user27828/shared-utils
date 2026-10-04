@@ -88,7 +88,9 @@ class Log {
         this.warn = this.warn.bind(this);
         this.error = this.error.bind(this);
         this.debug = this.debug.bind(this);
-        if (this.options.type === "client" && this.options.client.attachWindow) {
+        if (this.options.type === "client" &&
+            this.options.client.attachWindow &&
+            typeof globalThis.log === "undefined") {
             // Attach to window.log for easy access in client-side code
             globalThis.log = this;
         }
@@ -132,8 +134,7 @@ class Log {
     /**
      * Check localStorage override for client-side logging
      */
-    getLocalStorageOverride() {
-        const options = this.options;
+    getLocalStorageOverride(options) {
         if (options.type !== "client" || typeof localStorage === "undefined") {
             return null;
         }
@@ -187,8 +188,7 @@ class Log {
     /**
      * Check if a log level should be output
      */
-    shouldLog(level) {
-        const options = this.options;
+    shouldLog(level, options) {
         const config = options[options.type];
         // Always log in development
         if (!this.isProduction) {
@@ -196,7 +196,7 @@ class Log {
         }
         // Check localStorage override for client
         if (options.type === "client") {
-            const override = this.getLocalStorageOverride();
+            const override = this.getLocalStorageOverride(options);
             if (override === true) {
                 return true;
             }
@@ -210,8 +210,7 @@ class Log {
     /**
      * Format log message with namespace and timestamp
      */
-    formatMessage(level, args) {
-        const options = this.options;
+    formatMessage(level, args, options) {
         const config = options[options.type];
         const timestamp = new Date().toISOString();
         const namespace = config.namespace;
@@ -253,11 +252,11 @@ class Log {
             }
         }
         // Check if we should actually log
-        if (!this.shouldLog(level)) {
+        if (!this.shouldLog(level, options)) {
             return;
         }
         // Format message and log
-        const formattedArgs = this.formatMessage(level, args);
+        const formattedArgs = this.formatMessage(level, args, options);
         // In test environment, use current console methods to allow mocking
         // Otherwise use original methods to preserve call stack
         const isTestEnvironment = this.isTestEnvironment();
@@ -387,7 +386,8 @@ class Log {
      * @param {Function} interceptor - Function that receives (level, args) parameters
      */
     addInterceptor(interceptor) {
-        if (typeof interceptor === "function" && !this.interceptors.includes(interceptor)) {
+        if (typeof interceptor === "function" &&
+            !this.interceptors.includes(interceptor)) {
             this.interceptors.push(interceptor);
         }
     }
@@ -405,5 +405,5 @@ class Log {
 // Create singleton instance
 const log = new Log();
 // Export both the instance and the class
-export { Log, ORIGINAL_CONSOLE_METHODS };
+export { log, Log, ORIGINAL_CONSOLE_METHODS };
 export default log;

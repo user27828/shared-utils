@@ -13,7 +13,7 @@ yarn add tinymce @tinymce/tinymce-react
 ## Basic Usage
 
 ```tsx
-import { TinyMceEditor } from "@user27828/shared-utils/client/wysiwyg";
+import { TinyMceEditor } from "@user27828/shared-utils/client/wysiwyg/tinymce";
 
 const MyEditor = () => {
   const [content, setContent] = useState("");
@@ -28,6 +28,12 @@ const MyEditor = () => {
 ```
 
 ## Vite Bundler Issue
+
+The TinyMCE entrypoint includes the minimal plugins required by its default
+toolbar. Applications using additional plugins should import the matching
+registration module from `client/wysiwyg/tinymce/features` or use the `full`
+preset. See [WYSIWYG Setup](./WYSIWYG_SETUP.md#tinymce-plugin-presets) for the
+available groups.
 
 ### Problem
 
@@ -92,7 +98,7 @@ Use the optional `skinUrl` and `contentCss` props (or pass them via `init`):
 <TinyMceEditor
   data={content}
   onChange={(_, editor) => setContent(editor.getData())}
-  skinUrl="/tinymce/skins/ui/oxide"  // or oxide-dark for dark theme
+  skinUrl="/tinymce/skins/ui/oxide" // or oxide-dark for dark theme
   contentCss="/tinymce/skins/content/default/content.css"
   // Alternative: pass via init prop
   init={{
@@ -113,8 +119,8 @@ const isDarkMode = /* your dark mode detection */;
   data={content}
   onChange={(_, editor) => setContent(editor.getData())}
   init={{
-    skin_url: isDarkMode 
-      ? "/tinymce/skins/ui/oxide-dark" 
+    skin_url: isDarkMode
+      ? "/tinymce/skins/ui/oxide-dark"
       : "/tinymce/skins/ui/oxide",
     content_css: isDarkMode
       ? "/tinymce/skins/content/dark/content.css"
@@ -127,29 +133,29 @@ const isDarkMode = /* your dark mode detection */;
 
 ### Skin Configuration Props
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `skinUrl` | `string` | URL path to TinyMCE UI skin directory (e.g., `/tinymce/skins/ui/oxide`) |
+| Prop         | Type     | Description                                                                       |
+| ------------ | -------- | --------------------------------------------------------------------------------- |
+| `skinUrl`    | `string` | URL path to TinyMCE UI skin directory (e.g., `/tinymce/skins/ui/oxide`)           |
 | `contentCss` | `string` | URL path to content CSS file (e.g., `/tinymce/skins/content/default/content.css`) |
 
 These props are shortcuts that merge into the TinyMCE `init` object as `skin_url` and `content_css`.
 
 ### File Picker & Upload Props
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `onPickFile` | `(request: TinyMcePickRequest) => Promise<TinyMcePickResult \| null>` | Custom file picker callback |
-| `onUploadImage` | `(request: TinyMceImageUploadRequest) => Promise<TinyMceImageUploadResult>` | Image upload handler |
-| `canonicalizeUrl` | `(url: string) => string` | URL canonicalizer for inserted URLs |
+| Prop              | Type                                                                        | Description                         |
+| ----------------- | --------------------------------------------------------------------------- | ----------------------------------- |
+| `onPickFile`      | `(request: TinyMcePickRequest) => Promise<TinyMcePickResult \| null>`       | Custom file picker callback         |
+| `onUploadImage`   | `(request: TinyMceImageUploadRequest) => Promise<TinyMceImageUploadResult>` | Image upload handler                |
+| `canonicalizeUrl` | `(url: string) => string`                                                   | URL canonicalizer for inserted URLs |
 
 ### Other Props
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `data` | `string` | Editor content (HTML) |
-| `onChange` | `(event, editor: { getData: () => string }) => void` | Content change handler |
-| `onEditorInstance` | `(editor: any) => void` | Callback to receive TinyMCE editor instance |
-| `init` | `object` | Additional TinyMCE init options (merged with defaults) |
+| Prop               | Type                                                 | Description                                            |
+| ------------------ | ---------------------------------------------------- | ------------------------------------------------------ |
+| `data`             | `string`                                             | Editor content (HTML)                                  |
+| `onChange`         | `(event, editor: { getData: () => string }) => void` | Content change handler                                 |
+| `onEditorInstance` | `(editor: any) => void`                              | Callback to receive TinyMCE editor instance            |
+| `init`             | `object`                                             | Additional TinyMCE init options (merged with defaults) |
 
 ## Troubleshooting
 
@@ -180,8 +186,12 @@ If using Webpack with TinyMCE, you may need the `copy-webpack-plugin` to copy sk
 When using TinyMceEditor with db-supabase's File Manager:
 
 ```tsx
-import { TinyMceEditor } from "@user27828/shared-utils/client/wysiwyg";
-import { fmUploadInitApi, fmUploadFinalizeApi, fmGetReadUrlApi } from "@user27828/db-supabase/client";
+import { TinyMceEditor } from "@user27828/shared-utils/client/wysiwyg/tinymce";
+import {
+  fmUploadInitApi,
+  fmUploadFinalizeApi,
+  fmGetReadUrlApi,
+} from "@user27828/db-supabase/client";
 
 const handleUploadImage = async (request: TinyMceImageUploadRequest) => {
   // Initialize upload
@@ -211,5 +221,5 @@ const handleUploadImage = async (request: TinyMceImageUploadRequest) => {
     skin_url: "/tinymce/skins/ui/oxide-dark",
     content_css: "/tinymce/skins/content/dark/content.css",
   }}
-/>
+/>;
 ```

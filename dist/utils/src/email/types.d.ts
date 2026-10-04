@@ -46,4 +46,3 @@ export interface EmailTemplatePreviewResponse {
     warnings?: EmailRenderWarnings;
     metadata?: Record<string, unknown>;
 }
-//# sourceMappingURL=types.d.ts.map

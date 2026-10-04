@@ -3,7 +3,7 @@
  * @jest-environment node
  */
 
-import { log } from "../../dist/utils/index.js";
+import { log } from "../../dist/utils/src/log.js";
 
 describe("Log Utility - Caller Information", () => {
   let consoleSpy;

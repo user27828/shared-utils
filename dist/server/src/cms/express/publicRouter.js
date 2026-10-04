@@ -17,7 +17,7 @@
  */
 import { Router } from "express";
 import { isCmsError, cmsErrorToResponse, } from "../../../../utils/src/cms/errors.js";
-import { verifyCmsPassword } from "../../../../utils/src/cms/password.js";
+import { verifyCmsPassword } from "../password.js";
 import { normalizeLocale, canonicalizeSlug, } from "../../../../utils/src/cms/validation.js";
 import { getSingleParam } from "../../express/params.js";
 import { applyCmsPublicCacheHeaders, } from "../cacheControl.js";

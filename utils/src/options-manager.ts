@@ -33,13 +33,7 @@ import mergeWith from "lodash-es/mergeWith.js";
 import set from "lodash-es/set.js";
 
 type UtilityName =
-  | "log"
-  | "turnstile"
-  | "files"
-  | "dates"
-  | "site"
-  | "ENV"
-  | string; // string=future utilities
+  "log" | "turnstile" | "files" | "dates" | "site" | "ENV" | string; // string=future utilities
 
 interface GlobalOptions {
   log?: any;
@@ -423,11 +417,14 @@ class GlobalOptionsManager {
 
     if (path !== undefined) {
       // Pattern: (utilityName, categoryKey, path)
-      return manager.getOption(categoryKeyOrPath as any, path) as T;
+      // Clone only the requested value so callers cannot mutate registered
+      // configuration and unrelated managers are not read or cloned.
+      return cloneDeep(manager.getOption(categoryKeyOrPath as any, path)) as T;
     }
 
     // If categoryKeyOrPath contains a dot, let manager handle it as a full path
-    return manager.getOption(categoryKeyOrPath as any) as T;
+    // Clone only the requested value to preserve defensive-copy semantics.
+    return cloneDeep(manager.getOption(categoryKeyOrPath as any)) as T;
   }
 }
 

@@ -23,4 +23,3 @@ export interface CmsListPageProps {
 }
 declare const CmsListPage: React.FC<CmsListPageProps>;
 export default CmsListPage;
-//# sourceMappingURL=CmsListPage.d.ts.map

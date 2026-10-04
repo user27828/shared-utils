@@ -14,6 +14,7 @@ import type {
   CmsTransferPublicEligibility,
 } from "../CmsApi.js";
 import type { FmApi } from "../../fm/FmApi.js";
+import type { WysiwygEditorAdapter } from "../../components/wysiwyg/WysiwygEditor.js";
 
 // ─── Media picker adapter ─────────────────────────────────────────────────
 
@@ -63,6 +64,18 @@ export interface CmsNavigationAdapter {
 
 /** WYSIWYG editor choices for the CMS body editor. */
 export type CmsEditorPreference = "ckeditor" | "tinymce";
+
+/**
+ * Editor adapters selected by CMS content type. Import only the engines the
+ * host application installs and provide them here.
+ */
+export type CmsBodyEditorAdapterMap = Partial<
+  Record<CmsEditorPreference | "mdx", WysiwygEditorAdapter>
+>;
+
+export type CmsBodyEditorEngineProps = Partial<
+  Record<CmsEditorPreference | "mdx", Record<string, unknown>>
+>;
 
 export type CmsImageUploadSource = "editor-upload" | "pasted-data-uri";
 
@@ -163,6 +176,12 @@ export interface CmsAdminUiConfig {
    * Defaults to "ckeditor".
    */
   editorPreference?: CmsEditorPreference;
+
+  /** Explicit engine adapters used by HTML and Markdown body editing. */
+  editorAdapters?: CmsBodyEditorAdapterMap;
+
+  /** Optional engine-specific props passed through to the selected adapter. */
+  editorProps?: CmsBodyEditorEngineProps;
 
   /**
    * Called when the user changes the WYSIWYG editor preference via the

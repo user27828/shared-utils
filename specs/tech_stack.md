@@ -4,7 +4,7 @@ feature: shared-utils-current-state
 artifact: tech-stack
 status: current-state-baseline
 created: 2026-04-28
-updated: 2026-04-28
+updated: 2026-10-05
 source: codebase-analysis
 ---
 
@@ -21,21 +21,22 @@ Spec-Kit planning phase. It complements:
 
 ## Stack Summary
 
-| Dimension           | Current state                                                                |
-| ------------------- | ---------------------------------------------------------------------------- |
-| Project type        | TypeScript utility/library monorepo with reusable client and server packages |
-| Package manager     | Yarn 4 workspaces                                                            |
-| Language            | TypeScript source with ES module output                                      |
-| Module pattern      | Native ESM with `.js` import suffixes in source                              |
-| Root runtime target | Node.js 22+                                                                |
-| Client runtime      | React 19                                                                     |
-| Client UI toolkit   | MUI 7 plus optional MUI X and editor peer dependencies                       |
-| Server HTTP layer   | Express 5                                                                    |
-| Edge runtime        | Optional Cloudflare Worker deployment for Turnstile                          |
-| Build output        | Workspace compilation into `dist/`                                           |
-| Client tests        | Vitest                                                                       |
-| Server/utils tests  | Jest with ES module support                                                  |
-| Integration harness | `test-consumer/` multi-runtime consumer workspace                            |
+| Dimension           | Current state                                                                             |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| Project type        | TypeScript utility/library monorepo with reusable client and server packages              |
+| Package manager     | Yarn 4 workspaces                                                                         |
+| Language            | TypeScript source with ES module output                                                   |
+| Module pattern      | Native ESM with `.js` import suffixes in source                                           |
+| Root runtime target | Node.js 22+                                                                               |
+| CommonJS interop    | `module-sync` loads synchronous ESM exports with `require()` on Node 22.12+; no CJS build |
+| Client runtime      | React 19                                                                                  |
+| Client UI toolkit   | MUI 9 plus optional MUI X and editor peer dependencies                                    |
+| Server HTTP layer   | Express 5                                                                                 |
+| Edge runtime        | Optional Cloudflare Worker deployment for Turnstile                                       |
+| Build output        | Workspace compilation into `dist/`                                                        |
+| Client tests        | Vitest                                                                                    |
+| Server/utils tests  | Jest with ES module support                                                               |
+| Integration harness | `test-consumer/` multi-runtime consumer workspace                                         |
 
 ## Workspace Breakdown
 
@@ -51,7 +52,8 @@ Spec-Kit planning phase. It complements:
 
 - Shared runtime utilities
 - Shared CMS, FM, and email types
-- Validation, sanitization, concurrency helpers, and typed errors
+- Validation, concurrency helpers, typed errors, and dependency-free CMS/FM constants
+- Erased CMS/FM type entrypoints retain canonical Zod-derived types
 - Canonical configuration and environment helpers
 
 ### `client/`
@@ -65,6 +67,7 @@ Spec-Kit planning phase. It complements:
 ### `server/`
 
 - Service cores for CMS and FM
+- CMS password hashing and HTML/Markdown sanitization behind explicit server paths
 - Express router factories
 - FM storage adapters
 - Turnstile verification and middleware
@@ -85,18 +88,27 @@ Spec-Kit planning phase. It complements:
 - `lodash-es` for deep merging and option handling
 - `sanitize-html` for CMS/server HTML sanitization
 - `bcryptjs` for CMS password hashing
-- Zod imports in CMS and FM source model files for runtime schemas and derived
+- Zod as a root runtime dependency for CMS and FM runtime schemas and derived
   types
 
 ### Client
 
 - `react` and `react-dom`
-- `@mui/material` and `@mui/system`
+- `@mui/material` and `@mui/system` (optional root peers)
 - `dompurify` for browser-side sanitization
 - `date-fns` and `date-fns-tz`
 - `papaparse` for CSV helpers
 - `prismjs` for markup/code display concerns
-- Optional peer editor integrations: CKEditor 5, TinyMCE, EasyMDE, MDXEditor
+- Optional peer editor integrations: TinyMCE, CKEditor 5, EasyMDE, and MDXEditor.
+  Each engine has a dedicated public entrypoint; TinyMCE's minimal and full
+  plugin presets are explicit imports.
+
+### Root optional peer integrations
+
+- Optional root peers cover MUI and its optional UI extensions, CKEditor 5,
+  EasyMDE, MDXEditor, Redis, CMS password hashing and sanitization, and
+  `prop-types`.
+- TinyMCE is an optional peer used by the dedicated TinyMCE entrypoints.
 
 ### Server
 
@@ -130,6 +142,7 @@ Spec-Kit planning phase. It complements:
 
 - Root utility barrel
 - Client barrel and `client/init`
+- Focused client helper and data-driven country/language selector entrypoints
 - Server barrel
 - CMS shared, client, server, and public client entrypoints
 - FM shared, client, server, and S3 adapter entrypoints
@@ -166,6 +179,9 @@ Spec-Kit planning phase. It complements:
 - ES module imports in TypeScript source must use `.js` suffixes
 - `client/index.ts` stays side-effect-free for tree-shaking
 - `client/init` must be imported explicitly when a consumer wants `window.log`
+- Contact CSV/vCard serialization is available from `utils/contact`; date-backed calendar operations use `utils/calendar`
+- `.` and `./utils` expose dependency-free helpers; configured and optional
+  utility modules use explicit `./utils/*` subpaths
 - `isDev()` is the canonical environment-detection helper
 - CMS and FM request/response types are centralized in `utils/`
 - FM supports both local and S3-like storage backends
@@ -180,3 +196,21 @@ Spec-Kit planning phase. It complements:
 - CMS and FM are extensible through injected connectors/adapters, so contract
   drift between shared types and implementation layers is a primary maintenance
   risk.
+
+## Consumer installation and release artifacts
+
+The root mandatory dependency contract is limited to `lodash-es`, `nanoid`,
+and `zod`. Date/CSV/HTML helpers, React/MUI/editors, env loading, Express,
+email providers, and Redis/AWS integrations use optional peers documented in
+README. Workspace development dependencies support compilation and tests.
+FM local storage is exported at `fm/server/storage`; S3 config creation uses
+an injected `createFmS3Storage` factory from `fm/server/s3`. CMS Redis usage
+requires `redisFactory` from `cms/server/redis`; the memory limiter entry is
+`cms/server/rate-limiter` and has no Redis import.
+
+Workspace builds clean their compiler-owned output before compilation and
+exclude nested tests. Archives contain generated runtime/declarations/assets,
+explicit CLI files and the Turnstile deployment helper. Declaration maps are
+omitted because source files are not published. Server JS source maps retain
+embedded source for debugging. Install checks derive required artifacts from
+the export/bin contract and perform no network calls or consumer builds.

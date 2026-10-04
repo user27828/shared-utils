@@ -88,7 +88,7 @@ import CmsHistoryDrawer, { HISTORY_DRAWER_WIDTH } from "./CmsHistoryDrawer.js";
 import CmsVersionNotesForm from "./CmsVersionNotesForm.js";
 import CmsContentNotes from "./CmsContentNotes.js";
 import { useFmApi } from "../../fm/FmClientProvider.js";
-import { isDev } from "../../../../utils/src/functions.js";
+import { isDev } from "../../../../utils/src/environment.js";
 import { useDebouncedCallback } from "../../helpers/debounce.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -2206,6 +2206,8 @@ const CmsEditPage: React.FC<CmsEditPageProps> = ({
                   value={content}
                   onChange={setContent}
                   editor={editorOverride}
+                  editorAdapters={config?.editorAdapters}
+                  editorProps={config?.editorProps}
                   onUploadImage={
                     hasUploadHandler ? effectiveOnUploadImage : undefined
                   }

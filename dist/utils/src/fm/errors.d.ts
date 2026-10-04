@@ -81,4 +81,3 @@ export declare function sendFmError(res: {
  * @returns HTTP status code
  */
 export declare function fmErrorToStatus(code: string): number;
-//# sourceMappingURL=errors.d.ts.map

@@ -5,4 +5,3 @@ export interface EmailHtmlPreviewFrameProps {
 }
 declare const EmailHtmlPreviewFrame: React.FC<EmailHtmlPreviewFrameProps>;
 export default EmailHtmlPreviewFrame;
-//# sourceMappingURL=EmailHtmlPreviewFrame.d.ts.map

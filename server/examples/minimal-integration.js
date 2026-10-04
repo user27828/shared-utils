@@ -3,7 +3,7 @@
  */
 
 import express from "express";
-import { optionsManager } from "../../utils/index.js";
+import { optionsManager } from "../../utils/src/options-manager.js";
 import { createTurnstileMiddleware } from "../index.js";
 
 const app = express();

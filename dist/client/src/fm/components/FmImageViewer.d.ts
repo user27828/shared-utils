@@ -50,4 +50,3 @@ export interface FmImageViewerProps {
  */
 export declare const FmImageViewer: React.FC<FmImageViewerProps>;
 export default FmImageViewer;
-//# sourceMappingURL=FmImageViewer.d.ts.map

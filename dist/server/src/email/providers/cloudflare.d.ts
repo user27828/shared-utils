@@ -32,4 +32,3 @@ export declare class CloudflareEmailProvider implements IEmailProvider {
 export declare const isConfigured: () => boolean;
 export declare const createCloudflareProvider: (config: CloudflareProviderConfig) => IEmailProvider;
 export {};
-//# sourceMappingURL=cloudflare.d.ts.map

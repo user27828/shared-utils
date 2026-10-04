@@ -30,7 +30,7 @@
  * ```
  */
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
-import { turnstile } from '@shared-utils/utils';
+import { turnstile } from "@user27828/shared-utils/utils/turnstile";
 
 interface TurnstileComponentProps {
   siteKey?: string;

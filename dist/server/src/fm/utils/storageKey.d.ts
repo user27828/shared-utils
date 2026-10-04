@@ -32,4 +32,3 @@ export declare const decodeFmStorageKey: (storageKey: string) => FmObjectRef;
  * @returns The decoded FmObjectRef, or `null` if the key is invalid.
  */
 export declare const tryDecodeFmStorageKey: (storageKey: string) => FmObjectRef | null;
-//# sourceMappingURL=storageKey.d.ts.map

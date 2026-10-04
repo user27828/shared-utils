@@ -18,4 +18,3 @@ export declare const detectFormatFromText: ({ content, filePath, formats, }: {
     formats?: string[];
 }) => Promise<FormatResponse>;
 export {};
-//# sourceMappingURL=index.d.ts.map

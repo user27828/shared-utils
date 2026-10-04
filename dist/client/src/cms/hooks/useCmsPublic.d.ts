@@ -24,4 +24,3 @@ export interface UseCmsPublicResult {
     reload: () => void;
 }
 export declare const useCmsPublic: (params: UseCmsPublicOptions) => UseCmsPublicResult;
-//# sourceMappingURL=useCmsPublic.d.ts.map

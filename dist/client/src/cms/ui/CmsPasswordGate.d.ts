@@ -33,4 +33,3 @@ export interface CmsPasswordGateProps {
 }
 declare const CmsPasswordGate: React.FC<CmsPasswordGateProps>;
 export default CmsPasswordGate;
-//# sourceMappingURL=CmsPasswordGate.d.ts.map

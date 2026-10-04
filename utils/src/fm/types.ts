@@ -8,38 +8,21 @@
  * Mirrors the CMS types pattern in utils/src/cms/types.ts.
  */
 import { z } from "zod";
+import { FM_PURPOSES, FM_VISIBILITY, FM_VARIANT_KINDS } from "./constants.js";
+
+export { FM_PURPOSES, FM_VISIBILITY, FM_VARIANT_KINDS } from "./constants.js";
 
 // =============================================================================
 // Enums & Constants
 // =============================================================================
 
-/** All recognised upload/file purpose values. */
-export const FM_PURPOSES = [
-  "resume",
-  "job",
-  "cms_asset",
-  "cms_b64",
-  "avatar",
-  "generic",
-] as const;
-
 /** Zod enum schema for {@link FM_PURPOSES}. */
 export const FmPurposeSchema = z.enum(FM_PURPOSES);
 export type FmPurpose = z.infer<typeof FmPurposeSchema>;
 
-/** File visibility levels. */
-export const FM_VISIBILITY = ["private", "public"] as const;
 /** Zod enum schema for {@link FM_VISIBILITY}. */
 export const FmVisibilitySchema = z.enum(FM_VISIBILITY);
 export type FmVisibility = z.infer<typeof FmVisibilitySchema>;
-
-/** Recognised variant kinds for image derivatives. */
-export const FM_VARIANT_KINDS = [
-  "original",
-  "thumb",
-  "preview",
-  "web",
-] as const;
 
 /** Zod enum schema for {@link FM_VARIANT_KINDS}. */
 export const FmVariantKindSchema = z.enum(FM_VARIANT_KINDS);
@@ -442,11 +425,7 @@ export interface FmFileLinkInsert {
 
 /** Whitelisted order-by columns for file listing. */
 export type FmFilesOrderBy =
-  | "created_at"
-  | "updated_at"
-  | "byte_size"
-  | "original_filename"
-  | "title";
+  "created_at" | "updated_at" | "byte_size" | "original_filename" | "title";
 
 /** Order direction for file listing. */
 export type FmOrderDirection = "asc" | "desc";
@@ -526,7 +505,7 @@ export interface FmContext {
   requestId?: string;
 }
 
-// ─── Upload progress callback ─────────────────────────────────────────────
+// --- Upload progress callback ------------------------------------------------
 
 /** Callback for tracking upload progress (used by FmClient XHR fallback). */
 export type FmUploadProgressCallback = (progress: {

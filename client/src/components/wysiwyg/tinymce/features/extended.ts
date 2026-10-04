@@ -1,0 +1,13 @@
+import "../minimal.js";
+import "tinymce/plugins/autoresize";
+import "tinymce/plugins/autosave";
+import "tinymce/plugins/charmap";
+import "tinymce/plugins/directionality";
+import "tinymce/plugins/emoticons";
+import "tinymce/plugins/emoticons/js/emojis";
+import "tinymce/plugins/fullscreen";
+import "tinymce/plugins/importcss";
+import "tinymce/plugins/nonbreaking";
+import "tinymce/plugins/pagebreak";
+import "tinymce/plugins/preview";
+import "tinymce/plugins/save";

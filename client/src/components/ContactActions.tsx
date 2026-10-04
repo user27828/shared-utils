@@ -47,16 +47,16 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import LinkIcon from "@mui/icons-material/Link";
 import VideoCallIcon from "@mui/icons-material/VideoCall";
 import {
+  buildMeetingEvent,
+  openCalendarEvent,
+} from "../../../utils/src/calendar.js";
+import {
   canGenerateVCard,
   canScheduleMeeting,
   downloadVCard,
-  buildMeetingEvent,
-  openCalendarEvent,
 } from "../../../utils/src/contact.js";
-import type {
-  ContactInfo,
-  CalendarProvider,
-} from "../../../utils/src/contact.js";
+import type { CalendarProvider } from "../../../utils/src/calendar.js";
+import type { ContactInfo } from "../../../utils/src/contact.js";
 import type { MeetingLinkEntry } from "../../../utils/src/meetingProviders.js";
 
 // ============================================================================

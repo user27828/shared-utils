@@ -7,4 +7,3 @@ export declare class ResendWebhookHandler implements IWebhookHandler {
     parse(payload: unknown): WebhookEvent[];
 }
 export declare const createResendWebhookHandler: () => IWebhookHandler;
-//# sourceMappingURL=resend.d.ts.map

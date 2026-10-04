@@ -45,4 +45,3 @@ export interface CmsUnlockTokenUtils {
 export declare const createCmsUnlockTokenUtils: (config: {
     signingKey: string;
 }) => CmsUnlockTokenUtils;
-//# sourceMappingURL=unlockToken.d.ts.map

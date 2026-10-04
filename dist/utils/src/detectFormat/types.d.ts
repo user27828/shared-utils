@@ -7,4 +7,3 @@ export interface FormatCheck {
     extension: string;
     reasons: string[];
 }
-//# sourceMappingURL=types.d.ts.map

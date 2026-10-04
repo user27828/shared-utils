@@ -4,10 +4,16 @@
     "composite": true,
     "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "declaration": true,
-    "declarationMap": true,
+    "declarationMap": false,
     "outDir": "../dist/utils",
     "types": ["jest", "node"]
   },
   "include": ["src/**/*", "index.ts"],
-  "exclude": ["node_modules", "dist", "__tests__"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/__tests__/**",
+    "**/*.test.*",
+    "**/*.spec.*"
+  ]
 }

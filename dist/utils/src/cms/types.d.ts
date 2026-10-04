@@ -6,7 +6,7 @@
  * should re-export or reference these.
  */
 import { z } from "zod";
-export declare const CMS_POST_TYPES: readonly ["post", "page", "general", "faq", "blog", "embed", "data", "docs", "kb", "other"];
+export { CMS_POST_TYPES, CMS_STATUS, CMS_CONTENT_TYPES } from "./constants.js";
 export declare const CmsPostTypeSchema: z.ZodEnum<{
     data: "data";
     embed: "embed";
@@ -20,14 +20,12 @@ export declare const CmsPostTypeSchema: z.ZodEnum<{
     kb: "kb";
 }>;
 export type CmsPostType = z.infer<typeof CmsPostTypeSchema>;
-export declare const CMS_STATUS: readonly ["draft", "published", "trash"];
 export declare const CmsStatusSchema: z.ZodEnum<{
     draft: "draft";
     published: "published";
     trash: "trash";
 }>;
 export type CmsStatus = z.infer<typeof CmsStatusSchema>;
-export declare const CMS_CONTENT_TYPES: readonly ["text/html", "text/markdown", "application/json", "text/plain"];
 export declare const CmsContentTypeSchema: z.ZodEnum<{
     "text/html": "text/html";
     "text/markdown": "text/markdown";
@@ -275,4 +273,3 @@ export interface CmsPublicHead {
     published_at: string | null;
     archived_at: string | null;
 }
-//# sourceMappingURL=types.d.ts.map

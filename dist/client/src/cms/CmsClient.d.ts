@@ -130,4 +130,3 @@ export declare class CmsClient implements CmsApi {
         password: string;
     }): Promise<CmsPublicUnlockResult>;
 }
-//# sourceMappingURL=CmsClient.d.ts.map

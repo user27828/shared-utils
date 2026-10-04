@@ -7,8 +7,12 @@ Collection of common utilities for web applications. Features centralized config
 - [shared-utils](#shared-utils)
   - [📋 Table of Contents](#-table-of-contents)
   - [Installation](#installation)
+    - [Optional Feature Dependencies](#optional-feature-dependencies)
+    - [Node.js CommonJS Interoperability](#nodejs-commonjs-interoperability)
   - [Quick Start](#quick-start)
+    - [Upgrade from 0.70.69 to 0.71.69](doc/upgrades/0.70.69-to-0.71.69.md)
     - [Import Paths](#import-paths)
+    - [Utility Entry Point Migration](#utility-entry-point-migration)
     - [Basic Setup](#basic-setup)
   - [Available Modules](#available-modules)
     - [📋 Utils](#-utils)
@@ -25,6 +29,8 @@ Collection of common utilities for web applications. Features centralized config
       - [Next.js](#nextjs)
       - [Express.js](#expressjs)
   - [Command Line Tools](#command-line-tools)
+    - [Consumer Efficiency Audit](#consumer-efficiency-audit)
+    - [Options Hot Path Benchmark](#options-hot-path-benchmark)
     - [Dependency Manager](#dependency-manager)
     - [Package Scripts Integration](#package-scripts-integration)
     - [Shared Spec-Kit and Codex synchronization](#shared-spec-kit-and-codex-synchronization)
@@ -57,9 +63,67 @@ Or install via command line:
 # Using yarn (recommended)
 yarn add @user27828/shared-utils@https://github.com/user27828/shared-utils.git#master
 
-# Using npm
-npm install @user27828/shared-utils@https://github.com/user27828/shared-utils.git#master
 ```
+
+### Optional Feature Dependencies
+
+The only mandatory runtime dependencies are `lodash-es`, `nanoid`, and `zod`.
+Pure helpers and client SDKs need no optional peers. Install React/ReactDOM for
+hooks and UI, then add the capability dependencies below. Broad barrels combine
+features and require all their runtime peers; prefer the focused entrypoints.
+
+| Capability / entrypoint                             | Additional Yarn install (combine rows when composing features)                            |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| React hooks and UI                                  | `yarn add react@^19 react-dom@^19`                                                        |
+| MUI components, CMS public/admin UI, FM/email UI    | `yarn add @mui/material@^9 @mui/icons-material@^9 @emotion/react@^11 @emotion/styled@^11` |
+| CMS history calendar (in addition to MUI/date rows) | `yarn add @mui/lab@^9.0.0-beta.9 @mui/x-date-pickers@^9`                                  |
+| Client dates/timezones and calendar URL/ICS helpers | `yarn add date-fns@^4 date-fns-tz@^3`                                                     |
+| Contact CSV and vCard serialization                 | None                                                                                      |
+| Client CSV helpers                                  | `yarn add papaparse@^5`                                                                   |
+| Country/language selectors (in addition to MUI)     | `yarn add prop-types@^15`                                                                 |
+| TinyMCE base                                        | `yarn add @tinymce/tinymce-react@^6 tinymce@^8`                                           |
+| TinyMCE full/code preset                            | `yarn add prismjs@^1`                                                                     |
+| CKEditor 5                                          | `yarn add @ckeditor/ckeditor5-react@^11 ckeditor5@^48`                                    |
+| EasyMDE                                             | `yarn add easymde@^2`                                                                     |
+| MDXEditor                                           | `yarn add @mdxeditor/editor@^4 @codemirror/language@^6 @lezer/highlight@^1 yjs@^13.6.32`  |
+| Express routers (CMS, FM, email webhooks)           | `yarn add express@^5`                                                                     |
+| CMS core/password/HTML sanitization                 | `yarn add bcryptjs@^3 sanitize-html@^2 marked@^18`                                        |
+| Redis-backed CMS rate limiting                      | `yarn add ioredis@^6`                                                                     |
+| FM S3 storage                                       | `yarn add @aws-sdk/client-s3@^3 @aws-sdk/s3-request-presigner@^3`                         |
+| SES provider / email marketing                      | `yarn add @aws-sdk/client-sesv2@^3`                                                       |
+| Gmail provider                                      | `yarn add nodemailer@^10`                                                                 |
+| Server env / email marketing                        | `yarn add dotenv@^18 dotenv-expand@^13`                                                   |
+
+TypeScript server applications using Express or Gmail declarations also need
+`yarn add -D @types/express@^5 @types/node`.
+React TypeScript applications need `@types/react` and `@types/react-dom`.
+All these integrations are optional root peers and are no longer installed by
+default. Importing the combined `server` surface does not load `.env` files or
+attach a global logger. The explicit `server/env` path loads environment data;
+the explicit `server/init` path attaches `globalThis.log` when no logger is
+already present. An individual worker import needs neither Express nor dotenv.
+
+Local FM keeps `createFmStorage(config)` and requires no AWS SDK. S3 callers
+must import `createFmS3Storage` from `fm/server/s3` and pass it as the second
+argument. CMS callers providing `redisUrl` must also provide `redisFactory:
+createCmsRedisClient`, imported from `cms/server/redis`; omitting the factory
+raises a configuration error. In-memory rate limiting needs neither URL nor
+factory. These explicit seams keep bundlers from resolving unused vendors.
+
+### Node.js CommonJS Interoperability
+
+The package publishes native ESM. Export maps use the same ESM targets for
+`import` and Node's `module-sync` condition; they do not publish separate
+CommonJS files. Synchronous `require()` of those ESM targets works on Node
+22.12 and later when the selected module graph has no top-level `await`.
+Node 22.0 through 22.11 do not enable `require(esm)` by default; CommonJS
+applications on those versions must use dynamic `import()` or move to a
+supported Node version. See the [Node 22.10 release notes](https://nodejs.org/en/blog/release/v22.10.0)
+for the `module-sync` condition and the [Node 22.12 release notes](https://nodejs.org/en/blog/release/v22.12.0)
+for default `require(esm)` support.
+
+For the API and initialization changes in this release, see the
+[0.70.69 to 0.71.69 upgrade guide](doc/upgrades/0.70.69-to-0.71.69.md).
 
 [🔝 Back to Top](#shared-utils)
 
@@ -70,8 +134,13 @@ npm install @user27828/shared-utils@https://github.com/user27828/shared-utils.gi
 Use specific import paths for clarity:
 
 ```typescript
-// ✅ Utils and configuration
-import { log, turnstile, optionsManager } from "@user27828/shared-utils/utils";
+// Pure helpers do not initialize global utilities or feature integrations.
+import { isValidEmail, normalizeUrl } from "@user27828/shared-utils/utils";
+
+// Configured utilities are explicit opt-ins.
+import { optionsManager } from "@user27828/shared-utils/utils/options";
+import log from "@user27828/shared-utils/utils/log";
+import turnstile from "@user27828/shared-utils/utils/turnstile";
 
 // ✅ Client components (React/Next.js)
 import {
@@ -91,15 +160,17 @@ import "@user27828/shared-utils/client/init";
 // CKEditor 5: yarn add ckeditor5 @ckeditor/ckeditor5-react
 // EasyMDE: yarn add easymde
 // MDXEditor: yarn add @mdxeditor/editor
-import {
-  TinyMceEditor,
-  CKEditor5Classic,
-  EasyMDEEditor,
-  MDXEditor,
-} from "@user27828/shared-utils/client/wysiwyg";
+import { TinyMceEditor } from "@user27828/shared-utils/client/wysiwyg/tinymce";
+import { CKEditor5Classic } from "@user27828/shared-utils/client/wysiwyg/ckeditor";
+import { EasyMDEEditor } from "@user27828/shared-utils/client/wysiwyg/easymde";
+import { MDXEditor } from "@user27828/shared-utils/client/wysiwyg/mdx";
 
 // ✅ Server functionality
 import { verifyTurnstileToken } from "@user27828/shared-utils/server";
+
+// Optional server setup: load environment data or attach globalThis.log.
+import env from "@user27828/shared-utils/server/env";
+import "@user27828/shared-utils/server/init";
 
 // ✅ Shared email types + validation helpers
 import { assertEmailRenderResult } from "@user27828/shared-utils/email";
@@ -131,7 +202,7 @@ import {
   EmailTemplateListPage,
 } from "@user27828/shared-utils/email/client";
 
-// ✅ CMS — types, validation, sanitization, concurrency, password
+// ✅ CMS - browser-safe contracts, schemas, validation, concurrency
 import {
   CmsHeadRow,
   CmsPublicPayload,
@@ -161,7 +232,7 @@ import {
 } from "@user27828/shared-utils/cms/client/public";
 
 // ✅ FM — types, error classes
-import { FmFileRow, FmContext } from "@user27828/shared-utils/fm";
+import type { FmFileRow, FmContext } from "@user27828/shared-utils/fm";
 
 // ✅ FM — server core service, Express routers, storage adapters
 import {
@@ -180,10 +251,94 @@ import {
 } from "@user27828/shared-utils/fm/client";
 ```
 
+### CMS and FM Contract Entry Points
+
+Import constants without constructing Zod schemas, and use erased types for
+DTOs. Runtime schemas remain available at the shared domain roots or dedicated
+`schemas` paths. Both domains also expose direct `validation` and `errors` paths.
+
+```typescript
+import {
+  CMS_POST_TYPES,
+  CMS_STATUS,
+} from "@user27828/shared-utils/cms/constants";
+import { FM_PURPOSES } from "@user27828/shared-utils/fm/constants";
+import type { CmsCreateRequest } from "@user27828/shared-utils/cms/types";
+import type { FmFileRow } from "@user27828/shared-utils/fm/types";
+import { CmsCreateRequestSchema } from "@user27828/shared-utils/cms/schemas";
+import { FmUploadInitRequestSchema } from "@user27828/shared-utils/fm/schemas";
+```
+
+CMS password and sanitizer helpers have moved out of the shared `cms` barrel.
+Migrate old imports (including raw `utils/src/cms` imports) to the server paths:
+
+```typescript
+import {
+  hashCmsPassword,
+  verifyCmsPassword,
+} from "@user27828/shared-utils/cms/server/password";
+import {
+  sanitizeCmsHtml,
+  renderMarkdownToSanitizedHtml,
+} from "@user27828/shared-utils/cms/server/sanitization";
+```
+
+The password path requires `bcryptjs`; the sanitizer path requires
+`sanitize-html` and uses `marked` for Markdown rendering. The CMS service core
+and routers retain these security dependencies and behavior. Browser contracts
+and constant consumers need neither password nor sanitizer peers. DTO types
+remain derived from the canonical Zod schemas, so their declarations need Zod
+(the package's runtime dependency), plus no React, MUI, or editor declarations.
+
+### Utility Entry Point Migration
+
+The root and `./utils` entrypoints now expose only dependency-free helpers and
+types. Move configured utilities and integrations to explicit subpaths:
+
+```typescript
+import { isDev, isValidEmail } from "@user27828/shared-utils/utils";
+import {
+  formatFileSize,
+  sanitizeFilename,
+} from "@user27828/shared-utils/utils/files";
+import { formatDate } from "@user27828/shared-utils/utils/dates";
+import { optionsManager } from "@user27828/shared-utils/utils/options";
+import log from "@user27828/shared-utils/utils/log";
+import turnstile from "@user27828/shared-utils/utils/turnstile";
+```
+
+Contact serialization, calendar helpers, meeting-provider data, and text
+format detection are available from `utils/contact` (CSV/vCard),
+`utils/calendar`, `utils/meeting-providers`, and `utils/detect-format`. Browser applications should continue importing
+`client/init` once when they need `window.log` and the MUI X telemetry opt-out.
+
+The `client/countries` and `client/languages` helpers and the default selector
+components keep their bundled full-data behavior. Consumers with their own
+tables can use `client/countries/core` and `client/languages/core`, or the
+`client/components/form/CountrySelect/custom-data` and
+`client/components/form/LanguageSelect/custom-data` selectors. The core
+selectors take rows matching the exported `CountryDataRow` or `LanguageDataRow`
+types and do not import the bundled tables. Add the dataset's empty-code row
+when the empty/other option is needed. Helpers do not mutate or cache supplied
+rows. Pass a new array identity to a mounted selector when its data changes so
+its memoized options are rebuilt.
+
+Calendar APIs moved out of `utils/contact` so contact serialization does not
+resolve date libraries. Import calendar operations and types from
+`utils/calendar`:
+
+```typescript
+import { generateVCard } from "@user27828/shared-utils/utils/contact";
+import {
+  buildCalendarUrl,
+  type CalendarEvent,
+} from "@user27828/shared-utils/utils/calendar";
+```
+
 ### Basic Setup
 
 ```typescript
-import { optionsManager } from "@user27828/shared-utils/utils";
+import { optionsManager } from "@user27828/shared-utils/utils/options";
 
 // Configure utilities
 optionsManager.setGlobalOptions({
@@ -222,6 +377,19 @@ React components and client-side helpers:
 - **File Icons**: `FileIcon` - MUI icons for 70+ file types and MIME types
 - **Clipboard Buttons**: `CopyButton`, `PasteButton` - IconButtons with visual feedback
 - **Helper Functions**: Country/language utilities, CSV helpers
+
+The `@user27828/shared-utils/client` barrel remains available. Consumers that
+want a smaller module graph can import focused helpers from
+`@user27828/shared-utils/client/debounce`, `/csv`, `/countries`, `/languages`,
+`/timezones`, or `/dates`. General components also have direct paths, for
+example `@user27828/shared-utils/client/components/CopyButton` and
+`@user27828/shared-utils/client/components/form/CountrySelect`.
+
+The default country and language selectors use the complete bundled datasets.
+For host-managed datasets, import the data-driven components from
+`@user27828/shared-utils/client/components/form/CountrySelect/custom-data` or
+`@user27828/shared-utils/client/components/form/LanguageSelect/custom-data`
+and pass the corresponding `countries` or `languages` rows.
 
 #### Clipboard Buttons
 
@@ -282,17 +450,30 @@ const [enabled, setEnabled] = useState(false);
 
 #### 📝 WYSIWYG Editor Components
 
-WYSIWYG components are available as an optional separate import to avoid forcing editor dependencies on projects that don't need them. The core editors are available, and a unified factory export is provided.
+WYSIWYG engines have separate entrypoints. The shared switcher imports no engine; the host supplies stable adapters for only the engines it installs. The explicit `client/wysiwyg/all` convenience entry includes every engine and TinyMCE's full preset.
 
 For a full guide (recommended), see [doc/WYSIWYG_SETUP.md](./doc/WYSIWYG_SETUP.md).
 
-**Unified factory (default export)**:
+| Entry point               | Contents                                                              |
+| ------------------------- | --------------------------------------------------------------------- |
+| `client/wysiwyg`          | Engine-neutral switcher, adapter contract, and shared types           |
+| `client/wysiwyg/tinymce`  | TinyMCE adapter and minimal plugin preset                             |
+| `client/wysiwyg/ckeditor` | CKEditor 5 adapter                                                    |
+| `client/wysiwyg/easymde`  | EasyMDE adapter                                                       |
+| `client/wysiwyg/mdx`      | MDXEditor adapter                                                     |
+| `client/wysiwyg/all`      | Convenience switcher with all four adapters and TinyMCE's full preset |
+
+**Lean switcher with one selected engine**:
 
 ```typescript
 import WysiwygEditor from "@user27828/shared-utils/client/wysiwyg";
+import { TinyMceWysiwygAdapter } from "@user27828/shared-utils/client/wysiwyg/tinymce";
+
+const adapters = { tinymce: TinyMceWysiwygAdapter };
 
 <WysiwygEditor
-  editor="tinymce" // "tinymce" | "ckeditor" | "easymde"
+  adapters={adapters}
+  editor="tinymce" // "tinymce" | "ckeditor" | "easymde" | "mdx"
   value={content}
   readOnly={false}
   height={420}
@@ -311,9 +492,32 @@ import WysiwygEditor from "@user27828/shared-utils/client/wysiwyg";
 **Key behavior**:
 
 - `value` stays in each editor's native format: HTML for TinyMCE/CKEditor, Markdown for EasyMDE.
-- Use `onPickAsset` for inserting images/files/media with a single hook.
+- Use `onPickAsset` for inserting images/files/media with TinyMCE, CKEditor, and EasyMDE.
 - Use `onUploadImage` for paste/drag-drop uploads.
-- TinyMCE and MDXEditor initialize Prism internally; no separate `prismjs` setup is required.
+- An absent adapter displays a configuration alert. `CmsBodyEditor` uses its textarea fallback until an adapter is supplied in `CmsAdminUiConfig.editorAdapters`.
+- MDXEditor code blocks are not enabled by default. Add the desired MDXEditor plugins through `additionalPlugins`; TinyMCE's code preset initializes Prism only when explicitly imported.
+
+CMS editor engines are supplied through the admin UI config:
+
+```tsx
+import type { CmsAdminUiConfig } from "@user27828/shared-utils/cms/client/ui";
+import { TinyMceWysiwygAdapter } from "@user27828/shared-utils/client/wysiwyg/tinymce/full";
+
+const cmsConfig = {
+  editorPreference: "tinymce",
+  editorAdapters: { tinymce: TinyMceWysiwygAdapter },
+} satisfies CmsAdminUiConfig;
+```
+
+Use the `/tinymce/full` adapter when you want CMS's current toolbar plugins.
+Use `/tinymce` with a custom `editorProps.tinymce.init` config when you want
+the smaller default preset.
+
+The `/all` entrypoint is intended for applications that install all editor peers. It provides the previous unified usage without a separate `adapters` prop:
+
+```typescript
+import WysiwygEditor from "@user27828/shared-utils/client/wysiwyg/all";
+```
 
 **TinyMCE Editor** (Rich HTML editor):
 
@@ -323,7 +527,7 @@ yarn add @tinymce/tinymce-react tinymce
 ```
 
 ```typescript
-import { TinyMceEditor } from "@user27828/shared-utils/client/wysiwyg";
+import { TinyMceEditor } from "@user27828/shared-utils/client/wysiwyg/tinymce";
 
 <TinyMceEditor
   data={htmlContent}
@@ -343,7 +547,7 @@ yarn add ckeditor5 @ckeditor/ckeditor5-react
 ```
 
 ```typescript
-import { CKEditor5Classic } from "@user27828/shared-utils/client/wysiwyg";
+import { CKEditor5Classic } from "@user27828/shared-utils/client/wysiwyg/ckeditor";
 
 <CKEditor5Classic
   data={htmlContent}
@@ -367,7 +571,7 @@ yarn add easymde
 ```
 
 ```typescript
-import { EasyMDEEditor } from "@user27828/shared-utils/client/wysiwyg";
+import { EasyMDEEditor } from "@user27828/shared-utils/client/wysiwyg/easymde";
 
 <EasyMDEEditor
   value={markdownContent}
@@ -395,7 +599,7 @@ yarn add @mdxeditor/editor
 ```
 
 ```typescript
-import { MDXEditor } from "@user27828/shared-utils/client/wysiwyg";
+import { MDXEditor } from "@user27828/shared-utils/client/wysiwyg/mdx";
 
 <MDXEditor
   data={markdownContent}
@@ -476,10 +680,22 @@ Server-side functionality and Cloudflare Workers:
 
 | Path                                                        | Contents                                                                                                             |
 | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `@user27828/shared-utils/server`                            | Turnstile verification, Express middleware, env loader, IP helpers, and general server utilities                     |
+| `@user27828/shared-utils/server`                            | Turnstile verification, Express middleware, IP helpers, and general server utilities; no env or logger bootstrap     |
+| `@user27828/shared-utils/server/env`                        | Explicit server environment loader and `getClientUrl`; importing it performs environment discovery and loading       |
+| `@user27828/shared-utils/server/init`                       | Explicit global logger setup; preserves an existing `globalThis.log`                                                 |
+| `@user27828/shared-utils/server/turnstile/worker`           | Turnstile Cloudflare Worker factory                                                                                  |
+| `@user27828/shared-utils/server/turnstile/middleware`       | Turnstile Express middleware                                                                                         |
 | `@user27828/shared-utils/email`                             | Shared email preview/request/response types and validation helpers                                                   |
 | `@user27828/shared-utils/email/client`                      | Email template preview client, hooks, and preview/admin UI components                                                |
+| `@user27828/shared-utils/email/client/api`                  | Email template SDK and erased contracts, without React hooks or UI                                                   |
+| `@user27828/shared-utils/email/client/hooks`                | Email template React hooks, without preview/admin UI components                                                      |
+| `@user27828/shared-utils/email/client/ui`                   | Email preview and admin UI components                                                                                |
 | `@user27828/shared-utils/email/server`                      | Email template registry, attachment helpers, marketing sync, webhook router factories, and shared email server types |
+| `@user27828/shared-utils/email/server/registry`             | Template registry factory and contracts, without provider adapters                                                   |
+| `@user27828/shared-utils/email/server/marketing`            | Marketing sync integration                                                                                           |
+| `@user27828/shared-utils/email/server/webhooks`             | Webhook router and built-in webhook handlers                                                                         |
+| `@user27828/shared-utils/email/server/providers/contracts`  | Provider contracts without built-in provider implementations                                                         |
+| `@user27828/shared-utils/email/server/providers/contracts`  | Provider contracts only, without built-in provider adapters                                                          |
 | `@user27828/shared-utils/email/server/errors`               | `EmailError`, `EmailProviderError`, and `isEmailError`                                                               |
 | `@user27828/shared-utils/email/server/providers`            | Provider contracts plus built-in Gmail, Cloudflare, Resend, SES, and `_test_` providers                              |
 | `@user27828/shared-utils/email/server/providers/_test_`     | Deep import for the file-backed `_test_` provider                                                                    |
@@ -508,12 +724,21 @@ A portable, full-featured CMS with pluggable DB connectors. The CMS core is DB-a
 
 **Import paths:**
 
-| Path                                        | Contents                                                                                                                                                                |
-| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@user27828/shared-utils/cms`               | Shared types, Zod schemas, validation, sanitization, concurrency, password utils, error classes                                                                         |
-| `@user27828/shared-utils/cms/server`        | `CmsServiceCore`, `CmsConnector` interface, Express router factories, rate limiter, authz, cache-control, unlock tokens, conformance test harness                       |
-| `@user27828/shared-utils/cms/client`        | Full client surface: `CmsClient`, `useCmsAdmin`/`useCmsPublic`, admin UI pages (`CmsListPage`, `CmsEditPage`, `CmsHistoryDrawer`, `CmsBodyEditor`, `CmsConflictDialog`) |
-| `@user27828/shared-utils/cms/client/public` | Public-only client surface: `useCmsPublic`, `CmsBodyRenderer`, `CmsPasswordGate`, `CmsContentNotes`, and related types without admin/editor UI dependencies             |
+| Path                                         | Contents                                                                                                                                                                |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@user27828/shared-utils/cms`                | Browser-safe shared types, Zod schemas, validation, concurrency, error classes                                                                                          |
+| `@user27828/shared-utils/cms/server`         | `CmsServiceCore`, `CmsConnector` interface, Express router factories, rate limiter, authz, cache-control, unlock tokens, conformance test harness                       |
+| `@user27828/shared-utils/cms/server/core`    | `CmsServiceCore` and connector contracts without Express routers                                                                                                        |
+| `@user27828/shared-utils/cms/server/express` | CMS Express routers and transfer helpers                                                                                                                                |
+| `@user27828/shared-utils/cms/client`         | Full client surface: `CmsClient`, `useCmsAdmin`/`useCmsPublic`, admin UI pages (`CmsListPage`, `CmsEditPage`, `CmsHistoryDrawer`, `CmsBodyEditor`, `CmsConflictDialog`) |
+| `@user27828/shared-utils/cms/client/api`     | `CmsClient`, `CmsClientError`, and API contracts without React or UI dependencies                                                                                       |
+| `@user27828/shared-utils/cms/client/hooks`   | CMS React hooks without admin/editor UI                                                                                                                                 |
+| `@user27828/shared-utils/cms/client/ui`      | CMS admin and rendering UI components                                                                                                                                   |
+| `@user27828/shared-utils/cms/client/public`  | Public-only client surface: `useCmsPublic`, `CmsBodyRenderer`, `CmsPasswordGate`, `CmsContentNotes`, and related types without admin/editor UI dependencies             |
+
+Use `cms/client/api` for non-UI consumers that only call CMS endpoints. The
+existing `cms/client` path intentionally remains the combined hooks and UI
+surface.
 
 **Key features:**
 
@@ -537,12 +762,17 @@ A portable file manager with pluggable DB connectors and storage adapters (local
 
 **Import paths:**
 
-| Path                                   | Contents                                                                                                                                       |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@user27828/shared-utils/fm`           | Shared types, Zod schemas, error classes                                                                                                       |
-| `@user27828/shared-utils/fm/server`    | `FmServiceCore`, `FmConnector` interface, Express router factories (admin, content, public), authz, storage adapters, conformance test harness |
-| `@user27828/shared-utils/fm/server/s3` | `FmStorageS3` adapter (requires optional `@aws-sdk` peer deps)                                                                                 |
-| `@user27828/shared-utils/fm/client`    | `FmClient` SDK, `useFmListFiles` hook, `FmMediaLibrary`/`FmFilePicker` UI components, image variant utilities                                  |
+| Path                                        | Contents                                                                                                                                       |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@user27828/shared-utils/fm`                | Shared types, Zod schemas, error classes                                                                                                       |
+| `@user27828/shared-utils/fm/server`         | `FmServiceCore`, `FmConnector` interface, Express router factories (admin, content, public), authz, storage adapters, conformance test harness |
+| `@user27828/shared-utils/fm/client/api`     | `FmClient`, `FmClientError`, and API contracts without React or UI dependencies                                                                |
+| `@user27828/shared-utils/fm/client/hooks`   | FM hooks and provider without FM UI components                                                                                                 |
+| `@user27828/shared-utils/fm/client/ui`      | FM media library, picker, and viewer components                                                                                                |
+| `@user27828/shared-utils/fm/server/core`    | `FmServiceCore` and connector contracts without Express routers                                                                                |
+| `@user27828/shared-utils/fm/server/express` | FM Express authorization and router factories                                                                                                  |
+| `@user27828/shared-utils/fm/server/s3`      | `FmStorageS3` adapter (requires optional `@aws-sdk` peer deps)                                                                                 |
+| `@user27828/shared-utils/fm/client`         | `FmClient` SDK, `useFmListFiles` hook, `FmMediaLibrary`/`FmFilePicker` UI components, image variant utilities                                  |
 
 **Key features:**
 
@@ -566,7 +796,7 @@ A portable file manager with pluggable DB connectors and storage adapters (local
 ### Centralized Configuration (Recommended)
 
 ```typescript
-import { optionsManager } from "@user27828/shared-utils/utils";
+import { optionsManager } from "@user27828/shared-utils/utils/options";
 
 optionsManager.setGlobalOptions({
   log: {
@@ -589,7 +819,7 @@ optionsManager.setGlobalOptions({
 
 ```typescript
 // app/lib/utils-config.ts
-import { optionsManager } from "@user27828/shared-utils/utils";
+import { optionsManager } from "@user27828/shared-utils/utils/options";
 
 export function initializeUtils() {
   optionsManager.setGlobalOptions({
@@ -607,7 +837,7 @@ export function initializeUtils() {
 
 ```typescript
 // server.js
-import { optionsManager } from "@user27828/shared-utils/utils";
+import { optionsManager } from "@user27828/shared-utils/utils/options";
 
 optionsManager.setGlobalOptions({
   log: { type: "server" },
@@ -622,6 +852,111 @@ optionsManager.setGlobalOptions({
 - **`killnode`** - Kills Express server node processes (ignores VS Code, Electron, etc.)
 - **`package-upgrade`** - Audit-first, age-gated dependency upgrade planning for Yarn, npm, and pnpm
 - **`dependency-manager`** - Manages portal: resolutions for local development vs. production builds
+
+### Consumer Efficiency Audit
+
+After `yarn build`, run the maintained diagnostic to inspect published runtime
+imports, JavaScript and declaration export targets, export closures, and
+representative consumer bundles:
+
+```bash
+node scripts/dev/audit-efficiency.mjs --out /tmp/shared-utils-efficiency.json
+node scripts/dev/audit-efficiency.mjs --vite --only easy-editor --out /tmp/shared-utils-editor-efficiency.json
+node scripts/dev/audit-efficiency.mjs --help
+```
+
+Use `--json --only <fixture>` for a small machine-readable report. The audit
+uses the installed workspace dependencies through a cleaned temporary mirror;
+it does not install packages or measure isolated consumer installation costs.
+Editor fixtures fail if an unselected editor or Prism module enters resolution;
+these checks do not install packages or measure isolated consumer costs. Bundle
+sizes and import counts are diagnostics, not performance budgets.
+The `cms-constants` and `fm-constants` fixtures reject Zod/password/sanitizer
+imports during resolution; the shared CMS/schema fixtures reject server helpers.
+
+### Options Hot Path Benchmark
+
+After `yarn build`, compare file/date formatting and logging with normal and
+large unrelated `ENV` configuration:
+
+```bash
+node scripts/dev/benchmark-options.mjs
+node scripts/dev/benchmark-options.mjs --iterations 1000 --samples 5 --large-env-keys 5000
+node scripts/dev/benchmark-options.mjs --help
+```
+
+The report uses median milliseconds per operation and the large/small ratio.
+Logger output is muted. It also counts reads of the unrelated `ENV` manager and
+includes an all-options snapshot control. Timings are diagnostic and have no
+absolute CI gate; compare runs on the same machine and Node version.
+
+### Geographic Data and Selector Benchmark
+
+After `yarn build`, measure country/language lookup and option generation,
+timezone list/offset generation for winter and summer dates, and optionally
+server-rendered selectors:
+
+```bash
+node scripts/dev/benchmark-geographic.mjs
+node scripts/dev/benchmark-geographic.mjs --include-ui --samples 5 --duration-ms 150
+node scripts/dev/benchmark-geographic.mjs --only timezone-options-winter --json
+node scripts/dev/benchmark-geographic.mjs --help
+```
+
+The UI fixtures need the optional React, PropTypes, and MUI client dependencies.
+Results report median milliseconds per operation and are diagnostic, with no
+absolute CI gate. Compare runs on the same Node version and host.
+
+To verify real packed installs with only one editor's documented peers, then
+typecheck and build each editor entry in an isolated Yarn project, run:
+
+```bash
+node scripts/dev/verify-editor-isolation.mjs --out /tmp/shared-utils-editor-isolation.json
+```
+
+To check packed CMS/FM contracts with feature dependencies absent:
+
+```bash
+node scripts/dev/verify-contract-isolation.mjs --out /tmp/shared-utils-contract-isolation.json
+# Reuse an existing freshly built archive:
+node scripts/dev/verify-contract-isolation.mjs --tarball /tmp/shared-utils.tgz
+```
+
+This script extracts into a cleaned temporary project, checks native constants
+and erased type modules with no dependencies, then supplies only Zod for shared
+schemas and NodeNext/Bundler declaration checks. It uses the checkout's
+TypeScript executable and does not install packages or access the network.
+
+### Release artifacts and isolated installs
+
+Workspace builds clean only their compiler-owned dist output before compiling.
+The publish allowlist includes runtime JS, declarations, supported assets,
+server JS maps with embedded source, and explicit CLI/support files. It omits
+unit tests, dev scripts, build caches, and declaration maps pointing to
+unpublished sources. The installed artifact check reads exports/bins and only
+warns on missing files; it never builds or downloads anything.
+
+```bash
+yarn pack --out /tmp/shared-utils.tgz
+node scripts/dev/verify-package-isolation.mjs --tarball /tmp/shared-utils.tgz --out /tmp/shared-utils-package-isolation.json
+node scripts/dev/verify-package-isolation.mjs --tarball /tmp/shared-utils.tgz --only pure --samples 3 --cold-cache --out /tmp/shared-utils-cold-install.json
+```
+
+The maintained verifier checks the archive allowlist, every export/bin and
+relative runtime/type/worker reference, embedded maps, and installed feature
+fixtures. Each fixture is a real extracted Yarn install with only documented
+peers, fresh Node probes or esbuild/Vite builds, and NodeNext/Bundler types.
+`--only` narrows the matrix; `--samples` repeats fresh projects. Default install
+timings share a warm download cache. `--cold-cache` starts each sample with an
+empty download cache and requires registry access. Package counts, archive
+bytes, and install timings are reported separately; none prove dev-server or
+browser latency. Editor isolation remains a separate verifier and accepts
+`--tarball` to reuse this archive.
+
+The worker setup CLI generates `turnstile-worker.js` importing the public
+worker factory and copies the packaged deployment helper. It does not depend
+on unpublished TypeScript sources. Install Wrangler as a development dependency
+in the consuming project before deployment.
 
 ### Dependency Manager
 

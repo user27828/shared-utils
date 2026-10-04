@@ -4,7 +4,7 @@ feature: shared-utils-current-state
 artifact: technical-spec
 status: current-state-baseline
 created: 2026-04-28
-updated: 2026-04-28
+updated: 2026-10-05
 source: codebase-analysis
 ---
 
@@ -96,6 +96,11 @@ Primary source anchors used for tracing:
 - Client runtime: React 19 plus MUI-based UI components.
 - Server runtime: Node 22+ with Express 5 and optional Cloudflare Worker
   deployment for Turnstile.
+- The package publishes native ESM, not separate CommonJS files. Native
+  synchronous `require()` of package exports uses the `module-sync` condition
+  on Node 22.12+ and requires an ESM graph without top-level `await`. Earlier
+  Node 22 releases remain within the ESM runtime target; CommonJS consumers on
+  those versions must use dynamic `import()` or upgrade Node.
 
 ### Tooling
 
@@ -124,12 +129,24 @@ Primary source anchors used for tracing:
 The root package exports domain-specific entrypoints instead of exposing raw
 workspace source folders. Key public surfaces are:
 
-- `.` and `./utils` -> shared runtime utilities
+- `.` and `./utils` -> dependency-free helpers and erased utility types
+- `./utils/environment`, `./utils/validation`, and `./utils/json` -> pure helper modules
+- `./utils/files` and `./utils/dates` -> helpers that read registered options
+- `./utils/options`, `./utils/log`, and `./utils/turnstile` -> explicit configured integrations
+- `./utils/contact` -> contact CSV and vCard serialization without date-library imports
+- `./utils/calendar`, `./utils/meeting-providers`, and `./utils/detect-format` -> optional utility features
 - `./client` and `./client/init` -> reusable browser-side UI and setup
+- `./client/debounce`, `./client/csv`, `./client/countries`, `./client/languages`, `./client/timezones`, `./client/dates` -> focused client helpers
+- `./client/countries/core`, `./client/languages/core` -> data-driven helper cores without bundled geographic tables
+- `./client/components/form/{CountrySelect,LanguageSelect}/custom-data` -> selectors that receive host-provided rows
+- `./client/components/...` -> individually listed direct component modules
 - `./server` -> server helpers and shared server exports
-- `./cms`, `./cms/server`, `./cms/client`, `./cms/client/public`
-- `./fm`, `./fm/server`, `./fm/client`, `./fm/server/s3`
-- `./email`, `./email/server`, `./email/client`
+- `./server/env`, `./server/init`, `./server/turnstile/worker`, `./server/turnstile/middleware` -> explicit server initialization and focused server modules
+- `./cms/constants`, `./cms/types`, `./cms/schemas`, `./cms/validation`, `./cms/errors`, `./cms/server/password`, `./cms/server/sanitization`
+- `./cms`, `./cms/server`, `./cms/server/core`, `./cms/server/express`, `./cms/client`, `./cms/client/api`, `./cms/client/hooks`, `./cms/client/ui`, `./cms/client/public`
+- `./fm/constants`, `./fm/types`, `./fm/schemas`, `./fm/validation`, `./fm/errors`
+- `./fm`, `./fm/server`, `./fm/server/core`, `./fm/server/express`, `./fm/client`, `./fm/client/api`, `./fm/client/hooks`, `./fm/client/ui`, `./fm/server/s3`
+- `./email`, `./email/server`, `./email/server/registry`, `./email/server/attachments`, `./email/server/marketing`, `./email/server/webhooks`, `./email/server/providers/contracts`, `./email/client`, `./email/client/api`, `./email/client/hooks`, `./email/client/ui`
 
 ### Implementation Layout
 
@@ -143,6 +160,11 @@ shared-utils/
 |  |  |- log.ts
 |  |  |- options-manager.ts
 |  |  |- turnstile.ts
+|  |  |- environment.ts
+|  |  |- validation.ts
+|  |  |- files.ts
+|  |  |- dates.ts
+|  |  |- json.ts
 |  |  `- functions.ts
 |  `- index.ts
 |- client/
@@ -173,17 +195,26 @@ shared-utils/
 - `utils/src/options-manager.ts` provides the global `optionsManager`
   singleton used to register utility-specific option managers and apply shared
   config.
-- `server/src/env.ts` eagerly loads environment data and stores the computed
-  `ENV` object into the global options space.
-- `utils/src/functions.ts` provides `isDev()` for unified environment
-  detection rather than ad hoc `window` or `NODE_ENV` checks.
+- `server/src/env.ts` loads environment data and stores the computed `ENV`
+  object into the global options space when consumers explicitly import
+  `server/env`. The broad `server` entrypoint does not load environment files.
+- `utils/src/environment.ts` provides `isDev()` for unified environment
+  detection rather than ad hoc `window` or `NODE_ENV` checks. The legacy
+  `utils/src/functions.ts` deep import remains a compatibility barrel.
+- The root utility entrypoints expose dependency-free helpers only. Configured
+  helpers and integrations use explicit `./utils/*` subpaths so pure consumers
+  do not initialize the OptionsManager, logger, or Turnstile singletons.
 
 #### Logging
 
 - `utils/src/log.ts` is the canonical logging wrapper.
 - `client/src/init.ts` exists as a separate side-effect entrypoint to attach
-  `window.log` without polluting the side-effect-free client barrel.
-- `server/index.ts` also attaches the shared logger to `globalThis` if needed.
+  `window.log` without polluting the side-effect-free client barrel. It loads
+  the canonical OptionsManager before the logger so logger configuration
+  registers with the shared singleton synchronously.
+- `server/src/init.ts` is the explicit server-side logger bootstrap. It attaches
+  the shared logger to `globalThis` only when no logger is already present.
+- `server/index.ts` does not load environment files or attach a global logger.
 
 #### Turnstile
 
@@ -211,7 +242,12 @@ business core and the client package supplies reusable UI shells.
 
 ### CMS Data Model
 
-Source: `utils/src/cms/types.ts`
+Sources: `utils/src/cms/types.ts` (canonical Zod schemas and inferred types),
+`utils/src/cms/constants.ts` (dependency-free values), and
+`utils/src/cms/contracts.ts` (erased public type exports).
+CMS password/sanitization implementations live in `server/src/cms/password.ts`
+and `server/src/cms/sanitization.ts`, published at dedicated server paths.
+The shared CMS barrel has no runtime imports of these helpers.
 
 #### Core enums
 
@@ -253,7 +289,9 @@ Source: `utils/src/cms/types.ts`
 
 ### FM Data Model
 
-Source: `utils/src/fm/types.ts`
+Sources: `utils/src/fm/types.ts` (canonical Zod schemas and inferred types),
+`utils/src/fm/constants.ts` (dependency-free values), and
+`utils/src/fm/contracts.ts` (erased public type exports).
 
 #### Core enums
 
@@ -454,6 +492,12 @@ Observed behavior:
 - lazy history loading when the drawer opens
 - optimistic concurrency conflict handling with overwrite option
 - media selection delegated through injected config and `useFmApi()`
+- `CmsBodyEditor` receives stable engine adapters through
+  `CmsAdminUiConfig.editorAdapters`; the CMS UI module has no literal dynamic
+  imports of editor engines
+- `client/wysiwyg` contains the engine-neutral switcher and adapter contract;
+  each editor has a dedicated public entry, while `client/wysiwyg/all` is the
+  explicit convenience entry for applications that install every engine
 
 ### CMS Public Surface
 
@@ -648,16 +692,34 @@ Important invariants:
 
 ### Public export to implementation examples
 
-| Public surface        | Forward trace                                                                                                       |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `./cms/client`        | `package.json` -> `client/src/cms/index.ts` -> `CmsClient`, hooks, UI pages -> `client/src/cms/ui/*`                |
-| `./cms/client/public` | `package.json` -> `client/src/cms/public.ts` -> `useCmsPublic`, `CmsBodyRenderer`, `CmsPasswordGate`                |
-| `./cms/server`        | `package.json` -> `server/src/cms/index.ts` -> router factories and `CmsServiceCore` -> `utils/src/cms/types.ts`    |
-| `./fm/client`         | `package.json` -> `client/src/fm/index.ts` -> `FmClient`, hooks, `FmMediaLibrary`, `FmFilePicker`                   |
-| `./fm/server`         | `package.json` -> `server/src/fm/index.ts` -> routers, `FmServiceCore`, storage adapters -> `utils/src/fm/types.ts` |
-| `./email/client`      | `package.json` -> `client/src/email/index.ts` -> client, hooks, list/detail preview UI                              |
-| `./email/server`      | `package.json` -> `server/src/email/index.ts` -> registry, marketing, webhooks, providers                           |
-| `./client/init`       | `package.json` -> `client/src/init.ts` -> browser-side logger bootstrap                                             |
+| Public surface            | Forward trace                                                                                                       |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `./cms/client/api`        | `package.json` -> `client/src/cms/api.ts` -> `CmsClient` and erased `CmsApi` contracts                              |
+| `./cms/client/hooks`      | `package.json` -> `client/src/cms/hooks/index.ts` -> CMS React hooks                                                |
+| `./cms/client/ui`         | `package.json` -> `client/src/cms/ui/index.ts` -> CMS UI components                                                 |
+| `./cms/client`            | `package.json` -> `client/src/cms/index.ts` -> `CmsClient`, hooks, UI pages -> `client/src/cms/ui/*`                |
+| `./cms/client/public`     | `package.json` -> `client/src/cms/public.ts` -> `useCmsPublic`, `CmsBodyRenderer`, `CmsPasswordGate`                |
+| `./cms/server/core`       | `package.json` -> `server/src/cms/core.ts` -> `CmsServiceCore` and connector contract                               |
+| `./cms/server/express`    | `package.json` -> `server/src/cms/express/index.ts` -> router and transfer helpers                                  |
+| `./cms/server`            | `package.json` -> `server/src/cms/index.ts` -> router factories and `CmsServiceCore` -> `utils/src/cms/types.ts`    |
+| `./fm/client/api`         | `package.json` -> `client/src/fm/api.ts` -> `FmClient` and erased `FmApi` contract                                  |
+| `./fm/client/hooks`       | `package.json` -> `client/src/fm/hooks/index.ts` -> FM hooks and provider                                           |
+| `./fm/client/ui`          | `package.json` -> `client/src/fm/ui/index.ts` -> FM UI components                                                   |
+| `./fm/client`             | `package.json` -> `client/src/fm/index.ts` -> `FmClient`, hooks, `FmMediaLibrary`, `FmFilePicker`                   |
+| `./fm/server/core`        | `package.json` -> `server/src/fm/core.ts` -> `FmServiceCore` and connector contract                                 |
+| `./fm/server/express`     | `package.json` -> `server/src/fm/express/index.ts` -> authorization and router factories                            |
+| `./fm/server`             | `package.json` -> `server/src/fm/index.ts` -> routers, `FmServiceCore`, storage adapters -> `utils/src/fm/types.ts` |
+| `./email/client/api`      | `package.json` -> `client/src/email/api.ts` -> template SDK and erased email contracts                              |
+| `./email/client/hooks`    | `package.json` -> `client/src/email/hooks/index.ts` -> template hooks                                               |
+| `./email/client/ui`       | `package.json` -> `client/src/email/ui/index.ts` -> preview and admin UI components                                 |
+| `./email/client`          | `package.json` -> `client/src/email/index.ts` -> client, hooks, list/detail preview UI                              |
+| `./email/server`          | `package.json` -> `server/src/email/index.ts` -> registry, marketing, webhooks, providers                           |
+| `./client/init`           | `package.json` -> `client/src/init.ts` -> browser-side logger bootstrap                                             |
+| `./server/init`           | `package.json` -> `server/src/init.ts` -> optional `globalThis.log` bootstrap                                       |
+| `./utils/contact`         | `package.json` -> `utils/src/contact.ts` -> CSV/vCard serialization without calendar dependencies                   |
+| `./utils/calendar`        | `package.json` -> `utils/src/calendar.ts` -> date-fns-backed URL and ICS helpers                                    |
+| `./client/countries/core` | `package.json` -> `client/src/helpers/countries-core.js` -> caller-provided country rows                            |
+| `./client/languages/core` | `package.json` -> `client/src/helpers/languages-core.js` -> caller-provided language rows                           |
 
 ## Reverse Trace
 
@@ -665,8 +727,8 @@ Important invariants:
 
 | Internal module                                   | Reverse trace                                                               |
 | ------------------------------------------------- | --------------------------------------------------------------------------- |
-| `server/src/cms/CmsServiceCore.ts`                | exported through `server/src/cms/index.ts`, published at `./cms/server`     |
-| `server/src/fm/FmServiceCore.ts`                  | exported through `server/src/fm/index.ts`, published at `./fm/server`       |
+| `server/src/cms/CmsServiceCore.ts`                | exported through `server/src/cms/core.ts`, published at `./cms/server/core` |
+| `server/src/fm/FmServiceCore.ts`                  | exported through `server/src/fm/core.ts`, published at `./fm/server/core`   |
 | `client/src/cms/ui/CmsEditPage.tsx`               | exported through `client/src/cms/index.ts`, published at `./cms/client`     |
 | `client/src/fm/components/FmMediaLibrary.tsx`     | exported through `client/src/fm/index.ts`, published at `./fm/client`       |
 | `client/src/email/ui/EmailTemplateDetailPage.tsx` | exported through `client/src/email/index.ts`, published at `./email/client` |
@@ -696,3 +758,21 @@ Important invariants:
   especially CMS.
 - The `test-consumer/` workspace is part of the architecture, not incidental
   demo code. It acts as a real integration harness across runtime targets.
+
+## Consumer installation and release artifacts
+
+The root mandatory dependency contract is limited to `lodash-es`, `nanoid`,
+and `zod`. Date/CSV/HTML helpers, React/MUI/editors, env loading, Express,
+email providers, and Redis/AWS integrations use optional peers documented in
+README. Workspace development dependencies support compilation and tests.
+FM local storage is exported at `fm/server/storage`; S3 config creation uses
+an injected `createFmS3Storage` factory from `fm/server/s3`. CMS Redis usage
+requires `redisFactory` from `cms/server/redis`; the memory limiter entry is
+`cms/server/rate-limiter` and has no Redis import.
+
+Workspace builds clean their compiler-owned output before compilation and
+exclude nested tests. Archives contain generated runtime/declarations/assets,
+explicit CLI files and the Turnstile deployment helper. Declaration maps are
+omitted because source files are not published. Server JS source maps retain
+embedded source for debugging. Install checks derive required artifacts from
+the export/bin contract and perform no network calls or consumer builds.

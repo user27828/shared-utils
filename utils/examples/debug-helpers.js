@@ -2,7 +2,7 @@
  * Debug helpers example for client-side development
  * Shows how to use localStorage overrides and debug utilities
  */
-import { log } from '@shared-utils/utils';
+import { log } from "@user27828/shared-utils/utils/log";
 
 // Configure log for client with debug capabilities
 log.setOptions({

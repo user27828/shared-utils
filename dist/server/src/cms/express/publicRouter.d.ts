@@ -54,4 +54,3 @@ export interface CmsPublicRouterConfig {
     unlockTtlSeconds?: number;
 }
 export declare function createCmsPublicRouter(cfg: CmsPublicRouterConfig): Router;
-//# sourceMappingURL=publicRouter.d.ts.map

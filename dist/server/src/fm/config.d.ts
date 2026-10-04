@@ -81,4 +81,3 @@ export declare const resolveFmLocalUploadRootAbsPath: (cfg: FmServerConfig) => s
  * @returns Array of validated upload path presets.
  */
 export declare const getFmUploadPathPresetsFromConfig: (cfg: FmServerConfig) => FmUploadPathPreset[];
-//# sourceMappingURL=config.d.ts.map

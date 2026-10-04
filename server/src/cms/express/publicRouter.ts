@@ -22,7 +22,7 @@ import {
   isCmsError,
   cmsErrorToResponse,
 } from "../../../../utils/src/cms/errors.js";
-import { verifyCmsPassword } from "../../../../utils/src/cms/password.js";
+import { verifyCmsPassword } from "../password.js";
 import {
   normalizeLocale,
   canonicalizeSlug,

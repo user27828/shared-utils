@@ -10,4 +10,3 @@ declare const env: Record<string, any>;
  */
 export declare const getClientUrl: (req: MaybeRequest) => any;
 export default env;
-//# sourceMappingURL=env.d.ts.map

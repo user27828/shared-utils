@@ -19,4 +19,3 @@ export interface UseEmailTemplatePreviewResult {
     sendTestEmail: () => Promise<void>;
 }
 export declare const useEmailTemplatePreview: (options?: UseEmailTemplatePreviewOptions) => UseEmailTemplatePreviewResult;
-//# sourceMappingURL=useEmailTemplatePreview.d.ts.map

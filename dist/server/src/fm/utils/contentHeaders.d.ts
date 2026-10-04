@@ -9,4 +9,3 @@ export declare const applyFmContentHeaders: (input: {
     filename: string;
     download?: boolean;
 }) => void;
-//# sourceMappingURL=contentHeaders.d.ts.map

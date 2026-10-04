@@ -8,8 +8,7 @@
  * Mirrors the CMS types pattern in utils/src/cms/types.ts.
  */
 import { z } from "zod";
-/** All recognised upload/file purpose values. */
-export declare const FM_PURPOSES: readonly ["resume", "job", "cms_asset", "cms_b64", "avatar", "generic"];
+export { FM_PURPOSES, FM_VISIBILITY, FM_VARIANT_KINDS } from "./constants.js";
 /** Zod enum schema for {@link FM_PURPOSES}. */
 export declare const FmPurposeSchema: z.ZodEnum<{
     resume: "resume";
@@ -20,16 +19,12 @@ export declare const FmPurposeSchema: z.ZodEnum<{
     generic: "generic";
 }>;
 export type FmPurpose = z.infer<typeof FmPurposeSchema>;
-/** File visibility levels. */
-export declare const FM_VISIBILITY: readonly ["private", "public"];
 /** Zod enum schema for {@link FM_VISIBILITY}. */
 export declare const FmVisibilitySchema: z.ZodEnum<{
     private: "private";
     public: "public";
 }>;
 export type FmVisibility = z.infer<typeof FmVisibilitySchema>;
-/** Recognised variant kinds for image derivatives. */
-export declare const FM_VARIANT_KINDS: readonly ["original", "thumb", "preview", "web"];
 /** Zod enum schema for {@link FM_VARIANT_KINDS}. */
 export declare const FmVariantKindSchema: z.ZodEnum<{
     original: "original";
@@ -505,4 +500,3 @@ export interface FmWriteEvent {
     userUid: string;
     metadata?: Record<string, unknown>;
 }
-//# sourceMappingURL=types.d.ts.map

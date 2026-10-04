@@ -77,4 +77,3 @@ export interface CmsAdminRouterConfig {
     };
 }
 export declare function createCmsAdminRouter(cfg: CmsAdminRouterConfig): Router;
-//# sourceMappingURL=adminRouter.d.ts.map

@@ -62,4 +62,3 @@ export declare const createMeetingEntry: (providerKey?: string) => MeetingEntry;
  * Only includes entries that have at least one non-empty value.
  */
 export declare const flattenMeetingEntries: (entries: MeetingEntry[]) => MeetingLinkEntry[];
-//# sourceMappingURL=meetingProviders.d.ts.map

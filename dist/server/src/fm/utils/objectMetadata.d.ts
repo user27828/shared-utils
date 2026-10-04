@@ -42,4 +42,3 @@ export declare const buildFmObjectMetadataForInit: (input: {
 export declare const buildFmObjectMetadataForExistingFile: (input: {
     file: Pick<FmFileRow, "uid" | "original_filename" | "is_public" | "mime_type">;
 }) => Record<string, string>;
-//# sourceMappingURL=objectMetadata.d.ts.map

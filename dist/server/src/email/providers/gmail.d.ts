@@ -23,4 +23,3 @@ export declare class GmailEmailProvider implements IEmailProvider {
 }
 export declare const isConfigured: () => boolean;
 export declare const createGmailProvider: (config: GmailProviderConfig, runtime?: GmailProviderRuntime) => IEmailProvider;
-//# sourceMappingURL=gmail.d.ts.map

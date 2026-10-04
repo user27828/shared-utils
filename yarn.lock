@@ -7379,6 +7379,12 @@ __metadata:
     "@babel/preset-env": "npm:^8.0.6"
     "@babel/preset-react": "npm:^8.0.1"
     "@babel/preset-typescript": "npm:^8.0.1"
+    "@ckeditor/ckeditor5-react": "npm:^11.2.0"
+    "@codemirror/language": "npm:^6.0.0"
+    "@emotion/react": "npm:^11.14.0"
+    "@emotion/styled": "npm:^11.14.1"
+    "@lezer/highlight": "npm:^1.0.0"
+    "@mdxeditor/editor": "npm:^4.2.5"
     "@mui/icons-material": "npm:^9.4.0"
     "@mui/lab": "npm:^9.0.0-beta.9"
     "@mui/material": "npm:^9.4.0"
@@ -7389,6 +7395,7 @@ __metadata:
     "@testing-library/jest-dom": "npm:7.0.1"
     "@testing-library/react": "npm:^16.3.3"
     "@testing-library/user-event": "npm:^14.6.7"
+    "@tinymce/tinymce-react": "npm:^6.3.0"
     "@types/dompurify": "npm:^3.2.0"
     "@types/jest": "npm:^30.0.0"
     "@types/papaparse": "npm:^5.5.2"
@@ -7397,18 +7404,23 @@ __metadata:
     "@vitest/coverage-v8": "npm:5.0.1"
     "@vitest/ui": "npm:5.0.1"
     babel-jest: "npm:^30.5.2"
+    ckeditor5: "npm:^48.5.1"
     date-fns: "npm:^4.4.0"
     date-fns-tz: "npm:^3.2.0"
     dompurify: "npm:^3.4.15"
+    easymde: "npm:^2.21.0"
     jest: "npm:^30.5.2"
     jest-environment-jsdom: "npm:^30.5.2"
     papaparse: "npm:^5.7.0"
     prismjs: "npm:^1.30.0"
+    prop-types: "npm:^15.8.1"
     react: "npm:^19.3.0"
     react-dom: "npm:^19.3.0"
+    tinymce: "npm:^8.9.1"
     typescript: "npm:^6.0.3"
     vite: "npm:8.3.0"
     vitest: "npm:5.0.1"
+    yjs: "npm:^13.6.32"
   peerDependencies:
     "@ckeditor/ckeditor5-react": ">=9.0.0"
     "@mdxeditor/editor": ">=3.0.0 <5.0.0"
@@ -7457,10 +7469,15 @@ __metadata:
     "@shared-utils/utils": "workspace:*"
     "@types/express": "npm:^5.0.6"
     "@types/node": "npm:^26.6.2"
+    "@types/sanitize-html": "npm:^2.16.1"
     babel-jest: "npm:^30.5.2"
+    bcryptjs: "npm:^3.0.3"
     express: "npm:^5.2.1"
+    ioredis: "npm:6.0.0"
     jest: "npm:^30.5.2"
+    marked: "npm:^18.0.13"
     nodemailer: "npm:10.0.10"
+    sanitize-html: "npm:2.17.7"
     ts-jest: "npm:^29.4.12"
     tsx: "npm:^4.23.15"
     typescript: "npm:^6.0.3"
@@ -7491,15 +7508,11 @@ __metadata:
     "@types/jest": "npm:^30.0.0"
     "@types/lodash-es": "npm:^4.17.12"
     "@types/node": "npm:^26.6.2"
-    "@types/sanitize-html": "npm:^2.16.1"
     babel-jest: "npm:^30.5.2"
-    bcryptjs: "npm:^3.0.3"
-    express: "npm:^5.2.1"
-    ioredis: "npm:6.0.0"
     jest: "npm:^30.5.2"
     lodash-es: "npm:^4.18.1"
-    sanitize-html: "npm:2.17.7"
     typescript: "npm:^6.0.3"
+    zod: "npm:~4.1.12"
   languageName: unknown
   linkType: soft
 
@@ -8628,17 +8641,18 @@ __metadata:
     "@babel/preset-env": "npm:^8.0.6"
     "@babel/preset-typescript": "npm:^8.0.1"
     "@testing-library/jest-dom": "npm:7.0.1"
-    "@tinymce/tinymce-react": "npm:^6.3.0"
     "@types/jest": "npm:^30.0.0"
     "@types/supertest": "npm:^7.2.1"
     "@vitest/coverage-v8": "npm:5.0.1"
     "@vitest/ui": "npm:5.0.1"
     babel-jest: "npm:^30.5.2"
+    bcryptjs: "npm:^3.0.3"
     date-fns: "npm:^4.4.0"
     date-fns-tz: "npm:^3.2.0"
     dompurify: "npm:^3.4.15"
     dotenv: "npm:18.0.1"
     dotenv-expand: "npm:^13.0.0"
+    esbuild: "npm:0.28.0"
     express: "npm:^5.2.1"
     jest: "npm:^30.5.2"
     jest-environment-node: "npm:^30.5.2"
@@ -8652,24 +8666,106 @@ __metadata:
     prismjs: "npm:^1.30.0"
     react: "npm:^19.3.0"
     react-dom: "npm:^19.3.0"
+    sanitize-html: "npm:2.17.7"
     supertest: "npm:^7.2.2"
-    tinymce: "npm:^8.9.1"
     typescript: "npm:^6.0.3"
     vite: "npm:8.3.0"
     vitest: "npm:5.0.1"
+    zod: "npm:~4.1.12"
   peerDependencies:
     "@aws-sdk/client-s3": ">=3.0.0"
+    "@aws-sdk/client-sesv2": ^3.1136.0
     "@aws-sdk/s3-request-presigner": ">=3.0.0"
+    "@ckeditor/ckeditor5-react": ">=9.0.0"
+    "@emotion/react": ^11.5.0
+    "@emotion/styled": ^11.3.0
+    "@mdxeditor/editor": ">=3.0.0 <5.0.0"
+    "@mui/icons-material": ^9.0.0
+    "@mui/lab": ^9.0.0-beta.3
+    "@mui/material": ^9.0.0
+    "@mui/x-date-pickers": ^9.0.0
+    "@tinymce/tinymce-react": ">=5.0.0"
+    bcryptjs: ^3.0.3
+    ckeditor5: ">=44.0.0"
+    date-fns: ^4.4.0
+    date-fns-tz: ^3.2.0
+    dompurify: ^3.4.15
+    dotenv: 18.0.1
+    dotenv-expand: ^13.0.0
+    easymde: ">=2.0.0"
+    express: ^5.2.1
+    ioredis: ^6.0.0
+    marked: ^18.0.13
+    nodemailer: 10.0.10
+    papaparse: ^5.7.0
+    prismjs: ^1.30.0
+    prop-types: ^15.8.1
     react: ">=16.8.0"
     react-dom: ">=16.8.0"
+    sanitize-html: ^2.17.7
+    tinymce: ">=6.0.0"
   peerDependenciesMeta:
     "@aws-sdk/client-s3":
       optional: true
+    "@aws-sdk/client-sesv2":
+      optional: true
     "@aws-sdk/s3-request-presigner":
+      optional: true
+    "@ckeditor/ckeditor5-react":
+      optional: true
+    "@emotion/react":
+      optional: true
+    "@emotion/styled":
+      optional: true
+    "@mdxeditor/editor":
+      optional: true
+    "@mui/icons-material":
+      optional: true
+    "@mui/lab":
+      optional: true
+    "@mui/material":
+      optional: true
+    "@mui/x-date-pickers":
+      optional: true
+    "@tinymce/tinymce-react":
+      optional: true
+    bcryptjs:
+      optional: true
+    ckeditor5:
+      optional: true
+    date-fns:
+      optional: true
+    date-fns-tz:
+      optional: true
+    dompurify:
+      optional: true
+    dotenv:
+      optional: true
+    dotenv-expand:
+      optional: true
+    easymde:
+      optional: true
+    express:
+      optional: true
+    ioredis:
+      optional: true
+    marked:
+      optional: true
+    nodemailer:
+      optional: true
+    papaparse:
+      optional: true
+    prismjs:
+      optional: true
+    prop-types:
       optional: true
     react:
       optional: true
     react-dom:
+      optional: true
+    sanitize-html:
+      optional: true
+    tinymce:
       optional: true
   bin:
     "cf:setup-turnstile-worker": ./scripts/setup-turnstile-worker.sh
@@ -10461,6 +10557,95 @@ __metadata:
   languageName: node
   linkType: hard
 
+"esbuild@npm:0.28.0, esbuild@npm:~0.28.0":
+  version: 0.28.0
+  resolution: "esbuild@npm:0.28.0"
+  dependencies:
+    "@esbuild/aix-ppc64": "npm:0.28.0"
+    "@esbuild/android-arm": "npm:0.28.0"
+    "@esbuild/android-arm64": "npm:0.28.0"
+    "@esbuild/android-x64": "npm:0.28.0"
+    "@esbuild/darwin-arm64": "npm:0.28.0"
+    "@esbuild/darwin-x64": "npm:0.28.0"
+    "@esbuild/freebsd-arm64": "npm:0.28.0"
+    "@esbuild/freebsd-x64": "npm:0.28.0"
+    "@esbuild/linux-arm": "npm:0.28.0"
+    "@esbuild/linux-arm64": "npm:0.28.0"
+    "@esbuild/linux-ia32": "npm:0.28.0"
+    "@esbuild/linux-loong64": "npm:0.28.0"
+    "@esbuild/linux-mips64el": "npm:0.28.0"
+    "@esbuild/linux-ppc64": "npm:0.28.0"
+    "@esbuild/linux-riscv64": "npm:0.28.0"
+    "@esbuild/linux-s390x": "npm:0.28.0"
+    "@esbuild/linux-x64": "npm:0.28.0"
+    "@esbuild/netbsd-arm64": "npm:0.28.0"
+    "@esbuild/netbsd-x64": "npm:0.28.0"
+    "@esbuild/openbsd-arm64": "npm:0.28.0"
+    "@esbuild/openbsd-x64": "npm:0.28.0"
+    "@esbuild/openharmony-arm64": "npm:0.28.0"
+    "@esbuild/sunos-x64": "npm:0.28.0"
+    "@esbuild/win32-arm64": "npm:0.28.0"
+    "@esbuild/win32-ia32": "npm:0.28.0"
+    "@esbuild/win32-x64": "npm:0.28.0"
+  dependenciesMeta:
+    "@esbuild/aix-ppc64":
+      optional: true
+    "@esbuild/android-arm":
+      optional: true
+    "@esbuild/android-arm64":
+      optional: true
+    "@esbuild/android-x64":
+      optional: true
+    "@esbuild/darwin-arm64":
+      optional: true
+    "@esbuild/darwin-x64":
+      optional: true
+    "@esbuild/freebsd-arm64":
+      optional: true
+    "@esbuild/freebsd-x64":
+      optional: true
+    "@esbuild/linux-arm":
+      optional: true
+    "@esbuild/linux-arm64":
+      optional: true
+    "@esbuild/linux-ia32":
+      optional: true
+    "@esbuild/linux-loong64":
+      optional: true
+    "@esbuild/linux-mips64el":
+      optional: true
+    "@esbuild/linux-ppc64":
+      optional: true
+    "@esbuild/linux-riscv64":
+      optional: true
+    "@esbuild/linux-s390x":
+      optional: true
+    "@esbuild/linux-x64":
+      optional: true
+    "@esbuild/netbsd-arm64":
+      optional: true
+    "@esbuild/netbsd-x64":
+      optional: true
+    "@esbuild/openbsd-arm64":
+      optional: true
+    "@esbuild/openbsd-x64":
+      optional: true
+    "@esbuild/openharmony-arm64":
+      optional: true
+    "@esbuild/sunos-x64":
+      optional: true
+    "@esbuild/win32-arm64":
+      optional: true
+    "@esbuild/win32-ia32":
+      optional: true
+    "@esbuild/win32-x64":
+      optional: true
+  bin:
+    esbuild: bin/esbuild
+  checksum: 10/49eafc8906cc4a760a1704556bd3b301f808fcdcf2725190383f151741226bf2a2898a03da75a06a896d6217dadc4f3f3168983557ee31bae602e2e37779a83a
+  languageName: node
+  linkType: hard
+
 "esbuild@npm:0.28.1":
   version: 0.28.1
   resolution: "esbuild@npm:0.28.1"
@@ -10547,95 +10732,6 @@ __metadata:
   bin:
     esbuild: bin/esbuild
   checksum: 10/aaa4a922644afffac45e735c99caf343f881e2d36abcc6b6fb53c230bd69940504a5bb6b0041bdd1a690e748ebc681d3308a7d178987c523d74c63c2c280bac8
-  languageName: node
-  linkType: hard
-
-"esbuild@npm:~0.28.0":
-  version: 0.28.0
-  resolution: "esbuild@npm:0.28.0"
-  dependencies:
-    "@esbuild/aix-ppc64": "npm:0.28.0"
-    "@esbuild/android-arm": "npm:0.28.0"
-    "@esbuild/android-arm64": "npm:0.28.0"
-    "@esbuild/android-x64": "npm:0.28.0"
-    "@esbuild/darwin-arm64": "npm:0.28.0"
-    "@esbuild/darwin-x64": "npm:0.28.0"
-    "@esbuild/freebsd-arm64": "npm:0.28.0"
-    "@esbuild/freebsd-x64": "npm:0.28.0"
-    "@esbuild/linux-arm": "npm:0.28.0"
-    "@esbuild/linux-arm64": "npm:0.28.0"
-    "@esbuild/linux-ia32": "npm:0.28.0"
-    "@esbuild/linux-loong64": "npm:0.28.0"
-    "@esbuild/linux-mips64el": "npm:0.28.0"
-    "@esbuild/linux-ppc64": "npm:0.28.0"
-    "@esbuild/linux-riscv64": "npm:0.28.0"
-    "@esbuild/linux-s390x": "npm:0.28.0"
-    "@esbuild/linux-x64": "npm:0.28.0"
-    "@esbuild/netbsd-arm64": "npm:0.28.0"
-    "@esbuild/netbsd-x64": "npm:0.28.0"
-    "@esbuild/openbsd-arm64": "npm:0.28.0"
-    "@esbuild/openbsd-x64": "npm:0.28.0"
-    "@esbuild/openharmony-arm64": "npm:0.28.0"
-    "@esbuild/sunos-x64": "npm:0.28.0"
-    "@esbuild/win32-arm64": "npm:0.28.0"
-    "@esbuild/win32-ia32": "npm:0.28.0"
-    "@esbuild/win32-x64": "npm:0.28.0"
-  dependenciesMeta:
-    "@esbuild/aix-ppc64":
-      optional: true
-    "@esbuild/android-arm":
-      optional: true
-    "@esbuild/android-arm64":
-      optional: true
-    "@esbuild/android-x64":
-      optional: true
-    "@esbuild/darwin-arm64":
-      optional: true
-    "@esbuild/darwin-x64":
-      optional: true
-    "@esbuild/freebsd-arm64":
-      optional: true
-    "@esbuild/freebsd-x64":
-      optional: true
-    "@esbuild/linux-arm":
-      optional: true
-    "@esbuild/linux-arm64":
-      optional: true
-    "@esbuild/linux-ia32":
-      optional: true
-    "@esbuild/linux-loong64":
-      optional: true
-    "@esbuild/linux-mips64el":
-      optional: true
-    "@esbuild/linux-ppc64":
-      optional: true
-    "@esbuild/linux-riscv64":
-      optional: true
-    "@esbuild/linux-s390x":
-      optional: true
-    "@esbuild/linux-x64":
-      optional: true
-    "@esbuild/netbsd-arm64":
-      optional: true
-    "@esbuild/netbsd-x64":
-      optional: true
-    "@esbuild/openbsd-arm64":
-      optional: true
-    "@esbuild/openbsd-x64":
-      optional: true
-    "@esbuild/openharmony-arm64":
-      optional: true
-    "@esbuild/sunos-x64":
-      optional: true
-    "@esbuild/win32-arm64":
-      optional: true
-    "@esbuild/win32-ia32":
-      optional: true
-    "@esbuild/win32-x64":
-      optional: true
-  bin:
-    esbuild: bin/esbuild
-  checksum: 10/49eafc8906cc4a760a1704556bd3b301f808fcdcf2725190383f151741226bf2a2898a03da75a06a896d6217dadc4f3f3168983557ee31bae602e2e37779a83a
   languageName: node
   linkType: hard
 
@@ -17264,6 +17360,13 @@ __metadata:
   version: 4.1.12
   resolution: "zod@npm:4.1.12"
   checksum: 10/c5f04e6ac306515c4db6ef73cf7705f521c7a2107c8c8912416a0658d689f361db9bee829b0bf01ef4a22492f1065c5cbcdb523ce532606ac6792fd714f3c326
+  languageName: node
+  linkType: hard
+
+"zod@npm:~4.1.12":
+  version: 4.1.13
+  resolution: "zod@npm:4.1.13"
+  checksum: 10/0679190318928f69fcb07751063719de232c663b13955fcdb55db59839569d39f3f29b955cb0cba7af0b724233f88c06b3e84c550397ad4e68f8088fa6799d88
   languageName: node
   linkType: hard
 

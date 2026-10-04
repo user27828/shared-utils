@@ -7,4 +7,3 @@ export interface EmailPreviewTabsProps {
 }
 declare const EmailPreviewTabs: React.FC<EmailPreviewTabsProps>;
 export default EmailPreviewTabs;
-//# sourceMappingURL=EmailPreviewTabs.d.ts.map

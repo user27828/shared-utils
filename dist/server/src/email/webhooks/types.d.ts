@@ -54,4 +54,3 @@ export interface WebhookEventHandlers {
     clicked?: WebhookEventCallback;
     spam_report?: WebhookEventCallback;
 }
-//# sourceMappingURL=types.d.ts.map

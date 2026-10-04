@@ -1,24 +1,17 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { missingArtifacts } from "./artifact-contract.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const packageRoot = path.resolve(__dirname, "..");
 
-const requiredFiles = [
-  "dist/utils/index.js",
-  "dist/utils/index.d.ts",
-  "dist/client/index.js",
-  "dist/client/index.d.ts",
-  "dist/server/index.js",
-  "dist/server/index.d.ts",
-];
-
-const missing = requiredFiles.filter((relativePath) => {
-  return !fs.existsSync(path.join(packageRoot, relativePath));
-});
+const manifest = JSON.parse(
+  fs.readFileSync(path.join(packageRoot, "package.json"), "utf8"),
+);
+const missing = missingArtifacts(packageRoot, manifest);
 
 if (missing.length > 0) {
   const preview = missing.slice(0, 4).join(", ");
@@ -27,7 +20,7 @@ if (missing.length > 0) {
   // Important: do not fail installs. GitHub installs expect dist/ to be committed.
   // If dist/ is missing, the consumer install will succeed but runtime imports may fail.
   console.warn(
-    `[shared-utils] Warning: missing built artifacts in dist/ (${preview}${more}). ` +
+    `[shared-utils] Warning: missing package artifacts (${preview}${more}). ` +
       `If you're developing from source, run \`yarn build\` in the shared-utils repo.`,
   );
 }

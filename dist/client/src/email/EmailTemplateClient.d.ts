@@ -17,4 +17,3 @@ export declare class EmailTemplateClient {
     previewTemplate(templateUid: string, body: EmailTemplatePreviewRequest): Promise<EmailTemplatePreviewResponse>;
     sendTestEmail(templateUid: string, fixtureUid?: string): Promise<void>;
 }
-//# sourceMappingURL=EmailTemplateClient.d.ts.map

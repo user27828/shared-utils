@@ -16,4 +16,3 @@ export declare class EmailProviderError extends EmailError {
     });
 }
 export declare const isEmailError: (error: unknown) => error is EmailError;
-//# sourceMappingURL=errors.d.ts.map

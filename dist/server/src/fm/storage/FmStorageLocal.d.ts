@@ -47,4 +47,3 @@ export declare class FmStorageLocal implements FmStorageAdapter {
         to: FmObjectRef;
     }): Promise<void>;
 }
-//# sourceMappingURL=FmStorageLocal.d.ts.map

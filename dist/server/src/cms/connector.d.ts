@@ -87,4 +87,3 @@ export interface CmsConnectorWithPublicHead extends CmsConnector {
 }
 /** Type guard to check if a connector supports public head */
 export declare const hasPublicHead: (connector: CmsConnector) => connector is CmsConnectorWithPublicHead;
-//# sourceMappingURL=connector.d.ts.map

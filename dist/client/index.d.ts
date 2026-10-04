@@ -32,4 +32,3 @@ export { useDebouncedValue, useDebouncedCallback, } from "./src/helpers/debounce
 export type { DebounceOptions, DebounceControls, DebouncedValueOptions, } from "./src/helpers/debounce.js";
 export { formatDate, parseDate, addToDate, dateDifference, isValidDate, getRelativeTime, getTimezoneInfo, getTimezoneOffset, isLeapYear, getDaysInMonth, } from "./src/helpers/date-utils.js";
 export { genderOptions, ethnicityOptions, raceOptions, pronounOptions, sexualOrientationOptions, } from "./src/data/demographic-options.js";
-//# sourceMappingURL=index.d.ts.map

@@ -15,6 +15,6 @@ export { useCmsPublic, } from "./hooks/useCmsPublic.js";
 export { default as CmsBodyRenderer, renderCmsBody, } from "./ui/CmsBodyRenderer.js";
 export { default as CmsPasswordGate } from "./ui/CmsPasswordGate.js";
 export { default as CmsContentNotes } from "./ui/CmsContentNotes.js";
-// Re-export schema constants used by public-facing host apps
-export { CMS_POST_TYPES } from "../../../utils/src/cms/types.js";
+// Re-export dependency-free constants used by public-facing host apps
+export { CMS_POST_TYPES } from "../../../utils/src/cms/constants.js";
 export { normalizeLocale, isValidSlug } from "../../../utils/src/cms/validation.js";

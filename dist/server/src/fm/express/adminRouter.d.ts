@@ -40,4 +40,3 @@ export interface CreateFmRouterConfig {
  * @returns An Express Router with all FM admin routes.
  */
 export declare function createFmRouter(config: CreateFmRouterConfig): Router;
-//# sourceMappingURL=adminRouter.d.ts.map

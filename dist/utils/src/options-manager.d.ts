@@ -135,4 +135,3 @@ declare class GlobalOptionsManager {
 }
 export declare const optionsManager: GlobalOptionsManager;
 export type { UtilityName, GlobalOptions };
-//# sourceMappingURL=options-manager.d.ts.map

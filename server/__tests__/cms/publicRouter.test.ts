@@ -4,7 +4,7 @@ import { jest, describe, test, expect } from "@jest/globals";
 
 import { createCmsPublicRouter } from "../../src/cms/express/publicRouter.js";
 import { createCmsUnlockTokenUtils } from "../../src/cms/unlockToken.js";
-import { hashCmsPassword } from "../../../utils/src/cms/password.js";
+import { hashCmsPassword } from "../../src/cms/password.js";
 
 type AsyncMock = jest.Mock<(...args: any[]) => Promise<any>>;
 

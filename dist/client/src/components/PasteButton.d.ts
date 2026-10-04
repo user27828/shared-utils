@@ -53,4 +53,3 @@ export interface PasteButtonProps {
 }
 declare const PasteButton: React.FC<PasteButtonProps>;
 export default PasteButton;
-//# sourceMappingURL=PasteButton.d.ts.map

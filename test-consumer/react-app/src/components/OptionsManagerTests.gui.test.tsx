@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import OptionsManagerTests from "./OptionsManagerTests";
 
-vi.mock("@user27828/shared-utils/utils", () => {
+vi.mock("@user27828/shared-utils/utils/options", () => {
   return {
     OptionsManager: class {},
     optionsManager: {},

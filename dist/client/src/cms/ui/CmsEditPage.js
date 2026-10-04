@@ -62,7 +62,7 @@ import CmsHistoryDrawer from "./CmsHistoryDrawer.js";
 import CmsVersionNotesForm from "./CmsVersionNotesForm.js";
 import CmsContentNotes from "./CmsContentNotes.js";
 import { useFmApi } from "../../fm/FmClientProvider.js";
-import { isDev } from "../../../../utils/src/functions.js";
+import { isDev } from "../../../../utils/src/environment.js";
 import { useDebouncedCallback } from "../../helpers/debounce.js";
 // ─── Helpers ──────────────────────────────────────────────────────────────
 const safeJsonParse = (input) => {
@@ -1460,7 +1460,7 @@ const CmsEditPage = ({ uid: propUid, config, defaultPostType = "page", defaultLo
                                                                             py: 0.25,
                                                                             fontSize: "0.8rem",
                                                                             textTransform: "none",
-                                                                        }, children: "Text" })] }))] }), _jsx(CmsBodyEditor, { contentType: effectiveContentType, value: content, onChange: setContent, editor: editorOverride, onUploadImage: hasUploadHandler ? effectiveOnUploadImage : undefined, onPickAsset: config?.renderMediaPicker
+                                                                        }, children: "Text" })] }))] }), _jsx(CmsBodyEditor, { contentType: effectiveContentType, value: content, onChange: setContent, editor: editorOverride, editorAdapters: config?.editorAdapters, editorProps: config?.editorProps, onUploadImage: hasUploadHandler ? effectiveOnUploadImage : undefined, onPickAsset: config?.renderMediaPicker
                                                             ? async () => {
                                                                 const result = await openMediaPicker();
                                                                 if (!result) {

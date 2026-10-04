@@ -13,5 +13,5 @@ export { useCmsAdmin, } from "./hooks/useCmsAdmin.js";
 export { useCmsPublic, } from "./hooks/useCmsPublic.js";
 // ── UI components ─────────────────────────────────────────────────────────
 export { CmsListPage, CmsEditPage, CmsConflictDialog, CmsBodyEditor, CmsBodyRenderer, renderCmsBody, CmsPasswordGate, CmsVersionNotesForm, CmsContentNotes, contentTypeToMime, mimeToContentType, defaultToast, } from "./ui/index.js";
-// Re-export schema constants used by host apps for config
-export { CMS_POST_TYPES } from "../../../utils/src/cms/types.js";
+// Re-export dependency-free constants used by host apps for config
+export { CMS_POST_TYPES } from "../../../utils/src/cms/constants.js";

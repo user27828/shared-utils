@@ -7,10 +7,10 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mockOpenCalendarEvent = vi.fn();
 
-vi.mock("../../../../utils/src/contact.js", async () => {
+vi.mock("../../../../utils/src/calendar.js", async () => {
   const actual = await vi.importActual<
-    typeof import("../../../../utils/src/contact.js")
-  >("../../../../utils/src/contact.js");
+    typeof import("../../../../utils/src/calendar.js")
+  >("../../../../utils/src/calendar.js");
 
   return {
     ...actual,

@@ -21,4 +21,3 @@ export declare class SesEmailProvider implements IEmailProvider {
 }
 export declare const isConfigured: () => boolean;
 export declare const createSesProvider: (config: SesProviderConfig, runtime?: SesProviderRuntime) => IEmailProvider;
-//# sourceMappingURL=ses.d.ts.map

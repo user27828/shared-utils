@@ -44,4 +44,3 @@ export interface TagsInputProps {
  */
 export declare const TagsInput: React.FC<TagsInputProps>;
 export default TagsInput;
-//# sourceMappingURL=TagsInput.d.ts.map

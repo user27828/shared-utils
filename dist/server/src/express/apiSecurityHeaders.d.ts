@@ -10,4 +10,3 @@ type NextLike = (...args: unknown[]) => void;
  */
 export declare const apiResponseSecurityHeaders: (_req: unknown, res: HeaderCapableResponse, next: NextLike) => void;
 export {};
-//# sourceMappingURL=apiSecurityHeaders.d.ts.map

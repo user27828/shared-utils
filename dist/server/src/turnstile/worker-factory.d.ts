@@ -29,4 +29,3 @@ export interface TurnstileWorkerConfig extends Omit<TurnstileServerOptions, "sec
 export declare const createTurnstileWorker: (config?: TurnstileWorkerConfig) => {
     fetch(request: Request, env: Environment): Promise<Response>;
 };
-//# sourceMappingURL=worker-factory.d.ts.map

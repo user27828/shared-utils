@@ -22,8 +22,9 @@ vi.mock("@user27828/shared-utils/fm/client", () => {
   };
 });
 
-vi.mock("@user27828/shared-utils/client/wysiwyg", () => {
+vi.mock("@user27828/shared-utils/client/wysiwyg/all", () => {
   return {
+    ALL_WYSIWYG_EDITOR_ADAPTERS: {},
     default: () => <div>Mock WysiwygEditor</div>,
   };
 });
@@ -58,11 +59,23 @@ vi.mock("@user27828/shared-utils/client", () => {
   };
 });
 
-vi.mock("@user27828/shared-utils/utils", () => {
+vi.mock("@user27828/shared-utils/utils/turnstile", () => {
   return {
     turnstile: {},
+    default: {},
+  };
+});
+
+vi.mock("@user27828/shared-utils/utils/log", () => {
+  return {
     log: {},
     Log: class {},
+    default: {},
+  };
+});
+
+vi.mock("@user27828/shared-utils/utils/options", () => {
+  return {
     OptionsManager: class {},
     optionsManager: {},
   };

@@ -4,4 +4,3 @@ export { GmailEmailProvider, isConfigured as isGmailProviderConfigured, createGm
 export { CloudflareEmailProvider, createCloudflareProvider, isConfigured as isCloudflareProviderConfigured, } from "./cloudflare.js";
 export { ResendEmailProvider, isConfigured as isResendProviderConfigured, createResendProvider, } from "./resend.js";
 export { SesEmailProvider, isConfigured as isSesProviderConfigured, createSesProvider, } from "./ses.js";
-//# sourceMappingURL=index.d.ts.map

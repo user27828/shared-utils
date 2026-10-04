@@ -61,4 +61,3 @@ export declare const buildCmsTransferPackage: (args: {
 export declare const parseCmsTransferPackage: (value: string | unknown) => CmsTransferPackage;
 export declare const stringifyCmsTransferPackage: (value: CmsTransferPackage, indentation?: number) => string;
 export declare const buildCmsTransferFilename: (value: CmsTransferPackage) => string;
-//# sourceMappingURL=transferPackage.d.ts.map

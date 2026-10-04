@@ -77,25 +77,25 @@ const sortTimezones = (timezones, topTimezones) => {
         return collator.compare(leftTimezone, rightTimezone);
     });
 };
-export const getSupportedTimezones = ({ topTimezones = DEFAULT_PRIORITY_TIMEZONES, currentValue, } = {}) => {
-    const mergedTimezones = new Set(["UTC", ...getRuntimeSupportedTimezones()]);
+const buildSupportedTimezones = (runtimeTimezones, topTimezones, currentValue) => {
+    const mergedTimezones = new Set(["UTC", ...runtimeTimezones]);
     const normalizedCurrentValue = normalizeTimezoneValue(currentValue);
     if (normalizedCurrentValue) {
         mergedTimezones.add(normalizedCurrentValue);
     }
     return sortTimezones(Array.from(mergedTimezones), topTimezones);
 };
+export const getSupportedTimezones = ({ topTimezones = DEFAULT_PRIORITY_TIMEZONES, currentValue, } = {}) => {
+    return buildSupportedTimezones(getRuntimeSupportedTimezones(), topTimezones, currentValue);
+};
 export const getTimezoneOptions = ({ topTimezones = DEFAULT_PRIORITY_TIMEZONES, currentValue, referenceDate = new Date(), } = {}) => {
-    const runtimeTimezoneSet = new Set([
-        "UTC",
-        ...getRuntimeSupportedTimezones(),
-    ]);
+    const runtimeTimezones = getRuntimeSupportedTimezones();
+    const runtimeTimezoneSet = new Set(["UTC", ...runtimeTimezones]);
     const normalizedCurrentValue = normalizeTimezoneValue(currentValue);
-    return getSupportedTimezones({
-        topTimezones,
-        currentValue: normalizedCurrentValue,
-    }).map((timezone) => {
-        const offsetLabel = formatUtcOffsetLabel(timezone === "UTC" ? "+00:00" : getTimezoneOffset(referenceDate, timezone));
+    return buildSupportedTimezones(runtimeTimezones, topTimezones, normalizedCurrentValue).map((timezone) => {
+        const offsetLabel = formatUtcOffsetLabel(timezone === "UTC"
+            ? "+00:00"
+            : getTimezoneOffset(referenceDate, timezone));
         const friendlyTimezoneName = createFriendlyTimezoneName(timezone);
         const isUnknown = normalizedCurrentValue === timezone && !runtimeTimezoneSet.has(timezone);
         const secondaryLabelParts = [offsetLabel];

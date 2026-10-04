@@ -55,4 +55,3 @@ export declare const generateImageVariants: (input: {
     quality?: number;
     useWorker?: boolean;
 }) => Promise<GenerateImageVariantsResult>;
-//# sourceMappingURL=imageVariants.d.ts.map

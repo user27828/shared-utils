@@ -1,4 +1,4 @@
-export { DEFAULT_CALENDAR_CONFIG } from "../../../utils/src/contact.js";
+export { DEFAULT_CALENDAR_CONFIG } from "../../../utils/src/calendar.js";
 export default CalendarAdd;
 /**
  * Adding events to various calendar services
@@ -44,4 +44,3 @@ declare function CalendarAdd({ event, requireAuth, isAuthenticated, onAuthRequir
     iconOnly?: boolean | undefined;
 }): React.JSX.Element;
 import React from "react";
-//# sourceMappingURL=CalendarAdd.d.ts.map

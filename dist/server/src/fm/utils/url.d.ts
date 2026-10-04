@@ -56,4 +56,3 @@ export declare const buildCanonicalMediaUrl: (params: {
     req?: FmRequestLike;
     pathPrefix?: string;
 }) => string;
-//# sourceMappingURL=url.d.ts.map

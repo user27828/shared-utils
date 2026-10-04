@@ -106,4 +106,3 @@ export interface ProviderRegistration<TConfig = unknown> {
     factory: ProviderFactory<TConfig>;
     isConfigured: ProviderConfigCheck;
 }
-//# sourceMappingURL=types.d.ts.map

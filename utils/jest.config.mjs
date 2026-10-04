@@ -22,6 +22,9 @@ export default {
     ],
   },
   moduleNameMapper: {
+    "^@shared-utils/utils/options$": "<rootDir>/../dist/utils/src/options-manager.js",
+    "^@shared-utils/utils/log$": "<rootDir>/../dist/utils/src/log.js",
+    "^@shared-utils/utils/turnstile$": "<rootDir>/../dist/utils/src/turnstile.js",
     "^@shared-utils/utils$": "<rootDir>/../dist/utils/index.js",
     "^shared-utils/utils$": "<rootDir>/../dist/utils/index.js",
     "^shared-utils$": "<rootDir>/../dist/utils/index.js",

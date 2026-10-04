@@ -16,4 +16,3 @@ declare const countries: {
     population: number;
     flagEmoji: string;
 }[];
-//# sourceMappingURL=countries.d.ts.map

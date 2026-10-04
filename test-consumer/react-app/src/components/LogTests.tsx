@@ -19,7 +19,7 @@ let Log: any = null;
 // Dynamically import to handle potential import issues
 const loadLogUtility = async () => {
   try {
-    const module = (await import("@user27828/shared-utils/utils")) as any;
+    const module = (await import("@user27828/shared-utils/utils/log")) as any;
     console.log("Imported log module successfully:", module);
 
     // The utils module exports log and Log as named exports

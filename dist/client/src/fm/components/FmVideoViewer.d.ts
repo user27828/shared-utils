@@ -34,4 +34,3 @@ export interface FmVideoViewerProps {
  */
 export declare const FmVideoViewer: React.FC<FmVideoViewerProps>;
 export default FmVideoViewer;
-//# sourceMappingURL=FmVideoViewer.d.ts.map

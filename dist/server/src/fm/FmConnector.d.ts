@@ -139,4 +139,3 @@ export interface FmConnectorWithFileLinkDelete extends FmConnector {
 }
 /** Type guard: check if a connector supports file-centric link deletion. */
 export declare function hasFileLinkDelete(connector: FmConnector): connector is FmConnectorWithFileLinkDelete;
-//# sourceMappingURL=FmConnector.d.ts.map

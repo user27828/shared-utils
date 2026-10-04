@@ -54,4 +54,3 @@ export interface CopyButtonProps {
 }
 declare const CopyButton: React.FC<CopyButtonProps>;
 export default CopyButton;
-//# sourceMappingURL=CopyButton.d.ts.map

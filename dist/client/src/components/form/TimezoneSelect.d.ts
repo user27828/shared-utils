@@ -20,4 +20,3 @@ export interface TimezoneSelectProps {
 }
 declare const TimezoneSelect: React.FC<TimezoneSelectProps>;
 export default TimezoneSelect;
-//# sourceMappingURL=TimezoneSelect.d.ts.map

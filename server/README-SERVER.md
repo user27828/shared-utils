@@ -10,11 +10,27 @@ It follows the strict Cloudflare flow directly:
 
 There is no development or localhost bypass in the Turnstile helpers.
 
+## Explicit initialization
+
+Importing `@user27828/shared-utils/server` does not read `.env` files or attach
+the logger to `globalThis`. Import the environment loader only when the server
+application wants that behavior, and import the logger initializer only when
+server code relies on `globalThis.log`:
+
+```typescript
+import env from "@user27828/shared-utils/server/env";
+import "@user27828/shared-utils/server/init";
+```
+
+`server/init` leaves an existing `globalThis.log` untouched. Both paths are
+independent and can be imported separately. The `server/env` entry also
+exports `getClientUrl`.
+
 ## Quick Start
 
 ```javascript
 import express from "express";
-import { optionsManager } from "@user27828/shared-utils/utils";
+import { optionsManager } from "@user27828/shared-utils/utils/options";
 import { createTurnstileMiddleware } from "@user27828/shared-utils/server";
 
 const app = express();

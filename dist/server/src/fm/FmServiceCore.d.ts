@@ -389,4 +389,3 @@ export type FmDeleteOutcome = {
     fileUid: string;
     deletedObjects: number;
 };
-//# sourceMappingURL=FmServiceCore.d.ts.map

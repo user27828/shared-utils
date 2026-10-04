@@ -19,4 +19,3 @@ export { FmVideoViewer, type FmVideoViewerProps, } from "./components/FmVideoVie
 export { FmImageViewer, type FmImageViewerProps, } from "./components/FmImageViewer.js";
 export { FmFilePicker, type FmFilePickerProps, } from "./components/FmFilePicker.js";
 export { generateImageVariants, constrainToCanvasLimits, supportsOffscreenCanvas, DEFAULT_VARIANT_WIDTHS, MAX_CANVAS_DIMENSION, type ImageVariantResult, type GenerateImageVariantsResult, } from "./utils/imageVariants.js";
-//# sourceMappingURL=index.d.ts.map

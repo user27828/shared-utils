@@ -72,6 +72,8 @@ export type {
   CmsVersionNotesFormProps,
   CmsContentNotesProps,
   CmsAdminUiConfig,
+  CmsBodyEditorAdapterMap,
+  CmsBodyEditorEngineProps,
   CmsCategoryOption,
   CmsEditorPreference,
   CmsMediaPickerProps,
@@ -79,6 +81,6 @@ export type {
   CmsNavigationAdapter,
 } from "./ui/index.js";
 
-// Re-export schema constants used by host apps for config
-export { CMS_POST_TYPES } from "../../../utils/src/cms/types.js";
+// Re-export dependency-free constants used by host apps for config
+export { CMS_POST_TYPES } from "../../../utils/src/cms/constants.js";
 export type { CmsPostType } from "../../../utils/src/cms/types.js";

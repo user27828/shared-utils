@@ -126,4 +126,3 @@ export interface FmStorageAdapter {
      */
     destroy?(): void;
 }
-//# sourceMappingURL=FmStorageAdapter.d.ts.map

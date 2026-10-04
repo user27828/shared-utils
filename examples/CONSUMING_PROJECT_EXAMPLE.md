@@ -2,7 +2,7 @@
 
 This example shows the current shared-utils Turnstile shape:
 
-- client widget rendering from `@user27828/shared-utils/utils`
+- client widget rendering from `@user27828/shared-utils/utils/turnstile`
 - strict verification from `@user27828/shared-utils/server`
 - optional Cloudflare Worker deployment for edge verification
 
@@ -65,7 +65,7 @@ app.post("/api/contact", async (req, res) => {
 
 ```html
 <script type="module">
-  import { turnstile } from "@user27828/shared-utils/utils";
+  import { turnstile } from "@user27828/shared-utils/utils/turnstile";
 
   turnstile.setOptions({
     siteKey: "YOUR_SITE_KEY",

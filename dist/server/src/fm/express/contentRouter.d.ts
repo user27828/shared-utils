@@ -29,4 +29,3 @@ export interface CreateFmContentRouterConfig {
  * @returns An Express Router with the content endpoint.
  */
 export declare function createFmContentRouter(config: CreateFmContentRouterConfig): Router;
-//# sourceMappingURL=contentRouter.d.ts.map

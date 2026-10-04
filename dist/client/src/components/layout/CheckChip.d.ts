@@ -17,4 +17,3 @@ export interface CheckChipProps extends Omit<ChipProps, "label" | "icon" | "onCl
 }
 export declare const CheckChip: React.ForwardRefExoticComponent<Omit<CheckChipProps, "ref"> & React.RefAttributes<HTMLInputElement>>;
 export default CheckChip;
-//# sourceMappingURL=CheckChip.d.ts.map

@@ -259,4 +259,3 @@ export type CmsPublicUnlockResult = {
     message: string;
     statusCode: number | null;
 };
-//# sourceMappingURL=CmsApi.d.ts.map

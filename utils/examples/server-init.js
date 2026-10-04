@@ -2,7 +2,8 @@
  * Complete server-side initialization example
  * Includes logging and Turnstile server verification configuration
  */
-import { log, optionsManager } from "@shared-utils/utils";
+import { log } from "@user27828/shared-utils/utils/log";
+import { optionsManager } from "@user27828/shared-utils/utils/options";
 
 // Configuration values would be injected by your application
 const CONFIG = {

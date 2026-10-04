@@ -21,7 +21,9 @@ describe("timezone helpers", () => {
 
     if (typeof intlWithSupportedValues.supportedValuesOf === "function") {
       expect(supportedTimezones).toEqual(
-        expect.arrayContaining(intlWithSupportedValues.supportedValuesOf("timeZone")),
+        expect.arrayContaining(
+          intlWithSupportedValues.supportedValuesOf("timeZone"),
+        ),
       );
     }
   });
@@ -63,6 +65,30 @@ describe("timezone helpers", () => {
 
     expect(newYorkOption?.secondaryLabel).toContain("UTC-04:00");
     expect(newYorkOption?.secondaryLabel).not.toMatch(/\.\d/);
+  });
+
+  it("keeps priority order and computes offsets for the requested DST date", () => {
+    const priorityTimezones = getSupportedTimezones({
+      topTimezones: ["Europe/London", "UTC"],
+    });
+    const winterOptions = getTimezoneOptions({
+      currentValue: "America/New_York",
+      referenceDate: new Date("2026-01-15T12:00:00Z"),
+    });
+    const summerOptions = getTimezoneOptions({
+      currentValue: "America/New_York",
+      referenceDate: new Date("2026-07-15T12:00:00Z"),
+    });
+
+    expect(priorityTimezones.slice(0, 2)).toEqual(["Europe/London", "UTC"]);
+    expect(
+      winterOptions.find((option) => option.value === "America/New_York")
+        ?.secondaryLabel,
+    ).toContain("UTC-05:00");
+    expect(
+      summerOptions.find((option) => option.value === "America/New_York")
+        ?.secondaryLabel,
+    ).toContain("UTC-04:00");
   });
 });
 

@@ -7,4 +7,3 @@ import type { TurnstileServerOptions } from "./types.js";
  * Automatically uses the global optionsManager configuration.
  */
 export declare const createTurnstileMiddleware: (options?: Partial<TurnstileServerOptions>) => (req: any, res: any, next: any) => Promise<any>;
-//# sourceMappingURL=middleware.d.ts.map

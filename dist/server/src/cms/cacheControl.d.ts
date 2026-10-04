@@ -27,4 +27,3 @@ export declare const getCmsPublicCacheHeaders: (opts: CmsPublicCacheHeaderOption
 export declare const applyCmsPublicCacheHeaders: (res: {
     setHeader(name: string, value: string): void;
 }, opts: CmsPublicCacheHeaderOptions) => void;
-//# sourceMappingURL=cacheControl.d.ts.map
