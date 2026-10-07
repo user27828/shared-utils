@@ -21,7 +21,12 @@ The core owns **semantics**. The connector owns **persistence**. The connector m
 Your connector must implement the `CmsConnector` interface:
 
 ```ts
-import type { CmsConnector } from "@user27828/shared-utils/cms/server";
+import type {
+  CmsAtomicUpdateResult,
+  CmsCollaboratorReplaceResult,
+  CmsConnector,
+  CmsEditLockResult,
+} from "@user27828/shared-utils/cms/server";
 ```
 
 ### Required methods
@@ -31,24 +36,54 @@ interface CmsConnector {
   // ── Head table CRUD ─────────────────────────────────────────
   getByUid(uid: string): Promise<CmsHeadRow | null>;
   insert(row: Partial<CmsHeadRow> & { uid: string }): Promise<CmsHeadRow>;
-  updateByUid(uid: string, patch: Partial<CmsHeadRow>): Promise<CmsHeadRow | null>;
+  updateByUid(
+    uid: string,
+    patch: Partial<CmsHeadRow>,
+  ): Promise<CmsHeadRow | null>;
+  updateVersionedByUid(input: {
+    uid: string;
+    expectedEtag: string | null;
+    patch: Partial<CmsHeadRow>;
+    historySnapshot: Record<string, unknown>;
+  }): Promise<CmsAtomicUpdateResult>;
+  acquireEditLock(input: {
+    uid: string;
+    actorUserUid: string;
+    ttlMs: number;
+  }): Promise<CmsEditLockResult>;
+  releaseEditLock(input: {
+    uid: string;
+    actorUserUid: string;
+    force: boolean;
+  }): Promise<CmsEditLockResult>;
   deleteByUid(uid: string): Promise<void>;
   list(params: CmsListRequest): Promise<CmsListResponse>;
 
   // ── Public read ─────────────────────────────────────────────
   getPublishedBySlug(params: {
-    postType: string; locale: string; slug: string;
+    postType: string;
+    locale: string;
+    slug: string;
   }): Promise<CmsHeadRow | null>;
 
   // ── History ─────────────────────────────────────────────────
   insertHistory(row: {
-    cms_uid: string; revision: number; snapshot: unknown; created_by: string | null;
+    cms_uid: string;
+    revision: number;
+    snapshot: unknown;
+    created_by: string | null;
   }): Promise<CmsHistoryRow>;
   listHistory(params: {
-    cmsUid: string; limit?: number; offset?: number; includeSoftDeleted?: boolean;
+    cmsUid: string;
+    limit?: number;
+    offset?: number;
+    includeSoftDeleted?: boolean;
   }): Promise<{ items: CmsHistoryRow[]; totalCount: number }>;
   getHistoryById(id: number): Promise<CmsHistoryRow | null>;
-  updateHistoryById(id: number, patch: Partial<CmsHistoryRow>): Promise<CmsHistoryRow | null>;
+  updateHistoryById(
+    id: number,
+    patch: Partial<CmsHistoryRow>,
+  ): Promise<CmsHistoryRow | null>;
   deleteHistoryById(id: number): Promise<void>;
 
   // ── Collaborators ───────────────────────────────────────────
@@ -56,8 +91,21 @@ interface CmsConnector {
   replaceCollaborators(
     cmsUid: string,
     collaborators: Array<{ user_uid: string; role: string }>,
-  ): Promise<CmsCollaboratorRow[]>;
+  ): Promise<CmsCollaboratorReplaceResult>;
 }
+
+type CmsAtomicUpdateResult =
+  | { status: "updated"; row: CmsHeadRow }
+  | { status: "not_found" }
+  | { status: "precondition_failed"; currentEtag: string | null };
+
+type CmsEditLockResult =
+  | { status: "acquired" | "released"; row: CmsHeadRow }
+  | { status: "not_found" }
+  | { status: "locked"; lockedBy?: string; lockedAt?: string };
+
+type CmsCollaboratorReplaceResult =
+  { status: "replaced"; items: CmsCollaboratorRow[] } | { status: "not_found" };
 ```
 
 ### Optional capability: public head
@@ -69,7 +117,9 @@ import type { CmsConnectorWithPublicHead } from "@user27828/shared-utils/cms/ser
 
 interface CmsConnectorWithPublicHead extends CmsConnector {
   getPublicHeadBySlug(params: {
-    postType: string; locale: string; slug: string;
+    postType: string;
+    locale: string;
+    slug: string;
   }): Promise<CmsPublicHead | null>;
 }
 ```
@@ -95,6 +145,13 @@ The core auto-detects this capability via the `hasPublicHead()` type guard. If y
 - Return the full updated row, or `null` if the UID was not found.
 - **Do not** delete or drop fields from the patch. The core already filters which fields to include.
 
+### Versioned writes and locks
+
+- `updateVersionedByUid` must compare `expectedEtag`, update the head row, and insert the supplied snapshot of the previous state in one transaction. Return `precondition_failed` when the stored ETag changed and `not_found` when the head row is missing. A failed history write must roll the head update back.
+- The core uses this operation for update, publish, trash, restore, password changes, and history restores. Metadata-only updates continue through `updateByUid` and do not bump the ETag or write history.
+- `acquireEditLock` must lock the parent row while checking owner and TTL. Return `locked` with the current owner when another unexpired owner holds it.
+- `releaseEditLock` must serialize its owner/force check and update. The core and router retain responsibility for authorizing force unlocks.
+
 ### deleteByUid
 
 - Permanently delete the row. No soft-delete -- the core enforces trash-first semantics before calling this.
@@ -105,7 +162,7 @@ Accepts `CmsListRequest`:
 
 ```ts
 interface CmsListRequest {
-  q?: string;           // full-text search
+  q?: string; // full-text search
   status?: "draft" | "published" | "trash";
   post_type?: string;
   locale?: string;
@@ -160,7 +217,7 @@ Key behaviors:
 ### Collaborator methods
 
 - `listCollaborators` -- Return all collaborator rows for a CMS UID.
-- `replaceCollaborators` -- Atomically replace all collaborators: delete existing, insert new. Return the new list.
+- `replaceCollaborators` -- Validate the complete set, serialize on the CMS head row, then delete and insert in one transaction. Return `not_found` if the head row is missing. Any validation or insert error must preserve the old set.
 
 ## Column Aliasing
 
@@ -168,10 +225,10 @@ If your database uses different column names than the CMS API fields, the connec
 
 Example from the Supabase connector:
 
-| API field (`CmsHeadRow`) | DB column |
-|---|---|
-| `content` | `body` |
-| `userUid` | `created_by` |
+| API field (`CmsHeadRow`) | DB column    |
+| ------------------------ | ------------ |
+| `content`                | `body`       |
+| `userUid`                | `created_by` |
 
 The core always speaks in API field names. Your connector translates at the persistence boundary.
 
@@ -203,13 +260,18 @@ export class InMemoryCmsConnector implements CmsConnector {
     return this.rows.get(uid) ?? null;
   }
 
-  async insert(row: Partial<CmsHeadRow> & { uid: string }): Promise<CmsHeadRow> {
+  async insert(
+    row: Partial<CmsHeadRow> & { uid: string },
+  ): Promise<CmsHeadRow> {
     const full = { ...row } as CmsHeadRow;
     this.rows.set(row.uid, full);
     return full;
   }
 
-  async updateByUid(uid: string, patch: Partial<CmsHeadRow>): Promise<CmsHeadRow | null> {
+  async updateByUid(
+    uid: string,
+    patch: Partial<CmsHeadRow>,
+  ): Promise<CmsHeadRow | null> {
     const existing = this.rows.get(uid);
     if (!existing) {
       return null;
@@ -217,6 +279,87 @@ export class InMemoryCmsConnector implements CmsConnector {
     const updated = { ...existing, ...patch };
     this.rows.set(uid, updated);
     return updated;
+  }
+
+  async updateVersionedByUid(input: {
+    uid: string;
+    expectedEtag: string | null;
+    patch: Partial<CmsHeadRow>;
+    historySnapshot: Record<string, unknown>;
+  }): Promise<CmsAtomicUpdateResult> {
+    const existing = this.rows.get(input.uid);
+    if (!existing) return { status: "not_found" };
+    if ((existing.etag ?? null) !== input.expectedEtag) {
+      return {
+        status: "precondition_failed",
+        currentEtag: existing.etag ?? null,
+      };
+    }
+    const revision = existing.version_number ?? 0;
+    const history = {
+      id: ++this.historySeq,
+      cms_uid: input.uid,
+      revision,
+      snapshot: input.historySnapshot,
+      created_by: existing.userUid ?? null,
+      created_at: new Date().toISOString(),
+    };
+    const row = { ...existing, ...input.patch };
+    this.history.push(history);
+    this.rows.set(input.uid, row);
+    return { status: "updated", row };
+  }
+
+  async acquireEditLock(input: {
+    uid: string;
+    actorUserUid: string;
+    ttlMs: number;
+  }): Promise<CmsEditLockResult> {
+    const existing = this.rows.get(input.uid);
+    if (!existing) return { status: "not_found" };
+    const lockedAt = existing.locked_at ? Date.parse(existing.locked_at) : NaN;
+    if (
+      existing.locked_by &&
+      existing.locked_by !== input.actorUserUid &&
+      Number.isFinite(lockedAt) &&
+      Date.now() - lockedAt < input.ttlMs
+    ) {
+      return {
+        status: "locked",
+        lockedBy: existing.locked_by,
+        lockedAt: existing.locked_at,
+      };
+    }
+    const row = {
+      ...existing,
+      locked_by: input.actorUserUid,
+      locked_at: new Date().toISOString(),
+    };
+    this.rows.set(input.uid, row);
+    return { status: "acquired", row };
+  }
+
+  async releaseEditLock(input: {
+    uid: string;
+    actorUserUid: string;
+    force: boolean;
+  }): Promise<CmsEditLockResult> {
+    const existing = this.rows.get(input.uid);
+    if (!existing) return { status: "not_found" };
+    if (
+      existing.locked_by &&
+      existing.locked_by !== input.actorUserUid &&
+      !input.force
+    ) {
+      return {
+        status: "locked",
+        lockedBy: existing.locked_by,
+        lockedAt: existing.locked_at,
+      };
+    }
+    const row = { ...existing, locked_by: null, locked_at: null };
+    this.rows.set(input.uid, row);
+    return { status: "released", row };
   }
 
   async deleteByUid(uid: string): Promise<void> {
@@ -253,7 +396,9 @@ export class InMemoryCmsConnector implements CmsConnector {
   }
 
   async getPublishedBySlug(params: {
-    postType: string; locale: string; slug: string;
+    postType: string;
+    locale: string;
+    slug: string;
   }): Promise<CmsHeadRow | null> {
     for (const row of this.rows.values()) {
       if (
@@ -270,7 +415,10 @@ export class InMemoryCmsConnector implements CmsConnector {
   }
 
   async insertHistory(row: {
-    cms_uid: string; revision: number; snapshot: unknown; created_by: string | null;
+    cms_uid: string;
+    revision: number;
+    snapshot: unknown;
+    created_by: string | null;
   }): Promise<CmsHistoryRow> {
     const entry: CmsHistoryRow = {
       id: ++this.historySeq,
@@ -285,7 +433,10 @@ export class InMemoryCmsConnector implements CmsConnector {
   }
 
   async listHistory(params: {
-    cmsUid: string; limit?: number; offset?: number; includeSoftDeleted?: boolean;
+    cmsUid: string;
+    limit?: number;
+    offset?: number;
+    includeSoftDeleted?: boolean;
   }): Promise<{ items: CmsHistoryRow[]; totalCount: number }> {
     let items = this.history.filter((h) => h.cms_uid === params.cmsUid);
     if (!params.includeSoftDeleted) {
@@ -302,7 +453,8 @@ export class InMemoryCmsConnector implements CmsConnector {
   }
 
   async updateHistoryById(
-    id: number, patch: Partial<CmsHistoryRow>,
+    id: number,
+    patch: Partial<CmsHistoryRow>,
   ): Promise<CmsHistoryRow | null> {
     const idx = this.history.findIndex((h) => h.id === id);
     if (idx < 0) {
@@ -323,7 +475,20 @@ export class InMemoryCmsConnector implements CmsConnector {
   async replaceCollaborators(
     cmsUid: string,
     collaborators: Array<{ user_uid: string; role: string }>,
-  ): Promise<CmsCollaboratorRow[]> {
+  ): Promise<CmsCollaboratorReplaceResult> {
+    if (!this.rows.has(cmsUid)) return { status: "not_found" };
+    const seen = new Set<string>();
+    for (const collaborator of collaborators) {
+      if (seen.has(collaborator.user_uid)) {
+        throw new Error(
+          `Duplicate CMS collaborator user: ${collaborator.user_uid}`,
+        );
+      }
+      if (!["author", "publisher", "viewer"].includes(collaborator.role)) {
+        throw new Error(`Invalid CMS collaborator role: ${collaborator.role}`);
+      }
+      seen.add(collaborator.user_uid);
+    }
     const rows: CmsCollaboratorRow[] = collaborators.map((c, i) => ({
       id: i + 1,
       cms_uid: cmsUid,
@@ -332,7 +497,7 @@ export class InMemoryCmsConnector implements CmsConnector {
       created_at: new Date().toISOString(),
     }));
     this.collaborators.set(cmsUid, rows);
-    return rows;
+    return { status: "replaced", items: rows };
   }
 }
 ```
@@ -350,9 +515,16 @@ const core = new CmsServiceCore({
 });
 
 // Use with Express routers
-import { createCmsAdminRouter, createCmsPublicRouter } from "@user27828/shared-utils/cms/server";
+import {
+  createCmsAdminRouter,
+  createCmsPublicRouter,
+} from "@user27828/shared-utils/cms/server";
 
-app.use("/api/admin/cms", authMiddleware, createCmsAdminRouter({ service: core, authz }));
+app.use(
+  "/api/admin/cms",
+  authMiddleware,
+  createCmsAdminRouter({ service: core, authz }),
+);
 app.use("/api/public/cms", createCmsPublicRouter({ service: core }));
 ```
 
@@ -381,20 +553,23 @@ runCmsConnectorConformanceTests({
 
 The harness exercises every `CmsConnector` method:
 
-| Test | What it validates |
-|---|---|
-| **insert + getByUid** | Inserted row is retrievable by UID with correct field values |
-| **updateByUid** | Partial updates are applied and persisted |
-| **deleteByUid** | Row is removed and subsequent `getByUid` returns null |
-| **list with status filter** | Items filtered by status return only matching rows |
-| **list with pagination** | `limit` and `offset` are respected |
-| **getPublishedBySlug** | Published rows are found by (postType, locale, slug) triple |
-| **getPublishedBySlug (miss)** | Non-existent slugs return null |
-| **insertHistory + listHistory** | History entries persist and are listed for the correct CMS UID |
-| **getHistoryById** | Single history entry is retrievable by auto-increment ID |
-| **updateHistoryById** | Soft-delete fields are applied |
-| **deleteHistoryById** | History entry is permanently removed |
-| **listCollaborators + replaceCollaborators** | Replacement is atomic; cleared list returns empty array |
+| Test                                         | What it validates                                                               |
+| -------------------------------------------- | ------------------------------------------------------------------------------- |
+| **insert + getByUid**                        | Inserted row is retrievable by UID with correct field values                    |
+| **updateByUid**                              | Metadata-only partial updates are applied and persisted                         |
+| **updateVersionedByUid**                     | Two writes with one ETag produce one winner; history is committed with the head |
+| **acquireEditLock**                          | Concurrent lock attempts produce one owner                                      |
+| **releaseEditLock**                          | Only the owner or an authorized force release can clear the lock                |
+| **deleteByUid**                              | Row is removed and subsequent `getByUid` returns null                           |
+| **list with status filter**                  | Items filtered by status return only matching rows                              |
+| **list with pagination**                     | `limit` and `offset` are respected                                              |
+| **getPublishedBySlug**                       | Published rows are found by (postType, locale, slug) triple                     |
+| **getPublishedBySlug (miss)**                | Non-existent slugs return null                                                  |
+| **insertHistory + listHistory**              | History entries persist and are listed for the correct CMS UID                  |
+| **getHistoryById**                           | Single history entry is retrievable by auto-increment ID                        |
+| **updateHistoryById**                        | Soft-delete fields are applied                                                  |
+| **deleteHistoryById**                        | History entry is permanently removed                                            |
+| **listCollaborators + replaceCollaborators** | Whole-set replacement is serialized and preserves the prior set on failure      |
 
 ### Integrating with your test runner
 
@@ -418,55 +593,55 @@ The CMS core is schema-agnostic, but your connector's backing database must supp
 
 ### `cms` (head table)
 
-| Column | Type | Notes |
-|---|---|---|
-| `uid` | text, PK | Unique content identifier |
-| `title` | text | |
-| `content` (or `body`) | text | Content body |
-| `content_type` | text | `text/html`, `text/markdown`, `application/json`, `text/plain` |
-| `slug` | text | URL-safe identifier, unique per (post_type, locale) |
-| `locale` | text | e.g., `en`, `es` |
-| `post_type` | text | `post`, `page`, `blog`, `faq`, etc. |
-| `options` | jsonb | Arbitrary metadata (OG tags, SEO, etc.) |
-| `tags` | text[] | Tag array |
-| `password_hash` | text, nullable | bcrypt hash for password-protected content |
-| `password_version` | int | Incremented on password change |
-| `status` | text | `draft`, `published`, `trash` |
-| `etag` | text | Concurrency token (computed by core) |
-| `version_number` | int | Monotonically increasing |
-| `created_at` | timestamptz | |
-| `updated_at` | timestamptz | |
-| `published_at` | timestamptz, nullable | |
-| `first_published_at` | timestamptz, nullable | |
-| `locked_by` | uuid, nullable | User UID holding the lock |
-| `locked_at` | timestamptz, nullable | |
-| `trashed_at` | timestamptz, nullable | |
-| `trashed_by` | uuid, nullable | |
-| `archived_at` | timestamptz, nullable | |
-| `userUid` / `created_by` | uuid, nullable | Content author |
+| Column                   | Type                  | Notes                                                          |
+| ------------------------ | --------------------- | -------------------------------------------------------------- |
+| `uid`                    | text, PK              | Unique content identifier                                      |
+| `title`                  | text                  |                                                                |
+| `content` (or `body`)    | text                  | Content body                                                   |
+| `content_type`           | text                  | `text/html`, `text/markdown`, `application/json`, `text/plain` |
+| `slug`                   | text                  | URL-safe identifier, unique per (post_type, locale)            |
+| `locale`                 | text                  | e.g., `en`, `es`                                               |
+| `post_type`              | text                  | `post`, `page`, `blog`, `faq`, etc.                            |
+| `options`                | jsonb                 | Arbitrary metadata (OG tags, SEO, etc.)                        |
+| `tags`                   | text[]                | Tag array                                                      |
+| `password_hash`          | text, nullable        | bcrypt hash for password-protected content                     |
+| `password_version`       | int                   | Incremented on password change                                 |
+| `status`                 | text                  | `draft`, `published`, `trash`                                  |
+| `etag`                   | text                  | Concurrency token (computed by core)                           |
+| `version_number`         | int                   | Monotonically increasing                                       |
+| `created_at`             | timestamptz           |                                                                |
+| `updated_at`             | timestamptz           |                                                                |
+| `published_at`           | timestamptz, nullable |                                                                |
+| `first_published_at`     | timestamptz, nullable |                                                                |
+| `locked_by`              | uuid, nullable        | User UID holding the lock                                      |
+| `locked_at`              | timestamptz, nullable |                                                                |
+| `trashed_at`             | timestamptz, nullable |                                                                |
+| `trashed_by`             | uuid, nullable        |                                                                |
+| `archived_at`            | timestamptz, nullable |                                                                |
+| `userUid` / `created_by` | uuid, nullable        | Content author                                                 |
 
 ### `cms_history` (revision table)
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | serial, PK | Auto-increment |
-| `cms_uid` | text, FK | References `cms.uid` |
-| `revision` | int | Version number at time of snapshot |
-| `snapshot` | jsonb | Full row snapshot |
-| `created_by` | uuid, nullable | |
-| `soft_deleted_at` | timestamptz, nullable | |
-| `soft_deleted_by` | uuid, nullable | |
-| `created_at` | timestamptz | |
+| Column            | Type                  | Notes                              |
+| ----------------- | --------------------- | ---------------------------------- |
+| `id`              | serial, PK            | Auto-increment                     |
+| `cms_uid`         | text, FK              | References `cms.uid`               |
+| `revision`        | int                   | Version number at time of snapshot |
+| `snapshot`        | jsonb                 | Full row snapshot                  |
+| `created_by`      | uuid, nullable        |                                    |
+| `soft_deleted_at` | timestamptz, nullable |                                    |
+| `soft_deleted_by` | uuid, nullable        |                                    |
+| `created_at`      | timestamptz           |                                    |
 
 ### `cms_collaborators` (collaborator table)
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | serial, PK | |
-| `cms_uid` | text, FK | References `cms.uid` |
-| `user_uid` | uuid | |
-| `role` | text | e.g., `author`, `reviewer` |
-| `created_at` | timestamptz | |
+| Column       | Type        | Notes                      |
+| ------------ | ----------- | -------------------------- |
+| `id`         | serial, PK  |                            |
+| `cms_uid`    | text, FK    | References `cms.uid`       |
+| `user_uid`   | uuid        |                            |
+| `role`       | text        | e.g., `author`, `reviewer` |
+| `created_at` | timestamptz |                            |
 
 Exact column names may differ. The connector is responsible for mapping between the API field names (`CmsHeadRow`) and whatever your database uses.
 

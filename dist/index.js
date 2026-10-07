@@ -7,7 +7,8 @@
  *
  * Usage:
  * - Client components: import { CountrySelect } from '@shared-utils/client'
- * - Utils: import { log } from '@shared-utils/utils'
+ * - Pure utilities: import { isValidEmail } from '@user27828/shared-utils/utils'
+ * - Logger: import { log } from '@user27828/shared-utils/utils/log'
  */
 // No exports from root - use specific import paths
 // This ensures proper tree-shaking and avoids JSX import issues

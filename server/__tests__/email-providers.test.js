@@ -275,7 +275,7 @@ describe("Email providers", () => {
 
     expect(sendMail).toHaveBeenCalledTimes(1);
     expect(infoSpy).toHaveBeenCalledWith(
-      expect.stringContaining("[gmail.js]"),
+      expect.stringMatching(/\[gmail\.(?:js|ts)\]/),
       expectedMessage,
     );
   });

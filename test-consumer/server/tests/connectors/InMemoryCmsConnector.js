@@ -60,6 +60,111 @@ export class InMemoryCmsConnector {
     return clone(updated);
   }
 
+  async updateVersionedByUid({
+    uid,
+    expectedEtag,
+    patch,
+    historySnapshot,
+  }) {
+    const existing = this._heads.get(uid);
+    if (!existing) {
+      return { status: "not_found" };
+    }
+    if ((existing.etag ?? null) !== expectedEtag) {
+      return {
+        status: "precondition_failed",
+        currentEtag: existing.etag ?? null,
+      };
+    }
+    if (this.failNextVersionedHistoryWrite) {
+      this.failNextVersionedHistoryWrite = false;
+      throw new Error("Injected history write failure");
+    }
+
+    const revision = existing.version_number ?? 0;
+    const historyConflict = Array.from(this._history.values()).some(
+      (row) => row.cms_uid === uid && row.revision === revision,
+    );
+    if (historyConflict) {
+      throw new Error(`Duplicate CMS history revision ${revision}`);
+    }
+
+    const historyId = ++this._historySeq;
+    const historyRow = {
+      id: historyId,
+      cms_uid: uid,
+      revision,
+      snapshot: clone(historySnapshot),
+      created_by: existing.userUid ?? null,
+      created_at: nowIso(),
+      soft_deleted_at: null,
+    };
+    const updated = {
+      ...clone(existing),
+      ...clone(patch),
+      uid,
+      updated_at: nowIso(),
+    };
+
+    this._history.set(historyId, historyRow);
+    this._heads.set(uid, updated);
+    return { status: "updated", row: clone(updated) };
+  }
+
+  async acquireEditLock({ uid, actorUserUid, ttlMs }) {
+    if (ttlMs < 0) {
+      throw new Error("CMS lock TTL cannot be negative");
+    }
+    const existing = this._heads.get(uid);
+    if (!existing) {
+      return { status: "not_found" };
+    }
+
+    const lockedAt = existing.locked_at ? Date.parse(existing.locked_at) : NaN;
+    const lockActive =
+      existing.locked_by &&
+      existing.locked_by !== actorUserUid &&
+      Number.isFinite(lockedAt) &&
+      Date.now() - lockedAt < ttlMs;
+    if (lockActive) {
+      return {
+        status: "locked",
+        lockedBy: existing.locked_by,
+        lockedAt: existing.locked_at,
+      };
+    }
+
+    const updated = {
+      ...clone(existing),
+      locked_by: actorUserUid,
+      locked_at: nowIso(),
+    };
+    this._heads.set(uid, updated);
+    return { status: "acquired", row: clone(updated) };
+  }
+
+  async releaseEditLock({ uid, actorUserUid, force }) {
+    const existing = this._heads.get(uid);
+    if (!existing) {
+      return { status: "not_found" };
+    }
+    if (existing.locked_by && existing.locked_by !== actorUserUid && !force) {
+      return {
+        status: "locked",
+        lockedBy: existing.locked_by,
+        lockedAt: existing.locked_at,
+      };
+    }
+
+    const updated = {
+      ...clone(existing),
+      locked_by: null,
+      locked_at: null,
+    };
+    this._heads.set(uid, updated);
+    return { status: "released", row: clone(updated) };
+  }
+
   async deleteByUid(uid) {
     this._heads.delete(uid);
     // Keep history/collaborators as-is; real DB would likely cascade but conformance
@@ -257,9 +362,31 @@ export class InMemoryCmsConnector {
   }
 
   async replaceCollaborators(cmsUid, collaborators) {
-    const safe = Array.isArray(collaborators) ? collaborators : [];
+    if (!this._heads.has(cmsUid)) {
+      return { status: "not_found" };
+    }
+    if (!Array.isArray(collaborators)) {
+      throw new Error("CMS collaborators must be an array");
+    }
 
-    const normalized = safe.map((c, idx) => {
+    const seenUserUids = new Set();
+    for (const collaborator of collaborators) {
+      if (
+        !collaborator ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          collaborator.user_uid,
+        ) ||
+        !["author", "publisher", "viewer"].includes(collaborator.role)
+      ) {
+        throw new Error("Invalid CMS collaborator entry");
+      }
+      if (seenUserUids.has(collaborator.user_uid)) {
+        throw new Error(`Duplicate CMS collaborator user: ${collaborator.user_uid}`);
+      }
+      seenUserUids.add(collaborator.user_uid);
+    }
+
+    const normalized = collaborators.map((c, idx) => {
       return {
         id: idx + 1,
         cms_uid: cmsUid,
@@ -270,6 +397,6 @@ export class InMemoryCmsConnector {
     });
 
     this._collaborators.set(cmsUid, normalized);
-    return clone(normalized);
+    return { status: "replaced", items: clone(normalized) };
   }
 }

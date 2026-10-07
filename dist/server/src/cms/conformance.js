@@ -39,7 +39,7 @@ const baseSeed = (overrides = {}) => ({
 });
 // ─── Conformance Suite ────────────────────────────────────────────────────
 export function runCmsConnectorConformanceTests(config) {
-    const { name, factory, cleanup, ownerUid = "test-user-001", } = config;
+    const { name, factory, cleanup, ownerUid = "test-user-001" } = config;
     // Use globalThis test functions if not provided
     const _describe = config.describe ?? globalThis.describe;
     const _it = config.it ?? globalThis.it;
@@ -91,6 +91,76 @@ export function runCmsConnectorConformanceTests(config) {
             _expect(updated.version_number).toBe(2);
             const refetched = await connector.getByUid(seed.uid);
             _expect(refetched.title).toBe("Updated Title");
+        });
+        // ──────────────────────────────────────────────────────────────────
+        //  Atomic versioned update + history
+        // ──────────────────────────────────────────────────────────────────
+        _it("should allow only one concurrent write for the same ETag", async () => {
+            const id = uid();
+            const seed = baseSeed({
+                uid: id,
+                slug: `atomic-${id}`,
+                title: "Original",
+                version_number: 1,
+                etag: `cms:${id}:v1`,
+                owner_user_uid: ownerUid,
+            });
+            const inserted = await connector.insert(seed);
+            const makeWrite = (title) => connector.updateVersionedByUid({
+                uid: id,
+                expectedEtag: inserted.etag ?? null,
+                patch: {
+                    title,
+                    version_number: 2,
+                    etag: `cms:${id}:v2`,
+                },
+                historySnapshot: { uid: id, title: "Original", version_number: 1 },
+            });
+            const results = await Promise.all([
+                makeWrite("First writer"),
+                makeWrite("Second writer"),
+            ]);
+            const winners = results.filter((result) => result.status === "updated");
+            const conflicts = results.filter((result) => result.status === "precondition_failed");
+            const history = await connector.listHistory({ cmsUid: id });
+            _expect(winners.length).toBe(1);
+            _expect(conflicts.length).toBe(1);
+            _expect(history.totalCount).toBe(1);
+            _expect((history.items[0]?.snapshot).title).toBe("Original");
+        });
+        // ──────────────────────────────────────────────────────────────────
+        //  Atomic edit lock acquisition
+        // ──────────────────────────────────────────────────────────────────
+        _it("should grant a competing edit lock to only one owner", async () => {
+            const id = uid();
+            await connector.insert(baseSeed({
+                uid: id,
+                slug: `lock-${id}`,
+                owner_user_uid: ownerUid,
+            }));
+            const firstActor = "00000000-0000-4000-8000-000000000001";
+            const secondActor = "00000000-0000-4000-8000-000000000002";
+            const results = await Promise.all([
+                connector.acquireEditLock({
+                    uid: id,
+                    actorUserUid: firstActor,
+                    ttlMs: 60_000,
+                }),
+                connector.acquireEditLock({
+                    uid: id,
+                    actorUserUid: secondActor,
+                    ttlMs: 60_000,
+                }),
+            ]);
+            const owners = results.filter((result) => result.status === "acquired");
+            const blocked = results.filter((result) => result.status === "locked");
+            _expect(owners.length).toBe(1);
+            _expect(blocked.length).toBe(1);
+            if (blocked[0]?.status === "locked") {
+                _expect(blocked[0].lockedBy).toBe(owners[0]?.status === "acquired"
+                    ? owners[0].row.locked_by
+                    : undefined);
+            }
         });
         // ──────────────────────────────────────────────────────────────────
         //  deleteByUid
@@ -315,17 +385,47 @@ export function runCmsConnectorConformanceTests(config) {
             const initial = await connector.listCollaborators(id);
             _expect(Array.isArray(initial)).toBe(true);
             // Replace with one collaborator
+            const userUid = "00000000-0000-4000-8000-000000000001";
             const replaced = await connector.replaceCollaborators(id, [
-                { user_uid: "collab-user-001", role: "author" },
+                { user_uid: userUid, role: "author" },
             ]);
-            _expect(Array.isArray(replaced)).toBe(true);
-            _expect(replaced.length).toBeGreaterThanOrEqual(1);
+            _expect(replaced.status).toBe("replaced");
+            if (replaced.status !== "replaced") {
+                throw new Error("Collaborator replacement unexpectedly missed its CMS row");
+            }
+            _expect(replaced.items.length).toBe(1);
             // Verify via list
             const afterReplace = await connector.listCollaborators(id);
-            _expect(afterReplace.length).toBeGreaterThanOrEqual(1);
+            _expect(afterReplace.length).toBe(1);
+            const concurrentSets = await Promise.all([
+                connector.replaceCollaborators(id, [
+                    { user_uid: userUid, role: "author" },
+                ]),
+                connector.replaceCollaborators(id, [
+                    { user_uid: userUid, role: "viewer" },
+                ]),
+            ]);
+            _expect(concurrentSets.every((result) => result.status === "replaced")).toBe(true);
+            const finalSet = await connector.listCollaborators(id);
+            _expect(finalSet.length).toBe(1);
+            _expect(["author", "viewer"]).toContain(finalSet[0]?.role);
+            let duplicateRejected = false;
+            try {
+                await connector.replaceCollaborators(id, [
+                    { user_uid: userUid, role: "author" },
+                    { user_uid: userUid, role: "publisher" },
+                ]);
+            }
+            catch {
+                duplicateRejected = true;
+            }
+            _expect(duplicateRejected).toBe(true);
+            const afterInvalidReplace = await connector.listCollaborators(id);
+            _expect(afterInvalidReplace).toEqual(finalSet);
             // Clear all collaborators
             const cleared = await connector.replaceCollaborators(id, []);
-            _expect(Array.isArray(cleared)).toBe(true);
+            _expect(cleared.status).toBe("replaced");
+            _expect((await connector.listCollaborators(id)).length).toBe(0);
         });
     });
 }

@@ -123,11 +123,6 @@ export declare class CmsServiceCore {
      */
     private renderPublicPayload;
     /**
-     * Best-effort: create a history snapshot of the current state.
-     * Errors are caught and logged but not propagated.
-     */
-    private createHistorySnapshot;
-    /**
      * Update only the metadata column of a CMS item without creating a
      * history snapshot or bumping the version/etag. Used for adding
      * content notes or editing version annotations independently of
@@ -158,5 +153,6 @@ export declare class CmsServiceCore {
      * Build a snapshot object from a CMS head row for history storage.
      */
     private buildHistorySnapshot;
+    private persistVersionedUpdate;
     private fireAfterWrite;
 }

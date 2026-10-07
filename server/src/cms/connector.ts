@@ -40,6 +40,31 @@ export interface CmsConnector {
     patch: Partial<CmsHeadRow>,
   ): Promise<CmsHeadRow | null>;
 
+  /**
+   * Compare the current ETag, update a versioned head, and persist its
+   * previous-state history snapshot in the same database transaction.
+   */
+  updateVersionedByUid(input: {
+    uid: string;
+    expectedEtag: string | null;
+    patch: Partial<CmsHeadRow>;
+    historySnapshot: Record<string, unknown>;
+  }): Promise<CmsAtomicUpdateResult>;
+
+  /** Acquire or refresh a CMS edit lock under one serialized write. */
+  acquireEditLock(input: {
+    uid: string;
+    actorUserUid: string;
+    ttlMs: number;
+  }): Promise<CmsEditLockResult>;
+
+  /** Release a CMS edit lock under one serialized write. */
+  releaseEditLock(input: {
+    uid: string;
+    actorUserUid: string;
+    force: boolean;
+  }): Promise<CmsEditLockResult>;
+
   /** Permanently delete a CMS row by UID. */
   deleteByUid(uid: string): Promise<void>;
 
@@ -103,8 +128,21 @@ export interface CmsConnector {
   replaceCollaborators(
     cmsUid: string,
     collaborators: Array<{ user_uid: string; role: string }>,
-  ): Promise<CmsCollaboratorRow[]>;
+  ): Promise<CmsCollaboratorReplaceResult>;
 }
+
+export type CmsAtomicUpdateResult =
+  | { status: "updated"; row: CmsHeadRow }
+  | { status: "not_found" }
+  | { status: "precondition_failed"; currentEtag: string | null };
+
+export type CmsEditLockResult =
+  | { status: "acquired" | "released"; row: CmsHeadRow }
+  | { status: "not_found" }
+  | { status: "locked"; lockedBy?: string; lockedAt?: string };
+
+export type CmsCollaboratorReplaceResult =
+  { status: "replaced"; items: CmsCollaboratorRow[] } | { status: "not_found" };
 
 // ─── Optional capabilities ───────────────────────────────────────────────
 

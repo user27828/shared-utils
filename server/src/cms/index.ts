@@ -13,7 +13,13 @@ export { CmsServiceCore } from "./CmsServiceCore.js";
 export type { CmsServiceCoreConfig } from "./CmsServiceCore.js";
 
 // ── Connector (port) ──────────────────────────────────────────────────────
-export type { CmsConnector, CmsConnectorWithPublicHead } from "./connector.js";
+export type {
+  CmsAtomicUpdateResult,
+  CmsCollaboratorReplaceResult,
+  CmsConnector,
+  CmsConnectorWithPublicHead,
+  CmsEditLockResult,
+} from "./connector.js";
 export { hasPublicHead } from "./connector.js";
 
 // ── Auth / Authz ──────────────────────────────────────────────────────────

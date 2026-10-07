@@ -22,7 +22,10 @@
  */
 
 import type { CmsConnector } from "./connector.js";
-import type { CmsHeadRow, CmsHistoryRow } from "../../../utils/src/cms/types.js";
+import type {
+  CmsHeadRow,
+  CmsHistoryRow,
+} from "../../../utils/src/cms/types.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -62,7 +65,9 @@ export interface ConformanceTestConfig {
 let seqCounter = 0;
 const uid = () => `conf-test-${Date.now()}-${++seqCounter}`;
 
-const baseSeed = (overrides: Partial<CmsHeadRow> = {}): Partial<CmsHeadRow> => ({
+const baseSeed = (
+  overrides: Partial<CmsHeadRow> = {},
+): Partial<CmsHeadRow> => ({
   uid: uid(),
   slug: `test-slug-${seqCounter}`,
   title: `Test Title ${seqCounter}`,
@@ -79,13 +84,10 @@ const baseSeed = (overrides: Partial<CmsHeadRow> = {}): Partial<CmsHeadRow> => (
 
 // ─── Conformance Suite ────────────────────────────────────────────────────
 
-export function runCmsConnectorConformanceTests(config: ConformanceTestConfig): void {
-  const {
-    name,
-    factory,
-    cleanup,
-    ownerUid = "test-user-001",
-  } = config;
+export function runCmsConnectorConformanceTests(
+  config: ConformanceTestConfig,
+): void {
+  const { name, factory, cleanup, ownerUid = "test-user-001" } = config;
 
   // Use globalThis test functions if not provided
   const _describe = config.describe ?? (globalThis as any).describe;
@@ -154,6 +156,94 @@ export function runCmsConnectorConformanceTests(config: ConformanceTestConfig): 
     });
 
     // ──────────────────────────────────────────────────────────────────
+    //  Atomic versioned update + history
+    // ──────────────────────────────────────────────────────────────────
+    _it(
+      "should allow only one concurrent write for the same ETag",
+      async () => {
+        const id = uid();
+        const seed = baseSeed({
+          uid: id,
+          slug: `atomic-${id}`,
+          title: "Original",
+          version_number: 1,
+          etag: `cms:${id}:v1`,
+          owner_user_uid: ownerUid,
+        });
+        const inserted = await connector.insert(seed as CmsHeadRow);
+        const makeWrite = (title: string) =>
+          connector.updateVersionedByUid({
+            uid: id,
+            expectedEtag: inserted.etag ?? null,
+            patch: {
+              title,
+              version_number: 2,
+              etag: `cms:${id}:v2`,
+            },
+            historySnapshot: { uid: id, title: "Original", version_number: 1 },
+          });
+
+        const results = await Promise.all([
+          makeWrite("First writer"),
+          makeWrite("Second writer"),
+        ]);
+        const winners = results.filter((result) => result.status === "updated");
+        const conflicts = results.filter(
+          (result) => result.status === "precondition_failed",
+        );
+        const history = await connector.listHistory({ cmsUid: id });
+
+        _expect(winners.length).toBe(1);
+        _expect(conflicts.length).toBe(1);
+        _expect(history.totalCount).toBe(1);
+        _expect(
+          (history.items[0]?.snapshot as Record<string, unknown>).title,
+        ).toBe("Original");
+      },
+    );
+
+    // ──────────────────────────────────────────────────────────────────
+    //  Atomic edit lock acquisition
+    // ──────────────────────────────────────────────────────────────────
+    _it("should grant a competing edit lock to only one owner", async () => {
+      const id = uid();
+      await connector.insert(
+        baseSeed({
+          uid: id,
+          slug: `lock-${id}`,
+          owner_user_uid: ownerUid,
+        }) as CmsHeadRow,
+      );
+      const firstActor = "00000000-0000-4000-8000-000000000001";
+      const secondActor = "00000000-0000-4000-8000-000000000002";
+
+      const results = await Promise.all([
+        connector.acquireEditLock({
+          uid: id,
+          actorUserUid: firstActor,
+          ttlMs: 60_000,
+        }),
+        connector.acquireEditLock({
+          uid: id,
+          actorUserUid: secondActor,
+          ttlMs: 60_000,
+        }),
+      ]);
+      const owners = results.filter((result) => result.status === "acquired");
+      const blocked = results.filter((result) => result.status === "locked");
+
+      _expect(owners.length).toBe(1);
+      _expect(blocked.length).toBe(1);
+      if (blocked[0]?.status === "locked") {
+        _expect(blocked[0].lockedBy).toBe(
+          owners[0]?.status === "acquired"
+            ? owners[0].row.locked_by
+            : undefined,
+        );
+      }
+    });
+
+    // ──────────────────────────────────────────────────────────────────
     //  deleteByUid
     // ──────────────────────────────────────────────────────────────────
     _it("should delete a row by UID", async () => {
@@ -172,18 +262,22 @@ export function runCmsConnectorConformanceTests(config: ConformanceTestConfig): 
     _it("should list rows with status filter", async () => {
       const uid1 = uid();
       const uid2 = uid();
-      await connector.insert(baseSeed({
-        uid: uid1,
-        slug: `list-draft-${uid1}`,
-        status: "draft",
-        owner_user_uid: ownerUid,
-      }) as CmsHeadRow);
-      await connector.insert(baseSeed({
-        uid: uid2,
-        slug: `list-pub-${uid2}`,
-        status: "published",
-        owner_user_uid: ownerUid,
-      }) as CmsHeadRow);
+      await connector.insert(
+        baseSeed({
+          uid: uid1,
+          slug: `list-draft-${uid1}`,
+          status: "draft",
+          owner_user_uid: ownerUid,
+        }) as CmsHeadRow,
+      );
+      await connector.insert(
+        baseSeed({
+          uid: uid2,
+          slug: `list-pub-${uid2}`,
+          status: "published",
+          owner_user_uid: ownerUid,
+        }) as CmsHeadRow,
+      );
 
       const drafts = await connector.list({
         status: "draft",
@@ -206,12 +300,14 @@ export function runCmsConnectorConformanceTests(config: ConformanceTestConfig): 
       // Insert enough items
       for (let i = 0; i < 3; i++) {
         const id = uid();
-        await connector.insert(baseSeed({
-          uid: id,
-          slug: `page-${id}`,
-          status: "draft",
-          owner_user_uid: ownerUid,
-        }) as CmsHeadRow);
+        await connector.insert(
+          baseSeed({
+            uid: id,
+            slug: `page-${id}`,
+            status: "draft",
+            owner_user_uid: ownerUid,
+          }) as CmsHeadRow,
+        );
       }
 
       const page1 = await connector.list({ limit: 2, offset: 0 });
@@ -226,15 +322,17 @@ export function runCmsConnectorConformanceTests(config: ConformanceTestConfig): 
     // ──────────────────────────────────────────────────────────────────
     _it("should fetch a published entry by slug triple", async () => {
       const id = uid();
-      await connector.insert(baseSeed({
-        uid: id,
-        slug: `pub-${id}`,
-        status: "published",
-        published_at: new Date().toISOString(),
-        locale: "en",
-        post_type: "page",
-        owner_user_uid: ownerUid,
-      }) as CmsHeadRow);
+      await connector.insert(
+        baseSeed({
+          uid: id,
+          slug: `pub-${id}`,
+          status: "published",
+          published_at: new Date().toISOString(),
+          locale: "en",
+          post_type: "page",
+          owner_user_uid: ownerUid,
+        }) as CmsHeadRow,
+      );
 
       const result = await connector.getPublishedBySlug({
         postType: "page",
@@ -260,11 +358,13 @@ export function runCmsConnectorConformanceTests(config: ConformanceTestConfig): 
     // ──────────────────────────────────────────────────────────────────
     _it("should insert and list history entries", async () => {
       const id = uid();
-      await connector.insert(baseSeed({
-        uid: id,
-        slug: `hist-${id}`,
-        owner_user_uid: ownerUid,
-      }) as CmsHeadRow);
+      await connector.insert(
+        baseSeed({
+          uid: id,
+          slug: `hist-${id}`,
+          owner_user_uid: ownerUid,
+        }) as CmsHeadRow,
+      );
 
       // Insert a history snapshot
       const histRow = await connector.insertHistory({
@@ -302,11 +402,13 @@ export function runCmsConnectorConformanceTests(config: ConformanceTestConfig): 
     // ──────────────────────────────────────────────────────────────────
     _it("should get a single history entry by ID", async () => {
       const id = uid();
-      await connector.insert(baseSeed({
-        uid: id,
-        slug: `histget-${id}`,
-        owner_user_uid: ownerUid,
-      }) as CmsHeadRow);
+      await connector.insert(
+        baseSeed({
+          uid: id,
+          slug: `histget-${id}`,
+          owner_user_uid: ownerUid,
+        }) as CmsHeadRow,
+      );
 
       const histRow = await connector.insertHistory({
         cms_uid: id,
@@ -332,11 +434,13 @@ export function runCmsConnectorConformanceTests(config: ConformanceTestConfig): 
     // ──────────────────────────────────────────────────────────────────
     _it("should update a history entry (soft-delete)", async () => {
       const id = uid();
-      await connector.insert(baseSeed({
-        uid: id,
-        slug: `histup-${id}`,
-        owner_user_uid: ownerUid,
-      }) as CmsHeadRow);
+      await connector.insert(
+        baseSeed({
+          uid: id,
+          slug: `histup-${id}`,
+          owner_user_uid: ownerUid,
+        }) as CmsHeadRow,
+      );
 
       const histRow = await connector.insertHistory({
         cms_uid: id,
@@ -365,11 +469,13 @@ export function runCmsConnectorConformanceTests(config: ConformanceTestConfig): 
     // ──────────────────────────────────────────────────────────────────
     _it("should hard-delete a history entry", async () => {
       const id = uid();
-      await connector.insert(baseSeed({
-        uid: id,
-        slug: `histdel-${id}`,
-        owner_user_uid: ownerUid,
-      }) as CmsHeadRow);
+      await connector.insert(
+        baseSeed({
+          uid: id,
+          slug: `histdel-${id}`,
+          owner_user_uid: ownerUid,
+        }) as CmsHeadRow,
+      );
 
       const histRow = await connector.insertHistory({
         cms_uid: id,
@@ -396,31 +502,68 @@ export function runCmsConnectorConformanceTests(config: ConformanceTestConfig): 
     // ──────────────────────────────────────────────────────────────────
     _it("should list and replace collaborators", async () => {
       const id = uid();
-      await connector.insert(baseSeed({
-        uid: id,
-        slug: `collab-${id}`,
-        owner_user_uid: ownerUid,
-      }) as CmsHeadRow);
+      await connector.insert(
+        baseSeed({
+          uid: id,
+          slug: `collab-${id}`,
+          owner_user_uid: ownerUid,
+        }) as CmsHeadRow,
+      );
 
       // Start with empty
       const initial = await connector.listCollaborators(id);
       _expect(Array.isArray(initial)).toBe(true);
 
       // Replace with one collaborator
+      const userUid = "00000000-0000-4000-8000-000000000001";
       const replaced = await connector.replaceCollaborators(id, [
-        { user_uid: "collab-user-001", role: "author" },
+        { user_uid: userUid, role: "author" },
       ]);
 
-      _expect(Array.isArray(replaced)).toBe(true);
-      _expect(replaced.length).toBeGreaterThanOrEqual(1);
+      _expect(replaced.status).toBe("replaced");
+      if (replaced.status !== "replaced") {
+        throw new Error(
+          "Collaborator replacement unexpectedly missed its CMS row",
+        );
+      }
+      _expect(replaced.items.length).toBe(1);
 
       // Verify via list
       const afterReplace = await connector.listCollaborators(id);
-      _expect(afterReplace.length).toBeGreaterThanOrEqual(1);
+      _expect(afterReplace.length).toBe(1);
+
+      const concurrentSets = await Promise.all([
+        connector.replaceCollaborators(id, [
+          { user_uid: userUid, role: "author" },
+        ]),
+        connector.replaceCollaborators(id, [
+          { user_uid: userUid, role: "viewer" },
+        ]),
+      ]);
+      _expect(
+        concurrentSets.every((result) => result.status === "replaced"),
+      ).toBe(true);
+      const finalSet = await connector.listCollaborators(id);
+      _expect(finalSet.length).toBe(1);
+      _expect(["author", "viewer"]).toContain(finalSet[0]?.role);
+
+      let duplicateRejected = false;
+      try {
+        await connector.replaceCollaborators(id, [
+          { user_uid: userUid, role: "author" },
+          { user_uid: userUid, role: "publisher" },
+        ]);
+      } catch {
+        duplicateRejected = true;
+      }
+      _expect(duplicateRejected).toBe(true);
+      const afterInvalidReplace = await connector.listCollaborators(id);
+      _expect(afterInvalidReplace).toEqual(finalSet);
 
       // Clear all collaborators
       const cleared = await connector.replaceCollaborators(id, []);
-      _expect(Array.isArray(cleared)).toBe(true);
+      _expect(cleared.status).toBe("replaced");
+      _expect((await connector.listCollaborators(id)).length).toBe(0);
     });
   });
 }

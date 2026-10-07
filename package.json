@@ -981,7 +981,7 @@
     "yarn-upgrade-interactive": "./bin/package-upgrades.sh"
   },
   "devDependencies": {
-    "@aws-sdk/client-sesv2": "^3.1144.0",
+    "@aws-sdk/client-sesv2": "^3.1146.0",
     "@babel/core": "^8.0.6",
     "@babel/preset-env": "^8.0.6",
     "@babel/preset-typescript": "^8.0.1",
@@ -1010,9 +1010,9 @@
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "sanitize-html": "2.18.0",
-    "supertest": "^7.3.0",
+    "supertest": "^7.3.1",
     "typescript": "^6.0.3",
-    "vite": "8.3.1",
+    "vite": "8.3.2",
     "vitest": "5.0.3"
   },
   "resolutions": {

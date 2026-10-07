@@ -8,7 +8,7 @@
 import { nanoid } from "nanoid";
 import { hasPublicHead } from "./connector.js";
 import { CmsCreateRequestSchema, CmsUpdateRequestSchema, CmsListRequestSchema, } from "../../../utils/src/cms/types.js";
-import { CmsNotFoundError, CmsConflictError, CmsLockedError, CmsValidationError, } from "../../../utils/src/cms/errors.js";
+import { CmsNotFoundError, CmsConflictError, CmsLockedError, CmsPreconditionFailedError, CmsValidationError, } from "../../../utils/src/cms/errors.js";
 import { normalizeLocale, canonicalizeSlug, assertValidSlug, assertAllowedContentType, assertAllowedPostType, } from "../../../utils/src/cms/validation.js";
 import { assertIfMatchSatisfied, computeCmsEtag, } from "../../../utils/src/cms/concurrency.js";
 import { hashCmsPassword } from "./password.js";
@@ -166,12 +166,7 @@ export class CmsServiceCore {
         dbPatch.version_number = newVersion;
         dbPatch.etag = computeCmsEtag(input.uid, newVersion);
         dbPatch.updated_at = now;
-        // Best-effort history snapshot before update
-        await this.createHistorySnapshot(current);
-        const updated = await this.connector.updateByUid(input.uid, dbPatch);
-        if (!updated) {
-            throw new CmsNotFoundError(`CMS item not found after update: ${input.uid}`);
-        }
+        const updated = await this.persistVersionedUpdate(input.uid, current, dbPatch);
         await this.fireAfterWrite({
             type: "update",
             uid: input.uid,
@@ -193,8 +188,6 @@ export class CmsServiceCore {
         const now = new Date().toISOString();
         const publishedAt = input.publishedAt || now;
         const newVersion = (current.version_number ?? 0) + 1;
-        // Best-effort history snapshot
-        await this.createHistorySnapshot(current);
         const patch = {
             status: "published",
             published_at: publishedAt,
@@ -203,10 +196,7 @@ export class CmsServiceCore {
             etag: computeCmsEtag(input.uid, newVersion),
             updated_at: now,
         };
-        const updated = await this.connector.updateByUid(input.uid, patch);
-        if (!updated) {
-            throw new CmsNotFoundError(`CMS item not found: ${input.uid}`);
-        }
+        const updated = await this.persistVersionedUpdate(input.uid, current, patch);
         await this.fireAfterWrite({
             type: "publish",
             uid: input.uid,
@@ -227,8 +217,6 @@ export class CmsServiceCore {
         });
         const now = new Date().toISOString();
         const newVersion = (current.version_number ?? 0) + 1;
-        // Best-effort history snapshot
-        await this.createHistorySnapshot(current);
         const patch = {
             status: "trash",
             trashed_at: now,
@@ -237,10 +225,7 @@ export class CmsServiceCore {
             etag: computeCmsEtag(input.uid, newVersion),
             updated_at: now,
         };
-        const updated = await this.connector.updateByUid(input.uid, patch);
-        if (!updated) {
-            throw new CmsNotFoundError(`CMS item not found: ${input.uid}`);
-        }
+        const updated = await this.persistVersionedUpdate(input.uid, current, patch);
         await this.fireAfterWrite({
             type: "trash",
             uid: input.uid,
@@ -261,8 +246,6 @@ export class CmsServiceCore {
         });
         const now = new Date().toISOString();
         const newVersion = (current.version_number ?? 0) + 1;
-        // Best-effort history snapshot
-        await this.createHistorySnapshot(current);
         const patch = {
             status: "draft",
             trashed_at: null,
@@ -271,10 +254,7 @@ export class CmsServiceCore {
             etag: computeCmsEtag(input.uid, newVersion),
             updated_at: now,
         };
-        const updated = await this.connector.updateByUid(input.uid, patch);
-        if (!updated) {
-            throw new CmsNotFoundError(`CMS item not found: ${input.uid}`);
-        }
+        const updated = await this.persistVersionedUpdate(input.uid, current, patch);
         await this.fireAfterWrite({
             type: "restore",
             uid: input.uid,
@@ -335,51 +315,33 @@ export class CmsServiceCore {
     }
     // ─── Lock ─────────────────────────────────────────────────────────────
     async lockByUid(input) {
-        const current = await this.connector.getByUid(input.uid);
-        if (!current) {
-            throw new CmsNotFoundError(`CMS item not found: ${input.uid}`);
-        }
-        // Check for existing lock by another user
-        if (current.locked_by && current.locked_by !== input.actorUserUid) {
-            // Check if the lock has expired
-            if (current.locked_at) {
-                const lockedAt = new Date(current.locked_at).getTime();
-                const now = Date.now();
-                if (now - lockedAt < this.lockTtlMs) {
-                    throw new CmsLockedError("Content is locked by another user", current.locked_by, current.locked_at);
-                }
-            }
-        }
-        const now = new Date().toISOString();
-        const updated = await this.connector.updateByUid(input.uid, {
-            locked_by: input.actorUserUid,
-            locked_at: now,
+        const result = await this.connector.acquireEditLock({
+            uid: input.uid,
+            actorUserUid: input.actorUserUid,
+            ttlMs: this.lockTtlMs,
         });
-        if (!updated) {
+        if (result.status === "not_found") {
             throw new CmsNotFoundError(`CMS item not found: ${input.uid}`);
         }
-        return updated;
+        if (result.status === "locked") {
+            throw new CmsLockedError("Content is locked by another user", result.lockedBy, result.lockedAt);
+        }
+        return result.row;
     }
     // ─── Unlock ───────────────────────────────────────────────────────────
     async unlockByUid(input) {
-        const current = await this.connector.getByUid(input.uid);
-        if (!current) {
-            throw new CmsNotFoundError(`CMS item not found: ${input.uid}`);
-        }
-        // Only the lock owner or force can unlock
-        if (current.locked_by &&
-            current.locked_by !== input.actorUserUid &&
-            !input.force) {
-            throw new CmsLockedError("Cannot unlock: locked by another user", current.locked_by, current.locked_at ?? undefined);
-        }
-        const updated = await this.connector.updateByUid(input.uid, {
-            locked_by: null,
-            locked_at: null,
+        const result = await this.connector.releaseEditLock({
+            uid: input.uid,
+            actorUserUid: input.actorUserUid,
+            force: input.force ?? false,
         });
-        if (!updated) {
+        if (result.status === "not_found") {
             throw new CmsNotFoundError(`CMS item not found: ${input.uid}`);
         }
-        return updated;
+        if (result.status === "locked") {
+            throw new CmsLockedError("Cannot unlock: locked by another user", result.lockedBy, result.lockedAt);
+        }
+        return result.row;
     }
     // ─── History: list ────────────────────────────────────────────────────
     async listHistory(params) {
@@ -413,8 +375,6 @@ export class CmsServiceCore {
         if (!snapshot || typeof snapshot !== "object") {
             throw new CmsValidationError("Invalid history snapshot");
         }
-        // Create history snapshot of current state first
-        await this.createHistorySnapshot(current);
         const now = new Date().toISOString();
         const newVersion = (current.version_number ?? 0) + 1;
         // Apply snapshot fields to head row
@@ -432,10 +392,7 @@ export class CmsServiceCore {
             etag: computeCmsEtag(input.cmsUid, newVersion),
             updated_at: now,
         };
-        const updated = await this.connector.updateByUid(input.cmsUid, patch);
-        if (!updated) {
-            throw new CmsNotFoundError(`CMS item not found: ${input.cmsUid}`);
-        }
+        const updated = await this.persistVersionedUpdate(input.cmsUid, current, patch);
         await this.fireAfterWrite({
             type: "history_restore",
             uid: input.cmsUid,
@@ -472,12 +429,27 @@ export class CmsServiceCore {
         return this.connector.listCollaborators(cmsUid);
     }
     async replaceCollaborators(cmsUid, collaborators) {
-        // Verify the CMS item exists
-        const current = await this.connector.getByUid(cmsUid);
-        if (!current) {
+        if (!Array.isArray(collaborators)) {
+            throw new CmsValidationError("CMS collaborators must be an array");
+        }
+        const seenUserUids = new Set();
+        for (const collaborator of collaborators) {
+            if (!collaborator ||
+                typeof collaborator.user_uid !== "string" ||
+                !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(collaborator.user_uid) ||
+                !["author", "publisher", "viewer"].includes(collaborator.role)) {
+                throw new CmsValidationError("Invalid CMS collaborator entry");
+            }
+            if (seenUserUids.has(collaborator.user_uid)) {
+                throw new CmsValidationError(`Duplicate CMS collaborator user: ${collaborator.user_uid}`);
+            }
+            seenUserUids.add(collaborator.user_uid);
+        }
+        const result = await this.connector.replaceCollaborators(cmsUid, collaborators);
+        if (result.status === "not_found") {
             throw new CmsNotFoundError(`CMS item not found: ${cmsUid}`);
         }
-        return this.connector.replaceCollaborators(cmsUid, collaborators);
+        return result.items;
     }
     // ─── Public payload ───────────────────────────────────────────────────
     async getPublicPayloadBySlug(params) {
@@ -561,27 +533,6 @@ export class CmsServiceCore {
                 break;
         }
         return payload;
-    }
-    /**
-     * Best-effort: create a history snapshot of the current state.
-     * Errors are caught and logged but not propagated.
-     */
-    async createHistorySnapshot(row) {
-        try {
-            const snapshot = this.buildHistorySnapshot(row);
-            await this.connector.insertHistory({
-                cms_uid: row.uid,
-                revision: row.version_number ?? 0,
-                snapshot,
-                created_by: row.userUid || null,
-            });
-        }
-        catch (err) {
-            // Best-effort: log but don't propagate
-            if (typeof globalThis !== "undefined" && globalThis.log) {
-                globalThis.log.warn("CMS history snapshot failed:", err);
-            }
-        }
     }
     // ─── Metadata: lightweight update (no snapshot, no version bump) ────
     /**
@@ -707,6 +658,24 @@ export class CmsServiceCore {
             first_published_at: row.first_published_at ?? null,
             password_version: row.password_version ?? null,
         };
+    }
+    async persistVersionedUpdate(uid, current, patch) {
+        const result = await this.connector.updateVersionedByUid({
+            uid,
+            expectedEtag: current.etag ?? null,
+            patch,
+            historySnapshot: this.buildHistorySnapshot(current),
+        });
+        if (result.status === "not_found") {
+            throw new CmsNotFoundError(`CMS item not found: ${uid}`);
+        }
+        if (result.status === "precondition_failed") {
+            const currentEtag = result.currentEtag;
+            throw new CmsPreconditionFailedError(currentEtag
+                ? `ETag mismatch: content changed during the write (current ETag is "${currentEtag}")`
+                : "ETag mismatch: content changed during the write");
+        }
+        return result.row;
     }
     async fireAfterWrite(event) {
         if (!this.onAfterWrite) {
