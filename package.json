@@ -967,6 +967,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "upgrade": "yarn upgrade-interactive",
+    "upgrade:devtools": "node ./scripts/upgrade-devtools.mjs",
     "update:data": "./bin/update-source-data.sh",
     "compare:data": "./bin/compare-data.cjs"
   },
@@ -977,6 +978,7 @@
     "killnode": "./bin/killnode.sh",
     "package-upgrade": "./scripts/package-upgrade.mjs",
     "shared-utils-speckit-sync": "./scripts/speckit-sync.mjs",
+    "shared-utils-upgrade-devtools": "./scripts/upgrade-devtools.mjs",
     "vite-preview-envs": "./bin/vite-preview-envs.sh",
     "yarn-upgrade-interactive": "./bin/package-upgrades.sh"
   },
@@ -1002,8 +1004,8 @@
     "jest": "^30.5.2",
     "jest-environment-node": "^30.5.2",
     "jsdom": "^29.1.1",
-    "marked": "^18.0.14",
-    "nodemailer": "10.0.13",
+    "marked": "^18.1.0",
+    "nodemailer": "10.0.15",
     "papaparse": "^5.7.0",
     "prettier": "^3.9.9",
     "prismjs": "^1.30.0",
@@ -1012,7 +1014,7 @@
     "sanitize-html": "2.18.0",
     "supertest": "^7.3.1",
     "typescript": "^6.0.3",
-    "vite": "8.3.2",
+    "vite": "8.3.3",
     "vitest": "5.0.3"
   },
   "resolutions": {
@@ -1021,7 +1023,7 @@
   },
   "dependencies": {
     "lodash-es": "^4.18.1",
-    "nanoid": "^6.0.1",
+    "nanoid": "^6.0.2",
     "zod": "4.6.5"
   },
   "peerDependencies": {
@@ -1169,6 +1171,7 @@
     "./bin/docker-build.sh",
     "./bin/killnode.sh",
     "./scripts/package-upgrade.mjs",
+    "./scripts/upgrade-devtools.mjs",
     "./scripts/speckit-sync.mjs",
     "./bin/vite-preview-envs.sh",
     "./bin/package-upgrades.sh",
