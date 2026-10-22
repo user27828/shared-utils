@@ -76,14 +76,14 @@ features and require all their runtime peers; prefer the focused entrypoints.
 | --------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | React hooks and UI                                  | `yarn add react@^19 react-dom@^19`                                                        |
 | MUI components, CMS public/admin UI, FM/email UI    | `yarn add @mui/material@^9 @mui/icons-material@^9 @emotion/react@^11 @emotion/styled@^11` |
-| CMS history calendar (in addition to MUI/date rows) | `yarn add @mui/lab@^9.0.0-beta.9 @mui/x-date-pickers@^9`                                  |
+| CMS history calendar (in addition to MUI/date rows) | `yarn add @mui/lab@^9.0.0-beta.10 @mui/x-date-pickers@^9`                                 |
 | Client dates/timezones and calendar URL/ICS helpers | `yarn add date-fns@^4 date-fns-tz@^3`                                                     |
 | Contact CSV and vCard serialization                 | None                                                                                      |
 | Client CSV helpers                                  | `yarn add papaparse@^5`                                                                   |
 | Country/language selectors (in addition to MUI)     | `yarn add prop-types@^15`                                                                 |
 | TinyMCE base                                        | `yarn add @tinymce/tinymce-react@^6 tinymce@^8`                                           |
 | TinyMCE full/code preset                            | `yarn add prismjs@^1`                                                                     |
-| CKEditor 5                                          | `yarn add @ckeditor/ckeditor5-react@^11 ckeditor5@^48`                                    |
+| CKEditor 5                                          | `yarn add @ckeditor/ckeditor5-react@^12 ckeditor5@^49`                                    |
 | EasyMDE                                             | `yarn add easymde@^2`                                                                     |
 | MDXEditor                                           | `yarn add @mdxeditor/editor@^4 @codemirror/language@^6 @lezer/highlight@^1 yjs@^13.6.32`  |
 | Express routers (CMS, FM, email webhooks)           | `yarn add express@^5`                                                                     |
