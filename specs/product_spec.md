@@ -276,3 +276,13 @@ explicit CLI files and the Turnstile deployment helper. Declaration maps are
 omitted because source files are not published. Server JS source maps retain
 embedded source for debugging. Install checks derive required artifacts from
 the export/bin contract and perform no network calls or consumer builds.
+
+### Global pstack workflows
+
+The package supplies `shared-utils-pstack` to route a single global pstack
+entry point to a normal existing installation. Help discovers installed
+workflows and their purposes. Upgrades use that installation's normal Git or
+plugin-manager command. Shared Copilot/Codex entry points preserve local
+compatibility rules and load the user's implementation/audit prompts only
+when relevant. Explicit global synchronization works without a Spec-Kit
+repository; automatic project-only sync does not mutate global state.

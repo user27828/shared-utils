@@ -24,7 +24,7 @@
     "@mui/lab": "^9.0.0-beta.10",
     "@mui/material": "^9.5.0",
     "@mui/system": "^9.5.0",
-    "@mui/x-date-pickers": "^9.15.0",
+    "@mui/x-date-pickers": "^9.16.0",
     "@tinymce/tinymce-react": "^6.3.1",
     "@user27828/shared-utils": "workspace:*",
     "ckeditor5": "49.0.0",

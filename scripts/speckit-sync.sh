@@ -3,11 +3,8 @@
 set -euo pipefail
 
 # This is the single synchronization implementation distributed by the package.
-# It must run with the consuming repository as the current Git workspace.
-if ! ROOT_DIR="$(git rev-parse --show-toplevel 2>/dev/null)"; then
-  echo "Spec-Kit sync must run from inside a Git repository." >&2
-  exit 1
-fi
+# Repository mode uses the consuming workspace; --global-only needs no repo.
+ROOT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 BRIDGE_FILE="$ROOT_DIR/.specify/spec-kit-bridge.md"
 COPILOT_FILE="$ROOT_DIR/.github/copilot-instructions.md"
 CODEX_HOME_DIR="${CODEX_HOME:-$HOME/.codex}"
@@ -18,11 +15,15 @@ SYNC_GLOBAL=1
 ALLOW_GLOBAL_REPOSITORY=0
 SYNC_PRUNE=0
 SYNC_PRUNE_GLOBAL=0
+GLOBAL_ONLY=0
 
 for sync_arg in "$@"; do
   case "$sync_arg" in
     --no-global)
       SYNC_GLOBAL=0
+      ;;
+    --global-only)
+      GLOBAL_ONLY=1
       ;;
     --global-repository)
       ALLOW_GLOBAL_REPOSITORY=1
@@ -36,9 +37,11 @@ for sync_arg in "$@"; do
       ;;
     --help|-h)
       cat <<'EOF'
-Usage: shared-utils-speckit-sync [--no-global] [--global-repository] [--prune] [--prune-global]
+Usage: shared-utils-speckit-sync [--no-global | --global-only] [--global-repository] [--prune] [--prune-global]
 
   --no-global          Sync repository skills without changing CODEX_HOME.
+  --global-only        Sync user-global prompts and installed pstack without
+                       requiring or changing a repository.
   --global-repository  Explicitly allow repository prompts to use global mirrors
                        when project-local .agents/skills is unavailable.
   --prune              Remove only generated entries owned by this repository.
@@ -59,6 +62,15 @@ EOF
       ;;
   esac
 done
+
+if [[ "$GLOBAL_ONLY" -eq 1 && ("$SYNC_GLOBAL" -eq 0 || "$ALLOW_GLOBAL_REPOSITORY" -eq 1 || ("$SYNC_PRUNE" -eq 1 && "$SYNC_PRUNE_GLOBAL" -eq 0)) ]]; then
+  echo "--global-only cannot be combined with repository-only options." >&2
+  exit 2
+fi
+if [[ "$GLOBAL_ONLY" -eq 0 && -z "$ROOT_DIR" ]]; then
+  echo "Spec-Kit sync must run from inside a Git repository; use --global-only for global prompts." >&2
+  exit 1
+fi
 
 has_github_copilot() {
   local extension_root extension_dir
@@ -107,7 +119,7 @@ has_codex() {
     return 0
   fi
 
-  if [[ -d "$ROOT_DIR/.agents/skills" || -d "$CODEX_HOME_DIR" ]]; then
+  if [[ -d "$ROOT_DIR/.agents/skills" || -d "$CODEX_HOME_DIR" || -d "$HOME/.agents/skills" ]]; then
     return 0
   fi
 
@@ -336,7 +348,9 @@ add_prompt_source_dir() {
 }
 
 collect_prompt_source_dirs() {
-  add_prompt_source_dir "$ROOT_DIR/.github/prompts"
+  if [[ "$GLOBAL_ONLY" -eq 0 ]]; then
+    add_prompt_source_dir "$ROOT_DIR/.github/prompts"
+  fi
   [[ "$SYNC_GLOBAL" -eq 1 ]] || return 0
 
   add_global_prompt_source_dir() {
@@ -591,6 +605,7 @@ legacy_global_prompt_source_verified() {
 }
 
 project_codex_skills_available() {
+  [[ "$GLOBAL_ONLY" -eq 0 ]] || return 1
   [[ -d "$PROJECT_CODEX_SKILLS_DIR" && ! -L "$PROJECT_CODEX_SKILLS_DIR" && -w "$PROJECT_CODEX_SKILLS_DIR" ]] || return 1
 
   local repository_path
@@ -854,6 +869,22 @@ legacy_global_skill_source_verified() {
 }
 
 sync_codex_skill() {
+  local shared_skill shared_source
+  shared_skill="$HOME/.agents/skills/$(normalize_skill_id "$PROMPT_ID")/SKILL.md"
+  shared_source=""
+  if [[ -f "$shared_skill" ]]; then
+    shared_source="$(skill_marker_value "$shared_skill" spec-kit-bridge-source)"
+    if [[ -n "$shared_source" ]] && command -v cygpath >/dev/null 2>&1; then
+      shared_source="$(cygpath -u -- "$shared_source")"
+    fi
+  fi
+  if [[ "$PROMPT_SCOPE" == "global" && -f "$shared_skill" && ! -L "$shared_skill" ]] \
+    && [[ "$(skill_marker_value "$shared_skill" spec-kit-bridge-owner)" == "$PROMPT_OWNER" ]] \
+    && [[ "$shared_source" -ef "$PROMPT_SOURCE" ]] \
+    && is_managed_marker "$(skill_marker_value "$shared_skill" spec-kit-bridge-managed)"; then
+    sync_codex_skill_at "$HOME/.agents/skills"
+    return 0
+  fi
   sync_codex_skill_at "$CODEX_SKILLS_DIR"
 }
 
@@ -997,7 +1028,9 @@ sync_codex_prompts() {
 }
 
 has_specify=0
-if is_eligible_repository; then
+if [[ "$GLOBAL_ONLY" -eq 1 ]]; then
+  has_specify=0
+elif is_eligible_repository; then
   has_specify=1
 else
   echo "Spec-Kit bridge skipped: active repository is not eligible."
@@ -1009,7 +1042,14 @@ if [[ "$has_specify" -eq 1 && "$has_ghcp" -eq 1 ]]; then
   write_if_changed "$COPILOT_FILE" render_copilot
 fi
 
-if [[ "$has_specify" -eq 1 && "$has_codex_client" -eq 1 ]]; then
+if [[ "$SYNC_GLOBAL" -eq 1 ]] && command -v node >/dev/null 2>&1; then
+  pstack_manager="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/pstack.mjs"
+  if [[ -f "$pstack_manager" ]]; then
+    node "$pstack_manager" sync --if-installed
+  fi
+fi
+
+if [[ ("$has_specify" -eq 1 || "$GLOBAL_ONLY" -eq 1) && "$has_codex_client" -eq 1 ]]; then
   sync_codex_prompts
 fi
 

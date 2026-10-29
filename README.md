@@ -1198,6 +1198,55 @@ repository instructions remain in force.
 
 Within this repository, the equivalent command is `yarn speckit:sync`.
 
+Use `yarn exec shared-utils-speckit-sync --global-only` for an explicit global
+refresh outside a Spec-Kit repository. It does not change repository files.
+When a same-owner adapter already exists in `~/.agents/skills`, that shared
+entry is refreshed without creating a duplicate under `CODEX_HOME/skills`.
+
+#### Shared pstack entry point
+
+`shared-utils-pstack` connects one `/pstack <skill> [task]` entry point to an
+existing pstack installation. It does not install a second copy of upstream
+skills. Install pstack through its normal plugin manager, or use a regular
+checkout of `https://github.com/cursor/plugins` when neither Cursor nor Claude
+Code is installed. Point the adapter at the checkout's `pstack` directory:
+
+```bash
+yarn exec shared-utils-pstack setup --source /path/to/plugins/pstack
+yarn exec shared-utils-speckit-sync --global-only
+```
+
+Setup writes the shared VS Code `pstack.prompt.md` and a native
+`~/.agents/skills/pstack/SKILL.md` entry for Copilot and Codex. Use `/pstack`
+in Copilot or `$pstack` in Codex, followed by `help [skill]`, `list`, `status`,
+`upgrade`, `sync`, or a skill name and task. `run <skill> [task]` disambiguates
+upstream names that collide with built-in arguments. Help reads installed
+skill descriptions, so new upstream workflows become available automatically.
+
+For a clean Git checkout, `upgrade` runs `git pull --ff-only`; it preserves
+local modifications and refuses detached checkouts. For a plugin-managed
+installation, setup accepts `--upgrade-command` as a JSON array containing its
+normal updater executable and arguments. No shell command string is evaluated.
+Changes made by that manager remain its responsibility; this adapter does not
+reset, snapshot, or replace the upstream installation.
+
+The adapter uses `PSTACK_HOME`, or the platform's local application-data
+directory (`~/.local/share/pstack` on Linux/WSL). Its `config.json` records the
+source and prompt paths; `overrides.md` holds preserved machine-specific rules.
+`--prompts DIRECTORY` or `PSTACK_PROMPTS_DIR` overrides prompt discovery. Run
+setup once per terminal host; Windows and WSL have separate home directories.
+Node and filesystem/terminal tools must be available to the selected agent.
+
+Package-owned compatibility rules map tools, inherit the session model, honor
+repository policies, and require material utility before generating tests.
+The dispatcher reads the existing `implement.prompt.md` or `audit.prompt.md`
+only for relevant work, preserving their custom rules without copying them.
+Normal sync refreshes adapter text without upgrading upstream or replacing
+local overrides. Automatic `--no-global` hooks do neither. Sync compares the
+few generated files directly; it needs no additional `rsync` dependency.
+Mutating adapter operations use a PID-bearing lock. If an interrupted process
+leaves it behind, verify that PID is no longer running before removing it.
+
 [🔝 Back to Top](#shared-utils)
 
 ## Graphify Knowledge Graph
