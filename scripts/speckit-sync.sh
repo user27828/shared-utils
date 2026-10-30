@@ -1043,9 +1043,14 @@ if [[ "$has_specify" -eq 1 && "$has_ghcp" -eq 1 ]]; then
 fi
 
 if [[ "$SYNC_GLOBAL" -eq 1 ]] && command -v node >/dev/null 2>&1; then
-  pstack_manager="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/pstack.mjs"
+  script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+  pstack_manager="$script_directory/pstack.mjs"
+  thermos_manager="$script_directory/thermos.mjs"
   if [[ -f "$pstack_manager" ]]; then
     node "$pstack_manager" sync --if-installed
+  fi
+  if [[ -f "$thermos_manager" ]]; then
+    node "$thermos_manager" sync --if-installed
   fi
 fi
 

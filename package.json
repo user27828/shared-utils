@@ -968,6 +968,8 @@
     "test:coverage": "jest --coverage",
     "upgrade": "yarn upgrade-interactive",
     "upgrade:devtools": "node ./scripts/upgrade-devtools.mjs",
+    "upgrade:agent-tools": "node ./scripts/upgrade-agent-tools.mjs",
+    "thermos": "node ./scripts/thermos.mjs",
     "update:data": "./bin/update-source-data.sh",
     "compare:data": "./bin/compare-data.cjs"
   },
@@ -979,13 +981,15 @@
     "package-upgrade": "./scripts/package-upgrade.mjs",
     "shared-utils-pstack": "./scripts/pstack.mjs",
     "shared-utils-speckit-sync": "./scripts/speckit-sync.mjs",
+    "shared-utils-thermos": "./scripts/thermos.mjs",
+    "shared-utils-upgrade-agent-tools": "./scripts/upgrade-agent-tools.mjs",
     "shared-utils-upgrade-devtools": "./scripts/upgrade-devtools.mjs",
     "vite-preview-envs": "./bin/vite-preview-envs.sh",
     "yarn-upgrade-interactive": "./bin/package-upgrades.sh"
   },
   "devDependencies": {
     "@aws-sdk/client-sesv2": "^3.1156.0",
-    "@babel/core": "^8.0.7",
+    "@babel/core": "^8.0.9",
     "@babel/preset-env": "^8.0.7",
     "@babel/preset-typescript": "^8.0.7",
     "@testing-library/jest-dom": "7.0.1",
@@ -1005,7 +1009,7 @@
     "jest": "^30.5.2",
     "jest-environment-node": "^30.5.2",
     "jsdom": "30.1.3",
-    "marked": "^18.1.1",
+    "marked": "^18.1.2",
     "nodemailer": "10.2.1",
     "papaparse": "^5.7.0",
     "prettier": "^3.9.10",
@@ -1015,7 +1019,7 @@
     "sanitize-html": "2.18.1",
     "supertest": "^7.3.1",
     "typescript": "^6.0.3",
-    "vite": "8.3.4",
+    "vite": "8.3.5",
     "vitest": "5.0.5"
   },
   "resolutions": {
@@ -1173,6 +1177,7 @@
     "./bin/killnode.sh",
     "./scripts/package-upgrade.mjs",
     "./scripts/upgrade-devtools.mjs",
+    "./scripts/upgrade-agent-tools.mjs",
     "./scripts/speckit-sync.mjs",
     "./bin/vite-preview-envs.sh",
     "./bin/package-upgrades.sh",
@@ -1186,8 +1191,12 @@
     "!.specify/**",
     "!data/**",
     "!examples/**",
+    "scripts/agent-plugin-manager.mjs",
     "scripts/pstack.mjs",
     "scripts/pstack/pstack.prompt.md",
-    "scripts/pstack/compatibility.md"
+    "scripts/pstack/compatibility.md",
+    "scripts/thermos.mjs",
+    "scripts/thermos/thermos.prompt.md",
+    "scripts/thermos/compatibility.md"
   ]
 }

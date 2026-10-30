@@ -1230,6 +1230,24 @@ normal updater executable and arguments. No shell command string is evaluated.
 Changes made by that manager remain its responsibility; this adapter does not
 reset, snapshot, or replace the upstream installation.
 
+#### Shared Thermos entry point
+
+`shared-utils-thermos` uses the same manager and configured plugins checkout as
+pstack. Configure it from the Thermos directory in that checkout:
+
+```bash
+yarn exec shared-utils-thermos setup --source /path/to/plugins/thermos
+yarn exec shared-utils-speckit-sync --global-only
+```
+
+Use `/thermos` in Copilot or `$thermos` in Codex with `help [skill]`, `list`,
+`status`, `upgrade`, `sync`, `setup`, or a workflow name. The upstream workflow
+named `thermos` is available as `$thermos thermos` (or `$thermos run thermos`).
+`pstack setup`, `pstack sync`, and `pstack upgrade` also refresh the Thermos
+adapter when the sibling plugin exists. The Thermos code-quality
+skill is copied to `~/.agents/skills` with an integrity marker; local edits
+and conflicting unmanaged skills are preserved.
+
 The adapter uses `PSTACK_HOME`, or the platform's local application-data
 directory (`~/.local/share/pstack` on Linux/WSL). Its `config.json` records the
 source and prompt paths; `overrides.md` holds preserved machine-specific rules.
@@ -1246,6 +1264,24 @@ local overrides. Automatic `--no-global` hooks do neither. Sync compares the
 few generated files directly; it needs no additional `rsync` dependency.
 Mutating adapter operations use a PID-bearing lock. If an interrupted process
 leaves it behind, verify that PID is no longer running before removing it.
+
+#### Unified agent-tool updates
+
+Run `yarn upgrade:agent-tools` from shared-utils to update the Spec-Kit CLI and
+integration, Graphify, the shared pstack/Thermos checkout, both workflow
+adapters, the global Thermos code-quality skill, and repository/global Codex
+adapters. The package also
+publishes `shared-utils-upgrade-agent-tools` for use from a consuming project;
+`--project-root` selects that project's Spec-Kit integration target.
+
+Pass `--dry-run` to preview the Spec-Kit and Graphify updates and list the
+shared plugin checkout and adapter-sync steps. The updater adopts an existing
+global Thermos skill only if it matches the current plugin source, then records
+an integrity marker so later runs can refresh the managed copy while preserving
+local edits. It adds the `thermos` path to a sparse Cursor plugins checkout when
+needed. Missing
+Spec-Kit/Graphify installs are handled by the existing devtools updater; pstack
+must be configured and its checkout must contain the Thermos plugin.
 
 [🔝 Back to Top](#shared-utils)
 

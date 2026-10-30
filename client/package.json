@@ -69,7 +69,7 @@
     "@shared-utils/utils": "workspace:*"
   },
   "devDependencies": {
-    "@babel/core": "^8.0.7",
+    "@babel/core": "^8.0.9",
     "@babel/preset-env": "^8.0.7",
     "@babel/preset-react": "^8.0.1",
     "@babel/preset-typescript": "^8.0.7",
@@ -111,7 +111,7 @@
     "react-dom": "^19.3.1",
     "tinymce": "^8.10.0",
     "typescript": "^6.0.3",
-    "vite": "8.3.4",
+    "vite": "8.3.5",
     "vitest": "5.0.5",
     "yjs": "^13.6.33"
   },
