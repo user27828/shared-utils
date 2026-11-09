@@ -554,17 +554,6 @@ try {
           ],
           project,
         );
-        run(
-          process.execPath,
-          [
-            path.join(
-              packagePath(project, packed.name),
-              "scripts/package-upgrade.mjs",
-            ),
-            "--help",
-          ],
-          project,
-        );
       }
     }
     results.push({

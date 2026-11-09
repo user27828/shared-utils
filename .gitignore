@@ -70,6 +70,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Misc
+
 .DS_Store
 .Spotlight-V100
 .env
@@ -92,6 +93,7 @@ graphify-out/*
 !.vscode/tasks.json
 !.vscode/launch.json
 
+/.agents/
 /models/*
 #.userdata
 .userdata/cache/

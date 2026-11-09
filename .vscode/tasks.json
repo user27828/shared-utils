@@ -2,10 +2,16 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "sync-speckit-bridge",
-      "type": "shell",
-      "command": "yarn",
-      "args": ["speckit:sync", "--no-global"],
+      "label": "agent-config-repo-sync",
+      "type": "process",
+      "command": "node",
+      "args": [
+        "${env:HOME}/.local/share/agent-config/bin/agent-config.mjs",
+        "repo-sync",
+        "--root",
+        "${workspaceFolder}",
+        "--apply"
+      ],
       "runOptions": {
         "runOn": "folderOpen"
       },

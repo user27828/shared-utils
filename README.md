@@ -850,7 +850,6 @@ optionsManager.setGlobalOptions({
 ## Command Line Tools
 
 - **`killnode`** - Kills Express server node processes (ignores VS Code, Electron, etc.)
-- **`package-upgrade`** - Audit-first, age-gated dependency upgrade planning for Yarn, npm, and pnpm
 - **`dependency-manager`** - Manages portal: resolutions for local development vs. production builds
 
 ### Consumer Efficiency Audit
@@ -1028,8 +1027,6 @@ Add useful scripts to your `package.json`:
 {
   "scripts": {
     "kill": "npx killnode -9",
-    "upgrade:plan": "yarn exec package-upgrade --json",
-    "upgrade:apply": "yarn exec package-upgrade --apply --verify test",
     "dev": "dependency-manager && npx killnode && your-dev-command",
     "build": "dependency-manager && your-build-command",
     "cf:deploy": "dependency-manager && wrangler deploy"
@@ -1038,6 +1035,12 @@ Add useful scripts to your `package.json`:
 ```
 
 ### Package upgrade safety
+
+Agent Config owns `package-upgrade`. Invoke it through the host-installed
+Agent Config launcher from the target project's directory; it is not a
+shared-utils command and does not require this package to be installed. These
+examples use the default Linux/WSL launcher path. Use the host's stable launcher
+path on Windows and macOS.
 
 `package-upgrade` is a project-aware companion to the legacy interactive
 `yarn upgrade` workflow. It resolves the nearest caller `package.json`, never
@@ -1053,29 +1056,29 @@ rejects newer packages before any write.
 
 ```bash
 # Plan every direct dependency upgrade from a nested directory; no files change.
-yarn exec package-upgrade --project-dir packages/web
+node ~/.local/share/agent-config/bin/agent-config.mjs package-upgrade --project-dir packages/web
 
 # Plan specific packages with compact machine-readable output.
-yarn exec package-upgrade --json vite @types/node
+node ~/.local/share/agent-config/bin/agent-config.mjs package-upgrade --json vite @types/node
 
 # Triage selected exact versions in one low-token compatibility summary request.
-yarn exec package-upgrade --inspect --summary --json typescript@7.0.2 vite@8.2.0
+node ~/.local/share/agent-config/bin/agent-config.mjs package-upgrade --inspect --summary --json typescript@7.0.2 vite@8.2.0
 
 # Request full bounded compatibility and provenance metadata only when needed.
-yarn exec package-upgrade --inspect --json typescript@7.0.2
+node ~/.local/share/agent-config/bin/agent-config.mjs package-upgrade --inspect --json typescript@7.0.2
 
 # Summarize current advisories without returning the full audit payload.
-yarn exec package-upgrade --audit --json
+node ~/.local/share/agent-config/bin/agent-config.mjs package-upgrade --audit --json
 
 # Apply exact, eligible upgrades, audit afterwards, then run a trusted project test.
-yarn exec package-upgrade --apply --verify test vite@8.2.0
+node ~/.local/share/agent-config/bin/agent-config.mjs package-upgrade --apply --verify test vite@8.2.0
 
 # Use npm or pnpm in projects that use them.
-npm exec -- package-upgrade --manager npm --apply --verify test eslint
-pnpm exec package-upgrade --manager pnpm --apply --verify lint typescript
+node ~/.local/share/agent-config/bin/agent-config.mjs package-upgrade --manager npm --apply --verify test eslint
+node ~/.local/share/agent-config/bin/agent-config.mjs package-upgrade --manager pnpm --apply --verify lint typescript
 
 # Upgrade only the caller project's Corepack package-manager pin after its age check.
-yarn exec package-upgrade --upgrade-package-manager --apply
+node ~/.local/share/agent-config/bin/agent-config.mjs package-upgrade --upgrade-package-manager --apply
 ```
 
 The package-manager flag updates only `package.json`'s `packageManager` field;
@@ -1089,7 +1092,7 @@ must no longer contain it or the tool restores the original package manifest
 and lockfile.
 
 ```bash
-yarn exec package-upgrade --apply \
+node ~/.local/share/agent-config/bin/agent-config.mjs package-upgrade --apply \
   --security-exception dompurify@3.4.12=CVE-2025-12345 \
   dompurify@3.4.12
 ```
@@ -1116,15 +1119,14 @@ and GHSA identifiers instead of the raw audit document.
 
 `yarn upgrade` remains the interactive Yarn workflow and calls
 `yarn upgrade-interactive`. Use it when selecting upgrades manually; use
-`package-upgrade` for repeatable, audit-first automation.
+Agent Config's `package-upgrade` command for repeatable, audit-first automation.
 
 ### Using `/yarn-upgrade` in consuming projects
 
 When a consuming project has the `/yarn-upgrade` GHCP/Codex prompt or skill,
-the agent should use the `package-upgrade` binary provided by the installed
-`@user27828/shared-utils` package from the target project's directory. If the
-binary is not available, add or link this package using the consuming
-project's normal package-manager workflow before planning upgrades.
+the agent should invoke `package-upgrade` through the host-installed Agent
+Config launcher from the target project's directory. This workflow does not
+require `@user27828/shared-utils`.
 
 The agent should begin with a read-only plan, review each eligible candidate's
 release notes, actual usage, downstream impact, and current audit, then apply
@@ -1132,27 +1134,32 @@ only the reviewed exact specs. It must not apply `rejected-age-gate`
 candidates. Patch and minor upgrades may use `--apply --verify test` (or an
 equivalent trusted verification); major upgrades require a confirmed
 compatibility plan or the user's decision before application. The prompt's
-workflow is the authority for this process; the package-owned CLI is the
-execution mechanism.
+workflow is the authority for this process; Agent Config provides the execution
+mechanism.
 
 ### Shared Spec-Kit and Codex synchronization
 
-The package owns the synchronization implementation in
-`scripts/speckit-sync.sh` and publishes it as the
-`shared-utils-speckit-sync` executable. Consuming repositories should invoke
-that package executable instead of copying the script.
+Agent Config owns synchronization on migrated hosts. Its repository publisher
+reads .github/prompts/ and declared .github/agents/ files, then writes project
+skills and Spec-Kit bridge outputs under the selected repository. It does not
+need shared-utils, Yarn, or a detected Copilot/Codex installation to run.
 
-Add a folder-open task to a consuming repository's `.vscode/tasks.json`:
+For the default Linux/WSL installation, add this folder-open task to a
+consuming repository's .vscode/tasks.json:
 
-```json
+~~~json
 {
-  "label": "sync-speckit-bridge",
-  "type": "shell",
-  "command": "yarn",
-  "args": ["exec", "shared-utils-speckit-sync", "--no-global"],
-  "runOptions": {
-    "runOn": "folderOpen"
-  },
+  "label": "agent-config-repo-sync",
+  "type": "process",
+  "command": "node",
+  "args": [
+    "${env:HOME}/.local/share/agent-config/bin/agent-config.mjs",
+    "repo-sync",
+    "--root",
+    "${workspaceFolder}",
+    "--apply"
+  ],
+  "runOptions": { "runOn": "folderOpen" },
   "problemMatcher": [],
   "presentation": {
     "reveal": "silent",
@@ -1160,130 +1167,54 @@ Add a folder-open task to a consuming repository's `.vscode/tasks.json`:
     "close": true
   }
 }
-```
+~~~
 
-The consuming repository must also enable automatic tasks with
-`"task.allowAutomaticTasks": "on"` in `.vscode/settings.json`. The runner
-uses the consuming repository as its Git root and reads its Spec-Kit prompts.
-Before syncing, it detects whether GitHub Copilot or Codex is installed. If
-neither client is available, the task exits without creating or changing any
-bridge, prompt, or skill files.
-The runner has separate repository and user-global scopes:
+Use the host's stable Agent Config launcher path on Windows and macOS. Enable
+automatic tasks with "task.allowAutomaticTasks": "on". repo-sync uses the
+explicit workspace root, updates only that repository, and stores ownership,
+transaction, and recovery state under .agents/.agent-config/. It updates only
+the marked region of an existing Copilot instructions file and the generated
+Spec-Kit bridge. A missing prompt source is a no-op; conflicts are reported
+without replacing unmanaged files. Global skills are a separate explicit
+Agent Config destination and are never changed by repo-sync.
 
-- Repository prompts under `.github/prompts/` are written to the repository's
-  `.agents/skills/` when that directory is writable. This is the default and
-  keeps project commands out of the shared global namespace.
-- User-global VS Code prompts are mirrored into `CODEX_HOME/prompts/` and are
-  exposed as bare Codex skills under `CODEX_HOME/skills/<prompt-id>/SKILL.md`.
-  This is how a global `yarn-upgrade.prompt.md` becomes `/yarn-upgrade`, along
-  with existing global `/implement` and `/audit` adapters.
-- If project-local `.agents/skills/` is unavailable, repository prompts are
-  skipped unless `--global-repository` is explicitly supplied. That flag is a
-  deliberate compatibility fallback and may update `CODEX_HOME`.
+#### Agent Config pstack, Thermos, and tool updates
 
-Use `--no-global` for automatic or project-only synchronization. It updates
-repository bridge files and project-local skills without changing `CODEX_HOME`.
-Normal synchronization never prunes generated entries. Use `--prune` to remove
-only entries owned by the current repository, or add `--prune-global` when
-intentionally cleaning entries generated from global VS Code prompts.
+Agent Config includes the shared pstack/Thermos managers and the unified agent
+tooling updater. Configure existing source checkouts once per host:
 
-Global writes are serialized with a lock under `CODEX_HOME`. Generated entries
-carry owner and source metadata; the runner preserves unmanaged files,
-symlinks, non-file collisions, entries owned by another repository or scope,
-and legacy entries whose ownership cannot be proven. A legacy global mirror is
-adopted only when its recorded source is an existing prompt in a detected
-global VS Code prompt directory. The generated adapters read their source
-prompt at invocation time, so the source prompt remains authoritative and
-repository instructions remain in force.
+~~~bash
+node ~/.local/share/agent-config/bin/agent-config.mjs pstack setup --source /path/to/plugins/pstack
+node ~/.local/share/agent-config/bin/agent-config.mjs thermos setup --source /path/to/plugins/thermos
+node ~/.local/share/agent-config/bin/agent-config.mjs pstack status
+node ~/.local/share/agent-config/bin/agent-config.mjs thermos status
+~~~
 
-Within this repository, the equivalent command is `yarn speckit:sync`.
+The manager setup commands point at an existing plugin checkout; they do not
+install or clone one. pstack and thermos support help, list, status, upgrade,
+and sync. Upgrade uses the checkout's normal fast-forward Git update or an
+explicitly configured plugin-manager command, and refuses dirty or detached
+Git checkouts. Sync publishes the canonical Agent Config workflow skill.
 
-Use `yarn exec shared-utils-speckit-sync --global-only` for an explicit global
-refresh outside a Spec-Kit repository. It does not change repository files.
-When a same-owner adapter already exists in `~/.agents/skills`, that shared
-entry is refreshed without creating a duplicate under `CODEX_HOME/skills`.
+Preview the combined update before applying it:
 
-#### Shared pstack entry point
+~~~bash
+node ~/.local/share/agent-config/bin/agent-config.mjs upgrade-agent-tools --dry-run --project-root /path/to/project
+~~~
 
-`shared-utils-pstack` connects one `/pstack <skill> [task]` entry point to an
-existing pstack installation. It does not install a second copy of upstream
-skills. Install pstack through its normal plugin manager, or use a regular
-checkout of `https://github.com/cursor/plugins` when neither Cursor nor Claude
-Code is installed. Point the adapter at the checkout's `pstack` directory:
+upgrade-agent-tools coordinates safely identified Spec-Kit and Graphify CLI
+updates, the configured shared pstack/Thermos checkout, and canonical skill
+refresh. Missing tools are not installed. Unrecognized Graphify installations
+are left for their original installer. upgrade-devtools previews or updates
+only existing Spec-Kit and Graphify installations that can be safely
+identified. Invoke all these commands through the host Agent Config launcher;
+they are not published by shared-utils.
 
-```bash
-yarn exec shared-utils-pstack setup --source /path/to/plugins/pstack
-yarn exec shared-utils-speckit-sync --global-only
-```
+#### Package-upgrade invocation
 
-Setup writes the shared VS Code `pstack.prompt.md` and a native
-`~/.agents/skills/pstack/SKILL.md` entry for Copilot and Codex. Use `/pstack`
-in Copilot or `$pstack` in Codex, followed by `help [skill]`, `list`, `status`,
-`upgrade`, `sync`, or a skill name and task. `run <skill> [task]` disambiguates
-upstream names that collide with built-in arguments. Help reads installed
-skill descriptions, so new upstream workflows become available automatically.
-
-For a clean Git checkout, `upgrade` runs `git pull --ff-only`; it preserves
-local modifications and refuses detached checkouts. For a plugin-managed
-installation, setup accepts `--upgrade-command` as a JSON array containing its
-normal updater executable and arguments. No shell command string is evaluated.
-Changes made by that manager remain its responsibility; this adapter does not
-reset, snapshot, or replace the upstream installation.
-
-#### Shared Thermos entry point
-
-`shared-utils-thermos` uses the same manager and configured plugins checkout as
-pstack. Configure it from the Thermos directory in that checkout:
-
-```bash
-yarn exec shared-utils-thermos setup --source /path/to/plugins/thermos
-yarn exec shared-utils-speckit-sync --global-only
-```
-
-Use `/thermos` in Copilot or `$thermos` in Codex with `help [skill]`, `list`,
-`status`, `upgrade`, `sync`, `setup`, or a workflow name. The upstream workflow
-named `thermos` is available as `$thermos thermos` (or `$thermos run thermos`).
-`pstack setup`, `pstack sync`, and `pstack upgrade` also refresh the Thermos
-adapter when the sibling plugin exists. The Thermos code-quality
-skill is copied to `~/.agents/skills` with an integrity marker; local edits
-and conflicting unmanaged skills are preserved.
-
-The adapter uses `PSTACK_HOME`, or the platform's local application-data
-directory (`~/.local/share/pstack` on Linux/WSL). Its `config.json` records the
-source and prompt paths; `overrides.md` holds preserved machine-specific rules.
-`--prompts DIRECTORY` or `PSTACK_PROMPTS_DIR` overrides prompt discovery. Run
-setup once per terminal host; Windows and WSL have separate home directories.
-Node and filesystem/terminal tools must be available to the selected agent.
-
-Package-owned compatibility rules map tools, inherit the session model, honor
-repository policies, and require material utility before generating tests.
-The dispatcher reads the existing `implement.prompt.md` or `audit.prompt.md`
-only for relevant work, preserving their custom rules without copying them.
-Normal sync refreshes adapter text without upgrading upstream or replacing
-local overrides. Automatic `--no-global` hooks do neither. Sync compares the
-few generated files directly; it needs no additional `rsync` dependency.
-Mutating adapter operations use a PID-bearing lock. If an interrupted process
-leaves it behind, verify that PID is no longer running before removing it.
-
-#### Unified agent-tool updates
-
-Run `yarn upgrade:agent-tools` from shared-utils to update the Spec-Kit CLI and
-integration, Graphify, the shared pstack/Thermos checkout, both workflow
-adapters, the global Thermos code-quality skill, and repository/global Codex
-adapters. The package also
-publishes `shared-utils-upgrade-agent-tools` for use from a consuming project;
-`--project-root` selects that project's Spec-Kit integration target.
-
-Pass `--dry-run` to preview the Spec-Kit and Graphify updates and list the
-shared plugin checkout and adapter-sync steps. The updater adopts an existing
-global Thermos skill only if it matches the current plugin source, then records
-an integrity marker so later runs can refresh the managed copy while preserving
-local edits. It adds the `thermos` path to a sparse Cursor plugins checkout when
-needed. Missing
-Spec-Kit/Graphify installs are handled by the existing devtools updater; pstack
-must be configured and its checkout must contain the Thermos plugin.
-
-[🔝 Back to Top](#shared-utils)
+Run `package-upgrade` directly through Agent Config from the project being
+updated. Its default operation remains a read-only plan; use `--apply` only for
+reviewed exact versions.
 
 ## Graphify Knowledge Graph
 

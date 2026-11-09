@@ -1,7 +1,7 @@
 {
   "name": "@user27828/shared-utils",
   "description": "Collection of common utilities I use for various projects",
-  "version": "0.71.69",
+  "version": "0.72.69",
   "type": "module",
   "sideEffects": [
     "dist/utils/src/log.js",
@@ -957,7 +957,6 @@
     "utils": "yarn workspace @shared-utils/utils",
     "server": "yarn workspace @shared-utils/server",
     "build": "yarn utils build && yarn client build && yarn server build",
-    "speckit:sync": "bash ./scripts/speckit-sync.sh",
     "prepare": "node ./scripts/ensure-dist.js",
     "postinstall": "node ./scripts/ensure-dist.js",
     "prepack": "yarn build",
@@ -967,9 +966,6 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "upgrade": "yarn upgrade-interactive",
-    "upgrade:devtools": "node ./scripts/upgrade-devtools.mjs",
-    "upgrade:agent-tools": "node ./scripts/upgrade-agent-tools.mjs",
-    "thermos": "node ./scripts/thermos.mjs",
     "update:data": "./bin/update-source-data.sh",
     "compare:data": "./bin/compare-data.cjs"
   },
@@ -978,17 +974,10 @@
     "dependency-manager": "./scripts/dependency-manager.js",
     "docker-build": "./bin/docker-build.sh",
     "killnode": "./bin/killnode.sh",
-    "package-upgrade": "./scripts/package-upgrade.mjs",
-    "shared-utils-pstack": "./scripts/pstack.mjs",
-    "shared-utils-speckit-sync": "./scripts/speckit-sync.mjs",
-    "shared-utils-thermos": "./scripts/thermos.mjs",
-    "shared-utils-upgrade-agent-tools": "./scripts/upgrade-agent-tools.mjs",
-    "shared-utils-upgrade-devtools": "./scripts/upgrade-devtools.mjs",
-    "vite-preview-envs": "./bin/vite-preview-envs.sh",
-    "yarn-upgrade-interactive": "./bin/package-upgrades.sh"
+    "vite-preview-envs": "./bin/vite-preview-envs.sh"
   },
   "devDependencies": {
-    "@aws-sdk/client-sesv2": "^3.1161.0",
+    "@aws-sdk/client-sesv2": "^3.1162.0",
     "@babel/core": "^8.1.0",
     "@babel/preset-env": "^8.0.7",
     "@babel/preset-typescript": "^8.0.7",
@@ -1019,7 +1008,7 @@
     "sanitize-html": "2.18.1",
     "supertest": "^7.3.1",
     "typescript": "^6.0.3",
-    "vite": "8.3.5",
+    "vite": "8.3.6",
     "vitest": "5.1.0"
   },
   "resolutions": {
@@ -1175,28 +1164,15 @@
     "./scripts/dependency-manager.js",
     "./bin/docker-build.sh",
     "./bin/killnode.sh",
-    "./scripts/package-upgrade.mjs",
-    "./scripts/upgrade-devtools.mjs",
-    "./scripts/upgrade-agent-tools.mjs",
-    "./scripts/speckit-sync.mjs",
     "./bin/vite-preview-envs.sh",
-    "./bin/package-upgrades.sh",
     "scripts/ensure-dist.js",
     "scripts/artifact-contract.mjs",
-    "scripts/speckit-sync.sh",
     "dist/server/deploy-turnstile-worker.sh",
     "bin/update-source-data.sh",
     "bin/compare-data.cjs",
     "bin/convert-bigint-ids.py",
     "!.specify/**",
     "!data/**",
-    "!examples/**",
-    "scripts/agent-plugin-manager.mjs",
-    "scripts/pstack.mjs",
-    "scripts/pstack/pstack.prompt.md",
-    "scripts/pstack/compatibility.md",
-    "scripts/thermos.mjs",
-    "scripts/thermos/thermos.prompt.md",
-    "scripts/thermos/compatibility.md"
+    "!examples/**"
   ]
 }

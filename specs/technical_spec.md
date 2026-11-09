@@ -776,15 +776,3 @@ explicit CLI files and the Turnstile deployment helper. Declaration maps are
 omitted because source files are not published. Server JS source maps retain
 embedded source for debugging. Install checks derive required artifacts from
 the export/bin contract and perform no network calls or consumer builds.
-
-### Global pstack adapter
-
-`scripts/pstack.mjs` uses Node built-ins to resolve source skill files, expose
-dynamic help, configure managed global entry points, and delegate explicit
-upgrades to Git or a configured executable/argument array. It keeps upstream
-files in their normal installation, rejects traversal and unmanaged output
-collisions, serializes mutations, and preserves machine overrides. Templates
-under `scripts/pstack/` are published with the CLI. Runtime source reads and
-sync perform no network calls. The existing sync runner supports
-`--global-only` and refreshes same-owner native skills in `~/.agents/skills`
-without producing duplicate legacy Codex skills.

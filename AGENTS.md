@@ -1,3 +1,29 @@
+<!-- agent-standards:begin -->
+<!-- catalog=agent-config; profile=default; source=standards/engineering.md; content-sha256=81342e567045734ff62db071667e187f4b897918759b9c80c50fd9fe6c50016f -->
+# Engineering Standards
+
+- Work from evidence and first principles. Aim for complete, production-ready behavior within the requested scope, including correctness, security, robustness, resource cleanup, and controlled side effects.
+- Before changing logic, trace behavior backward through callers, dependencies, data formats, and ownership, then forward through integrations and consumers. Define observable success criteria.
+- For substantive changes, write concrete steps and check preconditions backward and downstream effects forward before implementation.
+- Make the smallest complete change. Reuse existing utilities, consolidate duplicated rules, and avoid speculative abstractions, wrappers, or files.
+- Resolve technical uncertainty from source or authoritative documentation. Ask when consequential intent or a decision remains unclear.
+- Choose verification appropriate to risk and follow the owning project's test and validation instructions.
+
+
+## Testing
+
+- Add tests when they protect meaningful behavior, a stable contract, an invariant, or a credible regression. Unit tests must be substantive: use representative inputs, exercise relevant behavior, and assert observable outcomes, state transitions, side effects, boundary conditions, or failure handling.
+- Do not generate tests that merely mirror implementation, assert that something rendered or was called without verifying its contract, or exist only for line coverage.
+- Keep tests resilient to legitimate changes: test schemas and behavior contracts rather than volatile configuration values, model/provider choices or ordering, incidental implementation details, or changeable copy. Valid configuration changes should fail tests only when they violate a schema, explicit contract, or protected invariant. Never generate unit tests that lock incidental or user-editable UI copy, labels, or error wording; assert exact wording only for an explicitly fixed product requirement.
+## Spec-Kit projects
+
+- Detect Spec-Kit before applying these rules: treat a project as Spec-Kit when `.specify/` contains runtime metadata, workflow definitions, templates, or scripts, or when its local `AGENTS.md` explicitly identifies Spec-Kit. A `specs/` directory alone does not establish Spec-Kit use.
+- In detected projects, follow local `AGENTS.md` and `.specify/spec-kit-bridge.md` when present. Read `.specify/integration.json`, `.specify/init-options.json`, `.specify/workflows/workflow-registry.json`, and the selected workflow definition before assuming command names, client integration, or phase ordering.
+- Before editing Spec-Kit artifacts, read the applicable constitution and the current feature `spec.md`, `plan.md`, and `tasks.md` when present. Preserve their roles: specs state requirements, plans describe design, and tasks track executable work. Follow review gates, edit only artifacts needed for the requested phase, and keep task status accurate.
+- Ground brownfield requirements in observable code. When requirements artifacts and behavior disagree, report the discrepancy and avoid inventing current-state behavior. Keep project-specific paths, command aliases, sync operations, and governance exceptions in local `AGENTS.md`.
+- Preserve project-specific requirements in the project instructions that own them.
+- Use plain ASCII quotes and dashes in code and documentation; do not use smart quotes or box-drawing characters.
+<!-- agent-standards:end -->
 # Copilot Instructions for `shared-utils`
 
 ## Engineering Standards
@@ -152,45 +178,45 @@ Keep tests/dev scripts and declaration maps out of the archive; server JS maps
 include their source content. Keep export/bin targets and CLI support files
 covered by the artifact contract and packed consumer verifier.
 
-### Package upgrade helper for consuming projects
+### Package upgrade and agent-tool commands
 
-When a consuming project has the `/yarn-upgrade` GHCP/Codex prompt or skill,
-use the installed `@user27828/shared-utils` package's `package-upgrade` binary
-from the target project's directory. Start with the read-only plan:
+Agent Config owns the migrated package-upgrade, pstack/Thermos, and agent-tool
+update implementations. On configured hosts, run them through the installed
+Agent Config launcher from the target project directory. For the default
+Linux/WSL installation:
 
-```bash
-yarn exec package-upgrade --json
-```
+~~~bash
+node ~/.local/share/agent-config/bin/agent-config.mjs package-upgrade --json
+node ~/.local/share/agent-config/bin/agent-config.mjs upgrade-agent-tools --dry-run --project-root /path/to/project
+~~~
 
-Use the consuming project's manager when it is not Yarn:
-`npm exec -- package-upgrade --manager npm --json` or
-`pnpm exec package-upgrade --manager pnpm --json`. Review release notes,
-actual usage, downstream impact, and the current JSON audit before applying
-anything. Apply only reviewed exact specs, never `rejected-age-gate`
-candidates, and use `--verify test`, `--verify lint`, or `--verify build` for
-standard verification. Major upgrades need a confirmed compatibility plan or
-the user's decision; do not apply them automatically. The `/yarn-upgrade`
-workflow is authoritative, and `package-upgrade` is its package-owned
-execution mechanism. Do not use the legacy interactive wrapper for this
-workflow.
+Invoke these commands through the host-installed Agent Config runtime. They
+are not published by shared-utils and do not require it as a dependency. Use
+Yarn for shared-utils package operations.
+
+Start package-upgrade with its read-only plan. Review release notes, actual
+usage, downstream impact, and the current JSON audit before applying anything.
+Apply only reviewed exact specs, never rejected age-gate candidates, and use
+--verify test, --verify lint, or --verify build for standard verification.
+Major upgrades need a confirmed compatibility plan or the user's decision; do
+not apply them automatically. The /yarn-upgrade workflow owns package-upgrade
+policy and review.
 
 ### Shared Spec-Kit and Codex synchronization
 
-Use the package-owned `shared-utils-speckit-sync`; do not copy the script into
-consuming projects. A repository's prompt source is `.github/prompts/`, with
-optional agent bodies in `.github/agents/`; generated adapters resolve these
-files at invocation time.
+Agent Config is the synchronization owner for migrated hosts. Consuming
+repositories use the host-installed runtime directly; do not copy the sync
+implementation or add shared-utils as a bootstrap dependency. The repository
+folder-open task runs repo-sync with an explicit workspace root and apply mode.
 
-- Repository prompts default to local `.agents/skills/`.
-- User-global VS Code prompts populate `CODEX_HOME/prompts/` and
-  `CODEX_HOME/skills/` for cross-project commands.
-- Use `yarn exec shared-utils-speckit-sync --no-global` for automation and
-  routine project-only sync. It never changes `CODEX_HOME`.
-- Use `--global-repository` only as an explicit fallback when local skills are
-  unavailable. Use `--prune` or `--prune-global` only for deliberate cleanup;
-  normal sync does not prune.
-- Global sync is locked and owner-aware; preserve unmanaged, conflicting,
-  symlink, non-file, and unverifiable legacy entries.
+- Repository prompts under .github/prompts/ and declared agent bodies under
+  .github/agents/ produce project-local .agents/skills/ adapters.
+- For repositories with Spec-Kit runtime material, repo-sync also manages the
+  bridge and only the marked Copilot instructions region.
+- repo-sync writes only inside the selected repository. It does not sync global
+  destinations; those are selected explicitly in Agent Config host settings.
+- Invoke agent-tool commands through the host-installed Agent Config runtime;
+  shared-utils does not publish these tools or serve as their bootstrap dependency.
 
 See the [sync details](README.md#shared-spec-kit-and-codex-synchronization)
 and [Spec-Kit bridge](.specify/spec-kit-bridge.md).
