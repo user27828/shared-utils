@@ -19,6 +19,19 @@ Core utilities for common application needs with environment detection and centr
 
 Production-safe console wrapper with environment-specific behavior and automatic filtering.
 
+Set jsonLog.enabled to true to compact plain object arguments into one-line
+key/value pairs prefixed by JSON:. The default is disabled, so existing logging
+output stays unchanged. Set marker to customize the prefix or
+combineProperties to false to put each top-level property on a separate line.
+
+The formatter is also available directly for other JSON logging paths:
+
+    import { log, minifyJsonLoggingContent } from "@user27828/shared-utils/utils/log";
+
+    log.setOptions({ jsonLog: { enabled: true } });
+    minifyJsonLoggingContent({ jobId: "job-123", inspected: 0, resumed: 0 });
+    // JSON: jobId: "job-123", inspected: 0, resumed: 0
+
 ### Turnstile Utility
 
 Cloudflare Turnstile browser helper for bot protection, paired with server-side verification helpers from the server package.

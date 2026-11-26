@@ -31,6 +31,75 @@
  * });
  */
 import { OptionsManager } from "./options-manager.js";
+const isPlainObject = (value) => {
+    if (value === null || typeof value !== "object") {
+        return false;
+    }
+    try {
+        const prototype = Object.getPrototypeOf(value);
+        return prototype === Object.prototype || prototype === null;
+    }
+    catch {
+        return false;
+    }
+};
+const serializeJsonValue = (value) => {
+    const seen = new WeakSet();
+    try {
+        const serialized = JSON.stringify(value, (_key, candidate) => {
+            if (candidate instanceof Error) {
+                return {
+                    name: candidate.name,
+                    message: candidate.message,
+                    stack: candidate.stack,
+                };
+            }
+            if (typeof candidate === "bigint") {
+                return candidate.toString();
+            }
+            if (candidate && typeof candidate === "object") {
+                if (seen.has(candidate)) {
+                    return "[Circular]";
+                }
+                seen.add(candidate);
+            }
+            return candidate;
+        });
+        if (serialized !== undefined) {
+            return serialized;
+        }
+    }
+    catch {
+        // Fall through for values JSON does not support.
+    }
+    try {
+        return String(value);
+    }
+    catch {
+        return "[unserializable]";
+    }
+};
+/**
+ * Format JSON logging content on one line without top-level object braces.
+ * Plain object properties are joined as key/value pairs after a JSON marker.
+ */
+export const minifyJsonLoggingContent = (content, options = {}) => {
+    const marker = options.marker ?? "JSON:";
+    if (isPlainObject(content)) {
+        const pairs = Object.entries(content).map(([key, value]) => {
+            const formattedKey = /^[A-Za-z_$][\w$]*$/.test(key)
+                ? key
+                : serializeJsonValue(key);
+            return formattedKey + ": " + serializeJsonValue(value);
+        });
+        if (pairs.length === 0) {
+            return marker + " (empty)";
+        }
+        const separator = options.combineProperties === false ? ",\n" : ", ";
+        return marker + " " + pairs.join(separator);
+    }
+    return marker + " " + serializeJsonValue(content);
+};
 // Store original console methods at module level
 const ORIGINAL_CONSOLE_METHODS = {
     log: console.log.bind(console),
@@ -48,6 +117,11 @@ class Log {
             // Auto-detect environment - 'client' or 'server'
             type: this.detectEnvironment(),
             showCaller: true, // Add caller information to log messages
+            jsonLog: {
+                enabled: false,
+                marker: "JSON:",
+                combineProperties: true,
+            },
             client: {
                 namespace: "client", // Namespace for client-side logging
                 production: [], // List of log levels to log in production, e.g. ['warn', 'error']
@@ -256,7 +330,12 @@ class Log {
             return;
         }
         // Format message and log
-        const formattedArgs = this.formatMessage(level, args, options);
+        const logArgs = options.jsonLog.enabled
+            ? args.map((arg) => isPlainObject(arg)
+                ? minifyJsonLoggingContent(arg, options.jsonLog)
+                : arg)
+            : args;
+        const formattedArgs = this.formatMessage(level, logArgs, options);
         // In test environment, use current console methods to allow mocking
         // Otherwise use original methods to preserve call stack
         const isTestEnvironment = this.isTestEnvironment();

@@ -32,6 +32,17 @@
  */
 type LogLevel = "log" | "info" | "warn" | "error" | "debug";
 type Environment = "client" | "server";
+export interface JsonLogFormatOptions {
+    enabled?: boolean;
+    marker?: string;
+    combineProperties?: boolean;
+}
+type MinifyJsonLoggingContentOptions = Pick<JsonLogFormatOptions, "marker" | "combineProperties">;
+/**
+ * Format JSON logging content on one line without top-level object braces.
+ * Plain object properties are joined as key/value pairs after a JSON marker.
+ */
+export declare const minifyJsonLoggingContent: (content: unknown, options?: MinifyJsonLoggingContentOptions) => string;
 interface OriginalConsoleMethods {
     log: (...args: any[]) => void;
     info: (...args: any[]) => void;
@@ -44,6 +55,7 @@ interface LogOptions {
     type?: Environment;
     interceptor?: (level: LogLevel, args: any[]) => void;
     showCaller?: boolean;
+    jsonLog?: JsonLogFormatOptions;
     client?: {
         namespace?: string;
         production?: LogLevel[];

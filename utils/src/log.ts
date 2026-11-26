@@ -36,6 +36,102 @@ import { OptionsManager } from "./options-manager.js";
 type LogLevel = "log" | "info" | "warn" | "error" | "debug";
 type Environment = "client" | "server";
 
+export interface JsonLogFormatOptions {
+  enabled?: boolean;
+  marker?: string;
+  combineProperties?: boolean;
+}
+
+type MinifyJsonLoggingContentOptions = Pick<
+  JsonLogFormatOptions,
+  "marker" | "combineProperties"
+>;
+
+const isPlainObject = (
+  value: unknown,
+): value is Record<string, unknown> => {
+  if (value === null || typeof value !== "object") {
+    return false;
+  }
+
+  try {
+    const prototype = Object.getPrototypeOf(value);
+    return prototype === Object.prototype || prototype === null;
+  } catch {
+    return false;
+  }
+};
+
+const serializeJsonValue = (value: unknown): string => {
+  const seen = new WeakSet<object>();
+
+  try {
+    const serialized = JSON.stringify(value, (_key, candidate) => {
+      if (candidate instanceof Error) {
+        return {
+          name: candidate.name,
+          message: candidate.message,
+          stack: candidate.stack,
+        };
+      }
+
+      if (typeof candidate === "bigint") {
+        return candidate.toString();
+      }
+
+      if (candidate && typeof candidate === "object") {
+        if (seen.has(candidate)) {
+          return "[Circular]";
+        }
+        seen.add(candidate);
+      }
+
+      return candidate;
+    });
+
+    if (serialized !== undefined) {
+      return serialized;
+    }
+  } catch {
+    // Fall through for values JSON does not support.
+  }
+
+  try {
+    return String(value);
+  } catch {
+    return "[unserializable]";
+  }
+};
+
+/**
+ * Format JSON logging content on one line without top-level object braces.
+ * Plain object properties are joined as key/value pairs after a JSON marker.
+ */
+export const minifyJsonLoggingContent = (
+  content: unknown,
+  options: MinifyJsonLoggingContentOptions = {},
+): string => {
+  const marker = options.marker ?? "JSON:";
+
+  if (isPlainObject(content)) {
+    const pairs = Object.entries(content).map(([key, value]) => {
+      const formattedKey = /^[A-Za-z_$][\w$]*$/.test(key)
+        ? key
+        : serializeJsonValue(key);
+      return formattedKey + ": " + serializeJsonValue(value);
+    });
+
+    if (pairs.length === 0) {
+      return marker + " (empty)";
+    }
+
+    const separator = options.combineProperties === false ? ",\n" : ", ";
+    return marker + " " + pairs.join(separator);
+  }
+
+  return marker + " " + serializeJsonValue(content);
+};
+
 // Define the interface for the original console methods
 interface OriginalConsoleMethods {
   log: (...args: any[]) => void;
@@ -58,6 +154,7 @@ interface LogOptions {
   type?: Environment;
   interceptor?: (level: LogLevel, args: any[]) => void;
   showCaller?: boolean; // Add caller information to log messages
+  jsonLog?: JsonLogFormatOptions;
   client?: {
     namespace?: string;
     production?: LogLevel[];
@@ -86,6 +183,11 @@ class Log {
       // Auto-detect environment - 'client' or 'server'
       type: this.detectEnvironment(),
       showCaller: true, // Add caller information to log messages
+      jsonLog: {
+        enabled: false,
+        marker: "JSON:",
+        combineProperties: true,
+      },
       client: {
         namespace: "client", // Namespace for client-side logging
         production: [] as LogLevel[], // List of log levels to log in production, e.g. ['warn', 'error']
@@ -330,7 +432,14 @@ class Log {
     }
 
     // Format message and log
-    const formattedArgs = this.formatMessage(level, args, options);
+    const logArgs = options.jsonLog.enabled
+      ? args.map((arg) =>
+          isPlainObject(arg)
+            ? minifyJsonLoggingContent(arg, options.jsonLog)
+            : arg,
+        )
+      : args;
+    const formattedArgs = this.formatMessage(level, logArgs, options);
 
     // In test environment, use current console methods to allow mocking
     // Otherwise use original methods to preserve call stack
